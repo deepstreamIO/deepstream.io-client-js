@@ -1,0 +1,32 @@
+{
+  "name": "deepstream.io-client-js",
+  "version": "0.0.1",
+  "description": "the javascript client for deepstream.io",
+  "main": "dist/deepstream.min.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoxton-one/deepstream.io-client-js.git"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "grunt-contrib-concat": "0.5.0",
+    "grunt-contrib-uglify": "0.6.0",
+    "grunt-wrap": "0.3.0",
+    "grunt-karma": "0.9.0",
+    "karma-chrome-launcher": "~0.1.5",
+    "jasmine-core": "~2.1.2",
+    "karma-jasmine": "~0.3.2"
+  },
+  "author": "Wolfram Hempel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hoxton-one/deepstream.io-client-js/issues"
+  },
+  "homepage": "https://github.com/hoxton-one/deepstream.io-client-js"
+}
