@@ -1,3 +1,7 @@
+var EngineIoClient = require( 'engine.io-client'),
+	MessageParser = require( './message/message-parser' ),
+	EventHandler = require( './event/event-handler' );
+	
 /**
  *
  * recordPersistDefault (Boolean): Whether records should be persisted by default. Overwritten by getRecord flag
@@ -18,7 +22,7 @@ var Client = function( url, options ) {
 	this._url = url;
 	this._options = options;
 	this._messageParser = new MessageParser();
-	this._eventManager = new EventManager( this._options );
+	this._eventManager = new EventHandler( this._options );
 };
 
 Client.prototype.connect = function( authParams ) {
@@ -72,3 +76,5 @@ Client.prototype.getUid = function() {
 	
 	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
 };
+
+module.exports = Client;

@@ -5,21 +5,21 @@ module.exports = function(grunt) {
 		
 		pkg: grunt.file.readJSON( 'package.json' ),
 
-		concat: {
+		browserify: {
 			dist: {
-				src: [ 'src/**/*' ],
-				dest: 'dist/deepstream.js',
-			}
-		},
-
-		wrap: {
-			dist: {
-				src: [ 'dist/deepstream.js' ],
-				dest: 'dist/deepstream.js',
-				options: {
-					wrapper: ['(function() {\n', '\n})();']
+				files: {
+					'dist/deepstream.js': [ 'src/client.js' ]
 				}
 			},
+			live: {
+				files: {
+					'dist/deepstream.js': [ 'src/client.js' ]
+				},
+				options: {
+					watch: true,
+					keepAlive: true
+				}
+			}
 		},
 		
 		uglify: {
@@ -42,15 +42,13 @@ module.exports = function(grunt) {
 		
 	});
 
-	grunt.loadNpmTasks( 'grunt-contrib-concat' );
+	grunt.loadNpmTasks( 'grunt-browserify' );
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
-	grunt.loadNpmTasks( 'grunt-wrap' );
 	grunt.loadNpmTasks( 'grunt-karma' );
 
 	grunt.registerTask( 'build', [
 		'karma:unitOnce',
-		'concat:dist',
-		'wrap:dist',
+		'browserify:dist',
 		'uglify:dist'
 	]);
 
