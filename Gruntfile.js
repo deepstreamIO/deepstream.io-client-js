@@ -11,6 +11,14 @@ module.exports = function(grunt) {
 					'dist/deepstream.js': [ 'src/client.js' ]
 				}
 			},
+			unit: {
+				files: {
+					'dist/deepstream.js': [ 'src/client.js' ]
+				},
+				options: {
+					watch: true
+				}
+			},
 			live: {
 				files: {
 					'dist/deepstream.js': [ 'src/client.js' ]
@@ -47,12 +55,16 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks( 'grunt-karma' );
 
 	grunt.registerTask( 'build', [
-		'karma:unitOnce',
 		'browserify:dist',
+		'karma:unitOnce',
 		'uglify:dist'
 	]);
 
-	grunt.registerTask( 'unit', [ 'karma:unit' ] );
+	grunt.registerTask( 'unit', [
+		'browserify:unit',
+		'karma:unit' 
+	]);
+	
 	grunt.registerTask( 'default', [ 'build' ] );
 
 };

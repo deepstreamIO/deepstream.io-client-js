@@ -3894,6 +3894,7 @@ var Client = function( url, options ) {
 	this._options = options;
 	this._messageParser = new MessageParser();
 	this._eventManager = new EventHandler( this._options );
+	
 };
 
 Client.prototype.connect = function( authParams ) {
