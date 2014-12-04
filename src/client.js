@@ -1,5 +1,5 @@
-var EngineIoClient = require( 'engine.io-client'),
-	MessageParser = require( './message/message-parser' ),
+var Emitter = require( 'component-emitter' ),
+	Connection = require( './message/connection' ),
 	EventHandler = require( './event/event-handler' );
 	
 /**
@@ -20,14 +20,16 @@ var EngineIoClient = require( 'engine.io-client'),
  */
 var Client = function( url, options ) {
 	this._url = url;
-	this._options = options;
-	this._messageParser = new MessageParser();
+	this._options = options || {};
+	this._connection = null;
 	this._eventManager = new EventHandler( this._options );
-	
 };
 
-Client.prototype.connect = function( authParams ) {
+Emitter( Client );
 
+Client.prototype.connect = function( authParams ) {
+	this._connection = new Connection( this, this._url, this._options, authParams );
+	return this;
 };
 
 Client.prototype.provideRpc = function( name, callback ) {
@@ -78,4 +80,6 @@ Client.prototype.getUid = function() {
 	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
 };
 
-module.exports = Client;
+module.exports = function( url, options ) {
+	return new Client( url, options );
+};

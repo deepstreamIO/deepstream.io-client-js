@@ -1,5 +1,14 @@
+var derequire = require( 'derequire' );
+
 module.exports = function(grunt) {
 
+	var dereqCallback = function( err, src, next ) {
+		if( err ) {
+			throw err;
+		}
+
+		next( err, derequire( src ) );
+	};
 
 	grunt.initConfig({
 		
@@ -9,6 +18,12 @@ module.exports = function(grunt) {
 			dist: {
 				files: {
 					'dist/deepstream.js': [ 'src/client.js' ]
+				},
+				options:{
+					postBundleCB: dereqCallback,
+					browserifyOptions: { 
+						standalone: 'deepstream'
+					}
 				}
 			},
 			unit: {
@@ -16,7 +31,11 @@ module.exports = function(grunt) {
 					'dist/deepstream.js': [ 'src/client.js' ]
 				},
 				options: {
-					watch: true
+					watch: true,
+					postBundleCB: dereqCallback,
+					browserifyOptions: { 
+						standalone: 'deepstream'
+					}
 				}
 			},
 			live: {
@@ -25,7 +44,11 @@ module.exports = function(grunt) {
 				},
 				options: {
 					watch: true,
-					keepAlive: true
+					keepAlive: true,
+					postBundleCB: dereqCallback,
+					browserifyOptions: { 
+						standalone: 'deepstream'
+					}
 				}
 			}
 		},
@@ -54,13 +77,15 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
 	grunt.loadNpmTasks( 'grunt-karma' );
 
-	grunt.registerTask( 'build', [
+	grunt.registerTask( 'dev', 'Browserifies the files on every change to src', [ 'browserify:live' ] );
+
+	grunt.registerTask( 'build', 'Browserifies, tests and minifies the client file', [
 		'browserify:dist',
 		'karma:unitOnce',
 		'uglify:dist'
 	]);
 
-	grunt.registerTask( 'unit', [
+	grunt.registerTask( 'unit', 'Runs unit tests in PhantomJS on every file change', [
 		'browserify:unit',
 		'karma:unit' 
 	]);
