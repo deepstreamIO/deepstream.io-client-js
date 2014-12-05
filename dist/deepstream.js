@@ -3871,7 +3871,8 @@ function ws(uri, protocols, opts) {
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
 },{}],"c:\\dev\\deepstream.io-client-js\\src\\client.js":[function(_dereq_,module,exports){
-var Emitter = _dereq_( 'component-emitter' ),
+var C = _dereq_( './constants/constants' ),
+	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
 	EventHandler = _dereq_( './event/event-handler' );
 	
@@ -3894,15 +3895,23 @@ var Emitter = _dereq_( 'component-emitter' ),
 var Client = function( url, options ) {
 	this._url = url;
 	this._options = options || {};
-	this._connection = null;
-	this._eventManager = new EventHandler( this._options );
+
+	this._messageCallbacks = {};
+	this._messageCallbacks[ C.TOPIC.EVENT ] = ( new EventHandler( this._options ) ).handle;
+	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
+	
+	this._connection = new Connection( this, this._url, this._options );
 };
 
-Emitter( Client );
+Emitter( Client.prototype );
 
-Client.prototype.connect = function( authParams ) {
-	this._connection = new Connection( this, this._url, this._options, authParams );
+Client.prototype.login = function( authParams, callback ) {
+	this._connection.authenticate( authParams, callback );
 	return this;
+};
+
+Client.prototype.getConnectionState = function() {
+	return this._connection.getState();
 };
 
 Client.prototype.provideRpc = function( name, callback ) {
@@ -3953,15 +3962,45 @@ Client.prototype.getUid = function() {
 	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
 };
 
+Client.prototype._$onMessage = function( message ) {
+	if( this._messageCallbacks[ message.topic ] ) {
+		this._messageCallbacks[ message.topic ]( message );
+	} else {
+		this._$onError( message.topic, message.action, 'received message for unknown topic ' + message.topic );
+	}
+
+	if( message.action === C.ACTIONS.ERROR ) {
+		this._$onError( message.topic, message.action, message.data[ 0 ] );
+	}
+};
+
+Client.prototype._$onError = function( topic, event, msg ) {
+	if( this.hasListeners( 'error' ) ) {
+		this.emit( 'error', msg, event, topic );
+		this.emit( event, topic, msg );
+	} else {
+		console.log( '--- You can catch all deepstream errors by subscribing to the error event ---' );
+		
+		var errorMsg = event + ': ' + msg;
+		
+		if( topic ) {
+			errorMsg += ' (' + topic + ')';
+		}
+
+		throw new Error( errorMsg );
+	}
+};
+
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
+},{"./constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
 exports.CONNECTION_STATE.AUTHENTICATING = 'AUTHENTICATING';
 exports.CONNECTION_STATE.OPEN = 'OPEN';
+exports.CONNECTION_STATE.ERROR = 'ERROR';
 
 exports.MESSAGE_SEPERATOR = String.fromCharCode( 30 ); // ASCII Record Seperator 1E
 exports.MESSAGE_PART_SEPERATOR = String.fromCharCode( 31 ); // ASCII Unit Separator 1F
@@ -3973,6 +4012,9 @@ exports.TOPIC.EVENT = 'EVENT';
 exports.TOPIC.RECORD = 'RECORD';
 exports.TOPIC.RPC = 'RPC';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
+
+exports.EVENT = {};
+exports.EVENT.CONNECTION_ERROR = 'CONNECTION_ERROR';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';
@@ -4004,11 +4046,13 @@ var engineIoClient = _dereq_( 'engine.io-client'),
 	messageBuilder = _dereq_( './message-builder' ),
 	C = _dereq_( '../constants/constants' );
 
-var Connection = function( client, url, options, authParams ) {
+var Connection = function( client, url, options ) {
 	this._client = client;
 	this._url = url;
 	this._options = options;
-	this._authParams = authParams;
+	this._authParams = null;
+	this._authCallback = null;
+
 	this._state = C.CONNECTION_STATE.CLOSED;
 
 	this._engineIo = engineIoClient( url, options );
@@ -4018,23 +4062,76 @@ var Connection = function( client, url, options, authParams ) {
 	this._engineIo.on( 'message', this._onMessage.bind( this ) );
 };
 
-Connection.prototype._onOpen = function() {
-	this._state = C.CONNECTION_STATE.AUTHENTICATING;
-	this._client.emit( C.CONNECTION_STATE.AUTHENTICATING );
+Connection.prototype.getState = function() {
+	return this._state;
+};
+
+Connection.prototype.authenticate = function( authParams, callback ) {
+	this._authParams = authParams;
+	this._authCallback = callback;
+
+	if( this._state === C.CONNECTION_STATE.AUTHENTICATING ) {
+		this._sendAuthParams();
+	}
+};
+
+Connection.prototype.send = function( message ) {
+
+};
+
+Connection.prototype._sendAuthParams = function() {
 	var authMessage = messageBuilder.getMsg( C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ] );
 	this._engineIo.send( authMessage );
 };
 
-Connection.prototype._onError = function() {
-	console.log( 'error', arguments );
+Connection.prototype._onOpen = function() {
+	this._setState( C.CONNECTION_STATE.AUTHENTICATING );
+	
+	if( this._authParams ) {
+		this._sendAuthParams();
+	}
+};
+
+Connection.prototype._onError = function( error ) {
+	this._setState( C.CONNECTION_STATE.ERROR );
+	this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
 };
 
 Connection.prototype._onClose = function() {
-	console.log( 'close', arguments );
+	this._setState( C.CONNECTION_STATE.CLOSED );
+	//TODO Reconnection strategy & add flag if close was deliberately called
 };
 
-Connection.prototype._onMessage = function() {
-	console.log( 'message', arguments );
+Connection.prototype._onMessage = function( message ) {
+	var parsedMessages = messageParser.parse( message ),
+		i;
+
+	for( i = 0; i < parsedMessages.length; i++ ) {
+		if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
+			this._handleAuthResponse( parsedMessages[ i ] );
+		} else {
+			this._client._$onMessage( parsedMessages[ i ] );
+		}
+	}
+};
+
+Connection.prototype._handleAuthResponse = function( message ) {
+	if( message.action === C.ACTIONS.ERROR ) {
+		if( this._authCallback ) {
+			this._authCallback( false, message.data[ 0 ], message.data[ 1 ] );
+		}
+	} else if( message.action === C.ACTIONS.ACK ) {
+		this._setState( C.CONNECTION_STATE.OPEN );
+		
+		if( this._authCallback ) {
+			this._authCallback( true );
+		}
+	}
+};
+
+Connection.prototype._setState = function( state ) {
+	this._state = state;
+	this._client.emit( C.EVENT.CONNECTION_STATE_CHANGED, state );
 };
 
 module.exports = Connection;

@@ -1,4 +1,5 @@
-var Emitter = require( 'component-emitter' ),
+var C = require( './constants/constants' ),
+	Emitter = require( 'component-emitter' ),
 	Connection = require( './message/connection' ),
 	EventHandler = require( './event/event-handler' );
 	
@@ -21,15 +22,23 @@ var Emitter = require( 'component-emitter' ),
 var Client = function( url, options ) {
 	this._url = url;
 	this._options = options || {};
-	this._connection = null;
-	this._eventManager = new EventHandler( this._options );
+
+	this._messageCallbacks = {};
+	this._messageCallbacks[ C.TOPIC.EVENT ] = ( new EventHandler( this._options ) ).handle;
+	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
+	
+	this._connection = new Connection( this, this._url, this._options );
 };
 
-Emitter( Client );
+Emitter( Client.prototype );
 
-Client.prototype.connect = function( authParams ) {
-	this._connection = new Connection( this, this._url, this._options, authParams );
+Client.prototype.login = function( authParams, callback ) {
+	this._connection.authenticate( authParams, callback );
 	return this;
+};
+
+Client.prototype.getConnectionState = function() {
+	return this._connection.getState();
 };
 
 Client.prototype.provideRpc = function( name, callback ) {
@@ -78,6 +87,35 @@ Client.prototype.getUid = function() {
 	};
 	
 	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
+};
+
+Client.prototype._$onMessage = function( message ) {
+	if( this._messageCallbacks[ message.topic ] ) {
+		this._messageCallbacks[ message.topic ]( message );
+	} else {
+		this._$onError( message.topic, message.action, 'received message for unknown topic ' + message.topic );
+	}
+
+	if( message.action === C.ACTIONS.ERROR ) {
+		this._$onError( message.topic, message.action, message.data[ 0 ] );
+	}
+};
+
+Client.prototype._$onError = function( topic, event, msg ) {
+	if( this.hasListeners( 'error' ) ) {
+		this.emit( 'error', msg, event, topic );
+		this.emit( event, topic, msg );
+	} else {
+		console.log( '--- You can catch all deepstream errors by subscribing to the error event ---' );
+		
+		var errorMsg = event + ': ' + msg;
+		
+		if( topic ) {
+			errorMsg += ' (' + topic + ')';
+		}
+
+		throw new Error( errorMsg );
+	}
 };
 
 module.exports = function( url, options ) {

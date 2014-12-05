@@ -3,6 +3,7 @@ exports.CONNECTION_STATE = {};
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
 exports.CONNECTION_STATE.AUTHENTICATING = 'AUTHENTICATING';
 exports.CONNECTION_STATE.OPEN = 'OPEN';
+exports.CONNECTION_STATE.ERROR = 'ERROR';
 
 exports.MESSAGE_SEPERATOR = String.fromCharCode( 30 ); // ASCII Record Seperator 1E
 exports.MESSAGE_PART_SEPERATOR = String.fromCharCode( 31 ); // ASCII Unit Separator 1F
@@ -14,6 +15,9 @@ exports.TOPIC.EVENT = 'EVENT';
 exports.TOPIC.RECORD = 'RECORD';
 exports.TOPIC.RPC = 'RPC';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
+
+exports.EVENT = {};
+exports.EVENT.CONNECTION_ERROR = 'CONNECTION_ERROR';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';
