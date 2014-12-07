@@ -9,6 +9,7 @@ var Connection = function( client, url, options ) {
 	this._options = options;
 	this._authParams = null;
 	this._authCallback = null;
+	this._deliberateClose = false;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
@@ -27,7 +28,7 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	this._authParams = authParams;
 	this._authCallback = callback;
 
-	if( this._state === C.CONNECTION_STATE.AUTHENTICATING ) {
+	if( this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
 		this._sendAuthParams();
 	}
 };
@@ -36,13 +37,19 @@ Connection.prototype.send = function( message ) {
 
 };
 
+Connection.prototype.close = function() {
+	this._deliberateClose = true;
+	this._engineIo.close();
+};
+
 Connection.prototype._sendAuthParams = function() {
+	this._setState( C.CONNECTION_STATE.AUTHENTICATING );
 	var authMessage = messageBuilder.getMsg( C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ] );
 	this._engineIo.send( authMessage );
 };
 
 Connection.prototype._onOpen = function() {
-	this._setState( C.CONNECTION_STATE.AUTHENTICATING );
+	this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 	
 	if( this._authParams ) {
 		this._sendAuthParams();
@@ -53,6 +60,7 @@ Connection.prototype._onError = function( error ) {
 	this._setState( C.CONNECTION_STATE.ERROR );
 	this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
 };
+
 
 Connection.prototype._onClose = function() {
 	this._setState( C.CONNECTION_STATE.CLOSED );
@@ -77,6 +85,7 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		if( this._authCallback ) {
 			this._authCallback( false, message.data[ 0 ], message.data[ 1 ] );
 		}
+		this._setState( C.EVENT.AWAITING_AUTHENTICATION );
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
 		

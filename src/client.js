@@ -37,6 +37,10 @@ Client.prototype.login = function( authParams, callback ) {
 	return this;
 };
 
+Client.prototype.close = function() {
+	this._connection.close();
+};
+
 Client.prototype.getConnectionState = function() {
 	return this._connection.getState();
 };
@@ -57,7 +61,7 @@ Client.prototype.sendEvent = function( name, data ) {
 
 };
 
-Client.prototype.onRecordRequest = function( pattern, callback ) {
+Client.prototype.onRecordSubscription = function( pattern, callback ) {
 
 };
 

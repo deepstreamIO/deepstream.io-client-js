@@ -4,10 +4,43 @@
 		<meta charset="utf-8">
 		<title>Deepstream Client Testpage</title>
 
+		<link rel="stylesheet" type="text/css" href="screen.css" />
 		<script type="text/javascript" src="../dist/deepstream.js"></script>
+		<script type="text/javascript" src="ko.js"></script>
+		<script type="text/javascript" src="view-model.js"></script>
 		<script type="text/javascript" src="start.js"></script>
 	</head>
 	<body>
+		<div id="wrapper">
+			<fieldset>
+				<legend>Connection State</legend>
+				<ul class="fields">
+					<li>
+						<label>Connection State</label> <span data-bind="text:connectionState"></span>
+
+						<div class="button-group">
+							<button
+								type="button" 
+								class="half" 
+								data-bind="click:connect, enable:connectionState()==='CLOSED'">connect</button>
+							<button 
+								type="button" 
+								class="half" 
+								data-bind="click:disconnect, disable:connectionState()==='CLOSED'">disconnect</button>
+						</div>
+					</li>
+				</ul>
+			</fieldset>
+
+			<fieldset>
+				<legend>Login</legend>
+				<ul class="fields">
+					<li><label>username</label><input data-bind="value:username" /></li>
+					<li><label>password</label><input data-bind="value:password" /></li>
+				</ul>
+				<button type="button" data-bind="click:login">Login</button>
+			</fieldset>
+		</div>
 
 	</body>
 </html>
