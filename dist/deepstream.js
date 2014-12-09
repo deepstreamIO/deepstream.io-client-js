@@ -3874,7 +3874,8 @@ if (WebSocket) ws.prototype = WebSocket.prototype;
 var C = _dereq_( './constants/constants' ),
 	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
-	EventHandler = _dereq_( './event/event-handler' );
+	EventHandler = _dereq_( './event/event-handler' ),
+	RpcHandler = _dereq_( './rpc/rpc-handler' );
 	
 /**
  *
@@ -3901,9 +3902,10 @@ var Client = function( url, options ) {
 	this._messageCallbacks = {};
 
 	this.event = new EventHandler( this._options, this._connection );
-
+	this.rpc = new RpcHandler( this._options, this._connection, this );
 
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
+	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
 };
 
@@ -3920,14 +3922,6 @@ Client.prototype.close = function() {
 
 Client.prototype.getConnectionState = function() {
 	return this._connection.getState();
-};
-
-Client.prototype.provideRpc = function( name, callback ) {
-
-};
-
-Client.prototype.makeRpc = function( name, data, callback ) {
-
 };
 
 Client.prototype.onRecordSubscription = function( pattern, callback ) {
@@ -3994,7 +3988,7 @@ Client.prototype._$onError = function( topic, event, msg ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
+},{"./constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","./rpc/rpc-handler":"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -4354,5 +4348,44 @@ MessageParser.prototype._parseMessage = function( message ) {
 };
 
 module.exports = new MessageParser();
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
+var C = _dereq_( '../constants/constants' );
+
+var RpcHandler = function( options, connection, client ) {
+	this._options = options;
+	this._connection = connection;
+	this._client = client;
+	this._rpcs = {};
+	this._providers = {};
+};
+
+RpcHandler.prototype.provide = function( name, callback ) {
+	if( this._providers[ name ] ) {
+		throw new Error( 'rpc ' + name + ' already registered' );
+	}
+
+	this._providers[ name ] = callback;
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ name ] );
+};
+
+RpcHandler.prototype.unprovide = function( name ) {
+	if( this._providers[ name ] ) {
+		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
+	}
+};
+
+RpcHandler.prototype.make = function( name, data, callback ) {
+	var uid = this._client.getUid();
+	this._rpcs[ uid ] = callback;
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.RPC, [ name, uid, data ] );
+};
+
+RpcHandler.prototype._$handle = function( message ) {
+	if( message.action === C.ACTIONS.RPC ) {
+		this._respondToRpc( message );
+	}
+};
+
+module.exports = RpcHandler;
 },{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}]},{},["c:\\dev\\deepstream.io-client-js\\src\\client.js"])("c:\\dev\\deepstream.io-client-js\\src\\client.js")
 });

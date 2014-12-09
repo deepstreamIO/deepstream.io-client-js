@@ -1,7 +1,8 @@
 var C = require( './constants/constants' ),
 	Emitter = require( 'component-emitter' ),
 	Connection = require( './message/connection' ),
-	EventHandler = require( './event/event-handler' );
+	EventHandler = require( './event/event-handler' ),
+	RpcHandler = require( './rpc/rpc-handler' );
 	
 /**
  *
@@ -28,9 +29,10 @@ var Client = function( url, options ) {
 	this._messageCallbacks = {};
 
 	this.event = new EventHandler( this._options, this._connection );
-
+	this.rpc = new RpcHandler( this._options, this._connection, this );
 
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
+	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
 };
 
@@ -47,14 +49,6 @@ Client.prototype.close = function() {
 
 Client.prototype.getConnectionState = function() {
 	return this._connection.getState();
-};
-
-Client.prototype.provideRpc = function( name, callback ) {
-
-};
-
-Client.prototype.makeRpc = function( name, data, callback ) {
-
 };
 
 Client.prototype.onRecordSubscription = function( pattern, callback ) {
