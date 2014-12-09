@@ -4,11 +4,13 @@
 		<meta charset="utf-8">
 		<title>Deepstream Client Testpage</title>
 
-		<link rel="stylesheet" type="text/css" href="screen.css" />
+		<link rel="stylesheet" type="text/css" href="css/screen.css" />
 		<script type="text/javascript" src="../dist/deepstream.js"></script>
-		<script type="text/javascript" src="ko.js"></script>
-		<script type="text/javascript" src="view-model.js"></script>
-		<script type="text/javascript" src="start.js"></script>
+		<script type="text/javascript" src="lib/ko.js"></script>
+
+		<script type="text/javascript" src="js/event-view-model.js"></script>
+		<script type="text/javascript" src="js/view-model.js"></script>
+		<script type="text/javascript" src="js/start.js"></script>
 	</head>
 	<body>
 		<div id="wrapper">
@@ -32,13 +34,61 @@
 				</ul>
 			</fieldset>
 
-			<fieldset>
+			<fieldset data-bind="enable:hasClient">
 				<legend>Login</legend>
 				<ul class="fields">
 					<li><label>username</label><input data-bind="value:username" /></li>
 					<li><label>password</label><input data-bind="value:password" /></li>
 				</ul>
 				<button type="button" data-bind="click:login">Login</button>
+			</fieldset>
+
+			<fieldset data-bind="enable:hasClient">
+				<legend>Event</legend>
+				<ul class="fields">
+					<li>
+						<label>emit</label>
+						<div class="input-with-label">
+							<input data-bind="textInput:emitEventName" />
+							<label>name</label>
+						</div>
+						<div class="input-with-label">
+							<input data-bind="textInput:emitEventData" />
+							<label>data</label>
+						</div>
+						<button 
+							type="button"
+							data-bind="enable:emitEventName(), click: emitEvent"
+							class="inline">OK</button>
+					</li>
+					<li>
+						<label>subscribe</label>
+						<div class="input-with-label">
+							<input data-bind="textInput:eventName" />
+							<label>name</label>
+						</div>
+						<button 
+							type="button"
+							data-bind="enable:eventName(), click: subscribeToEvent"
+							class="inline">OK</button>
+					</li>
+					<li>
+						<label>events</label>
+						<div class="event-list" data-bind="foreach:events">
+							<div class="event">
+								<div><b data-bind="text:eventName"></b></div>
+								<div data-bind="foreach:receivedEvents" class="received-events">
+									<span data-bind="text:$data"></span>, 
+								</div>
+								<div>
+									<span class="clickable" 
+										data-bind="text:isSubscribed() ? 'unsubscribe' : 'subscribe', 
+										click:toggleSubscribe">
+								</div>
+							</div>
+						</div>
+					</li>
+				</ul>
 			</fieldset>
 		</div>
 

@@ -23,11 +23,15 @@ var Client = function( url, options ) {
 	this._url = url;
 	this._options = options || {};
 
-	this._messageCallbacks = {};
-	this._messageCallbacks[ C.TOPIC.EVENT ] = ( new EventHandler( this._options ) ).handle;
-	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
-	
 	this._connection = new Connection( this, this._url, this._options );
+
+	this._messageCallbacks = {};
+
+	this.event = new EventHandler( this._options, this._connection );
+
+
+	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
+	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
 };
 
 Emitter( Client.prototype );
@@ -50,14 +54,6 @@ Client.prototype.provideRpc = function( name, callback ) {
 };
 
 Client.prototype.makeRpc = function( name, data, callback ) {
-
-};
-
-Client.prototype.onEvent = function( name, callback ) {
-
-};
-
-Client.prototype.sendEvent = function( name, data ) {
 
 };
 

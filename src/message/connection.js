@@ -10,6 +10,7 @@ var Connection = function( client, url, options ) {
 	this._authParams = null;
 	this._authCallback = null;
 	this._deliberateClose = false;
+	this._queuedMessages = [];
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
@@ -33,13 +34,34 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	}
 };
 
-Connection.prototype.send = function( message ) {
+Connection.prototype.sendMsg = function( topic, action, data ) {
+	this.send( messageBuilder.getMsg( topic, action, data ) );
+};
 
+Connection.prototype.send = function( message ) {
+	this._queuedMessages.unshift( message );
+	
+	if( this._state === C.CONNECTION_STATE.OPEN ) {
+		setTimeout( this._sendQueuedMessages.bind( this ), 0 );
+	}
 };
 
 Connection.prototype.close = function() {
 	this._deliberateClose = true;
 	this._engineIo.close();
+};
+
+Connection.prototype._sendQueuedMessages = function() {
+	if( this._state !== C.CONNECTION_STATE.OPEN ) {
+		return;
+	}
+
+	if( this._queuedMessages.length === 0 ) {
+		return;
+	}
+
+	this._engineIo.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR) );
+	this._queuedMessages = [];
 };
 
 Connection.prototype._sendAuthParams = function() {
@@ -92,6 +114,8 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		if( this._authCallback ) {
 			this._authCallback( true );
 		}
+
+		this._sendQueuedMessages();
 	}
 };
 

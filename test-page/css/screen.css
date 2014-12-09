@@ -33,6 +33,7 @@ legend{
 
 li{
 	margin: 5px 0;
+	clear: left;
 }
 
 label{
@@ -69,6 +70,13 @@ button.half{
 	float:left;
 }
 
+button.inline{
+	display: inline-block;
+	margin: 0 0 0 5px;
+	width: auto;
+	padding: 2px 5px;
+}
+
 button.half:first-child{
 	margin-right: 4%;
 }
@@ -79,6 +87,50 @@ button[disabled]{
 	cursor: none;
 }
 
+b{
+	font-weight: bold;
+}
+
 .button-group{
 	clear: both;
+}
+
+.input-with-label{
+	float: left;
+	width: 150px;
+	margin: 0 5px 5px 0;
+}
+
+.input-with-label label{
+	display: block;
+	font-size: 9px;
+	color: #aaa;
+}
+
+.input-with-label:last-child{
+	margin-right: 0;
+}
+
+.event-list{
+	float: left;
+}
+
+.event > div{
+	float: left;
+	width: 60px;
+	min-height: 1px
+}
+
+.event .received-events{
+	width: 200px;
+}
+
+.clickable{
+	color: #4BBAF5;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.clickable:hover{
+	color: #1DA6F5;
 }

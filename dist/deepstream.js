@@ -3896,11 +3896,15 @@ var Client = function( url, options ) {
 	this._url = url;
 	this._options = options || {};
 
-	this._messageCallbacks = {};
-	this._messageCallbacks[ C.TOPIC.EVENT ] = ( new EventHandler( this._options ) ).handle;
-	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
-	
 	this._connection = new Connection( this, this._url, this._options );
+
+	this._messageCallbacks = {};
+
+	this.event = new EventHandler( this._options, this._connection );
+
+
+	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
+	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
 };
 
 Emitter( Client.prototype );
@@ -3923,14 +3927,6 @@ Client.prototype.provideRpc = function( name, callback ) {
 };
 
 Client.prototype.makeRpc = function( name, data, callback ) {
-
-};
-
-Client.prototype.onEvent = function( name, callback ) {
-
-};
-
-Client.prototype.sendEvent = function( name, data ) {
 
 };
 
@@ -4041,12 +4037,50 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 },{}],"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js":[function(_dereq_,module,exports){
-var EventHandler = function() {
+var messageBuilder = _dereq_( '../message/message-builder' ),
+	C = _dereq_( '../constants/constants' ),
+	EventEmitter = _dereq_( 'component-emitter' );
 
+var EventHandler = function( options, connection ) {
+	this._options = options;
+	this._connection = connection;
+	this._emitter = new EventEmitter();
+};
+
+EventHandler.prototype.subscribe = function( eventName, callback ) {
+	if( !this._emitter.hasListeners( eventName ) ) {
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+	}
+
+	this._emitter.on( eventName, callback );
+};
+
+EventHandler.prototype.unsubscribe = function( eventName, callback ) {
+	this._emitter.off( eventName, callback );
+	
+	if( !this._emitter.hasListeners( eventName ) ) {
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ eventName ] );
+	}
+};
+
+EventHandler.prototype.emit = function( name, data ) {
+	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, data ] );
+	this._emitter.emit( name, data );
+};
+
+EventHandler.prototype._$handle = function( message ) {
+	if( message.action === C.ACTIONS.EVENT ) {
+		if( message.data && message.data.length === 2 ) {
+			this._emitter.emit( message.data[ 0 ], message.data[ 1 ] );
+		} else {
+			this._emitter.emit( message.data[ 0 ] );
+		}
+		
+	}
 };
 
 module.exports = EventHandler;
-},{}],"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js":[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client'),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -4059,6 +4093,7 @@ var Connection = function( client, url, options ) {
 	this._authParams = null;
 	this._authCallback = null;
 	this._deliberateClose = false;
+	this._queuedMessages = [];
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
@@ -4082,13 +4117,34 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	}
 };
 
-Connection.prototype.send = function( message ) {
+Connection.prototype.sendMsg = function( topic, action, data ) {
+	this.send( messageBuilder.getMsg( topic, action, data ) );
+};
 
+Connection.prototype.send = function( message ) {
+	this._queuedMessages.unshift( message );
+	
+	if( this._state === C.CONNECTION_STATE.OPEN ) {
+		setTimeout( this._sendQueuedMessages.bind( this ), 0 );
+	}
 };
 
 Connection.prototype.close = function() {
 	this._deliberateClose = true;
 	this._engineIo.close();
+};
+
+Connection.prototype._sendQueuedMessages = function() {
+	if( this._state !== C.CONNECTION_STATE.OPEN ) {
+		return;
+	}
+
+	if( this._queuedMessages.length === 0 ) {
+		return;
+	}
+
+	this._engineIo.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR) );
+	this._queuedMessages = [];
 };
 
 Connection.prototype._sendAuthParams = function() {
@@ -4141,6 +4197,8 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		if( this._authCallback ) {
 			this._authCallback( true );
 		}
+
+		this._sendQueuedMessages();
 	}
 };
 
