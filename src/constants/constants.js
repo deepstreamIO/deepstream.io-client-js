@@ -39,3 +39,4 @@ exports.ACTIONS.EVENT = 'EVT';
 exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
+exports.ACTIONS.REJECTION = 'REJ';
