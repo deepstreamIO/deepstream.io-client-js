@@ -6,14 +6,20 @@ client.on( 'connectionStateChanged', function(){
 
 client.login({ username: 'Wolfram' });
 
-if( process.argv[ 2 ] ) {
+var makeRpc = function() {
+	console.log( client.transport );
+	console.time( 'makeRpc' );
+	client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, function( err, result ){
+		console.timeEnd( 'makeRpc' );
+	});
+};
+if( process.argv[ 2 ] === 'many' ) {
 	setInterval(function(){
-		console.time( 'makeRpc' );
-		client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, function( err, result ){
-			console.timeEnd( 'makeRpc' );
-		});
+		makeRpc();
 	}, 100 );
 	
+} else if( process.argv[ 2 ] === 'one' ) {
+	makeRpc();
 } else {
 	client.rpc.provide( 'addTwo', function( data, response ) {
 		data = JSON.parse( data );

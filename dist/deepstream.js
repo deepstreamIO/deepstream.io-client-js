@@ -1,4 +1,4 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.deepstream=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js":[function(_dereq_,module,exports){
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.deepstream=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js":[function(_dereq_,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -164,11 +164,11 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\index.js":[function(_dereq_,module,exports){
 
 module.exports =  _dereq_('./lib/');
 
-},{"./lib/":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/index.js":[function(_dereq_,module,exports){
+},{"./lib/":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\index.js":[function(_dereq_,module,exports){
 
 module.exports = _dereq_('./socket');
 
@@ -180,7 +180,7 @@ module.exports = _dereq_('./socket');
  */
 module.exports.parser = _dereq_('engine.io-parser');
 
-},{"./socket":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/socket.js","engine.io-parser":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/socket.js":[function(_dereq_,module,exports){
+},{"./socket":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\socket.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\socket.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -867,7 +867,7 @@ Socket.prototype.filterUpgrades = function (upgrades) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./transport":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transport.js","./transports":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/index.js","component-emitter":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-emitter/index.js","debug":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/browser.js","engine.io-parser":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js","indexof":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/indexof/index.js","parsejson":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parsejson/index.js","parseqs":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parseqs/index.js","parseuri":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parseuri/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transport.js":[function(_dereq_,module,exports){
+},{"./transport":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js","./transports":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\index.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js","indexof":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\indexof\\index.js","parsejson":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parsejson\\index.js","parseqs":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js","parseuri":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseuri\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js":[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -1019,7 +1019,7 @@ Transport.prototype.onClose = function () {
   this.emit('close');
 };
 
-},{"component-emitter":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-emitter/index.js","engine.io-parser":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/index.js":[function(_dereq_,module,exports){
+},{"component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\index.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies
@@ -1076,7 +1076,7 @@ function polling(opts){
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling-jsonp":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/polling-jsonp.js","./polling-xhr":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/polling-xhr.js","./websocket":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/websocket.js","xmlhttprequest":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/xmlhttprequest.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/polling-jsonp.js":[function(_dereq_,module,exports){
+},{"./polling-jsonp":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-jsonp.js","./polling-xhr":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-xhr.js","./websocket":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\websocket.js","xmlhttprequest":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-jsonp.js":[function(_dereq_,module,exports){
 (function (global){
 
 /**
@@ -1313,7 +1313,7 @@ JSONPPolling.prototype.doWrite = function (data, fn) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/polling.js","component-inherit":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-inherit/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/polling-xhr.js":[function(_dereq_,module,exports){
+},{"./polling":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-xhr.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module requirements.
@@ -1668,7 +1668,7 @@ function unloadHandler() {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/polling.js","component-emitter":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-emitter/index.js","component-inherit":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-inherit/index.js","debug":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/browser.js","xmlhttprequest":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/xmlhttprequest.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/polling.js":[function(_dereq_,module,exports){
+},{"./polling":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","xmlhttprequest":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling.js":[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -1915,7 +1915,7 @@ Polling.prototype.uri = function(){
   return schema + '://' + this.hostname + port + this.path + query;
 };
 
-},{"../transport":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transport.js","component-inherit":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-inherit/index.js","debug":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/browser.js","engine.io-parser":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js","parseqs":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parseqs/index.js","xmlhttprequest":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/xmlhttprequest.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transports/websocket.js":[function(_dereq_,module,exports){
+},{"../transport":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js","parseqs":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js","xmlhttprequest":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\websocket.js":[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -2146,7 +2146,7 @@ WS.prototype.check = function(){
   return !!WebSocket && !('__initialize' in WebSocket && this.name === WS.prototype.name);
 };
 
-},{"../transport":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/transport.js","component-inherit":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-inherit/index.js","debug":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/browser.js","engine.io-parser":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js","parseqs":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parseqs/index.js","ws":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/ws/lib/browser.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/lib/xmlhttprequest.js":[function(_dereq_,module,exports){
+},{"../transport":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js","parseqs":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js","ws":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\ws\\lib\\browser.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js":[function(_dereq_,module,exports){
 // browser shim for xmlhttprequest module
 var hasCORS = _dereq_('has-cors');
 
@@ -2184,9 +2184,9 @@ module.exports = function(opts) {
   }
 }
 
-},{"has-cors":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/has-cors/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-emitter/index.js":[function(_dereq_,module,exports){
-module.exports=_dereq_("/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js")
-},{"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/component-inherit/index.js":[function(_dereq_,module,exports){
+},{"has-cors":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js":[function(_dereq_,module,exports){
+module.exports=_dereq_("c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js")
+},{"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js":[function(_dereq_,module,exports){
 
 module.exports = function(a, b){
   var fn = function(){};
@@ -2194,7 +2194,7 @@ module.exports = function(a, b){
   a.prototype = new fn;
   a.prototype.constructor = a;
 };
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/browser.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js":[function(_dereq_,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -2343,7 +2343,7 @@ function load() {
 
 exports.enable(load());
 
-},{"./debug":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/debug.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/debug.js":[function(_dereq_,module,exports){
+},{"./debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\debug.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\debug.js":[function(_dereq_,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -2542,7 +2542,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/node_modules/ms/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/debug/node_modules/ms/index.js":[function(_dereq_,module,exports){
+},{"ms":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\node_modules\\ms\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\node_modules\\ms\\index.js":[function(_dereq_,module,exports){
 /**
  * Helpers.
  */
@@ -2655,7 +2655,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/browser.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -3225,7 +3225,7 @@ exports.decodePayloadAsBinary = function (data, binaryType, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./keys":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/keys.js","after":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/after/index.js","arraybuffer.slice":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/arraybuffer.slice/index.js","base64-arraybuffer":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/base64-arraybuffer/lib/base64-arraybuffer.js","blob":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/blob/index.js","utf8":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/utf8/utf8.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/lib/keys.js":[function(_dereq_,module,exports){
+},{"./keys":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\keys.js","after":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\after\\index.js","arraybuffer.slice":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\arraybuffer.slice\\index.js","base64-arraybuffer":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\base64-arraybuffer\\lib\\base64-arraybuffer.js","blob":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\blob\\index.js","utf8":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\utf8\\utf8.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\keys.js":[function(_dereq_,module,exports){
 
 /**
  * Gets the keys for an object.
@@ -3246,7 +3246,7 @@ module.exports = Object.keys || function keys (obj){
   return arr;
 };
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/after/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\after\\index.js":[function(_dereq_,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {
@@ -3276,7 +3276,7 @@ function after(count, callback, err_cb) {
 
 function noop() {}
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/arraybuffer.slice/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\arraybuffer.slice\\index.js":[function(_dereq_,module,exports){
 /**
  * An abstraction for slicing an arraybuffer even when
  * ArrayBuffer.prototype.slice is not supported
@@ -3307,7 +3307,7 @@ module.exports = function(arraybuffer, start, end) {
   return result.buffer;
 };
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/base64-arraybuffer/lib/base64-arraybuffer.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\base64-arraybuffer\\lib\\base64-arraybuffer.js":[function(_dereq_,module,exports){
 /*
  * base64-arraybuffer
  * https://github.com/niklasvh/base64-arraybuffer
@@ -3368,7 +3368,7 @@ module.exports = function(arraybuffer, start, end) {
   };
 })("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/blob/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\blob\\index.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Create a blob builder even when vendor prefixes exist
@@ -3421,7 +3421,7 @@ module.exports = (function() {
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/engine.io-parser/node_modules/utf8/utf8.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\utf8\\utf8.js":[function(_dereq_,module,exports){
 (function (global){
 /*! http://mths.be/utf8js v2.0.0 by @mathias */
 ;(function(root) {
@@ -3664,7 +3664,7 @@ module.exports = (function() {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/has-cors/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\index.js":[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -3689,7 +3689,7 @@ try {
   module.exports = false;
 }
 
-},{"global":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/has-cors/node_modules/global/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/has-cors/node_modules/global/index.js":[function(_dereq_,module,exports){
+},{"global":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\node_modules\\global\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\node_modules\\global\\index.js":[function(_dereq_,module,exports){
 
 /**
  * Returns `this`. Execute this without a "context" (i.e. without it being
@@ -3699,7 +3699,7 @@ try {
 
 module.exports = (function () { return this; })();
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/indexof/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\indexof\\index.js":[function(_dereq_,module,exports){
 
 var indexOf = [].indexOf;
 
@@ -3710,7 +3710,7 @@ module.exports = function(arr, obj){
   }
   return -1;
 };
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parsejson/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parsejson\\index.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * JSON parse.
@@ -3745,7 +3745,7 @@ module.exports = function parsejson(data) {
   }
 };
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parseqs/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js":[function(_dereq_,module,exports){
 /**
  * Compiles a querystring
  * Returns string representation of the object
@@ -3784,7 +3784,7 @@ exports.decode = function(qs){
   return qry;
 };
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/parseuri/index.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseuri\\index.js":[function(_dereq_,module,exports){
 /**
  * Parses an URI
  *
@@ -3825,7 +3825,7 @@ module.exports = function parseuri(str) {
     return uri;
 };
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/node_modules/ws/lib/browser.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\ws\\lib\\browser.js":[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -3870,7 +3870,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/src/client.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\src\\client.js":[function(_dereq_,module,exports){
 var C = _dereq_( './constants/constants' ),
 	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
@@ -3963,7 +3963,7 @@ Client.prototype._$onMessage = function( message ) {
 		this._$onError( message.topic, message.action, 'received message for unknown topic ' + message.topic );
 	}
 
-	if( message.action === C.ACTIONS.ERROR ) {
+	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
 		this._$onError( message.topic, message.action, message.data[ 0 ] );
 	}
 };
@@ -3988,7 +3988,7 @@ Client.prototype._$onError = function( topic, event, msg ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js","./event/event-handler":"/home/ubuntu/workspace/deepstream.io-client-js/src/event/event-handler.js","./message/connection":"/home/ubuntu/workspace/deepstream.io-client-js/src/message/connection.js","./rpc/rpc-handler":"/home/ubuntu/workspace/deepstream.io-client-js/src/rpc/rpc-handler.js","component-emitter":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js":[function(_dereq_,module,exports){
+},{"./constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","./rpc/rpc-handler":"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -4031,7 +4031,7 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
-},{}],"/home/ubuntu/workspace/deepstream.io-client-js/src/event/event-handler.js":[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js":[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
@@ -4075,7 +4075,7 @@ EventHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js","../message/message-builder":"/home/ubuntu/workspace/deepstream.io-client-js/src/message/message-builder.js","component-emitter":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/src/message/connection.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js":[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client'),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -4203,7 +4203,7 @@ Connection.prototype._setState = function( state ) {
 };
 
 module.exports = Connection;
-},{"../constants/constants":"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js","./message-builder":"/home/ubuntu/workspace/deepstream.io-client-js/src/message/message-builder.js","./message-parser":"/home/ubuntu/workspace/deepstream.io-client-js/src/message/message-parser.js","engine.io-client":"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/engine.io-client/index.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/src/message/message-builder.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","./message-parser":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-parser.js","engine.io-client":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js":[function(_dereq_,module,exports){
 var constants = _dereq_( '../constants/constants' ),
 	SEP = constants.MESSAGE_PART_SEPERATOR;
 
@@ -4255,7 +4255,7 @@ exports.getErrorMsg = function( topic, type, message ) {
 		return topic + SEP + 'E' + SEP + type + SEP + message.join( SEP );
 	}
 };
-},{"../constants/constants":"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/src/message/message-parser.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\message-parser.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -4349,7 +4349,7 @@ MessageParser.prototype._parseMessage = function( message ) {
 };
 
 module.exports = new MessageParser();
-},{"../constants/constants":"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/src/rpc/rpc-handler.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' );
 
@@ -4379,7 +4379,7 @@ RpcHandler.prototype.unprovide = function( name ) {
 RpcHandler.prototype.make = function( name, data, callback ) {
 	var uid = this._client.getUid();
 	this._rpcs[ uid ] = callback;
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.RPC, [ name, uid, data ] );
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, data ] );
 };
 
 RpcHandler.prototype._respondToRpc = function( message ) {
@@ -4396,14 +4396,47 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 	}
 };
 
+RpcHandler.prototype._handleResponse = function( message ) {
+	var correlationId = message.data[ 1 ];
+	
+	if( !this._rpcs[ correlationId ] ) {
+		return; //TODO - this should never happen - investigate if it does
+	}
+
+	this._rpcs[ correlationId ]( null, message.data[ 2 ] );
+	delete this._rpcs[ correlationId ];
+};
+
+RpcHandler.prototype._handleError = function( errorMsg ) {
+	var correlationId = errorMsg.data[ 2 ],
+		rpcName = errorMsg.data[ 1 ],
+		errorName = errorMsg.data[ 0 ];
+
+	if( !this._rpcs[ correlationId ] ) {
+		return; //TODO - this should never happen - investigate if it does
+	}
+
+	this._rpcs[ correlationId ]( errorName, errorName );
+};
+
 RpcHandler.prototype._$handle = function( message ) {
-	if( message.action === C.ACTIONS.RPC ) {
+	if( message.action === C.ACTIONS.REQUEST ) {
 		this._respondToRpc( message );
+	}
+	else if( message.action === C.ACTIONS.ACK ) {
+		//TODO
+	}
+	else if( message.action === C.ACTIONS.RESPONSE ) {
+		this._handleResponse( message );
+	}
+	else if( message.action === C.ACTIONS.ERROR ) {
+		message.processedError = true;
+		this._handleError( message );
 	}
 };
 
 module.exports = RpcHandler;
-},{"../constants/constants":"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js","./rpc-response":"/home/ubuntu/workspace/deepstream.io-client-js/src/rpc/rpc-response.js"}],"/home/ubuntu/workspace/deepstream.io-client-js/src/rpc/rpc-response.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./rpc-response":"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-response.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-response.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 var RpcResponse = function( connection, name, correlationId ) {
@@ -4443,5 +4476,5 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":"/home/ubuntu/workspace/deepstream.io-client-js/src/constants/constants.js"}]},{},["/home/ubuntu/workspace/deepstream.io-client-js/src/client.js"])("/home/ubuntu/workspace/deepstream.io-client-js/src/client.js")
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}]},{},["c:\\dev\\deepstream.io-client-js\\src\\client.js"])("c:\\dev\\deepstream.io-client-js\\src\\client.js")
 });

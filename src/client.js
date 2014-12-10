@@ -90,7 +90,7 @@ Client.prototype._$onMessage = function( message ) {
 		this._$onError( message.topic, message.action, 'received message for unknown topic ' + message.topic );
 	}
 
-	if( message.action === C.ACTIONS.ERROR ) {
+	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
 		this._$onError( message.topic, message.action, message.data[ 0 ] );
 	}
 };

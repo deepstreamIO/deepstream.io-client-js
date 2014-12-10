@@ -50,9 +50,21 @@ RpcHandler.prototype._handleResponse = function( message ) {
 	if( !this._rpcs[ correlationId ] ) {
 		return; //TODO - this should never happen - investigate if it does
 	}
-	
+
 	this._rpcs[ correlationId ]( null, message.data[ 2 ] );
 	delete this._rpcs[ correlationId ];
+};
+
+RpcHandler.prototype._handleError = function( errorMsg ) {
+	var correlationId = errorMsg.data[ 2 ],
+		rpcName = errorMsg.data[ 1 ],
+		errorName = errorMsg.data[ 0 ];
+
+	if( !this._rpcs[ correlationId ] ) {
+		return; //TODO - this should never happen - investigate if it does
+	}
+
+	this._rpcs[ correlationId ]( errorName, errorName );
 };
 
 RpcHandler.prototype._$handle = function( message ) {
@@ -64,6 +76,10 @@ RpcHandler.prototype._$handle = function( message ) {
 	}
 	else if( message.action === C.ACTIONS.RESPONSE ) {
 		this._handleResponse( message );
+	}
+	else if( message.action === C.ACTIONS.ERROR ) {
+		message.processedError = true;
+		this._handleError( message );
 	}
 };
 

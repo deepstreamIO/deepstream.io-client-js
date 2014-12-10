@@ -90,6 +90,42 @@
 					</li>
 				</ul>
 			</fieldset>
+
+			<fieldset data-bind="enable:hasClient">
+				<legend>RPC</legend>
+				<ul class="fields">
+					<li>
+						<label>provide addTwo</label>
+						<button 
+							type="button"
+							data-bind="click: provideAddTwo"
+							class="inline">OK</button>
+					</li>
+					<li>
+						<label>make rpc addTwo</label>
+						<div class="input-with-label quarter">
+							<input data-bind="textInput:rpcNumA" />
+							<label>numA</label>
+						</div>
+						<div class="input-with-label quarter">
+							<input data-bind="textInput:rpcNumB" />
+							<label>numB</label>
+						</div>
+						<div class="input-with-label quarter">
+							<div data-bind="text:rpcResponse"></div>
+							<label>response</label>
+						</div>
+						<div class="input-with-label quarter">
+							<div data-bind="text:rpcResponseTime"></div>
+							<label>response time</label>
+						</div>
+						<button 
+							type="button"
+							data-bind="click: makeAddTwoRpc"
+							class="inline">OK</button>
+					</li>
+				</ul>
+			</fieldset>
 		</div>
 
 	</body>

@@ -101,6 +101,20 @@ b{
 	margin: 0 5px 5px 0;
 }
 
+.input-with-label.quarter{
+	float: left;
+	width: 70px;
+	margin: 0 10px 5px 0;
+}
+
+.input-with-label.quarter input{
+	width: 70px;
+}
+
+.input-with-label div{
+	padding: 2px;
+}
+
 .input-with-label label{
 	display: block;
 	font-size: 9px;

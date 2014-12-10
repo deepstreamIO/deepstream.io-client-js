@@ -11,6 +11,11 @@ ViewModel = function() {
 	this.emitEventName = ko.observable();
 	this.emitEventData = ko.observable();
 
+	this.rpcNumA = ko.observable( 3 );
+	this.rpcNumB = ko.observable( 4 );
+	this.rpcResponse = ko.observable('-');
+	this.rpcResponseTime = ko.observable('-');
+
 	this.connectionState = ko.observable( 'CLOSED' );
 };
 
@@ -38,6 +43,30 @@ ViewModel.prototype.subscribeToEvent = function() {
 
 ViewModel.prototype.emitEvent = function() {
 	this._client.event.emit( this.emitEventName(), this.emitEventData() );
+};
+
+ViewModel.prototype.provideAddTwo = function() {
+	this._client.rpc.provide( 'addTwo', function( data, response ){
+		data = JSON.parse( data );
+		response.send( data.numA + data.numB );
+	});
+};
+
+ViewModel.prototype.makeAddTwoRpc = function() {
+	var data = {
+		numA: this.rpcNumA(),
+		numB: this.rpcNumB()
+	};
+
+	var startTime = performance.now();
+
+	this._client.rpc.make( 'addTwo', data, function( error, response ){
+		if( error ) {
+			alert( error );
+		}
+		this.rpcResponse( response );
+		this.rpcResponseTime( performance.now() - startTime );
+	}.bind( this ) );
 };
 
 ViewModel.prototype._onLoginResult = function( result, errorEvent, errorMessage ) {
