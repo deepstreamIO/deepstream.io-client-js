@@ -1,4 +1,4 @@
-var client = require( '../src/client' )( 'localhost:6020' );
+var client = require( '../src/client' )( 'localhost:6022' );
 
 client.on( 'connectionStateChanged', function(){
 	console.log( 'Connection state changed', client.getConnectionState() );

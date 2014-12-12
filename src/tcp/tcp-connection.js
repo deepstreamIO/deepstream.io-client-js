@@ -18,7 +18,6 @@ var net = require( 'net' ),
  * @constructor
  */
 var TcpConnection = function( url ) {
-	this._client = client;
 	this._socket = net.createConnection( this._getOptions( url ) );
 
 	this._socket.setEncoding( 'utf8' );
@@ -139,13 +138,20 @@ TcpConnection.prototype._onData = function( message ) {
  *
  * @todo  - test what happens if URL doesn't have a port
  *
- * @param   {String} url
+ * @param   {String} url (or short version without protocol, e.g. host:port )
  *
  * @private
  * @returns {Object} options
  */
 TcpConnection.prototype._getOptions = function( url ) {
-	var parsedUrl = URL.parse( url );
+	var parsedUrl = {};
+	
+	if( url.indexOf( '/' ) === -1 ) {
+		parsedUrl.hostname = url.split( ':' )[ 0 ];
+		parsedUrl.port = parseInt( url.split( ':' )[ 1 ], 10 );
+	} else {
+		parsedUrl = URL.parse( url );
+	}
 
 	return {
 		host: parsedUrl.hostname,

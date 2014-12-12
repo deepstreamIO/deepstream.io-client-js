@@ -1,6 +1,7 @@
 var engineIoClient = require( 'engine.io-client'),
 	messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
+	TcpConnection = require( '../tcp/tcp-connection' ),
 	C = require( '../constants/constants' );
 
 var Connection = function( client, url, options ) {
@@ -14,11 +15,17 @@ var Connection = function( client, url, options ) {
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
-	this._engineIo = engineIoClient( url, options );
-	this._engineIo.on( 'open', this._onOpen.bind( this ) );
-	this._engineIo.on( 'error', this._onError.bind( this ) );
-	this._engineIo.on( 'close', this._onClose.bind( this ) );
-	this._engineIo.on( 'message', this._onMessage.bind( this ) );
+	//assume node.js
+	if( typeof process !== 'undefined' && process.version ) {
+		this._endpoint = new TcpConnection( url );
+	} else {
+		this._endpoint = engineIoClient( url, options );
+	}
+	
+	this._endpoint.on( 'open', this._onOpen.bind( this ) );
+	this._endpoint.on( 'error', this._onError.bind( this ) );
+	this._endpoint.on( 'close', this._onClose.bind( this ) );
+	this._endpoint.on( 'message', this._onMessage.bind( this ) );
 };
 
 Connection.prototype.getState = function() {
@@ -48,7 +55,7 @@ Connection.prototype.send = function( message ) {
 
 Connection.prototype.close = function() {
 	this._deliberateClose = true;
-	this._engineIo.close();
+	this._endpoint.close();
 };
 
 Connection.prototype._sendQueuedMessages = function() {
@@ -60,14 +67,14 @@ Connection.prototype._sendQueuedMessages = function() {
 		return;
 	}
 
-	this._engineIo.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR) );
+	this._endpoint.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR) );
 	this._queuedMessages = [];
 };
 
 Connection.prototype._sendAuthParams = function() {
 	this._setState( C.CONNECTION_STATE.AUTHENTICATING );
 	var authMessage = messageBuilder.getMsg( C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ] );
-	this._engineIo.send( authMessage );
+	this._endpoint.send( authMessage );
 };
 
 Connection.prototype._onOpen = function() {
