@@ -1,4 +1,4 @@
-var client = require( '../src/client' )( 'localhost:6022' );
+var client = require( '../src/client' )( 'localhost:6021' );
 
 client.on( 'connectionStateChanged', function(){
 	console.log( 'Connection state changed', client.getConnectionState() );
@@ -7,19 +7,20 @@ client.on( 'connectionStateChanged', function(){
 client.login({ username: 'Wolfram' });
 
 var makeRpc = function() {
-	console.log( client.transport );
-	console.time( 'makeRpc' );
+	console.time( 'totalRpcTime' );
+	console.time( 'rpcStart' );
+	
 	client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, function( err, result ){
-		console.timeEnd( 'makeRpc' );
+		console.timeEnd( 'totalRpcTime' );
 	});
 };
 if( process.argv[ 2 ] === 'many' ) {
 	setInterval(function(){
 		makeRpc();
-	}, 100 );
+	}, 1000 );
 	
 } else if( process.argv[ 2 ] === 'one' ) {
-	makeRpc();
+	setTimeout(makeRpc, 1000 );
 } else {
 	client.rpc.provide( 'addTwo', function( data, response ) {
 		data = JSON.parse( data );

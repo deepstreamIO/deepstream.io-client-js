@@ -1,9 +1,20 @@
-var engineIoClient = require( 'engine.io-client'),
+var engineIoClient = require( 'engine.io-client' ),
 	messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
 	TcpConnection = require( '../tcp/tcp-connection' ),
+	utils = require( '../utils/utils' ),
 	C = require( '../constants/constants' );
-
+console.log( engineIoClient );
+/**
+ * Establishes a connection to a deepstream server, either
+ * using TCP in node or engine.io in the browser.
+ *
+ * @param {Client} client
+ * @param {String} url     Short url, e.g. <host>:<port>. Deepstream works out the protocol
+ * @param {Object} options connection options
+ *
+ * @constructor
+ */
 var Connection = function( client, url, options ) {
 	this._client = client;
 	this._url = url;
@@ -15,8 +26,7 @@ var Connection = function( client, url, options ) {
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
-	//assume node.js
-	if( typeof process !== 'undefined' && process.version ) {
+	if( utils.isNode() ) {
 		this._endpoint = new TcpConnection( url );
 	} else {
 		this._endpoint = engineIoClient( url, options );
@@ -28,10 +38,28 @@ var Connection = function( client, url, options ) {
 	this._endpoint.on( 'message', this._onMessage.bind( this ) );
 };
 
+/**
+ * Returns the current connection state.
+ * (One of constants.CONNECTION_STATE) 
+ *
+ * @public
+ * @returns {String} connectionState
+ */
 Connection.prototype.getState = function() {
 	return this._state;
 };
 
+/**
+ * Sends the specified authentication parameters
+ * to the server. Can be called up to <maxAuthAttempts>
+ * times for the same connection.
+ *
+ * @param   {Object}   authParams A map of user defined auth parameters. E.g. { username:<String>, password:<String> }
+ * @param   {Function} callback   A callback that will be invoked with the authenticationr result
+ *
+ * @public
+ * @returns {void}
+ */
 Connection.prototype.authenticate = function( authParams, callback ) {
 	this._authParams = authParams;
 	this._authCallback = callback;
@@ -41,23 +69,75 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	}
 };
 
+/**
+ * High level send message method. Creates a deepstream message
+ * string and invokes the actual send method.
+ *
+ * @param   {String} topic  One of C.TOPIC
+ * @param   {String} action One of C.ACTIONS
+ * @param   {[Mixed]} data 	Date that will be added to the message. Primitive values will
+ *                          be appended directly, objects and arrays will be serialized as JSON
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype.sendMsg = function( topic, action, data ) {
 	this.send( messageBuilder.getMsg( topic, action, data ) );
 };
 
+/**
+ * Main method for sending messages. Doesn't send messages instantly,
+ * but instead achieves conflation by adding them to the message
+ * buffer that will be drained on the next tick
+ *
+ * @param   {String} message deepstream message
+ *
+ * @public
+ * @returns {void}
+ */
 Connection.prototype.send = function( message ) {
 	this._queuedMessages.unshift( message );
-	
+
 	if( this._state === C.CONNECTION_STATE.OPEN ) {
-		setTimeout( this._sendQueuedMessages.bind( this ), 0 );
+
+		/*
+		 * Turns out that this makes all the diference in the world.
+		 * setTimeout with 0ms in node will be invoked after ~12ms
+		 * whereas in the browser it will be invoked immediatly
+		 * after the current computation is finished.
+		 *
+		 * process.nextTick however will be invoked in node like
+		 * setTimeout(fn, 0) in the browser
+		 */
+		if( utils.isNode() ) {
+			process.nextTick( this._sendQueuedMessages.bind( this ) );
+		} else {
+			setTimeout( this._sendQueuedMessages.bind( this ), 0 );
+		}
 	}
 };
 
+/**
+ * Closes the connection. Using this method
+ * sets a _deliberateClose flag that will prevent the client from
+ * reconnecting.
+ *
+ * @public
+ * @returns {void}
+ */
 Connection.prototype.close = function() {
 	this._deliberateClose = true;
 	this._endpoint.close();
 };
 
+/**
+ * Concatenates the messages in the current message queue
+ * and sends them as a single package. This will also
+ * empty the message queue and conclude the send process.
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._sendQueuedMessages = function() {
 	if( this._state !== C.CONNECTION_STATE.OPEN ) {
 		return;
@@ -67,16 +147,34 @@ Connection.prototype._sendQueuedMessages = function() {
 		return;
 	}
 
-	this._endpoint.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR) );
+	this._endpoint.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR ) );
 	this._queuedMessages = [];
 };
 
+/**
+ * Sends authentication params to the server. Please note, this
+ * doesn't use the queued message mechanism, but rather sends the message directly
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._sendAuthParams = function() {
 	this._setState( C.CONNECTION_STATE.AUTHENTICATING );
 	var authMessage = messageBuilder.getMsg( C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ] );
 	this._endpoint.send( authMessage );
 };
 
+/**
+ * Will be invoked once the connection is established. The client
+ * can't send messages yet, but needs to authenticate first.
+ *
+ * If authentication parameters are already provided this will kick of
+ * authentication immediatly. The actual 'open' event won't be emitted
+ * by the client until the authentication is succesfull
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._onOpen = function() {
 	this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 	
@@ -85,17 +183,47 @@ Connection.prototype._onOpen = function() {
 	}
 };
 
+/**
+ * Callback for generic connection errors. Forwards
+ * the error to the client.
+ *
+ * The connection is considered broken once this method has been
+ * invoked.
+ *
+ * @param   {String|Error} error connection error
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._onError = function( error ) {
 	this._setState( C.CONNECTION_STATE.ERROR );
 	this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
 };
 
-
+/**
+ * Callback when the connection closes. This might have been a deliberate
+ * close triggered by the client or the result of the connection getting
+ * lost.
+ *
+ * In the latter case the client will try to reconnect using the configured
+ * strategy.
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._onClose = function() {
 	this._setState( C.CONNECTION_STATE.CLOSED );
 	//TODO Reconnection strategy & add flag if close was deliberately called
 };
 
+/**
+ * Callback for messages received on the connection.
+ *
+ * @param   {String} message deepstream message
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._onMessage = function( message ) {
 	var parsedMessages = messageParser.parse( message ),
 		i;
@@ -109,6 +237,17 @@ Connection.prototype._onMessage = function( message ) {
 	}
 };
 
+/**
+ * Callback for messages received for the AUTH topic. If
+ * the authentication was succesfull this method will
+ * open the connection and send all messages that the client
+ * tried to send so far.
+ *
+ * @param   {Object} message parsed auth message
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._handleAuthResponse = function( message ) {
 	if( message.action === C.ACTIONS.ERROR ) {
 		if( this._authCallback ) {
@@ -126,6 +265,13 @@ Connection.prototype._handleAuthResponse = function( message ) {
 	}
 };
 
+/**
+ * Updates the connection state and emits the 
+ * connectionStateChanged event on the client
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._setState = function( state ) {
 	this._state = state;
 	this._client.emit( C.EVENT.CONNECTION_STATE_CHANGED, state );

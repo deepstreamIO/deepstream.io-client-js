@@ -29,6 +29,7 @@ var TcpConnection = function( url ) {
 	this._socket.on( 'connect', this._onConnect.bind( this ) );
 	this._socket.on( 'close', this._onClose.bind( this ) );
 
+	process.on( 'exit', this._socket.destroy.bind( this._socket) );
 	this._isOpen = false;
 };
 

@@ -59,9 +59,11 @@ ViewModel.prototype.makeAddTwoRpc = function() {
 	};
 
 	var startTime = performance.now();
-	console.log( 'Making rpc at ', Date.now() );
+
+	console.time( 'rpcStart' );
+
 	this._client.rpc.make( 'addTwo', data, function( error, response ){
-		console.log( 'response', Date.now() );
+
 		if( error ) {
 			alert( error );
 		}
