@@ -48,19 +48,23 @@ module.exports = function(grunt) {
 					'dist/deepstream.min.js': [ 'dist/deepstream.js' ]
 				}
 			}
+		},
+		exec: {
+			runUnitTests: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --autotest --watch ./src',
+			runUnitTestsOnce: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit'
 		}
-		
 	});
 
 	grunt.loadNpmTasks( 'grunt-browserify' );
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
+	grunt.loadNpmTasks( 'grunt-exec' );
 	
-
 	grunt.registerTask( 'dev', 'Browserifies the files on every change to src', [ 'browserify:live' ] );
+	grunt.registerTask( 'test-unit', [ 'exec:runUnitTests' ]);
 
 	grunt.registerTask( 'build', 'Browserifies, tests and minifies the client file', [
 		'browserify:dist',
-		//'karma:unitOnce', TODO Run jasmine-node tests
+		'exec:runUnitTestsOnce',
 		'uglify:dist'
 	]);
 
