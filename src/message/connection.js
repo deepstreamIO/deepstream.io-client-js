@@ -4,7 +4,7 @@ var engineIoClient = require( 'engine.io-client' ),
 	TcpConnection = require( '../tcp/tcp-connection' ),
 	utils = require( '../utils/utils' ),
 	C = require( '../constants/constants' );
-console.log( engineIoClient );
+
 /**
  * Establishes a connection to a deepstream server, either
  * using TCP in node or engine.io in the browser.
@@ -96,7 +96,7 @@ Connection.prototype.sendMsg = function( topic, action, data ) {
  * @returns {void}
  */
 Connection.prototype.send = function( message ) {
-	this._queuedMessages.unshift( message );
+	this._queuedMessages.push( message );
 
 	if( this._state === C.CONNECTION_STATE.OPEN ) {
 
