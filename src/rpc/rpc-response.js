@@ -1,5 +1,5 @@
 var C = require( '../constants/constants' ),
-	utils = require( 'utils' );
+	utils = require( '../utils/utils' );
 
 /**
  * This object provides a number of methods that allow a rpc provider

@@ -18,6 +18,22 @@ var net = require( 'net' ),
  * @constructor
  */
 var TcpConnection = function( url ) {
+	this._socket = null;
+	process.on( 'exit', this._destroy.bind( this ) );
+	this.open();
+	this._isOpen = false;
+};
+
+util.inherits( TcpConnection, events.EventEmitter );
+
+/**
+ * Creates the connection. Can be called multiple times to
+ * facilitate reconnecting.
+ *
+ * @private
+ * @returns {void}
+ */
+TcpConnection.prototype.open = function() {
 	this._socket = net.createConnection( this._getOptions( url ) );
 
 	this._socket.setEncoding( 'utf8' );
@@ -28,13 +44,7 @@ var TcpConnection = function( url ) {
 	this._socket.on( 'error', this._onError.bind( this ) );
 	this._socket.on( 'connect', this._onConnect.bind( this ) );
 	this._socket.on( 'close', this._onClose.bind( this ) );
-
-	process.on( 'exit', this._socket.destroy.bind( this._socket ) );
-	this._isOpen = false;
 };
-
-util.inherits( TcpConnection, events.EventEmitter );
-
 /**
  * Sends a message over the socket. Sending happens immediatly,
  * conflation takes place on a higher level
@@ -159,6 +169,17 @@ TcpConnection.prototype._getOptions = function( url ) {
 		port: parsedUrl.port,
 		allowHalfOpen: false
 	};
+};
+
+/**
+ * Closes the socket as a last resort before the
+ * process exits
+ *
+ * @private
+ * @returns {void}
+ */
+TcpConnection.prototype._destroy = function() {
+	this._socket.destroy();
 };
 
 module.exports = TcpConnection;

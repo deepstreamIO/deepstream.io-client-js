@@ -23,6 +23,8 @@ var Connection = function( client, url, options ) {
 	this._authCallback = null;
 	this._deliberateClose = false;
 	this._queuedMessages = [];
+	this._reconnectTimeout = null;
+	this._reconnectionAttempt = 0;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
@@ -31,7 +33,7 @@ var Connection = function( client, url, options ) {
 	} else {
 		this._endpoint = engineIoClient( url, options );
 	}
-	
+
 	this._endpoint.on( 'open', this._onOpen.bind( this ) );
 	this._endpoint.on( 'error', this._onError.bind( this ) );
 	this._endpoint.on( 'close', this._onClose.bind( this ) );
@@ -172,6 +174,7 @@ Connection.prototype._sendAuthParams = function() {
  * @returns {void}
  */
 Connection.prototype._onOpen = function() {
+	this._clearReconnect();
 	this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 	
 	if( this._authParams ) {
@@ -193,7 +196,14 @@ Connection.prototype._onOpen = function() {
  */
 Connection.prototype._onError = function( error ) {
 	this._setState( C.CONNECTION_STATE.ERROR );
-	this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
+	
+	/*
+	 * If the implementation isn't listening on the error event this will throw
+	 * an error. So let's defer it to allow the reconnection to kick in.
+	 */
+	setTimeout(function(){
+		this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
+	}.bind( this ), 1);
 };
 
 /**
@@ -208,8 +218,11 @@ Connection.prototype._onError = function( error ) {
  * @returns {void}
  */
 Connection.prototype._onClose = function() {
-	this._setState( C.CONNECTION_STATE.CLOSED );
-	//TODO Reconnection strategy & add flag if close was deliberately called
+	if( this._deliberateClose === true ) {
+		this._setState( C.CONNECTION_STATE.CLOSED );
+	} else {
+		this._tryReconnect();
+	}
 };
 
 /**
@@ -249,7 +262,7 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		if( this._authCallback ) {
 			this._authCallback( false, message.data[ 0 ], message.data[ 1 ] );
 		}
-		this._setState( C.EVENT.AWAITING_AUTHENTICATION );
+		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
 		
@@ -271,6 +284,60 @@ Connection.prototype._handleAuthResponse = function( message ) {
 Connection.prototype._setState = function( state ) {
 	this._state = state;
 	this._client.emit( C.EVENT.CONNECTION_STATE_CHANGED, state );
+};
+
+/**
+ * If the connection drops or is closed in error this
+ * method schedules increasing reconnection intervals
+ *
+ * If the number of failed reconnection attempts exceeds
+ * options.maxReconnectAttempts the connection is closed
+ * 
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._tryReconnect = function() {
+	if( this._reconnectTimeout !== null ) {
+		return;
+	}
+
+	if( this._reconnectionAttempt < this._options.maxReconnectAttempts ) {
+		this._setState( C.CONNECTION_STATE.RECONNECTING );
+		setTimeout(
+			this._tryOpen.bind( this ),
+			this._options.reconnectIntervalIncrement * this._reconnectionAttempt 
+		);
+		this._reconnectionAttempt++;
+	} else {
+		this._clearReconnect();
+		this.close();
+	}
+};
+
+/**
+ * Attempts to open a errourosly closed connection
+ * 
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._tryOpen = function() {
+	this._endpoint.open();
+	this._reconnectTimeout = null;
+};
+
+/**
+ * Stops all further reconnection attempts,
+ * either because the connection is open again
+ * or because the maximal number of reconnection
+ * attempts has been exceeded
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._clearReconnect = function() {
+	clearTimeout( this._reconnectTimeout );
+	this._reconnectTimeout = null;
+	this._reconnectionAttempt = 0;
 };
 
 module.exports = Connection;

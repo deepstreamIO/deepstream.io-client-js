@@ -1,6 +1,6 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.deepstream=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.deepstream=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\lib\\_empty.js":[function(_dereq_,module,exports){
 
-},{}],2:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\events\\events.js":[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -303,7 +303,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],3:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\inherits\\inherits_browser.js":[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -328,7 +328,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],4:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\process\\browser.js":[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -416,7 +416,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],5:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\punycode\\punycode.js":[function(_dereq_,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -927,7 +927,7 @@ process.chdir = function (dir) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],6:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\querystring-es3\\decode.js":[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1013,7 +1013,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],7:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\querystring-es3\\encode.js":[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1100,13 +1100,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],8:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\querystring-es3\\index.js":[function(_dereq_,module,exports){
 'use strict';
 
 exports.decode = exports.parse = _dereq_('./decode');
 exports.encode = exports.stringify = _dereq_('./encode');
 
-},{"./decode":6,"./encode":7}],9:[function(_dereq_,module,exports){
+},{"./decode":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\querystring-es3\\decode.js","./encode":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\querystring-es3\\encode.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\url\\url.js":[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1815,14 +1815,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":5,"querystring":8}],10:[function(_dereq_,module,exports){
+},{"punycode":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\punycode\\punycode.js","querystring":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\querystring-es3\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\util\\support\\isBufferBrowser.js":[function(_dereq_,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],11:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\util\\util.js":[function(_dereq_,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2412,7 +2412,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,_dereq_('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":10,"_process":4,"inherits":3}],12:[function(_dereq_,module,exports){
+},{"./support/isBuffer":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\util\\support\\isBufferBrowser.js","_process":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\process\\browser.js","inherits":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\inherits\\inherits_browser.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js":[function(_dereq_,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -2578,11 +2578,11 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\index.js":[function(_dereq_,module,exports){
 
 module.exports =  _dereq_('./lib/');
 
-},{"./lib/":14}],14:[function(_dereq_,module,exports){
+},{"./lib/":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\index.js":[function(_dereq_,module,exports){
 
 module.exports = _dereq_('./socket');
 
@@ -2594,7 +2594,7 @@ module.exports = _dereq_('./socket');
  */
 module.exports.parser = _dereq_('engine.io-parser');
 
-},{"./socket":15,"engine.io-parser":28}],15:[function(_dereq_,module,exports){
+},{"./socket":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\socket.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\socket.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -3281,7 +3281,7 @@ Socket.prototype.filterUpgrades = function (upgrades) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./transport":16,"./transports":17,"component-emitter":23,"debug":25,"engine.io-parser":28,"indexof":37,"parsejson":38,"parseqs":39,"parseuri":40}],16:[function(_dereq_,module,exports){
+},{"./transport":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js","./transports":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\index.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js","indexof":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\indexof\\index.js","parsejson":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parsejson\\index.js","parseqs":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js","parseuri":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseuri\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js":[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -3433,7 +3433,7 @@ Transport.prototype.onClose = function () {
   this.emit('close');
 };
 
-},{"component-emitter":23,"engine.io-parser":28}],17:[function(_dereq_,module,exports){
+},{"component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\index.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies
@@ -3490,7 +3490,7 @@ function polling(opts){
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling-jsonp":18,"./polling-xhr":19,"./websocket":21,"xmlhttprequest":22}],18:[function(_dereq_,module,exports){
+},{"./polling-jsonp":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-jsonp.js","./polling-xhr":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-xhr.js","./websocket":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\websocket.js","xmlhttprequest":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-jsonp.js":[function(_dereq_,module,exports){
 (function (global){
 
 /**
@@ -3727,7 +3727,7 @@ JSONPPolling.prototype.doWrite = function (data, fn) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":20,"component-inherit":24}],19:[function(_dereq_,module,exports){
+},{"./polling":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling-xhr.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module requirements.
@@ -4082,7 +4082,7 @@ function unloadHandler() {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":20,"component-emitter":23,"component-inherit":24,"debug":25,"xmlhttprequest":22}],20:[function(_dereq_,module,exports){
+},{"./polling":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","xmlhttprequest":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\polling.js":[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -4329,7 +4329,7 @@ Polling.prototype.uri = function(){
   return schema + '://' + this.hostname + port + this.path + query;
 };
 
-},{"../transport":16,"component-inherit":24,"debug":25,"engine.io-parser":28,"parseqs":39,"xmlhttprequest":22}],21:[function(_dereq_,module,exports){
+},{"../transport":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js","parseqs":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js","xmlhttprequest":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transports\\websocket.js":[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -4560,7 +4560,7 @@ WS.prototype.check = function(){
   return !!WebSocket && !('__initialize' in WebSocket && this.name === WS.prototype.name);
 };
 
-},{"../transport":16,"component-inherit":24,"debug":25,"engine.io-parser":28,"parseqs":39,"ws":41}],22:[function(_dereq_,module,exports){
+},{"../transport":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\transport.js","component-inherit":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js","debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js","engine.io-parser":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js","parseqs":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js","ws":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\ws\\lib\\browser.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\lib\\xmlhttprequest.js":[function(_dereq_,module,exports){
 // browser shim for xmlhttprequest module
 var hasCORS = _dereq_('has-cors');
 
@@ -4598,9 +4598,9 @@ module.exports = function(opts) {
   }
 }
 
-},{"has-cors":35}],23:[function(_dereq_,module,exports){
-module.exports=_dereq_(12)
-},{"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js":12}],24:[function(_dereq_,module,exports){
+},{"has-cors":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-emitter\\index.js":[function(_dereq_,module,exports){
+module.exports=_dereq_("c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js")
+},{"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\component-inherit\\index.js":[function(_dereq_,module,exports){
 
 module.exports = function(a, b){
   var fn = function(){};
@@ -4608,7 +4608,7 @@ module.exports = function(a, b){
   a.prototype = new fn;
   a.prototype.constructor = a;
 };
-},{}],25:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\browser.js":[function(_dereq_,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -4757,7 +4757,7 @@ function load() {
 
 exports.enable(load());
 
-},{"./debug":26}],26:[function(_dereq_,module,exports){
+},{"./debug":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\debug.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\debug.js":[function(_dereq_,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -4956,7 +4956,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":27}],27:[function(_dereq_,module,exports){
+},{"ms":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\node_modules\\ms\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\debug\\node_modules\\ms\\index.js":[function(_dereq_,module,exports){
 /**
  * Helpers.
  */
@@ -5069,7 +5069,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],28:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\browser.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -5639,7 +5639,7 @@ exports.decodePayloadAsBinary = function (data, binaryType, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./keys":29,"after":30,"arraybuffer.slice":31,"base64-arraybuffer":32,"blob":33,"utf8":34}],29:[function(_dereq_,module,exports){
+},{"./keys":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\keys.js","after":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\after\\index.js","arraybuffer.slice":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\arraybuffer.slice\\index.js","base64-arraybuffer":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\base64-arraybuffer\\lib\\base64-arraybuffer.js","blob":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\blob\\index.js","utf8":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\utf8\\utf8.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\lib\\keys.js":[function(_dereq_,module,exports){
 
 /**
  * Gets the keys for an object.
@@ -5660,7 +5660,7 @@ module.exports = Object.keys || function keys (obj){
   return arr;
 };
 
-},{}],30:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\after\\index.js":[function(_dereq_,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {
@@ -5690,7 +5690,7 @@ function after(count, callback, err_cb) {
 
 function noop() {}
 
-},{}],31:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\arraybuffer.slice\\index.js":[function(_dereq_,module,exports){
 /**
  * An abstraction for slicing an arraybuffer even when
  * ArrayBuffer.prototype.slice is not supported
@@ -5721,7 +5721,7 @@ module.exports = function(arraybuffer, start, end) {
   return result.buffer;
 };
 
-},{}],32:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\base64-arraybuffer\\lib\\base64-arraybuffer.js":[function(_dereq_,module,exports){
 /*
  * base64-arraybuffer
  * https://github.com/niklasvh/base64-arraybuffer
@@ -5782,7 +5782,7 @@ module.exports = function(arraybuffer, start, end) {
   };
 })("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
-},{}],33:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\blob\\index.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * Create a blob builder even when vendor prefixes exist
@@ -5835,7 +5835,7 @@ module.exports = (function() {
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],34:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\engine.io-parser\\node_modules\\utf8\\utf8.js":[function(_dereq_,module,exports){
 (function (global){
 /*! http://mths.be/utf8js v2.0.0 by @mathias */
 ;(function(root) {
@@ -6078,7 +6078,7 @@ module.exports = (function() {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],35:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\index.js":[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -6103,7 +6103,7 @@ try {
   module.exports = false;
 }
 
-},{"global":36}],36:[function(_dereq_,module,exports){
+},{"global":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\node_modules\\global\\index.js"}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\has-cors\\node_modules\\global\\index.js":[function(_dereq_,module,exports){
 
 /**
  * Returns `this`. Execute this without a "context" (i.e. without it being
@@ -6113,7 +6113,7 @@ try {
 
 module.exports = (function () { return this; })();
 
-},{}],37:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\indexof\\index.js":[function(_dereq_,module,exports){
 
 var indexOf = [].indexOf;
 
@@ -6124,7 +6124,7 @@ module.exports = function(arr, obj){
   }
   return -1;
 };
-},{}],38:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parsejson\\index.js":[function(_dereq_,module,exports){
 (function (global){
 /**
  * JSON parse.
@@ -6159,7 +6159,7 @@ module.exports = function parsejson(data) {
   }
 };
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],39:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseqs\\index.js":[function(_dereq_,module,exports){
 /**
  * Compiles a querystring
  * Returns string representation of the object
@@ -6198,7 +6198,7 @@ exports.decode = function(qs){
   return qry;
 };
 
-},{}],40:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\parseuri\\index.js":[function(_dereq_,module,exports){
 /**
  * Parses an URI
  *
@@ -6239,7 +6239,7 @@ module.exports = function parseuri(str) {
     return uri;
 };
 
-},{}],41:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\node_modules\\ws\\lib\\browser.js":[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -6284,32 +6284,18 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],42:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\src\\client.js":[function(_dereq_,module,exports){
 var C = _dereq_( './constants/constants' ),
 	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
 	EventHandler = _dereq_( './event/event-handler' ),
-	RpcHandler = _dereq_( './rpc/rpc-handler' );
+	RpcHandler = _dereq_( './rpc/rpc-handler' ),
+	defaultOptions = _dereq_( './default-options' );
 	
-/**
- *
- * recordPersistDefault (Boolean): Whether records should be persisted by default. Overwritten by getRecord flag
- * agent (http.Agent): http.Agent to use, defaults to false (NodeJS only)
- * upgrade (Boolean): defaults to true, whether the client should try to upgrade the transport from long-polling to something better.
- * forceJSONP (Boolean): forces JSONP for polling transport.
- * jsonp (Boolean): determines whether to use JSONP when necessary for polling. If disabled (by settings to false) an error will be emitted (saying "No transports available") if no other transports are available. If another transport is available for opening a connection (e.g. WebSocket) that transport will be used instead.
- * forceBase64 (Boolean): forces base 64 encoding for polling transport even when XHR2 responseType is available and WebSocket even if the used standard supports binary.
- * enablesXDR (Boolean): enables XDomainRequest for IE8 to avoid loading bar flashing with click sound. default to false because XDomainRequest has a flaw of not sending cookie.
- * timestampRequests (Boolean): whether to add the timestamp with each transport request. Note: this is ignored if the browser is IE or Android, in which case requests are always stamped (false)
- * timestampParam (String): timestamp parameter (t)
- * policyPort (Number): port the policy server listens on (843)
- * path (String): path to connect to, default is /engine.io
- * transports (Array): a list of transports to try (in order). Defaults to ['polling', 'websocket']. Engine always attempts to connect directly with the first one, provided the feature detection test for it passes.
- * rememberUpgrade (Boolean): defaults to false. If true and if the previous websocket connection to the server succeeded, the connection attempt will bypass the normal upgrade process and will initially try websocket. A connection attempt following a transport error will use the normal upgrade process. It is recommended you turn this on only when using SSL/TLS connections, or if you know that your network does not block websockets.
- */
+
 var Client = function( url, options ) {
 	this._url = url;
-	this._options = options || {};
+	this._options = this._getOptions( options || {} );
 
 	this._connection = new Connection( this, this._url, this._options );
 
@@ -6399,10 +6385,21 @@ Client.prototype._$onError = function( topic, event, msg ) {
 	}
 };
 
+Client.prototype._getOptions = function( options ) {
+	var mergedOptions = {},
+		key;
+
+	for( key in defaultOptions ) {
+		mergedOptions[ key ] = options[ key ] || defaultOptions[ key ];
+	}
+
+	return mergedOptions;
+};
+
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":43,"./event/event-handler":44,"./message/connection":45,"./rpc/rpc-handler":48,"component-emitter":12}],43:[function(_dereq_,module,exports){
+},{"./constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./default-options":"c:\\dev\\deepstream.io-client-js\\src\\default-options.js","./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","./rpc/rpc-handler":"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -6410,6 +6407,7 @@ exports.CONNECTION_STATE.AWAITING_AUTHENTICATION = 'AWAITING_AUTHENTICATION';
 exports.CONNECTION_STATE.AUTHENTICATING = 'AUTHENTICATING';
 exports.CONNECTION_STATE.OPEN = 'OPEN';
 exports.CONNECTION_STATE.ERROR = 'ERROR';
+exports.CONNECTION_STATE.RECONNECTING = 'RECONNECTING';
 
 exports.MESSAGE_SEPERATOR = String.fromCharCode( 30 ); // ASCII Record Seperator 1E
 exports.MESSAGE_PART_SEPERATOR = String.fromCharCode( 31 ); // ASCII Unit Separator 1F
@@ -6445,7 +6443,117 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
-},{}],44:[function(_dereq_,module,exports){
+},{}],"c:\\dev\\deepstream.io-client-js\\src\\default-options.js":[function(_dereq_,module,exports){
+module.exports = {
+	/************************************************
+	* Deepstream									*
+	************************************************/
+
+	/**
+	 * @param {Boolean} recordPersistDefault Whether records should be 
+	 *                                       persisted by default. Can be overwritten
+	 *                                       for individual records when calling getRecord( name, persist );
+	 */
+	recordPersistDefault: true,
+
+	/**
+	 * @param {Number} reconnectIntervalIncrement Specifies the number of milliseconds by which the time until
+	 *                                            the next reconnection attempt will be incremented after every
+	 *                                            unsuccesful attempt.
+	 *                                            E.g. for 1500: if the connection is lost, the client will attempt to reconnect
+	 *                                            immediatly, if that fails it will try again after 1.5 seconds, if that fails
+	 *                                            it will try again after 3 seconds and so on
+	 */
+	reconnectIntervalIncrement: 4000,
+
+	/**
+	 * @param {Number} maxReconnectAttempts		The number of reconnection attempts until the client gives
+	 *                                       	up and declares the connection closed
+	 */
+	maxReconnectAttempts: 5,
+
+	/************************************************
+	* Engine.io										*
+	************************************************/
+
+	/**
+	 * @param {http.Agent} agent http.Agent to use, defaults to false (NodeJS only)
+	 */
+	agent: false,
+
+	/**
+	 * @param {Boolean} upgrade 	whether the client should try to upgrade the 
+	 *                          	transport from long-polling to something better
+	 */
+	upgrade: false,
+
+	/**
+	 * @param {Boolean} forceJSONP forces JSONP for polling transport
+	 */
+	forceJSONP: false,
+
+	/**
+	 * @param {Boolean} jsonp determines whether to use JSONP when 
+	 *                        necessary for polling. If disabled (by settings to false) 
+	 *                        an error will be emitted (saying "No transports available") 
+	 *                        if no other transports are available. If another transport 
+	 *                        is available for opening a connection (e.g. WebSocket) 
+	 *                        that transport will be used instead.
+	 */
+	jsonp: true,
+
+	/**
+	 * @param {Boolean} forceBase64 forces base 64 encoding for polling transport even when XHR2 responseType 
+	 *                              is available and WebSocket even if the used standard supports binary.
+	 */
+	forceBase64: false,
+
+	/**
+	 * @param {Boolean} enablesXDR 	enables XDomainRequest for IE8 to avoid loading bar flashing with click sound. 
+	 *                              default to false because XDomainRequest has a flaw of not sending cookie.
+	 */
+	enablesXDR: false,
+
+	/**
+	 * @param {Boolean} timestampRequests 	whether to add the timestamp with each transport request. Note: this is 
+	 *                                     	ignored if the browser is IE or Android, in which case requests are always stamped
+	 */
+	timestampRequests: false,
+
+	/**
+	 * @param {String} timestampParam timestamp parameter
+	 */
+	timestampParam: 't',
+
+	/**
+	 * @param {Number} policyPort ort the policy server listens on
+	 */
+	policyPort: 843,
+
+	/**
+	 * @param {String} path path to connect to
+	 */
+	path: '/engine.io',
+
+	/**
+	 * @param {Array} transports 	a list of transports to try (in order). Engine always 
+	 *                             	attempts to connect directly with the first one, 
+	 *                             	provided the feature detection test for it passes.
+	 */
+	transports: [ 'polling', 'websocket' ],
+
+	/**
+	 * @param {Boolean} rememberUpgrade 	If true and if the previous websocket connection to 
+	 *                                   	the server succeeded, the connection attempt will bypass the normal 
+	 *                                   	upgrade process and will initially try websocket. A connection 
+	 *                                   	attempt following a transport error will use the normal upgrade 
+	 *                                   	process. It is recommended you turn this on only when using 
+	 *                                   	SSL/TLS connections, or if you know that 
+	 *                                   	your network does not block websockets.
+	 */
+	rememberUpgrade: false
+};
+},{}],"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js":[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
@@ -6489,15 +6597,14 @@ EventHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":43,"../message/message-builder":46,"component-emitter":12}],45:[function(_dereq_,module,exports){
-(function (process){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js":[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
 	TcpConnection = _dereq_( '../tcp/tcp-connection' ),
 	utils = _dereq_( '../utils/utils' ),
 	C = _dereq_( '../constants/constants' );
-console.log( engineIoClient );
+
 /**
  * Establishes a connection to a deepstream server, either
  * using TCP in node or engine.io in the browser.
@@ -6516,6 +6623,8 @@ var Connection = function( client, url, options ) {
 	this._authCallback = null;
 	this._deliberateClose = false;
 	this._queuedMessages = [];
+	this._reconnectTimeout = null;
+	this._reconnectionAttempt = 0;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
@@ -6524,7 +6633,7 @@ var Connection = function( client, url, options ) {
 	} else {
 		this._endpoint = engineIoClient( url, options );
 	}
-	
+
 	this._endpoint.on( 'open', this._onOpen.bind( this ) );
 	this._endpoint.on( 'error', this._onError.bind( this ) );
 	this._endpoint.on( 'close', this._onClose.bind( this ) );
@@ -6589,7 +6698,7 @@ Connection.prototype.sendMsg = function( topic, action, data ) {
  * @returns {void}
  */
 Connection.prototype.send = function( message ) {
-	this._queuedMessages.unshift( message );
+	this._queuedMessages.push( message );
 
 	if( this._state === C.CONNECTION_STATE.OPEN ) {
 
@@ -6602,11 +6711,7 @@ Connection.prototype.send = function( message ) {
 		 * process.nextTick however will be invoked in node like
 		 * setTimeout(fn, 0) in the browser
 		 */
-		if( utils.isNode() ) {
-			process.nextTick( this._sendQueuedMessages.bind( this ) );
-		} else {
-			setTimeout( this._sendQueuedMessages.bind( this ), 0 );
-		}
+		 utils.nextTick( this._sendQueuedMessages.bind( this ) );
 	}
 };
 
@@ -6669,6 +6774,7 @@ Connection.prototype._sendAuthParams = function() {
  * @returns {void}
  */
 Connection.prototype._onOpen = function() {
+	this._clearReconnect();
 	this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 	
 	if( this._authParams ) {
@@ -6690,7 +6796,14 @@ Connection.prototype._onOpen = function() {
  */
 Connection.prototype._onError = function( error ) {
 	this._setState( C.CONNECTION_STATE.ERROR );
-	this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
+	
+	/*
+	 * If the implementation isn't listening on the error event this will throw
+	 * an error. So let's defer it to allow the reconnection to kick in.
+	 */
+	setTimeout(function(){
+		this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
+	}.bind( this ), 1);
 };
 
 /**
@@ -6705,8 +6818,11 @@ Connection.prototype._onError = function( error ) {
  * @returns {void}
  */
 Connection.prototype._onClose = function() {
-	this._setState( C.CONNECTION_STATE.CLOSED );
-	//TODO Reconnection strategy & add flag if close was deliberately called
+	if( this._deliberateClose === true ) {
+		this._setState( C.CONNECTION_STATE.CLOSED );
+	} else {
+		this._tryReconnect();
+	}
 };
 
 /**
@@ -6746,7 +6862,7 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		if( this._authCallback ) {
 			this._authCallback( false, message.data[ 0 ], message.data[ 1 ] );
 		}
-		this._setState( C.EVENT.AWAITING_AUTHENTICATION );
+		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
 		
@@ -6770,9 +6886,62 @@ Connection.prototype._setState = function( state ) {
 	this._client.emit( C.EVENT.CONNECTION_STATE_CHANGED, state );
 };
 
+/**
+ * If the connection drops or is closed in error this
+ * method schedules increasing reconnection intervals
+ *
+ * If the number of failed reconnection attempts exceeds
+ * options.maxReconnectAttempts the connection is closed
+ * 
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._tryReconnect = function() {
+	if( this._reconnectTimeout !== null ) {
+		return;
+	}
+
+	if( this._reconnectionAttempt < this._options.maxReconnectAttempts ) {
+		this._setState( C.CONNECTION_STATE.RECONNECTING );
+		setTimeout(
+			this._tryOpen.bind( this ),
+			this._options.reconnectIntervalIncrement * this._reconnectionAttempt 
+		);
+		this._reconnectionAttempt++;
+	} else {
+		this._clearReconnect();
+		this.close();
+	}
+};
+
+/**
+ * Attempts to open a errourosly closed connection
+ * 
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._tryOpen = function() {
+	this._endpoint.open();
+	this._reconnectTimeout = null;
+};
+
+/**
+ * Stops all further reconnection attempts,
+ * either because the connection is open again
+ * or because the maximal number of reconnection
+ * attempts has been exceeded
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._clearReconnect = function() {
+	clearTimeout( this._reconnectTimeout );
+	this._reconnectTimeout = null;
+	this._reconnectionAttempt = 0;
+};
+
 module.exports = Connection;
-}).call(this,_dereq_('_process'))
-},{"../constants/constants":43,"../tcp/tcp-connection":50,"../utils/utils":51,"./message-builder":46,"./message-parser":47,"_process":4,"engine.io-client":13}],46:[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../tcp/tcp-connection":"c:\\dev\\deepstream.io-client-js\\src\\tcp\\tcp-connection.js","../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js","./message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","./message-parser":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-parser.js","engine.io-client":"c:\\dev\\deepstream.io-client-js\\node_modules\\engine.io-client\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js":[function(_dereq_,module,exports){
 var constants = _dereq_( '../constants/constants' ),
 	SEP = constants.MESSAGE_PART_SEPERATOR;
 
@@ -6787,6 +6956,9 @@ var constants = _dereq_( '../constants/constants' ),
  * @returns {String} deepstream message string
  */
 exports.getMsg = function( topic, action, data ) {
+	if( data && !( data instanceof Array ) ) {
+		throw new Error( 'data must be an array' );
+	}
 	var sendData = [ topic, action ],
 		i;
 
@@ -6824,7 +6996,7 @@ exports.getErrorMsg = function( topic, type, message ) {
 		return topic + SEP + 'E' + SEP + type + SEP + message.join( SEP );
 	}
 };
-},{"../constants/constants":43}],47:[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\message-parser.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -6918,7 +7090,7 @@ MessageParser.prototype._parseMessage = function( message ) {
 };
 
 module.exports = new MessageParser();
-},{"../constants/constants":43}],48:[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' );
 
@@ -7005,9 +7177,18 @@ RpcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = RpcHandler;
-},{"../constants/constants":43,"./rpc-response":49}],49:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' );
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./rpc-response":"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-response.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-response.js":[function(_dereq_,module,exports){
+var C = _dereq_( '../constants/constants' ),
+	utils = _dereq_( '../utils/utils' );
 
+/**
+ * This object provides a number of methods that allow a rpc provider
+ * to respond to a request
+ * 
+ * @param {Connection} connection - the clients connection object
+ * @param {String} name the name of the rpc
+ * @param {String} correlationId the correlationId for the RPC
+ */
 var RpcResponse = function( connection, name, correlationId ) {
 	this._connection = connection;
 	this._name = name;
@@ -7015,9 +7196,17 @@ var RpcResponse = function( connection, name, correlationId ) {
 	this._isAcknowledged = false;
 	this._isComplete = false;
 	this.autoAck = true;
-	setTimeout( this._performAutoAck.bind( this ), 0 );
+	utils.nextTick( this._performAutoAck.bind( this ) );
 };
 
+/**
+ * Acknowledges the receipt of the request. This
+ * will happen implicitly unless the request callback
+ * explicitly sets autoAck to false
+ * 
+ * @public
+ * @returns 	{void}
+ */
 RpcResponse.prototype.ack = function() {
 	if( this._isAcknowledged === false ) {
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ACK, [ this._name, this._correlationId ] );
@@ -7025,10 +7214,33 @@ RpcResponse.prototype.ack = function() {
 	}
 };
 
+/**
+ * Reject the request. This might be necessary if the client
+ * is already processing a large number of requests. If deepstream
+ * receives a rejection message it will try to route the request to
+ * another provider - or return a NO_RPC_PROVIDER error if there are no
+ * providers left
+ * 
+ * @public
+ * @returns	{void}
+ */
 RpcResponse.prototype.reject = function() {
 	
 };
 
+/**
+ * Completes the request by sending the response data
+ * to the server. If data is an array or object it will
+ * automatically be serialised.
+ * If autoAck is disabled and the response is send before
+ * the ack message the request will still be completed and the
+ * ack message ignored
+ * 
+ * @param {String} data the data send by the provider. Might be JSON serialized
+ * 
+ * @public
+ * @returns {void}
+ */
 RpcResponse.prototype.send = function( data ) {
 	if( this._isComplete === true ) {
 		throw new Error( 'Rpc ' + this._name + ' already completed' );
@@ -7038,6 +7250,13 @@ RpcResponse.prototype.send = function( data ) {
 	this._isComplete = true;
 };
 
+/**
+ * Callback for the autoAck timeout. Executes ack
+ * if autoAck is not disabled
+ * 
+ * @private
+ * @returns {void}
+ */
 RpcResponse.prototype._performAutoAck = function() {
 	if( this.autoAck === true ) {
 		this.ack();
@@ -7045,7 +7264,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":43}],50:[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js"}],"c:\\dev\\deepstream.io-client-js\\src\\tcp\\tcp-connection.js":[function(_dereq_,module,exports){
 (function (process){
 var net = _dereq_( 'net' ),
 	URL = _dereq_( 'url' ),
@@ -7067,6 +7286,22 @@ var net = _dereq_( 'net' ),
  * @constructor
  */
 var TcpConnection = function( url ) {
+	this._socket = null;
+	process.on( 'exit', this._destroy.bind( this ) );
+	this.open();
+	this._isOpen = false;
+};
+
+util.inherits( TcpConnection, events.EventEmitter );
+
+/**
+ * Creates the connection. Can be called multiple times to
+ * facilitate reconnecting.
+ *
+ * @private
+ * @returns {void}
+ */
+TcpConnection.prototype.open = function() {
 	this._socket = net.createConnection( this._getOptions( url ) );
 
 	this._socket.setEncoding( 'utf8' );
@@ -7077,13 +7312,7 @@ var TcpConnection = function( url ) {
 	this._socket.on( 'error', this._onError.bind( this ) );
 	this._socket.on( 'connect', this._onConnect.bind( this ) );
 	this._socket.on( 'close', this._onClose.bind( this ) );
-
-	process.on( 'exit', this._socket.destroy.bind( this._socket) );
-	this._isOpen = false;
 };
-
-util.inherits( TcpConnection, events.EventEmitter );
-
 /**
  * Sends a message over the socket. Sending happens immediatly,
  * conflation takes place on a higher level
@@ -7210,14 +7439,33 @@ TcpConnection.prototype._getOptions = function( url ) {
 	};
 };
 
+/**
+ * Closes the socket as a last resort before the
+ * process exits
+ *
+ * @private
+ * @returns {void}
+ */
+TcpConnection.prototype._destroy = function() {
+	this._socket.destroy();
+};
+
 module.exports = TcpConnection;
 
 }).call(this,_dereq_('_process'))
-},{"_process":4,"events":2,"net":1,"url":9,"util":11}],51:[function(_dereq_,module,exports){
+},{"_process":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\process\\browser.js","events":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\events\\events.js","net":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\lib\\_empty.js","url":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\url\\url.js","util":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\util\\util.js"}],"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js":[function(_dereq_,module,exports){
 (function (process){
 exports.isNode = function() {
 	return typeof process !== 'undefined' && process.version;
 };
+
+exports.nextTick = function( fn ) {
+	if( exports.isNode() ) {
+		process.nextTick( fn );
+	} else {
+		setTimeout( fn, 0 );
+	}
+};
 }).call(this,_dereq_('_process'))
-},{"_process":4}]},{},[42])(42)
+},{"_process":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\process\\browser.js"}]},{},["c:\\dev\\deepstream.io-client-js\\src\\client.js"])("c:\\dev\\deepstream.io-client-js\\src\\client.js")
 });
