@@ -109,11 +109,7 @@ Connection.prototype.send = function( message ) {
 		 * process.nextTick however will be invoked in node like
 		 * setTimeout(fn, 0) in the browser
 		 */
-		if( utils.isNode() ) {
-			process.nextTick( this._sendQueuedMessages.bind( this ) );
-		} else {
-			setTimeout( this._sendQueuedMessages.bind( this ), 0 );
-		}
+		 utils.nextTick( this._sendQueuedMessages.bind( this ) );
 	}
 };
 

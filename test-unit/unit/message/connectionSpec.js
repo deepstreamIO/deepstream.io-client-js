@@ -1,3 +1,5 @@
+/* global describe, it, expect, jasmine */
+
 var proxyquire = require( 'proxyquire' ).noCallThru(),
 	TcpConnectionMock = require( '../../mocks/tcp/tcp-connection-mock' ),
 	Connection = proxyquire( '../../../src/message/connection', { '../tcp/tcp-connection': TcpConnectionMock } ),
@@ -70,4 +72,62 @@ describe('connects - happy path', function(){
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( clientConnectionStateChangeCount ).toBe( 4 );
 	});
+});
+
+describe( 'buffers messages whilst connection is closed', function(){
+    var connection;
+    
+    it( 'creates the connection', function(){
+		connection = new Connection( clientMock );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+		expect( connection._endpoint.lastSendMessage ).toBe( null );
+	});
+	
+	it( 'tries to send messages whilst connection is closed', function( done ){
+		expect( connection._endpoint.lastSendMessage ).toBe( null );
+		connection.sendMsg( 'RECORD', 'S', ['rec1'] );
+		setTimeout(function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( null );
+			done();
+		}, 10);
+	});
+	
+	it( 'tries to send messages whilst awaiting authentication', function( done ) {
+	    connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		connection.sendMsg( 'RECORD', 'S', ['rec2'] );
+		setTimeout(function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( null );
+			done();
+		}, 10);
+	});
+	
+	it( 'tries to send messages whilst authenticating', function( done ) {
+	    connection.authenticate({ user: 'Wolfram' }, function(){} );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}' ) );
+		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
+		connection.sendMsg( 'RECORD', 'S', ['rec3'] );
+		setTimeout(function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}' ) );
+			done();
+		}, 10);
+	});
+	
+	it( 'tries to send messages whilst authenticating', function( done ) {
+	    connection._endpoint.emit( 'message', msg( 'AUTH|A' ) );
+		expect( connection.getState() ).toBe( 'OPEN' );
+		
+		setTimeout(function() {
+			var expected = msg( 'RECORD|S|rec1', 'RECORD|S|rec2', 'RECORD|S|rec3' );
+			
+
+			console.log(
+			
+			);
+			expect( connection._endpoint.lastSendMessage ).toBe( expected );
+			done();
+		}, 10);
+	});
+	
+
 });

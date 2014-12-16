@@ -12,6 +12,9 @@ var constants = require( '../constants/constants' ),
  * @returns {String} deepstream message string
  */
 exports.getMsg = function( topic, action, data ) {
+	if( data && !( data instanceof Array ) ) {
+		throw new Error( 'data must be an array' );
+	}
 	var sendData = [ topic, action ],
 		i;
 
