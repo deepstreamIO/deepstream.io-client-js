@@ -123,60 +123,6 @@ describe( 'buffers messages whilst connection is closed', function(){
 			done();
 		}, 10);
 	});
-});
-
-describe( 'connection handles auth rejections', function(){
-	var connection,
-		authCallback = jasmine.createSpy( 'invalid auth callback' );
-    
-    it( 'creates the connection', function(){
-		connection = new Connection( clientMock );
-		expect( connection.getState() ).toBe( 'CLOSED' );
-		expect( connection._endpoint.lastSendMessage ).toBe( null );
-	});
-
-	it( 'opens the connection', function(){
-		connection._endpoint.simulateOpen();
-		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
-	});
-
-	it( 'sends auth parameters', function(){
-		expect( connection._endpoint.lastSendMessage ).toBe( null );
-		connection.authenticate({ user: 'Wolfram' }, authCallback );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}' ) );
-		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
-		expect( authCallback ).not.toHaveBeenCalled();
-	});
-
-	it( 'receives auth rejection message', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|E|INVALID_AUTH_DATA|unknown user' ) );
-		expect( authCallback ).toHaveBeenCalledWith( false, 'INVALID_AUTH_DATA', 'unknown user' );
-		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
-	});
-
-	it( 'sends different auth parameters', function(){
-		connection.authenticate({ user: 'Egon' }, authCallback );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Egon"}' ) );
-		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
-	});
-
-	it( 'receives auth ack message', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|A' ) );
-		expect( authCallback ).toHaveBeenCalledWith( true );
-		expect( connection.getState() ).toBe( 'OPEN' );
-	});
-});
-
-describe( 'tries to reconnect if the connection drops unexpectedly', function(){
-	var connection,
-		authCallback = jasmine.createSpy( 'invalid auth callback' ),
-		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
-    
-    it( 'creates the connection', function(){ 
-		connection = new Connection( clientMock, options );
-		expect( connection.getState() ).toBe( 'CLOSED' );
-		expect( connection._endpoint.lastSendMessage ).toBe( null );
-	});
-
 	
+
 });

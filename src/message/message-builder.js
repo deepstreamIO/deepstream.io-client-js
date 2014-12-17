@@ -1,5 +1,5 @@
-var constants = require( '../constants/constants' ),
-	SEP = constants.MESSAGE_PART_SEPERATOR;
+var C = require( '../constants/constants' ),
+	SEP = C.MESSAGE_PART_SEPERATOR;
 
 /**
  * Creates a deepstream message string, based on the 
@@ -32,23 +32,46 @@ exports.getMsg = function( topic, action, data ) {
 };
 
 /**
- * Creates a deepstream error message string based on the provided
- * arguments
- *
- * @param   {String} topic   One of CONSTANTS.TOPIC - error messages might either be send on
- *                           the generic ERROR topic or on the topic that caused the error
- *                           
- * @param   {String} type    One of CONSTANTS.EVENT
- * @param   {String} message A generic error message
- *
- * @returns {String | Array } deepstream error message string
+ * Converts a serializable value into its string-representation and adds
+ * a flag that provides instructions on how to deserialize it.
+ * 
+ * Please see messageParser.convertTyped for the counterpart of this method
+ * 
+ * @param {Mixed} value
+ * 
+ * @public
+ * @returns {String} string representation of the value
  */
-exports.getErrorMsg = function( topic, type, message ) {
-	if( typeof message === 'string' ) {
-		return topic + SEP + 'E' + SEP + type + SEP + message;
+exports.typed = function( value ) {
+	var type = typeof value;
+	
+	if( type === 'string' ) {
+		return C.TYPES.STRING + value;
 	}
 	
-	if( message instanceof Array ) {
-		return topic + SEP + 'E' + SEP + type + SEP + message.join( SEP );
+	if( value === null ) {
+		return C.TYPES.NULL;
 	}
-};
+	
+	if( type === 'object' ) {
+		return C.TYPES.OBJECT + JSON.stringify( value );
+	}
+	
+	if( type === 'number' ) {
+		return C.TYPES.NUMBER + value.toString();
+	}
+	
+	if( value === true ) {
+		return C.TYPES.TRUE;
+	}
+	
+	if( value === false ) {
+		return C.TYPES.FALSE;
+	}
+	
+	if( value === undefined ) {
+		return C.TYPES.UNDEFINED;
+	}
+	
+	throw new Error( 'Can\'t serialize type ' + value );
+}

@@ -10,6 +10,15 @@ exports.CONNECTION_STATE.RECONNECTING = 'RECONNECTING';
 exports.MESSAGE_SEPERATOR = String.fromCharCode( 30 ); // ASCII Record Seperator 1E
 exports.MESSAGE_PART_SEPERATOR = String.fromCharCode( 31 ); // ASCII Unit Separator 1F
 
+exports.TYPES = {};
+exports.TYPES.STRING = 'S';
+exports.TYPES.OBJECT = 'O';
+exports.TYPES.NUMBER = 'N';
+exports.TYPES.NULL = 'L';
+exports.TYPES.TRUE = 'T';
+exports.TYPES.FALSE = 'F';
+exports.TYPES.UNDEFINED = 'U';
+
 exports.TOPIC = {};
 exports.TOPIC.AUTH = 'AUTH';
 exports.TOPIC.ERROR = 'ERROR';
