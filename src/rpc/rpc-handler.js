@@ -1,6 +1,7 @@
 var C = require( '../constants/constants' ),
 	RpcResponse = require( './rpc-response' ),
 	Rpc = require( './rpc' ),
+	messageParser= require( '../message/message-parser' ),
 	messageBuilder = require( '../message/message-builder' );
 
 /**
@@ -138,22 +139,35 @@ RpcHandler.prototype._respondToRpc = function( message ) {
  * @returns {void}
  */
 RpcHandler.prototype._$handle = function( message ) {
+	var rpcName, correlationId, rpc;
+	
 	// RPC Requests
 	if( message.action === C.ACTIONS.REQUEST ) {
 		this._respondToRpc( message );
 		return;
 	}
 	
-	// RPC Responses
+	/*
+	 * Error messages always have the error as first parameter. So the
+	 * order is different to ack and response messages
+	 */
+	if( message.action === C.ACTIONS.ERROR ) {
+		rpcName = message.data[ 1 ];
+		correlationId = message.data[ 2 ];
+	} else {
+		rpcName = message.data[ 0 ];
+		correlationId = message.data[ 1 ];
+	}
 	
-	var rpcName = message.data[ 0 ],
-		correlationId = message.data[ 1 ],
-		rpc = this._getRpc( correlationId, rpcName );
-		
+	/*
+	* Retrieve the rpc object
+	*/
+	rpc = this._getRpc( correlationId, rpcName );
 	if( rpc === null ) {
 		return;
 	}
 		
+	// RPC Responses
 	if( message.action === C.ACTIONS.ACK ) {
 		rpc.ack();
 	}
@@ -163,7 +177,7 @@ RpcHandler.prototype._$handle = function( message ) {
 	}
 	else if( message.action === C.ACTIONS.ERROR ) {
 		message.processedError = true;
-		rpc.error( message.data[ 2 ] );
+		rpc.error( message.data[ 0 ] );
 		delete this._rpcs[ correlationId ];
 	}
 };
