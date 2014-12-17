@@ -1,5 +1,6 @@
 var C = require( '../constants/constants' ),
-	utils = require( '../utils/utils' );
+	utils = require( '../utils/utils' ),
+	messageBuilder = require( '../message/message-builder' );
 
 /**
  * This object provides a number of methods that allow a rpc provider
@@ -66,7 +67,8 @@ RpcResponse.prototype.send = function( data ) {
 		throw new Error( 'Rpc ' + this._name + ' already completed' );
 	}
 	
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.RESPONSE, [ this._name, this._correlationId, data ] );
+	var typedData = messageBuilder.typed( data );
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.RESPONSE, [ this._name, this._correlationId, typedData ] );
 	this._isComplete = true;
 };
 

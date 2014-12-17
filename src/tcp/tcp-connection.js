@@ -8,7 +8,7 @@ var net = require( 'net' ),
  * other clients that speak TCP). Exposes the same interface as the engine.io
  * client
  *
- * @param {String} url
+ * @param   {String} url (or short version without protocol, e.g. host:port )
  *
  * @emits error
  * @emits open
@@ -19,6 +19,7 @@ var net = require( 'net' ),
  */
 var TcpConnection = function( url ) {
 	this._socket = null;
+	this._url = url;
 	process.on( 'exit', this._destroy.bind( this ) );
 	this.open();
 	this._isOpen = false;
@@ -34,7 +35,7 @@ util.inherits( TcpConnection, events.EventEmitter );
  * @returns {void}
  */
 TcpConnection.prototype.open = function() {
-	this._socket = net.createConnection( this._getOptions( url ) );
+	this._socket = net.createConnection( this._getOptions() );
 
 	this._socket.setEncoding( 'utf8' );
 	this._socket.setKeepAlive( true, 5000 );
@@ -149,19 +150,18 @@ TcpConnection.prototype._onData = function( message ) {
  *
  * @todo  - test what happens if URL doesn't have a port
  *
- * @param   {String} url (or short version without protocol, e.g. host:port )
  *
  * @private
  * @returns {Object} options
  */
-TcpConnection.prototype._getOptions = function( url ) {
+TcpConnection.prototype._getOptions = function() {
 	var parsedUrl = {};
 	
-	if( url.indexOf( '/' ) === -1 ) {
-		parsedUrl.hostname = url.split( ':' )[ 0 ];
-		parsedUrl.port = parseInt( url.split( ':' )[ 1 ], 10 );
+	if( this._url.indexOf( '/' ) === -1 ) {
+		parsedUrl.hostname = this._url.split( ':' )[ 0 ];
+		parsedUrl.port = parseInt( this._url.split( ':' )[ 1 ], 10 );
 	} else {
-		parsedUrl = URL.parse( url );
+		parsedUrl = URL.parse( this._url );
 	}
 
 	return {

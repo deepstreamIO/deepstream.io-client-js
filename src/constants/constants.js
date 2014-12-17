@@ -30,6 +30,9 @@ exports.TOPIC.PRIVATE = 'PRIVATE/';
 exports.EVENT = {};
 exports.EVENT.CONNECTION_ERROR = 'connectionError';
 exports.EVENT.CONNECTION_STATE_CHANGED = 'connectionStateChanged';
+exports.EVENT.ACK_TIMEOUT = 'ACK_TIMEOUT';
+exports.EVENT.RESPONSE_TIMEOUT = 'RESPONSE_TIMEOUT';
+exports.EVENT.UNSOLICITED_MESSAGE = 'UNSOLICITED_MESSAGE';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';

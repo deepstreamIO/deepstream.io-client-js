@@ -25,6 +25,18 @@ module.exports = {
 	 *                                       	up and declares the connection closed
 	 */
 	maxReconnectAttempts: 5,
+	
+	/**
+	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
+	 * 											no Ack-message has been received
+	 */
+	 rpcAckTimeout: 2000,
+	 
+	 /**
+	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
+	 * 											no response-message has been received
+	 */
+	 rpcResponseTimeout: 10000,
 
 	/************************************************
 	* Engine.io										*
