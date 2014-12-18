@@ -4,8 +4,26 @@ var C = require( './constants/constants' ),
 	EventHandler = require( './event/event-handler' ),
 	RpcHandler = require( './rpc/rpc-handler' ),
 	defaultOptions = require( './default-options' );
-	
 
+/**
+ * deepstream.io javascript client - works in
+ * node.js and browsers (using engine.io)
+ *
+ * @author Wolfram Hempel
+ * @version <version> (<build-date>)
+ *
+ * @license https://github.com/hoxton-one/deepstream.io-client-js/blob/master/LICENSE MIT
+ * @copyright 2014 Hoxton One Ltd.
+ *
+ * @{@link http://deepstream.io}
+ * 
+ *
+ * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
+ * @param {Object} options A map of options that extend the ones specified in default-options.js
+ *
+ * @public
+ * @constructor
+ */
 var Client = function( url, options ) {
 	this._url = url;
 	this._options = this._getOptions( options || {} );
@@ -24,34 +42,59 @@ var Client = function( url, options ) {
 
 Emitter( Client.prototype );
 
+/**
+ * Send authentication parameters to the client to fully open
+ * the connection.
+ *
+ * Please note: Authentication parameters are send over an already established
+ * connection, rather than appended to the server URL. This means the parameters
+ * will be encrypted when used with a WSS / HTTPS connection. If the deepstream server
+ * on the other side has message logging enabled it will however be written to the logs in
+ * plain text. If additional security is a requirement it might therefor make sense to hash
+ * the password on the client.
+ *
+ * If the connection is not yet established the authentication parameter will be
+ * stored and send once it becomes available
+ *
+ * authParams can be any JSON serializable data structure and its up for the
+ * permission handler on the server to make sense of them, although something
+ * like { username: 'someName', password: 'somePass' } will probably make the most sense.
+ *
+ * login can be called multiple times until either the connection is authenticated or
+ * forcefully closed by the server since its maxAuthAttempts threshhold has been exceeded
+ * 
+ * @param   {Object}   authParams JSON.serializable authentication data
+ * @param   {Function} callback   Will be called with either (true) or (false, errorType, errorMessage)
+ *
+ * @public
+ * @returns {Client}
+ */
 Client.prototype.login = function( authParams, callback ) {
 	this._connection.authenticate( authParams, callback );
 	return this;
 };
 
+/**
+ * Closes the connection to the server.
+ *
+ * @public
+ * @returns {void}
+ */
 Client.prototype.close = function() {
 	this._connection.close();
 };
 
+/**
+ * Returns the current state of the connection.
+ *
+ * connectionState is one of CONSTANTS.CONNECTION_STATE
+ *
+ * @returns {[type]} [description]
+ */
 Client.prototype.getConnectionState = function() {
 	return this._connection.getState();
 };
 
-Client.prototype.onRecordSubscription = function( pattern, callback ) {
-
-};
-
-Client.prototype.getRecord = function( name, persist ) {
-
-};
-
-Client.prototype.getList = function( name, persist ) {
-
-};
-
-Client.prototype.getAnonymousRecord = function() {
-
-};
 
 /**
  * Returns a random string. The first block of characters
@@ -69,6 +112,15 @@ Client.prototype.getUid = function() {
 	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
 };
 
+/**
+ * Package private callback for parsed incoming messages. Will be invoked
+ * by the connection class
+ *
+ * @param   {Object} message parsed deepstream message
+ *
+ * @package private
+ * @returns {void}
+ */
 Client.prototype._$onMessage = function( message ) {
 	if( this._messageCallbacks[ message.topic ] ) {
 		this._messageCallbacks[ message.topic ]( message );
@@ -81,6 +133,26 @@ Client.prototype._$onMessage = function( message ) {
 	}
 };
 
+/**
+ * Package private error callback. This is the single point at which
+ * errors are thrown in the client. (Well... that's the intention anyways)
+ *
+ * The expectations would be for implementations to subscribe
+ * to the client's error event to prevent errors from being thrown
+ * and then decide based on the event and topic parameters how
+ * to handle the errors
+ *
+ * IMPORTANT: Errors that are specific to a request, e.g. a RPC
+ * timing out or a record not being permissioned are passed directly
+ * to the method that requested them
+ * 
+ * @param   {String} topic One of CONSTANTS.TOPIC
+ * @param   {String} event One of CONSTANTS.EVENT
+ * @param   {String} msg   Error dependent message
+ *
+ * @package private
+ * @returns {void}
+ */
 Client.prototype._$onError = function( topic, event, msg ) {
 	if( this.hasListeners( 'error' ) ) {
 		this.emit( 'error', msg, event, topic );
@@ -98,6 +170,15 @@ Client.prototype._$onError = function( topic, event, msg ) {
 	}
 };
 
+/**
+ * Creates a new options map by extending default
+ * options with the passed in options
+ *
+ * @param   {Object} options The user specified client configuration options
+ *
+ * @private
+ * @returns {Object}	merged options
+ */
 Client.prototype._getOptions = function( options ) {
 	var mergedOptions = {},
 		key;
@@ -109,6 +190,16 @@ Client.prototype._getOptions = function( options ) {
 	return mergedOptions;
 };
 
+/**
+ * Exports factory function to adjust to the current JS style of
+ * disliking 'new' :-)
+ *
+ * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
+ * @param {Object} options A map of options that extend the ones specified in default-options.js
+ *
+ * @public
+ * @returns {void}
+ */
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
