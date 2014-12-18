@@ -22,7 +22,9 @@ module.exports = function(grunt) {
 				options:{
 					postBundleCB: dereqCallback,
 					browserifyOptions: { 
-						standalone: 'deepstream'
+						standalone: 'deepstream',
+						insertGlobalVars: 'global',
+						detectGlobals: false
 					}
 				}
 			},
@@ -36,7 +38,9 @@ module.exports = function(grunt) {
 					keepAlive: true,
 					postBundleCB: dereqCallback,
 					browserifyOptions: { 
-						standalone: 'deepstream'
+						standalone: 'deepstream',
+						insertGlobalVars: 'global',
+						detectGlobals: false
 					}
 				}
 			}

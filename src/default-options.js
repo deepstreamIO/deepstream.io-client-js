@@ -38,6 +38,12 @@ module.exports = {
 	 */
 	 rpcResponseTimeout: 10000,
 
+	 /**
+	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing a RPC or subscribing
+	 *                                      	to a record before an error is thrown
+	 */
+	 subscriptionTimeout: 2000,
+
 	/************************************************
 	* Engine.io										*
 	************************************************/

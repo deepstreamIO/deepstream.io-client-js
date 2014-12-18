@@ -47,7 +47,6 @@ ViewModel.prototype.emitEvent = function() {
 
 ViewModel.prototype.provideAddTwo = function() {
 	this._client.rpc.provide( 'addTwo', function( data, response ){
-		data = JSON.parse( data );
 		response.send( data.numA + data.numB );
 	});
 };
@@ -65,7 +64,7 @@ ViewModel.prototype.makeAddTwoRpc = function() {
 	this._client.rpc.make( 'addTwo', data, function( error, response ){
 
 		if( error ) {
-			alert( error );
+			console.error( 'RPC ERROR', error );
 		}
 		this.rpcResponse( response );
 		this.rpcResponseTime( ( performance.now() - startTime ).toFixed( 4 ) );

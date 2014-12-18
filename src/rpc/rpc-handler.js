@@ -23,6 +23,7 @@ var RpcHandler = function( options, connection, client ) {
 	this._client = client;
 	this._rpcs = {};
 	this._providers = {};
+	this._provideAckTimeouts = {};
 };
 
 /**
@@ -47,6 +48,7 @@ RpcHandler.prototype.provide = function( name, callback ) {
 	}
 
 	this._providers[ name ] = callback;
+	this._provideAckTimeouts[ name ] = setTimeout( this._provideTimedOut.bind( this, name ), this._options.subscriptionTimeout );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ name ] );
 };
 
@@ -130,6 +132,17 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 };
 
 /**
+ * Callback if a call to provide hasn't received an ACK message in time
+ *
+ * @param   {String} name
+ *
+ * @returns {void}
+ */
+RpcHandler.prototype._provideTimedOut = function( name ) {
+	this._client._$onError( C.TOPIC.RPC, C.EVENT.ACK_TIMEOUT, 'rpc:' + name );
+};
+
+/**
  * Distributes incoming messages from the server
  * based on their action
  *
@@ -144,6 +157,12 @@ RpcHandler.prototype._$handle = function( message ) {
 	// RPC Requests
 	if( message.action === C.ACTIONS.REQUEST ) {
 		this._respondToRpc( message );
+		return;
+	}
+
+	// RPC subscription Acks
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.SUBSCRIBE ) {
+		clearTimeout( this._provideAckTimeouts[ message.data[ 1 ] ] );
 		return;
 	}
 	
