@@ -88,7 +88,15 @@ TcpConnection.prototype.close = function() {
  * @returns {void}
  */
 TcpConnection.prototype._onError = function( error ) {
-	this.emit( 'error', error.toString() );
+	var msg;
+	
+	if( error.code === 'ECONNREFUSED' ) {
+		msg = 'Can\'t connect, deepstream server unreachable on ' + this._url;
+	} else {
+		msg = error.toString();
+	}
+	
+	this.emit( 'error', msg );
 };
 
 /**
