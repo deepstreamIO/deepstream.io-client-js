@@ -155,7 +155,7 @@ Connection.prototype._sendQueuedMessages = function() {
 		return;
 	}
 
-	this._endpoint.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR ) );
+	this._endpoint.send( this._queuedMessages.join( '' ) );
 	this._queuedMessages = [];
 };
 

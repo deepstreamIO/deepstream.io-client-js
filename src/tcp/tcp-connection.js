@@ -61,7 +61,7 @@ showChars = function( input ) {
  * @returns {void}
  */
 TcpConnection.prototype.send = function( message ) {
-	if( this._isOpen === true ) {console.log( 'SENDING', showChars( message ) );
+	if( this._isOpen === true ) {
 		this._socket.write( message );
 	} else {
 		this.emit( 'error', 'attempt to send message on closed socket: ' + message );

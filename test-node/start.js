@@ -26,11 +26,15 @@ if( process.argv[ 2 ] === 'many' ) {
 	console.time( number + ' RPCs' );
 	var results = 0;
 	var inc = function( err, result ){
-		if( results >= 10 ) {
+		if( err ){
+			console.log( 'ERROR', err );
+		}
+		results++;
+		if( results >= number ) {
 			console.timeEnd( number + ' RPCs' );
 		}
 
-		results++;
+		
 	};
 	
 

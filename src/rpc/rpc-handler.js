@@ -95,11 +95,11 @@ RpcHandler.prototype.make = function( name, data, callback ) {
  * @private
  * @returns {Rpc}
  */
-RpcHandler.prototype._getRpc = function( correlationId, rpcName ) {
+RpcHandler.prototype._getRpc = function( correlationId, rpcName, rawMessage ) {
 	var rpc = this._rpcs[ correlationId ];
 
 	if( !rpc ) {
-		this._client._$onError( C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rpcName );
+		this._client._$onError( C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rawMessage );
 		return null;
 	}
 
@@ -181,7 +181,7 @@ RpcHandler.prototype._$handle = function( message ) {
 	/*
 	* Retrieve the rpc object
 	*/
-	rpc = this._getRpc( correlationId, rpcName );
+	rpc = this._getRpc( correlationId, rpcName, message.raw );
 	if( rpc === null ) {
 		return;
 	}

@@ -28,7 +28,7 @@ exports.getMsg = function( topic, action, data ) {
 		}
 	}
 
-	return sendData.join( SEP );
+	return sendData.join( SEP ) + C.MESSAGE_SEPERATOR;
 };
 
 /**
