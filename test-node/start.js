@@ -18,9 +18,25 @@ var makeRpc = function() {
 if( process.argv[ 2 ] === 'many' ) {
 	setInterval(function(){
 		makeRpc();
-	}, 10 );
+	}, 100 );
 } else if( process.argv[ 2 ] === 'one' ) {
 	setTimeout(makeRpc, 1000 );
+} else if( process.argv[ 2 ] === 'batch' ) {
+	var number = parseInt( process.argv[ 3 ], 10 );
+	console.time( number + ' RPCs' );
+	var results = 0;
+	var inc = function( err, result ){
+		if( results >= 10 ) {
+			console.timeEnd( number + ' RPCs' );
+		}
+
+		results++;
+	};
+	
+
+	for( var i = 0; i < number; i++) {
+		client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, inc );
+	}
 } else {
 	client.rpc.provide( 'addTwo', function( data, response ) {
 		processed++;

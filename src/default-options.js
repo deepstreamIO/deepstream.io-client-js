@@ -57,7 +57,7 @@ module.exports = {
 	 * @param {Boolean} upgrade 	whether the client should try to upgrade the 
 	 *                          	transport from long-polling to something better
 	 */
-	upgrade: false,
+	upgrade: true,
 
 	/**
 	 * @param {Boolean} forceJSONP forces JSONP for polling transport

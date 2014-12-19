@@ -22,6 +22,7 @@ var Connection = function( client, url, options ) {
 	this._authParams = null;
 	this._authCallback = null;
 	this._deliberateClose = false;
+	this._batching = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
 	this._reconnectionAttempt = 0;
@@ -100,7 +101,7 @@ Connection.prototype.sendMsg = function( topic, action, data ) {
 Connection.prototype.send = function( message ) {
 	this._queuedMessages.push( message );
 
-	if( this._state === C.CONNECTION_STATE.OPEN ) {
+	if( this._state === C.CONNECTION_STATE.OPEN && this._batching === false ) {
 
 		/*
 		 * Turns out that this makes all the diference in the world.
@@ -111,7 +112,7 @@ Connection.prototype.send = function( message ) {
 		 * process.nextTick however will be invoked in node like
 		 * setTimeout(fn, 0) in the browser
 		 */
-		utils.nextTick( this._sendQueuedMessages.bind( this ) );
+		this._sendQueuedMessages();
 	}
 };
 
@@ -126,6 +127,15 @@ Connection.prototype.send = function( message ) {
 Connection.prototype.close = function() {
 	this._deliberateClose = true;
 	this._endpoint.close();
+};
+
+Connection.prototype.startBatch = function() {
+	this._batching = true;
+};
+
+Connection.prototype.endBatch = function() {
+	this._batching = false;
+	this._sendQueuedMessages();
 };
 
 /**

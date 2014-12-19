@@ -37,7 +37,7 @@ var Client = function( url, options ) {
 
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
-	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError;
+	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError.bind( this );
 };
 
 Emitter( Client.prototype );
@@ -110,6 +110,14 @@ Client.prototype.getUid = function() {
 	};
 	
 	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
+};
+
+Client.prototype.startBatch = function() {
+	this._connection.startBatch();
+};
+
+Client.prototype.endBatch = function() {
+	this._connection.endBatch();
 };
 
 /**

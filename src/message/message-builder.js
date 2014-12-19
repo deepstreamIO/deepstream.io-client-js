@@ -74,4 +74,4 @@ exports.typed = function( value ) {
 	}
 	
 	throw new Error( 'Can\'t serialize type ' + value );
-}
+};

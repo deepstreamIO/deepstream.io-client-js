@@ -46,6 +46,11 @@ TcpConnection.prototype.open = function() {
 	this._socket.on( 'connect', this._onConnect.bind( this ) );
 	this._socket.on( 'close', this._onClose.bind( this ) );
 };
+showChars = function( input ) {
+	return input
+		.replace( new RegExp( String.fromCharCode( 31 ), 'g' ), '|' )
+		.replace( new RegExp( String.fromCharCode( 30 ), 'g' ), '+' );
+};
 /**
  * Sends a message over the socket. Sending happens immediatly,
  * conflation takes place on a higher level
@@ -56,7 +61,7 @@ TcpConnection.prototype.open = function() {
  * @returns {void}
  */
 TcpConnection.prototype.send = function( message ) {
-	if( this._isOpen === true ) {
+	if( this._isOpen === true ) {console.log( 'SENDING', showChars( message ) );
 		this._socket.write( message );
 	} else {
 		this.emit( 'error', 'attempt to send message on closed socket: ' + message );
@@ -91,7 +96,7 @@ TcpConnection.prototype._onError = function( error ) {
 	var msg;
 	
 	if( error.code === 'ECONNREFUSED' ) {
-		msg = 'Can\'t connect, deepstream server unreachable on ' + this._url;
+		msg = 'Can\'t connect! Deepstream server unreachable on ' + this._url;
 	} else {
 		msg = error.toString();
 	}

@@ -15,7 +15,7 @@ ViewModel = function() {
 	this.rpcNumB = ko.observable( 4 );
 	this.rpcResponse = ko.observable('-');
 	this.rpcResponseTime = ko.observable('-');
-
+	window.viewModel = this;
 	this.connectionState = ko.observable( 'CLOSED' );
 };
 
@@ -60,9 +60,9 @@ ViewModel.prototype.makeAddTwoRpc = function() {
 	var startTime = performance.now();
 
 	console.time( 'rpcStart' );
-
+	console.log( performance.now(), 'makeRpc' );
 	this._client.rpc.make( 'addTwo', data, function( error, response ){
-
+		console.log( performance.now(), 'receivedResponse' );
 		if( error ) {
 			console.error( 'RPC ERROR', error );
 		}
