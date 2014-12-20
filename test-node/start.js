@@ -23,7 +23,7 @@ if( process.argv[ 2 ] === 'many' ) {
 	setTimeout(makeRpc, 1000 );
 } else if( process.argv[ 2 ] === 'batch' ) {
 	var number = parseInt( process.argv[ 3 ], 10 );
-	console.time( number + ' RPCs' );
+	
 	var results = 0;
 	var inc = function( err, result ){
 		if( err ){
@@ -37,10 +37,14 @@ if( process.argv[ 2 ] === 'many' ) {
 		
 	};
 	
+	setTimeout(function() {
+		console.log( 'making ' + number + ' rpcs' );
+		console.time( number + ' RPCs' );
+	    for( var i = 0; i < number; i++) {
+			client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, inc );
+		}
+	}, 1000 );
 
-	for( var i = 0; i < number; i++) {
-		client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, inc );
-	}
 } else {
 	client.rpc.provide( 'addTwo', function( data, response ) {
 		processed++;
