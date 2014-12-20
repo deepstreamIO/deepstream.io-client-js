@@ -22,10 +22,12 @@ var Connection = function( client, url, options ) {
 	this._authParams = null;
 	this._authCallback = null;
 	this._deliberateClose = false;
-	this._batching = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
 	this._reconnectionAttempt = 0;
+	this._currentPacketMessageCount = 0;
+	this._sendNextPacketTimeout = null;
+	this._currentMessageResetTimeout = null;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
@@ -100,19 +102,21 @@ Connection.prototype.sendMsg = function( topic, action, data ) {
  */
 Connection.prototype.send = function( message ) {
 	this._queuedMessages.push( message );
+	this._currentPacketMessageCount++;
 
-	if( this._state === C.CONNECTION_STATE.OPEN && this._batching === false ) {
+	if( this._currentMessageResetTimeout === null ) {
+		this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
+	}
 
-		/*
-		 * Turns out that this makes all the diference in the world.
-		 * setTimeout with 0ms in node will be invoked after ~12ms
-		 * whereas in the browser it will be invoked immediatly
-		 * after the current computation is finished.
-		 *
-		 * process.nextTick however will be invoked in node like
-		 * setTimeout(fn, 0) in the browser
-		 */
+	if( this._state === C.CONNECTION_STATE.OPEN && 
+		this._queuedMessages.length < this._options.maxMessagesPerPacket &&
+		this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
 		this._sendQueuedMessages();
+	}
+
+	if( this._queuedMessages.length >= this._options.maxMessagesPerPacket &&
+		this._sendNextPacketTimeout === null ) {
+		this._queueNextPacket();
 	}
 };
 
@@ -129,13 +133,9 @@ Connection.prototype.close = function() {
 	this._endpoint.close();
 };
 
-Connection.prototype.startBatch = function() {
-	this._batching = true;
-};
-
-Connection.prototype.endBatch = function() {
-	this._batching = false;
-	this._sendQueuedMessages();
+Connection.prototype._resetCurrentMessageCount = function() {
+	this._currentPacketMessageCount = 0;
+	this._currentMessageResetTimeout = null;
 };
 
 /**
@@ -152,11 +152,24 @@ Connection.prototype._sendQueuedMessages = function() {
 	}
 
 	if( this._queuedMessages.length === 0 ) {
+		this._sendNextPacketTimeout = null;
 		return;
 	}
 
-	this._endpoint.send( this._queuedMessages.join( '' ) );
-	this._queuedMessages = [];
+	var message = this._queuedMessages.splice( 0, this._options.maxMessagesPerPacket ).join( '' );
+
+	if( this._queuedMessages.length !== 0 ) {
+		this._queueNextPacket();
+	}
+
+	this._endpoint.send( message );
+};
+
+Connection.prototype._queueNextPacket = function() {
+	var fn = this._sendQueuedMessages.bind( this ),
+		delay = this._options.timeBetweenSendingQueuedPackages;
+
+	this._sendNextPacketTimeout = setTimeout( fn, delay );
 };
 
 /**

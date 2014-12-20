@@ -81,7 +81,7 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
 		
-	this._rpcs[ uid ] = new Rpc( this._options, callback );
+	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
 };
 
@@ -120,9 +120,13 @@ RpcHandler.prototype._getRpc = function( correlationId, rpcName, rawMessage ) {
 RpcHandler.prototype._respondToRpc = function( message ) {
 	var name = message.data[ 0 ],
 		correlationId = message.data[ 1 ],
-		data =  message.data[ 2 ] ? messageParser.convertTyped( message.data[ 2 ] ) : null,
+		data = null,
 		response;
 		
+	if( message.data[ 2 ] ) {
+		data = messageParser.convertTyped( message.data[ 2 ], this._client );
+	}
+
 	if( this._providers[ name ] ) {
 		response = new RpcResponse( this._connection,name, correlationId );
 		this._providers[ name ]( data, response );

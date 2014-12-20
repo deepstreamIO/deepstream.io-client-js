@@ -9,12 +9,14 @@ var C = require( '../constants/constants' ),
  *
  * @param {Object}   options  deepstream client config
  * @param {Function} callback the function that will be called once the request is complete or failed
+ * @param {Client} client
  *
  * @constructor
  */
-var Rpc = function( options, callback ) {
+var Rpc = function( options, callback, client ) {
 	this._options = options;
 	this._callback = callback;
+	this._client = client;
 	this._ackTimeout = setTimeout( this.error.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.rpcAckTimeout );
 	this._responseTimeout = setTimeout( this.error.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
 };
@@ -39,7 +41,7 @@ Rpc.prototype.ack = function() {
  * @returns {void}
  */
 Rpc.prototype.respond = function( data ) {
-	var convertedData = messageParser.convertTyped( data );
+	var convertedData = messageParser.convertTyped( data, this._client );
 	this._callback( null, convertedData );
 	this._complete();
 };

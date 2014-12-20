@@ -30,7 +30,7 @@ module.exports = {
 	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
 	 * 											no Ack-message has been received
 	 */
-	 rpcAckTimeout: 2000,
+	 rpcAckTimeout: 6000,
 	 
 	 /**
 	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
@@ -43,6 +43,22 @@ module.exports = {
 	 *                                      	to a record before an error is thrown
 	 */
 	 subscriptionTimeout: 2000,
+
+	 /**
+	  * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
+	  *                                      	time, the deepstream client will try to split them into smaller packets and send
+	  *                                      	these every <timeBetweenSendingQueuedPackages> ms.
+	  *                                      	
+	  *                                       	This parameter specifies the number of messages after which deepstream sends the
+	  *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
+	  *                                      	
+	  */
+	 maxMessagesPerPacket: 100,
+
+	 /**
+	  * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
+	  */
+	 timeBetweenSendingQueuedPackages: 16,
 
 	/************************************************
 	* Engine.io										*

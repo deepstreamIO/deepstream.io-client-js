@@ -52,7 +52,7 @@ MessageParser.prototype.parse = function( message ) {
  * @public
  * @returns {Mixed} original value
  */
-MessageParser.prototype.convertTyped = function( value ) {
+MessageParser.prototype.convertTyped = function( value, client ) {
 	var type = value.charAt( 0 );
 	
 	if( type === C.TYPES.STRING ) {
@@ -60,7 +60,11 @@ MessageParser.prototype.convertTyped = function( value ) {
 	}
 	
 	if( type === C.TYPES.OBJECT ) {
-		return JSON.parse( value.substr( 1 ) );
+		try{
+			return JSON.parse( value.substr( 1 ) );
+		} catch( e ) {
+			client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')' );
+		}
 	}
 	
 	if( type === C.TYPES.NUMBER ) {
@@ -83,7 +87,7 @@ MessageParser.prototype.convertTyped = function( value ) {
 		return undefined;
 	}
 	
-	throw new Error( 'Can\'t convert typed ' + value );
+	client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')' );
 };
 
 /**

@@ -1,7 +1,8 @@
 var net = require( 'net' ),
 	URL = require( 'url' ),
 	events = require( 'events' ),
-	util = require( 'util' );
+	util = require( 'util' ),
+	C = require( '../constants/constants' );
 
 /**
  * An alternative to the engine.io connection for backend processes (or 
@@ -20,6 +21,7 @@ var net = require( 'net' ),
 var TcpConnection = function( url ) {
 	this._socket = null;
 	this._url = url;
+	this._messageBuffer = '';
 	process.on( 'exit', this._destroy.bind( this ) );
 	this.open();
 	this._isOpen = false;
@@ -138,20 +140,34 @@ TcpConnection.prototype._onClose = function() {
  * no binary data / buffers get into the message pipeline though.
  * 
  *
- * @param   {String} message
+ * @param   {String} packet
  *
  * @private
  * @returns {void}
  */
-TcpConnection.prototype._onData = function( message ) {
-	if( typeof message !== 'string' ) {
+TcpConnection.prototype._onData = function( packet ) {
+	if( typeof packet !== 'string' ) {
 		this.emit( 'error', 'received non-string message from socket' );
 		return;
 	}
 
 	if( this._isOpen === false ) {
-		this.emit( 'error', 'received message on half closed socket: ' + message );
+		this.emit( 'error', 'received message on half closed socket: ' + packet );
 		return;
+	}
+
+	var message;
+
+	if( packet.charAt( packet.length - 1 ) !== C.MESSAGE_SEPERATOR ) {
+		this._messageBuffer += packet;
+		return;
+	}
+	
+	if( this._messageBuffer.length !== 0 ) {
+		message = this._messageBuffer + packet;
+		this._messageBuffer = '';
+	} else {
+		message = packet;
 	}
 
 	this.emit( 'message', message );
