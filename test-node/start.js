@@ -1,4 +1,5 @@
-var client = require( '../src/client' )( 'localhost:6021' );
+var client = require( '../src/client' )( 'localhost:6021' ),
+	cli = new (require( './cli'))();
 
 client.on( 'connectionStateChanged', function(){
 	console.log( 'Connection state changed', client.getConnectionState() );
@@ -6,66 +7,53 @@ client.on( 'connectionStateChanged', function(){
 
 client.login({ username: 'Wolfram' });
 
+/****************************************
+* RPC
+****************************************/
+cli.group( 'rpc' )
+	.command( 'provide', function(){
+		client.rpc.provide( 'addTwo', function( data, response ){
+			response.send( data.numA + data.numB );
+		});
+	})
+	.command( 'one', function(){
+		console.time( 'totalRpcTime' );
+		client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, function( err, result ){
+			console.timeEnd( 'totalRpcTime' );
+		});
+	})
+	.command( 'many', function( interval ){
+		setInterval(function(){
+			console.time( 'totalRpcTime' );
+			client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, function( err, result ){
+				console.timeEnd( 'totalRpcTime' );
+			});
+		}, parseInt( interval, 10 ) );
+	})
+	.command( 'burst', function( numberOfMessages ){
+		numberOfMessages = parseInt( numberOfMessages, 10 );
 
+		var responses = 0,
+			i,
+			callback = function( expected, error, result ) {
+				responses++;
 
-var rpcTimes = [],
-	processed = 0,
-	lastError = 0;
-var makeRpc = function() {
-	console.time( 'totalRpcTime' );
-	
-	client.rpc.make( 'addTwo', { numA: 3, numB: 43 }, function( err, result ){
-		console.timeEnd( 'totalRpcTime' );
+				if( error ) {
+					cli.write( 'ERROR + ' + error );
+				}
+
+				if( result !== expected ) {
+					cli.write( 'Expected ' + expected + ' but was ' + result );
+				}
+
+				if( responses === numberOfMessages ) {
+					console.timeEnd( 'Burst RPCs ' + numberOfMessages );
+				}
+			};
+
+		console.time( 'Burst RPCs ' + numberOfMessages );
+		for( i = 0; i < numberOfMessages; i++ ) {
+			client.rpc.make( 'addTwo', { numA: 3, numB: i }, callback.bind( this, i + 3 ) ); 
+		}
+		cli.write( 'Bursting ' + numberOfMessages );
 	});
-};
-
-if( process.argv[ 2 ] === 'many' ) {
-	setInterval(function(){
-		makeRpc();
-	}, 100 );
-} else if( process.argv[ 2 ] === 'one' ) {
-	setTimeout(makeRpc, 1000 );
-} else if( process.argv[ 2 ] === 'burst' ) {
-	var number = parseInt( process.argv[ 3 ], 10 );
-	
-	var results = 0;
-	var inc = function( expected, err, result ){
-		if( err && err !== lastError ){
-			console.log( 'ERROR', arguments );
-			lastError = err;
-			return;
-		}
-		if( result !== 'X' + ( expected + 2 ) ) {
-			console.log( 'expected ' + expected + ' but was ' + result );
-			console.log( arguments );
-		}
-		results++;
-		if( results === number ) {
-			console.timeEnd( number + ' RPCs' );
-		}
-
-		
-	};
-	
-	setTimeout(function() {
-		console.log( 'making ' + number + ' rpcs' );
-		console.time( number + ' RPCs' );
-	    for( var i = 0; i < number; i++) {
-			client.rpc.make( 'addTwo', { numA: i, numB: 2 }, inc.bind( this, i ) );
-		}
-	}, 1000 );
-
-} else {
-	client.rpc.provide( 'addTwo', function( data, response ) {
-		processed++;
-		//console.log( 'answering', processed );
-		if( !data ) {
-			console.log( 'Received invalid data for request ' + processed );
-			response.send( null );
-		} else {
-			response.send( 'X' + ( data.numA + data.numB ) );	
-		}
-		
-	});
-}
-

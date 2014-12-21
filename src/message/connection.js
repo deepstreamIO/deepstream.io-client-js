@@ -133,6 +133,19 @@ Connection.prototype.close = function() {
 	this._endpoint.close();
 };
 
+/**
+ * When the implementation tries to send a large
+ * number of messages in one execution thread, the first
+ * <maxMessagesPerPacket> are send straight away.
+ *
+ * _currentPacketMessageCount keeps track of how many messages
+ * went into that first packet. Once this number has been exceeded
+ * the remaining messages are written to a queue and this message
+ * is invoked on a timeout to reset the count.
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._resetCurrentMessageCount = function() {
 	this._currentPacketMessageCount = 0;
 	this._currentMessageResetTimeout = null;
@@ -165,6 +178,13 @@ Connection.prototype._sendQueuedMessages = function() {
 	this._endpoint.send( message );
 };
 
+/**
+ * Schedules the next packet whilst the connection is under
+ * heavy load.
+ *
+ * @private
+ * @returns {void}
+ */
 Connection.prototype._queueNextPacket = function() {
 	var fn = this._sendQueuedMessages.bind( this ),
 		delay = this._options.timeBetweenSendingQueuedPackages;

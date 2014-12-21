@@ -48,11 +48,7 @@ TcpConnection.prototype.open = function() {
 	this._socket.on( 'connect', this._onConnect.bind( this ) );
 	this._socket.on( 'close', this._onClose.bind( this ) );
 };
-showChars = function( input ) {
-	return input
-		.replace( new RegExp( String.fromCharCode( 31 ), 'g' ), '|' )
-		.replace( new RegExp( String.fromCharCode( 30 ), 'g' ), '+' );
-};
+
 /**
  * Sends a message over the socket. Sending happens immediatly,
  * conflation takes place on a higher level
@@ -139,7 +135,12 @@ TcpConnection.prototype._onClose = function() {
  * message parameter should always be a string. Let's make sure that
  * no binary data / buffers get into the message pipeline though.
  * 
- *
+ * IMPORTANT: There is no guarantee that this method is invoked for complete
+ * messages only. Especially under heavy load packets are written as quickly
+ * as possible. Therefor every message ends with a MESSAGE_SEPERATOR charactor
+ * and its this methods responsibility to buffer and concatenate the messages
+ * accordingly
+ * 
  * @param   {String} packet
  *
  * @private
@@ -158,14 +159,18 @@ TcpConnection.prototype._onData = function( packet ) {
 
 	var message;
 
+	// Incomplete message, write to buffer
 	if( packet.charAt( packet.length - 1 ) !== C.MESSAGE_SEPERATOR ) {
 		this._messageBuffer += packet;
 		return;
 	}
 	
+	// Message that completes previously received message
 	if( this._messageBuffer.length !== 0 ) {
 		message = this._messageBuffer + packet;
 		this._messageBuffer = '';
+
+	// Complete message
 	} else {
 		message = packet;
 	}
