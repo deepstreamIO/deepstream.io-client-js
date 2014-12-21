@@ -5,6 +5,11 @@ var proxyquire = require( 'proxyquire' ).noCallThru(),
 	Connection = proxyquire( '../../../src/message/connection', { '../tcp/tcp-connection': TcpConnectionMock } ),
 	clientMock = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,
+	url = 'somehost:4444',
+	options = { 
+		maxMessagesPerPacket: 100,
+		timeBetweenSendingQueuedPackages: 10
+	},
 	clientConnectionStateChangeCount;
 
 clientMock.on( 'connectionStateChanged', function(){
@@ -19,7 +24,7 @@ describe('connects - happy path', function(){
 	clientConnectionStateChangeCount = 0;
 
 	it( 'creates the connection', function(){
-		connection = new Connection( clientMock );
+		connection = new Connection( clientMock, url, options );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 	});
 
@@ -33,14 +38,14 @@ describe('connects - happy path', function(){
 	it( 'sends auth parameters', function(){
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 		connection.authenticate({ user: 'Wolfram' }, authCallback );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 		expect( clientConnectionStateChangeCount ).toBe( 2 );
 		expect( authCallback ).not.toHaveBeenCalled();
 	});
 
 	it( 'processes the authentication response', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|A' ) );
+		connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
 		expect( authCallback ).toHaveBeenCalledWith( true );
 		expect( clientConnectionStateChangeCount ).toBe( 3 );
@@ -49,18 +54,7 @@ describe('connects - happy path', function(){
 	it( 'sends individual messages', function( done ){
 		connection.sendMsg( 'RECORD', 'S', [ 'test1' ] );
 		setTimeout(function(){
-			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'RECORD|S|test1' ) );
-			done();
-		}, 10 );
-	});
-
-	it( 'batches multiple messages', function( done ){
-		connection.sendMsg( 'RECORD', 'S', [ 'test2' ] );
-		connection.sendMsg( 'RECORD', 'S', [ 'test3' ] );
-
-		setTimeout(function(){
-			var expectedResult = msg( 'RECORD|S|test2' ) + String.fromCharCode( 30 ) + msg( 'RECORD|S|test3' );
-			expect( connection._endpoint.lastSendMessage ).toBe( expectedResult );
+			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'RECORD|S|test1+' ) );
 			done();
 		}, 10 );
 	});
@@ -78,7 +72,7 @@ describe( 'buffers messages whilst connection is closed', function(){
     var connection;
     
     it( 'creates the connection', function(){
-		connection = new Connection( clientMock );
+		connection = new Connection( clientMock, url, options );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 	});
@@ -104,11 +98,11 @@ describe( 'buffers messages whilst connection is closed', function(){
 	
 	it( 'tries to send messages whilst authenticating', function( done ) {
 	    connection.authenticate({ user: 'Wolfram' }, function(){} );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 		connection.sendMsg( 'RECORD', 'S', ['rec3'] );
 		setTimeout(function() {
-			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}' ) );
+			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
 			done();
 		}, 10);
 	});
@@ -118,7 +112,7 @@ describe( 'buffers messages whilst connection is closed', function(){
 		expect( connection.getState() ).toBe( 'OPEN' );
 		
 		setTimeout(function() {
-			var expected = msg( 'RECORD|S|rec1', 'RECORD|S|rec2', 'RECORD|S|rec3' );
+			var expected = msg( 'RECORD|S|rec1', 'RECORD|S|rec2', 'RECORD|S|rec3+' );
 			expect( connection._endpoint.lastSendMessage ).toBe( expected );
 			done();
 		}, 10);

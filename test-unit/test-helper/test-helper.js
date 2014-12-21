@@ -4,7 +4,10 @@ exports.msg = function( input ) {
 	var result = [], i;
 	
 	for( i = 0; i < arguments.length; i++ ) {
-		result.push( arguments[ i ].replace( /\|/g, C.MESSAGE_PART_SEPERATOR ) );
+		result.push( arguments[ i ]
+			.replace( /\|/g, C.MESSAGE_PART_SEPERATOR ) 
+			.replace( /\+/g, C.MESSAGE_SEPERATOR ) 
+		);
 	}
 	
 	return result.join( C.MESSAGE_SEPERATOR );
