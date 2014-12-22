@@ -9,6 +9,7 @@ var events = require( 'events' ),
  */
 var TcpConnectionMock = function() {
 	this.isOpen = false;
+	this.callsToOpen = 0;
 	this.lastSendMessage = null;
 };
 
@@ -22,6 +23,10 @@ TcpConnectionMock.prototype.simulateOpen = function() {
 TcpConnectionMock.prototype.close = function() {
 	this.isOpen = false;
 	this.emit( 'close' );
+};
+
+TcpConnectionMock.prototype.open = function() {
+	this.callsToOpen++;
 };
 
 TcpConnectionMock.prototype.send = function( msg ) {
