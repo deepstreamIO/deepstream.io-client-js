@@ -62,6 +62,7 @@ RpcHandler.prototype.provide = function( name, callback ) {
  */
 RpcHandler.prototype.unprovide = function( name ) {
 	if( this._providers[ name ] ) {
+		delete this._providers[ name ];
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
