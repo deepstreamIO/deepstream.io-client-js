@@ -136,9 +136,9 @@ TcpConnection.prototype._onClose = function() {
  * no binary data / buffers get into the message pipeline though.
  * 
  * IMPORTANT: There is no guarantee that this method is invoked for complete
- * messages only. Especially under heavy load packets are written as quickly
+ * messages only. Especially under heavy load, packets are written as quickly
  * as possible. Therefor every message ends with a MESSAGE_SEPERATOR charactor
- * and its this methods responsibility to buffer and concatenate the messages
+ * and it is this methods responsibility to buffer and concatenate the messages
  * accordingly
  * 
  * @param   {String} packet
@@ -193,14 +193,14 @@ TcpConnection.prototype._getOptions = function() {
 	
 	if( this._url.indexOf( '/' ) === -1 ) {
 		parsedUrl.hostname = this._url.split( ':' )[ 0 ];
-		parsedUrl.port = parseInt( this._url.split( ':' )[ 1 ], 10 );
+		parsedUrl.port = this._url.split( ':' )[ 1 ];
 	} else {
 		parsedUrl = URL.parse( this._url );
 	}
 
 	return {
 		host: parsedUrl.hostname,
-		port: parsedUrl.port,
+		port: parseInt( parsedUrl.port, 10 ),
 		allowHalfOpen: false
 	};
 };

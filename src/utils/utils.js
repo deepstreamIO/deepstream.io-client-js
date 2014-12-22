@@ -1,5 +1,5 @@
 exports.isNode = function() {
-	return typeof process !== 'undefined' && process.version;
+	return typeof process !== 'undefined' && process.toString() === '[object process]';
 };
 
 exports.nextTick = function( fn ) {

@@ -27,14 +27,13 @@ var C = require( './constants/constants' ),
 var Client = function( url, options ) {
 	this._url = url;
 	this._options = this._getOptions( options || {} );
-
+	
 	this._connection = new Connection( this, this._url, this._options );
-
-	this._messageCallbacks = {};
-
+	
 	this.event = new EventHandler( this._options, this._connection );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 
+	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
@@ -95,7 +94,6 @@ Client.prototype.getConnectionState = function() {
 	return this._connection.getState();
 };
 
-
 /**
  * Returns a random string. The first block of characters
  * is a timestamp, in order to allow databases to optimize for semi-
@@ -105,19 +103,10 @@ Client.prototype.getConnectionState = function() {
  * @returns {String} unique id
  */
 Client.prototype.getUid = function() {
-	var f = function() {
-		return (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
-	};
+	var timestamp = (new Date()).getTime().toString(36),
+		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 	
-	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
-};
-
-Client.prototype.startBatch = function() {
-	this._connection.startBatch();
-};
-
-Client.prototype.endBatch = function() {
-	this._connection.endBatch();
+	return timestamp + '-' + randomString;
 };
 
 /**
@@ -178,6 +167,15 @@ Client.prototype._$onError = function( topic, event, msg ) {
 	}
 };
 
+/**
+ * Passes generic messages from the error topic
+ * to the _$onError handler
+ * 
+ * @param {Object} errorMessage parsed deepstream error message
+ * 
+ * @private
+ * @returns {void}
+ */
 Client.prototype._onErrorMessage = function( errorMessage ) {
 	this._$onError( errorMessage.topic, errorMessage.data[ 0 ], errorMessage.data[ 1 ] );
 };
