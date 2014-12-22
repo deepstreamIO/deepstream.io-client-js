@@ -46,7 +46,10 @@ RpcResponse.prototype.ack = function() {
  * @returns	{void}
  */
 RpcResponse.prototype.reject = function() {
-	
+	this.autoAck = false;
+	this._isComplete = true;
+	this._isAcknowledged = true;
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ this._name, this._correlationId ] );
 };
 
 /**
