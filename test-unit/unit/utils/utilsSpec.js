@@ -1,0 +1,58 @@
+var utils = require( '../../../src/utils/utils' );
+
+describe( 'deepEquals', function(){
+
+	it( 'compares two primitive values', function(){
+		var a = 'A',
+			b = 'B';
+		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});
+
+	it( 'compares two different simple objects', function(){
+		var a = { name: 'Wolfram' },
+			b = { name: 'Egon' };
+		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});
+
+	it( 'compares two equal simple objects', function(){
+		var a = { name: 'Wolfram' },
+			b = { name: 'Wolfram' };
+		expect( utils.deepEquals( a, b ) ).toBe( true );
+	});
+
+	it( 'compares two different arrays', function(){
+		var a = [ 'a', 'b' ],
+			b = [ 'a', 'c' ];
+		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});
+
+	it( 'compares two equal arrays', function(){
+		var a = [ 'a', 'b' ],
+			b = [ 'a', 'b' ];
+		expect( utils.deepEquals( a, b ) ).toBe( true );
+	});
+
+	it( 'compares two different complex objects', function(){
+		var a = { x: 'y', a: [ 'b', { q: 'f' } ] },
+			b = { x: 'y', a: [ 'b', { q: 'x' } ] };
+		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});
+
+	it( 'compares two equal complex objects', function(){
+		var a = { x: 'y', a: [ 'b', { q: 'f' } ] },
+			b = { x: 'y', a: [ 'b', { q: 'f' } ] };
+		expect( utils.deepEquals( a, b ) ).toBe( true );
+	});
+
+	it( 'a complex object and a primitive', function(){
+		var a = { x: 'y', a: [ 'b', { q: 'f' } ] },
+			b = 44;
+		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});
+
+	it( 'handles undefined', function(){
+		var a = undefined, // jshint ignore:line
+			b = { x: 'y', a: [ 'b', { q: 'f' } ] };
+		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});
+});
