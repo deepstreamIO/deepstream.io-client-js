@@ -1,7 +1,7 @@
 var utils = require( '../utils/utils' );
 
-var JsonPath = function( data, path ) {
-	this._data = data;
+var JsonPath = function( record, path ) {
+	this._record = record;
 	this._path = path;
 	this._tokens = [];
 
@@ -12,7 +12,7 @@ JsonPath.prototype._splitRegExp = /[\.\[\]]/g;
 JsonPath.prototype._asterisk = '*';
 
 JsonPath.prototype.getValue = function() {
-	var node = this._data,
+	var node = this._record._$data,
 		i;
 
 	for( i = 0; i < this._tokens.length; i++ ) {
@@ -27,7 +27,7 @@ JsonPath.prototype.getValue = function() {
 };
 
 JsonPath.prototype.setValue = function( value ) {
-	var node = this._data,
+	var node = this._record._$data,
 		i;
 
 

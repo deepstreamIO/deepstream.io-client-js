@@ -71,6 +71,10 @@ ViewModel.prototype.makeAddTwoRpc = function() {
 	}.bind( this ) );
 };
 
+ViewModel.prototype.getSomeUserRecord = function() {
+	window.someRecord = this._client.record.getRecord( 'someUser' );
+};
+
 ViewModel.prototype._onLoginResult = function( result, errorEvent, errorMessage ) {
 
 };

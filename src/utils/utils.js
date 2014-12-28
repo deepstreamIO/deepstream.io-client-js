@@ -45,3 +45,27 @@ exports.deepEquals = function( objA, objB ) {
 
 	return isEqual;
 };
+
+exports.shallowCopy = function( obj ) {
+	if( typeof obj !== OBJECT ) {
+		return obj;
+	}
+
+	var copy, i;
+
+	if( obj instanceof Array ) {
+		copy = [];
+
+		for( i = 0; i < obj.length; i++ ) {
+			copy[ i ] = obj[ i ];
+		}
+	} else {
+		copy = {};
+
+		for( i in obj ) {
+			copy[ i ] = obj[ i ];
+		}
+	}
+
+	return copy;
+};

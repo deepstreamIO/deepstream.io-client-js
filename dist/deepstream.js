@@ -6290,6 +6290,7 @@ var C = _dereq_( './constants/constants' ),
 	Connection = _dereq_( './message/connection' ),
 	EventHandler = _dereq_( './event/event-handler' ),
 	RpcHandler = _dereq_( './rpc/rpc-handler' ),
+	RecordHandler = _dereq_( './record/record-handler' ),
 	defaultOptions = _dereq_( './default-options' );
 
 /**
@@ -6314,17 +6315,18 @@ var C = _dereq_( './constants/constants' ),
 var Client = function( url, options ) {
 	this._url = url;
 	this._options = this._getOptions( options || {} );
-
+	
 	this._connection = new Connection( this, this._url, this._options );
-
-	this._messageCallbacks = {};
-
+	
 	this.event = new EventHandler( this._options, this._connection );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
+	this.record = new RecordHandler( this._options, this._connection, this );
 
+	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
-	this._messageCallbacks[ C.TOPIC.ERROR ] = this._$onError.bind( this );
+	this._messageCallbacks[ C.TOPIC.RECORd ] = this.record._$handle.bind( this.rpc );
+	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 
 Emitter( Client.prototype );
@@ -6382,7 +6384,6 @@ Client.prototype.getConnectionState = function() {
 	return this._connection.getState();
 };
 
-
 /**
  * Returns a random string. The first block of characters
  * is a timestamp, in order to allow databases to optimize for semi-
@@ -6392,19 +6393,10 @@ Client.prototype.getConnectionState = function() {
  * @returns {String} unique id
  */
 Client.prototype.getUid = function() {
-	var f = function() {
-		return (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
-	};
+	var timestamp = (new Date()).getTime().toString(36),
+		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 	
-	return (new Date()).getTime().toString(36) + '-' + f() + '-' + f();
-};
-
-Client.prototype.startBatch = function() {
-	this._connection.startBatch();
-};
-
-Client.prototype.endBatch = function() {
-	this._connection.endBatch();
+	return timestamp + '-' + randomString;
 };
 
 /**
@@ -6466,6 +6458,19 @@ Client.prototype._$onError = function( topic, event, msg ) {
 };
 
 /**
+ * Passes generic messages from the error topic
+ * to the _$onError handler
+ * 
+ * @param {Object} errorMessage parsed deepstream error message
+ * 
+ * @private
+ * @returns {void}
+ */
+Client.prototype._onErrorMessage = function( errorMessage ) {
+	this._$onError( errorMessage.topic, errorMessage.data[ 0 ], errorMessage.data[ 1 ] );
+};
+
+/**
  * Creates a new options map by extending default
  * options with the passed in options
  *
@@ -6498,7 +6503,7 @@ Client.prototype._getOptions = function( options ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./default-options":"c:\\dev\\deepstream.io-client-js\\src\\default-options.js","./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","./rpc/rpc-handler":"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
+},{"./constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./default-options":"c:\\dev\\deepstream.io-client-js\\src\\default-options.js","./event/event-handler":"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js","./message/connection":"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js","./record/record-handler":"c:\\dev\\deepstream.io-client-js\\src\\record\\record-handler.js","./rpc/rpc-handler":"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js":[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -6534,6 +6539,7 @@ exports.EVENT.CONNECTION_STATE_CHANGED = 'connectionStateChanged';
 exports.EVENT.ACK_TIMEOUT = 'ACK_TIMEOUT';
 exports.EVENT.RESPONSE_TIMEOUT = 'RESPONSE_TIMEOUT';
 exports.EVENT.UNSOLICITED_MESSAGE = 'UNSOLICITED_MESSAGE';
+exports.EVENT.MESSAGE_PARSE_ERROR = 'MESSAGE_PARSE_ERROR';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';
@@ -6587,7 +6593,7 @@ module.exports = {
 	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
 	 * 											no Ack-message has been received
 	 */
-	 rpcAckTimeout: 2000,
+	 rpcAckTimeout: 6000,
 	 
 	 /**
 	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
@@ -6600,6 +6606,22 @@ module.exports = {
 	 *                                      	to a record before an error is thrown
 	 */
 	 subscriptionTimeout: 2000,
+
+	 /**
+	  * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
+	  *                                      	time, the deepstream client will try to split them into smaller packets and send
+	  *                                      	these every <timeBetweenSendingQueuedPackages> ms.
+	  *                                      	
+	  *                                       	This parameter specifies the number of messages after which deepstream sends the
+	  *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
+	  *                                      	
+	  */
+	 maxMessagesPerPacket: 100,
+
+	 /**
+	  * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
+	  */
+	 timeBetweenSendingQueuedPackages: 16,
 
 	/************************************************
 	* Engine.io										*
@@ -6684,15 +6706,37 @@ module.exports = {
 };
 },{}],"c:\\dev\\deepstream.io-client-js\\src\\event\\event-handler.js":[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
+	messageParser = _dereq_( '../message/message-parser' ),
 	C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
+/**
+ * This class handles incoming and outgoing messages in relation
+ * to deepstream events. It basically acts like an event-hub that's
+ * replicated across all connected clients.
+ *
+ * @param {Object} options    deepstream options
+ * @param {Connection} connection
+ *
+ * @public
+ * @constructor
+ */
 var EventHandler = function( options, connection ) {
 	this._options = options;
 	this._connection = connection;
 	this._emitter = new EventEmitter();
 };
 
+/**
+ * Subscribe to an event. This will receive both locally emitted events
+ * as well as events emitted by other connected clients.
+ *
+ * @param   {String}   eventName
+ * @param   {Function} callback
+ *
+ * @public
+ * @returns {void}
+ */
 EventHandler.prototype.subscribe = function( eventName, callback ) {
 	if( !this._emitter.hasListeners( eventName ) ) {
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
@@ -6701,6 +6745,17 @@ EventHandler.prototype.subscribe = function( eventName, callback ) {
 	this._emitter.on( eventName, callback );
 };
 
+/**
+ * Removes a callback for a specified event. If all callbacks
+ * for an event have been removed, the server will be notified
+ * that the client is unsubscribed as a listener
+ *
+ * @param   {String}   eventName
+ * @param   {Function} callback
+ *
+ * @public
+ * @returns {void}
+ */
 EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 	this._emitter.off( eventName, callback );
 	
@@ -6709,24 +6764,41 @@ EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 	}
 };
 
+/**
+ * Emits an event locally and sends a message to the server to 
+ * broadcast the event to the other connected clients
+ *
+ * @param   {String} name 
+ * @param   {Mixed} data will be serialized and deserialized to its original type.
+ *
+ * @public
+ * @returns {void}
+ */
 EventHandler.prototype.emit = function( name, data ) {
-	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, data ] );
+	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
 	this._emitter.emit( name, data );
 };
 
+/**
+ * Handles incoming messages from the server
+ *
+ * @param   {Object} message parsed deepstream message
+ *
+ * @package privat
+ * @returns {void}
+ */
 EventHandler.prototype._$handle = function( message ) {
 	if( message.action === C.ACTIONS.EVENT ) {
 		if( message.data && message.data.length === 2 ) {
-			this._emitter.emit( message.data[ 0 ], message.data[ 1 ] );
+			this._emitter.emit( message.data[ 0 ], messageParser.convertTyped( message.data[ 1 ] ) );
 		} else {
 			this._emitter.emit( message.data[ 0 ] );
 		}
-		
 	}
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","../message/message-parser":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-parser.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\message\\connection.js":[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -6751,10 +6823,12 @@ var Connection = function( client, url, options ) {
 	this._authParams = null;
 	this._authCallback = null;
 	this._deliberateClose = false;
-	this._batching = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
 	this._reconnectionAttempt = 0;
+	this._currentPacketMessageCount = 0;
+	this._sendNextPacketTimeout = null;
+	this._currentMessageResetTimeout = null;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 
@@ -6829,19 +6903,21 @@ Connection.prototype.sendMsg = function( topic, action, data ) {
  */
 Connection.prototype.send = function( message ) {
 	this._queuedMessages.push( message );
+	this._currentPacketMessageCount++;
 
-	if( this._state === C.CONNECTION_STATE.OPEN && this._batching === false ) {
+	if( this._currentMessageResetTimeout === null ) {
+		this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
+	}
 
-		/*
-		 * Turns out that this makes all the diference in the world.
-		 * setTimeout with 0ms in node will be invoked after ~12ms
-		 * whereas in the browser it will be invoked immediatly
-		 * after the current computation is finished.
-		 *
-		 * process.nextTick however will be invoked in node like
-		 * setTimeout(fn, 0) in the browser
-		 */
+	if( this._state === C.CONNECTION_STATE.OPEN && 
+		this._queuedMessages.length < this._options.maxMessagesPerPacket &&
+		this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
 		this._sendQueuedMessages();
+	}
+
+	if( this._queuedMessages.length >= this._options.maxMessagesPerPacket &&
+		this._sendNextPacketTimeout === null ) {
+		this._queueNextPacket();
 	}
 };
 
@@ -6858,13 +6934,22 @@ Connection.prototype.close = function() {
 	this._endpoint.close();
 };
 
-Connection.prototype.startBatch = function() {
-	this._batching = true;
-};
-
-Connection.prototype.endBatch = function() {
-	this._batching = false;
-	this._sendQueuedMessages();
+/**
+ * When the implementation tries to send a large
+ * number of messages in one execution thread, the first
+ * <maxMessagesPerPacket> are send straight away.
+ *
+ * _currentPacketMessageCount keeps track of how many messages
+ * went into that first packet. Once this number has been exceeded
+ * the remaining messages are written to a queue and this message
+ * is invoked on a timeout to reset the count.
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._resetCurrentMessageCount = function() {
+	this._currentPacketMessageCount = 0;
+	this._currentMessageResetTimeout = null;
 };
 
 /**
@@ -6881,11 +6966,31 @@ Connection.prototype._sendQueuedMessages = function() {
 	}
 
 	if( this._queuedMessages.length === 0 ) {
+		this._sendNextPacketTimeout = null;
 		return;
 	}
 
-	this._endpoint.send( this._queuedMessages.join( C.MESSAGE_SEPERATOR ) );
-	this._queuedMessages = [];
+	var message = this._queuedMessages.splice( 0, this._options.maxMessagesPerPacket ).join( '' );
+
+	if( this._queuedMessages.length !== 0 ) {
+		this._queueNextPacket();
+	}
+
+	this._endpoint.send( message );
+};
+
+/**
+ * Schedules the next packet whilst the connection is under
+ * heavy load.
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._queueNextPacket = function() {
+	var fn = this._sendQueuedMessages.bind( this ),
+		delay = this._options.timeBetweenSendingQueuedPackages;
+
+	this._sendNextPacketTimeout = setTimeout( fn, delay );
 };
 
 /**
@@ -7042,7 +7147,7 @@ Connection.prototype._tryReconnect = function() {
 
 	if( this._reconnectionAttempt < this._options.maxReconnectAttempts ) {
 		this._setState( C.CONNECTION_STATE.RECONNECTING );
-		setTimeout(
+		this._reconnectTimeout = setTimeout(
 			this._tryOpen.bind( this ),
 			this._options.reconnectIntervalIncrement * this._reconnectionAttempt 
 		);
@@ -7111,7 +7216,7 @@ exports.getMsg = function( topic, action, data ) {
 		}
 	}
 
-	return sendData.join( SEP );
+	return sendData.join( SEP ) + C.MESSAGE_SEPERATOR;
 };
 
 /**
@@ -7196,7 +7301,9 @@ MessageParser.prototype.parse = function( message ) {
 		i;
 
 	for( i = 0; i < rawMessages.length; i++ ) {
-		parsedMessages.push( this._parseMessage( rawMessages[ i ] ) );
+		if( rawMessages[ i ].length > 2 ) {
+			parsedMessages.push( this._parseMessage( rawMessages[ i ] ) );
+		}
 	}
 
 	return parsedMessages;
@@ -7211,7 +7318,7 @@ MessageParser.prototype.parse = function( message ) {
  * @public
  * @returns {Mixed} original value
  */
-MessageParser.prototype.convertTyped = function( value ) {
+MessageParser.prototype.convertTyped = function( value, client ) {
 	var type = value.charAt( 0 );
 	
 	if( type === C.TYPES.STRING ) {
@@ -7219,7 +7326,11 @@ MessageParser.prototype.convertTyped = function( value ) {
 	}
 	
 	if( type === C.TYPES.OBJECT ) {
-		return JSON.parse( value.substr( 1 ) );
+		try{
+			return JSON.parse( value.substr( 1 ) );
+		} catch( e ) {
+			client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')' );
+		}
 	}
 	
 	if( type === C.TYPES.NUMBER ) {
@@ -7242,7 +7353,7 @@ MessageParser.prototype.convertTyped = function( value ) {
 		return undefined;
 	}
 	
-	throw new Error( 'Can\'t convert typed ' + value );
+	client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')' );
 };
 
 /**
@@ -7295,7 +7406,227 @@ MessageParser.prototype._parseMessage = function( message ) {
 };
 
 module.exports = new MessageParser();
-},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\json-path.js":[function(_dereq_,module,exports){
+var utils = _dereq_( '../utils/utils' );
+
+var JsonPath = function( data, path ) {
+	this._data = data;
+	this._path = path;
+	this._tokens = [];
+
+	this._tokenize();
+};
+
+JsonPath.prototype._splitRegExp = /[\.\[\]]/g;
+JsonPath.prototype._asterisk = '*';
+
+JsonPath.prototype.getValue = function() {
+	var node = this._data,
+		i;
+
+	for( i = 0; i < this._tokens.length; i++ ) {
+		if( node[ this._tokens[ i ] ] !== undefined ) {
+			node = node[ this._tokens[ i ] ];
+		} else {
+			return undefined;
+		}
+	}
+
+	return node;
+};
+
+JsonPath.prototype.setValue = function( value ) {
+	var node = this._data,
+		i;
+
+
+	for( i = 0; i < this._tokens.length - 1; i++ ) {
+		if( node[ this._tokens[ i ] ] !== undefined ) {
+			node = node[ this._tokens[ i ] ];
+		}
+		else if( this._tokens[ i + 1 ] && !isNaN( this._tokens[ i + 1 ] ) ){
+			node = node[ this._tokens[ i ] ] = [];
+		}
+		else {
+			node = node[ this._tokens[ i ] ] = {};
+		}
+	}
+
+	node[ this._tokens[ i ] ] = value;
+};
+
+JsonPath.prototype._tokenize = function() {
+	var parts = this._path.split( this._splitRegExp ),
+		part,
+		i;
+
+	for( i = 0; i < parts.length; i++ ) {
+		part = utils.trim( parts[ i ] );
+
+		if( part.length === 0 ) {
+			continue;
+		}
+
+		if( !isNaN( part ) ) {
+			this._tokens.push( parseInt( part, 10 ) );
+			continue;
+		}
+
+		if( part === this._asterisk ) {
+			this._tokens.push( true );
+			continue;
+		}
+
+		this._tokens.push( part );
+	}
+};
+
+module.exports = JsonPath;
+},{"../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record-handler.js":[function(_dereq_,module,exports){
+var Record = _dereq_( './record' );
+
+var RecordHandler = function( options, connection, client ) {
+	this._options = options;
+	this._connection = connection;
+	this._client = client;
+	this._records = {};
+};
+
+RecordHandler.prototype.getRecord = function( name, options ) {
+	if( !this._records[ name ] ) {
+		this._records[ name ] = new Record( name, options || {}, this._connection );
+	}
+
+	return this._records[ name ];
+};
+
+RecordHandler.prototype.getList = function( name, options ) {
+
+};
+
+RecordHandler.prototype.getAnonymousRecord = function( name, options ) {
+
+};
+
+RecordHandler.prototype.listenForRequests = function( pattern, callback ) {
+
+};
+
+RecordHandler.prototype._$handle = function( message ) {
+
+};
+
+module.exports = RecordHandler;
+},{"./record":"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js":[function(_dereq_,module,exports){
+var JsonPath = _dereq_( './json-path' ),
+	utils = _dereq_( '../utils/utils' ),
+	EventEmitter = _dereq_( 'component-emitter' ),
+	ALL_EVENT = 'ALL_EVENT';
+
+var Record = function( name, options, connection ) {
+	this.name = name;
+	this._options = options;
+	this._connection = connection;
+	this.isReady = false;
+	this._data = {};
+	this._paths = {};
+	this._oldPathValues = null;
+	this._eventEmitter = new EventEmitter();
+};
+
+Record.prototype.get = function( path ) {
+	var value;
+
+	if( path ) {
+		value = this._getPath( path ).getValue();
+	} else {
+		value = this._data;
+	}
+
+	return utils.shallowCopy( value );
+};
+
+Record.prototype.set = function( pathOrData, data ) {
+	this._beginChange();
+
+	if( arguments.length === 1 ) {
+		this._data = pathOrData;
+	} else {
+		this._getPath( pathOrData ).setValue( data );
+	}
+	
+	this._sendChange();
+	this._completeChange();
+};
+
+Record.prototype.subscribe = function( pathOrCallback, callback ) {
+	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
+	this._eventEmitter.on( event, callback );
+};
+
+Record.prototype.unsubscribe = function( path, callback ) {
+	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
+	this._eventEmitter.off( event, callback );
+};
+
+Record.prototype.delete = function() {
+
+};
+
+Record.prototype.discard = function() {
+
+};
+
+Record.prototype._getPath = function( path ) {
+	if( !this._paths[ path ] ) {
+		this._paths[ path ] = new JsonPath( this._data, path );
+	}
+
+	return this._paths[ path ];
+};
+
+Record.prototype._sendChange = function() {
+
+};
+
+Record.prototype._beginChange = function() {
+	// This is very specific to the implementation of component-emitter.
+	if( !this._eventEmitter._callbacks ) {
+		return;
+	}
+
+	var paths = Object.keys( this._eventEmitter._callbacks ),
+		i;
+
+	this._oldPathValues = {};
+
+	for( i = 0; i < paths.length; i++ ) {
+		this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
+	}
+};
+
+Record.prototype._completeChange = function() {
+	this._eventEmitter.emit( ALL_EVENT );
+
+	if( this._oldPathValues === null ) {
+		return;
+	}
+
+	var path, currentValue;
+
+	for( path in this._oldPathValues ) {
+		currentValue = this._getPath( path ).getValue();
+
+		if( currentValue !== this._oldPathValues[ path ] ) {
+			this._eventEmitter.emit( path, currentValue );
+		}
+	}
+
+	this._oldPathValues = null;
+};
+
+module.exports = Record;
+},{"../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js","./json-path":"c:\\dev\\deepstream.io-client-js\\src\\record\\json-path.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' ),
 	Rpc = _dereq_( './rpc' ),
@@ -7360,6 +7691,7 @@ RpcHandler.prototype.provide = function( name, callback ) {
  */
 RpcHandler.prototype.unprovide = function( name ) {
 	if( this._providers[ name ] ) {
+		delete this._providers[ name ];
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
@@ -7379,7 +7711,7 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
 		
-	this._rpcs[ uid ] = new Rpc( this._options, callback );
+	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
 };
 
@@ -7393,11 +7725,11 @@ RpcHandler.prototype.make = function( name, data, callback ) {
  * @private
  * @returns {Rpc}
  */
-RpcHandler.prototype._getRpc = function( correlationId, rpcName ) {
+RpcHandler.prototype._getRpc = function( correlationId, rpcName, rawMessage ) {
 	var rpc = this._rpcs[ correlationId ];
 
 	if( !rpc ) {
-		this._client._$onError( C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rpcName );
+		this._client._$onError( C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rawMessage );
 		return null;
 	}
 
@@ -7418,9 +7750,13 @@ RpcHandler.prototype._getRpc = function( correlationId, rpcName ) {
 RpcHandler.prototype._respondToRpc = function( message ) {
 	var name = message.data[ 0 ],
 		correlationId = message.data[ 1 ],
-		data =  message.data[ 2 ] ? messageParser.convertTyped( message.data[ 2 ] ) : null,
+		data = null,
 		response;
 		
+	if( message.data[ 2 ] ) {
+		data = messageParser.convertTyped( message.data[ 2 ], this._client );
+	}
+
 	if( this._providers[ name ] ) {
 		response = new RpcResponse( this._connection,name, correlationId );
 		this._providers[ name ]( data, response );
@@ -7479,7 +7815,7 @@ RpcHandler.prototype._$handle = function( message ) {
 	/*
 	* Retrieve the rpc object
 	*/
-	rpc = this._getRpc( correlationId, rpcName );
+	rpc = this._getRpc( correlationId, rpcName, message.raw );
 	if( rpc === null ) {
 		return;
 	}
@@ -7549,7 +7885,10 @@ RpcResponse.prototype.ack = function() {
  * @returns	{void}
  */
 RpcResponse.prototype.reject = function() {
-	
+	this.autoAck = false;
+	this._isComplete = true;
+	this._isAcknowledged = true;
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ this._name, this._correlationId ] );
 };
 
 /**
@@ -7601,12 +7940,14 @@ var C = _dereq_( '../constants/constants' ),
  *
  * @param {Object}   options  deepstream client config
  * @param {Function} callback the function that will be called once the request is complete or failed
+ * @param {Client} client
  *
  * @constructor
  */
-var Rpc = function( options, callback ) {
+var Rpc = function( options, callback, client ) {
 	this._options = options;
 	this._callback = callback;
+	this._client = client;
 	this._ackTimeout = setTimeout( this.error.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.rpcAckTimeout );
 	this._responseTimeout = setTimeout( this.error.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
 };
@@ -7631,7 +7972,7 @@ Rpc.prototype.ack = function() {
  * @returns {void}
  */
 Rpc.prototype.respond = function( data ) {
-	var convertedData = messageParser.convertTyped( data );
+	var convertedData = messageParser.convertTyped( data, this._client );
 	this._callback( null, convertedData );
 	this._complete();
 };
@@ -7670,7 +8011,8 @@ module.exports = Rpc;
 var net = _dereq_( 'net' ),
 	URL = _dereq_( 'url' ),
 	events = _dereq_( 'events' ),
-	util = _dereq_( 'util' );
+	util = _dereq_( 'util' ),
+	C = _dereq_( '../constants/constants' );
 
 /**
  * An alternative to the engine.io connection for backend processes (or 
@@ -7689,6 +8031,7 @@ var net = _dereq_( 'net' ),
 var TcpConnection = function( url ) {
 	this._socket = null;
 	this._url = url;
+	this._messageBuffer = '';
 	process.on( 'exit', this._destroy.bind( this ) );
 	this.open();
 	this._isOpen = false;
@@ -7715,11 +8058,7 @@ TcpConnection.prototype.open = function() {
 	this._socket.on( 'connect', this._onConnect.bind( this ) );
 	this._socket.on( 'close', this._onClose.bind( this ) );
 };
-showChars = function( input ) {
-	return input
-		.replace( new RegExp( String.fromCharCode( 31 ), 'g' ), '|' )
-		.replace( new RegExp( String.fromCharCode( 30 ), 'g' ), '+' );
-};
+
 /**
  * Sends a message over the socket. Sending happens immediatly,
  * conflation takes place on a higher level
@@ -7730,7 +8069,7 @@ showChars = function( input ) {
  * @returns {void}
  */
 TcpConnection.prototype.send = function( message ) {
-	if( this._isOpen === true ) {console.log( 'SENDING', showChars( message ) );
+	if( this._isOpen === true ) {
 		this._socket.write( message );
 	} else {
 		this.emit( 'error', 'attempt to send message on closed socket: ' + message );
@@ -7806,21 +8145,44 @@ TcpConnection.prototype._onClose = function() {
  * message parameter should always be a string. Let's make sure that
  * no binary data / buffers get into the message pipeline though.
  * 
- *
- * @param   {String} message
+ * IMPORTANT: There is no guarantee that this method is invoked for complete
+ * messages only. Especially under heavy load, packets are written as quickly
+ * as possible. Therefor every message ends with a MESSAGE_SEPERATOR charactor
+ * and it is this methods responsibility to buffer and concatenate the messages
+ * accordingly
+ * 
+ * @param   {String} packet
  *
  * @private
  * @returns {void}
  */
-TcpConnection.prototype._onData = function( message ) {
-	if( typeof message !== 'string' ) {
+TcpConnection.prototype._onData = function( packet ) {
+	if( typeof packet !== 'string' ) {
 		this.emit( 'error', 'received non-string message from socket' );
 		return;
 	}
 
 	if( this._isOpen === false ) {
-		this.emit( 'error', 'received message on half closed socket: ' + message );
+		this.emit( 'error', 'received message on half closed socket: ' + packet );
 		return;
+	}
+
+	var message;
+
+	// Incomplete message, write to buffer
+	if( packet.charAt( packet.length - 1 ) !== C.MESSAGE_SEPERATOR ) {
+		this._messageBuffer += packet;
+		return;
+	}
+	
+	// Message that completes previously received message
+	if( this._messageBuffer.length !== 0 ) {
+		message = this._messageBuffer + packet;
+		this._messageBuffer = '';
+
+	// Complete message
+	} else {
+		message = packet;
 	}
 
 	this.emit( 'message', message );
@@ -7841,14 +8203,14 @@ TcpConnection.prototype._getOptions = function() {
 	
 	if( this._url.indexOf( '/' ) === -1 ) {
 		parsedUrl.hostname = this._url.split( ':' )[ 0 ];
-		parsedUrl.port = parseInt( this._url.split( ':' )[ 1 ], 10 );
+		parsedUrl.port = this._url.split( ':' )[ 1 ];
 	} else {
 		parsedUrl = URL.parse( this._url );
 	}
 
 	return {
 		host: parsedUrl.hostname,
-		port: parsedUrl.port,
+		port: parseInt( parsedUrl.port, 10 ),
 		allowHalfOpen: false
 	};
 };
@@ -7867,10 +8229,10 @@ TcpConnection.prototype._destroy = function() {
 module.exports = TcpConnection;
 
 }).call(this,_dereq_('_process'))
-},{"_process":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\process\\browser.js","events":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\events\\events.js","net":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\lib\\_empty.js","url":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\url\\url.js","util":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\util\\util.js"}],"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","_process":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\process\\browser.js","events":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\events\\events.js","net":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\lib\\_empty.js","url":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\url\\url.js","util":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\util\\util.js"}],"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js":[function(_dereq_,module,exports){
 (function (process){
 exports.isNode = function() {
-	return typeof process !== 'undefined' && process.version;
+	return typeof process !== 'undefined' && process.toString() === '[object process]';
 };
 
 exports.nextTick = function( fn ) {
@@ -7879,6 +8241,66 @@ exports.nextTick = function( fn ) {
 	} else {
 		setTimeout( fn, 0 );
 	}
+};
+
+exports.trim = function( inputString ) {
+	if( inputString.trim ) {
+		return inputString.trim();
+	} else {
+		return inputString.replace( trimRegExp, '' );
+	}
+};
+
+var trimRegExp = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+
+var OBJECT = 'object';
+
+exports.deepEquals = function( objA, objB ) {
+	var isEqual = true, 
+		next;
+
+	if( typeof objA !== OBJECT ) {
+		return objA === objB;
+	}
+
+	next = function( _objA, _objB ) {
+		for( var key in _objA ) {
+			if( typeof _objA[ key ] === OBJECT ) {
+				next( _objA[ key ], _objB[ key ] );
+			} else if( _objA[ key ] !== _objB[ key ] ) {
+				isEqual = false;
+				return;
+			}
+		}
+	};
+
+	next( objA, objB );
+
+	return isEqual;
+};
+
+exports.shallowCopy = function( obj ) {
+	if( typeof obj !== OBJECT ) {
+		return obj;
+	}
+
+	var copy, i;
+
+	if( obj instanceof Array ) {
+		copy = [];
+
+		for( i = 0; i < obj.length; i++ ) {
+			copy[ i ] = obj[ i ];
+		}
+	} else {
+		copy = {};
+
+		for( i in obj ) {
+			copy[ i ] = obj[ i ];
+		}
+	}
+
+	return copy;
 };
 }).call(this,_dereq_('_process'))
 },{"_process":"c:\\dev\\deepstream.io-client-js\\node_modules\\browserify\\node_modules\\process\\browser.js"}]},{},["c:\\dev\\deepstream.io-client-js\\src\\client.js"])("c:\\dev\\deepstream.io-client-js\\src\\client.js")

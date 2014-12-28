@@ -42,7 +42,19 @@
 				</ul>
 				<button type="button" data-bind="click:login">Login</button>
 			</fieldset>
-
+			
+			<fieldset data-bind="enable:hasClient">
+				<legend>Record</legend>
+				<ul class="fields">
+					<li>
+						<label>subscribe to someUser</label>
+						<button 
+							type="button"
+							data-bind="click: getSomeUserRecord"
+							class="inline">OK</button>
+					</li>
+				</ul>
+			</fieldset>
 			<fieldset data-bind="enable:hasClient">
 				<legend>Event</legend>
 				<ul class="fields">
@@ -126,6 +138,8 @@
 					</li>
 				</ul>
 			</fieldset>
+
+			
 		</div>
 
 	</body>

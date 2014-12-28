@@ -56,3 +56,27 @@ describe( 'deepEquals', function(){
 		expect( utils.deepEquals( a, b ) ).toBe( false );
 	});
 });
+
+describe( 'shallow copy', function(){
+
+	it( 'copies primitives', function(){
+		expect( utils.shallowCopy( 'bla' ) ).toBe( 'bla' );
+		expect( utils.shallowCopy( 42 ) ).toBe( 42 );
+	});
+
+	it( 'copies arrays', function(){
+		var original = [ 'a', 'b', 2 ],
+			copy = utils.shallowCopy( original );
+		
+		expect( copy ).toEqual( original );
+		expect( copy ).not.toBe( original );
+	});
+
+	it( 'copies objects', function(){
+		var original = { firstname: 'Wolfram', lastname:' Hempel' },
+			copy = utils.shallowCopy( original );
+		
+		expect( copy ).toEqual( original );
+		expect( copy ).not.toBe( original );
+	});
+});
