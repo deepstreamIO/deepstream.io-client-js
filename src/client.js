@@ -38,7 +38,7 @@ var Client = function( url, options ) {
 	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
-	this._messageCallbacks[ C.TOPIC.RECORd ] = this.record._$handle.bind( this.rpc );
+	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 

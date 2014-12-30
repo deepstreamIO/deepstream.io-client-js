@@ -60,6 +60,18 @@ module.exports = {
 	  */
 	 timeBetweenSendingQueuedPackages: 16,
 
+	 /**
+	  * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
+	  *                                       	until an error is thrown since no ack message has been received.
+	  */
+	 recordReadAckTimeout: 1000,
+
+	 /**
+	  * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
+	  *                                       	until an error is thrown since no data has been received.
+	  */
+	 recordReadTimeout: 3000,
+
 	/************************************************
 	* Engine.io										*
 	************************************************/

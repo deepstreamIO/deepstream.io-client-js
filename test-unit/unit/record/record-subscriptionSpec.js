@@ -1,5 +1,6 @@
 var Record = require( '../../../src/record/record.js' ),
-	MockConnection = require( '../../mocks/message/connection-mock' );
+	MockConnection = require( '../../mocks/message/connection-mock' ),
+	options = { recordReadAckTimeout: 100, recordReadTimeout: 200 };
 
 describe( 'supscriptions to local record changes', function(){
 	var record,
@@ -7,7 +8,8 @@ describe( 'supscriptions to local record changes', function(){
 		connection = new MockConnection();
 
 	it( 'creates the record', function(){
-		record = new Record( 'testRecord', {}, connection );
+		record = new Record( 'testRecord', {}, connection, options );
+		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, {} ]} );
 		expect( record.get() ).toEqual( {} );
 	});
 
@@ -48,9 +50,11 @@ describe( 'supscriptions to local record changes', function(){
 	});
 
 	it( 'is called when the whole record is set', function(){
-		var record2 = new Record( 'testRecord2', {}, connection ),
+		var record2 = new Record( 'testRecord2', {}, connection, options ),
 			firstnameCb = jasmine.createSpy( 'firstname' ),
 			brotherAgeCb = jasmine.createSpy( 'brotherAge' );
+
+		record2._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, {} ]} );
 
 		record2.subscribe( 'firstname', firstnameCb );
 		record2.subscribe( 'brother.age', brotherAgeCb );

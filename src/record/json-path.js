@@ -1,4 +1,6 @@
-var utils = require( '../utils/utils' );
+var utils = require( '../utils/utils' ),
+	SPLIT_REG_EXP = /[\.\[\]]/g,
+	ASTERISK = '*';
 
 var JsonPath = function( record, path ) {
 	this._record = record;
@@ -7,9 +9,6 @@ var JsonPath = function( record, path ) {
 
 	this._tokenize();
 };
-
-JsonPath.prototype._splitRegExp = /[\.\[\]]/g;
-JsonPath.prototype._asterisk = '*';
 
 JsonPath.prototype.getValue = function() {
 	var node = this._record._$data,
@@ -47,7 +46,7 @@ JsonPath.prototype.setValue = function( value ) {
 };
 
 JsonPath.prototype._tokenize = function() {
-	var parts = this._path.split( this._splitRegExp ),
+	var parts = this._path.split( SPLIT_REG_EXP ),
 		part,
 		i;
 
@@ -63,7 +62,7 @@ JsonPath.prototype._tokenize = function() {
 			continue;
 		}
 
-		if( part === this._asterisk ) {
+		if( part === ASTERISK ) {
 			this._tokens.push( true );
 			continue;
 		}

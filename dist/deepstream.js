@@ -6325,7 +6325,7 @@ var Client = function( url, options ) {
 	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
-	this._messageCallbacks[ C.TOPIC.RECORd ] = this.record._$handle.bind( this.rpc );
+	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 
@@ -6546,6 +6546,7 @@ exports.ACTIONS.ACK = 'A';
 exports.ACTIONS.READ = 'R';
 exports.ACTIONS.CREATE = 'C';
 exports.ACTIONS.UPDATE = 'U';
+exports.ACTIONS.PATCH = 'P';
 exports.ACTIONS.DELETE = 'D';
 exports.ACTIONS.SUBSCRIBE = 'S';
 exports.ACTIONS.UNSUBSCRIBE = 'US';
@@ -6622,6 +6623,18 @@ module.exports = {
 	  * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
 	  */
 	 timeBetweenSendingQueuedPackages: 16,
+
+	 /**
+	  * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
+	  *                                       	until an error is thrown since no ack message has been received.
+	  */
+	 recordReadAckTimeout: 1000,
+
+	 /**
+	  * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
+	  *                                       	until an error is thrown since no data has been received.
+	  */
+	 recordReadTimeout: 3000,
 
 	/************************************************
 	* Engine.io										*
@@ -7407,21 +7420,20 @@ MessageParser.prototype._parseMessage = function( message ) {
 
 module.exports = new MessageParser();
 },{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\json-path.js":[function(_dereq_,module,exports){
-var utils = _dereq_( '../utils/utils' );
+var utils = _dereq_( '../utils/utils' ),
+	SPLIT_REG_EXP = /[\.\[\]]/g,
+	ASTERISK = '*';
 
-var JsonPath = function( data, path ) {
-	this._data = data;
+var JsonPath = function( record, path ) {
+	this._record = record;
 	this._path = path;
 	this._tokens = [];
 
 	this._tokenize();
 };
 
-JsonPath.prototype._splitRegExp = /[\.\[\]]/g;
-JsonPath.prototype._asterisk = '*';
-
 JsonPath.prototype.getValue = function() {
-	var node = this._data,
+	var node = this._record._$data,
 		i;
 
 	for( i = 0; i < this._tokens.length; i++ ) {
@@ -7436,7 +7448,7 @@ JsonPath.prototype.getValue = function() {
 };
 
 JsonPath.prototype.setValue = function( value ) {
-	var node = this._data,
+	var node = this._record._$data,
 		i;
 
 
@@ -7456,7 +7468,7 @@ JsonPath.prototype.setValue = function( value ) {
 };
 
 JsonPath.prototype._tokenize = function() {
-	var parts = this._path.split( this._splitRegExp ),
+	var parts = this._path.split( SPLIT_REG_EXP ),
 		part,
 		i;
 
@@ -7472,7 +7484,7 @@ JsonPath.prototype._tokenize = function() {
 			continue;
 		}
 
-		if( part === this._asterisk ) {
+		if( part === ASTERISK ) {
 			this._tokens.push( true );
 			continue;
 		}
@@ -7483,7 +7495,8 @@ JsonPath.prototype._tokenize = function() {
 
 module.exports = JsonPath;
 },{"../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record-handler.js":[function(_dereq_,module,exports){
-var Record = _dereq_( './record' );
+var Record = _dereq_( './record' ),
+	C = _dereq_( '../constants/constants' );
 
 var RecordHandler = function( options, connection, client ) {
 	this._options = options;
@@ -7492,9 +7505,10 @@ var RecordHandler = function( options, connection, client ) {
 	this._records = {};
 };
 
-RecordHandler.prototype.getRecord = function( name, options ) {
+RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
-		this._records[ name ] = new Record( name, options || {}, this._connection );
+		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options );
+		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
 	}
 
 	return this._records[ name ];
@@ -7512,27 +7526,58 @@ RecordHandler.prototype.listenForRequests = function( pattern, callback ) {
 
 };
 
-RecordHandler.prototype._$handle = function( message ) {
 
+RecordHandler.prototype._$handle = function( message ) {
+	var name;
+
+	if( message.action === C.ACTIONS.ERROR ) {
+		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
+		return;
+	}
+	
+	if( message.action === C.ACTIONS.ACK ) {
+		name = message.data[ 1 ];
+	} else {
+		name = message.data[ 0 ];
+	}
+
+	if( !this._records[ name ] ) {
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
+	} else {
+		this._records[ name ]._$onMessage( message );
+	}
 };
 
 module.exports = RecordHandler;
-},{"./record":"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js":[function(_dereq_,module,exports){
+
+RecordHandler.prototype._onRecordError = function( recordName, error ) {
+	this._client._$onError( C.TOPIC.RECORD, error, recordName );
+};
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./record":"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js":[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
+	C = _dereq_( '../constants/constants' ),
+	messageBuilder = _dereq_( '../message/message-builder' ),
 	ALL_EVENT = 'ALL_EVENT';
 
-var Record = function( name, options, connection ) {
+var Record = function( name, recordOptions, connection, options ) {
 	this.name = name;
-	this._options = options;
+	this._recordOptions = recordOptions;
 	this._connection = connection;
+	this._options = options;
 	this.isReady = false;
-	this._data = {};
+	this._$data = {};
+	this._version = null;
 	this._paths = {};
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
+	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
+	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
+	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
 };
+
+EventEmitter( Record.prototype );
 
 Record.prototype.get = function( path ) {
 	var value;
@@ -7540,22 +7585,38 @@ Record.prototype.get = function( path ) {
 	if( path ) {
 		value = this._getPath( path ).getValue();
 	} else {
-		value = this._data;
+		value = this._$data;
 	}
 
 	return utils.shallowCopy( value );
 };
 
 Record.prototype.set = function( pathOrData, data ) {
+	if( !this.isReady ) {
+		this.emit( 'error', 'Can\'t set record data for ' + this._name + '. Record not ready yet' );
+		return;
+	}
+
 	this._beginChange();
+	this._version++;
 
 	if( arguments.length === 1 ) {
-		this._data = pathOrData;
+		this._$data = pathOrData;
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
+			this.name, 
+			this._version, 
+			this._$data 
+		]);
 	} else {
 		this._getPath( pathOrData ).setValue( data );
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [ 
+			this.name, 
+			this._version, 
+			pathOrData, 
+			messageBuilder.typed( data ) 
+		]);
 	}
-	
-	this._sendChange();
+
 	this._completeChange();
 };
 
@@ -7564,7 +7625,7 @@ Record.prototype.subscribe = function( pathOrCallback, callback ) {
 	this._eventEmitter.on( event, callback );
 };
 
-Record.prototype.unsubscribe = function( path, callback ) {
+Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
 	this._eventEmitter.off( event, callback );
 };
@@ -7577,16 +7638,29 @@ Record.prototype.discard = function() {
 
 };
 
+Record.prototype._$onMessage = function( message ) {
+	if( message.action === C.ACTIONS.READ ) {
+		this._clearTimeouts();
+		this._onRead( message );
+	}
+	else if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.SUBSCRIBE ) {
+		clearTimeout( this._readAckTimeout );
+	}
+};
+
+Record.prototype._onRead = function( message ) {
+	this._version = message.data[ 1 ];
+	this._$data = message.data[ 2 ];
+	this.isReady = true;
+	this.emit( 'ready' );
+};
+
 Record.prototype._getPath = function( path ) {
 	if( !this._paths[ path ] ) {
-		this._paths[ path ] = new JsonPath( this._data, path );
+		this._paths[ path ] = new JsonPath( this, path );
 	}
 
 	return this._paths[ path ];
-};
-
-Record.prototype._sendChange = function() {
-
 };
 
 Record.prototype._beginChange = function() {
@@ -7625,8 +7699,18 @@ Record.prototype._completeChange = function() {
 	this._oldPathValues = null;
 };
 
+Record.prototype._clearTimeouts = function() {
+	clearTimeout( this._readAckTimeout );
+	clearTimeout( this._readTimeout );
+};
+
+Record.prototype._onTimeout = function( timeoutType ) {
+	this._clearTimeouts();
+	this.emit( 'error', timeoutType );
+};
+
 module.exports = Record;
-},{"../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js","./json-path":"c:\\dev\\deepstream.io-client-js\\src\\record\\json-path.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js","./json-path":"c:\\dev\\deepstream.io-client-js\\src\\record\\json-path.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' ),
 	Rpc = _dereq_( './rpc' ),

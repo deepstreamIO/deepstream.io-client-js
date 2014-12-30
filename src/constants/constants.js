@@ -40,6 +40,7 @@ exports.ACTIONS.ACK = 'A';
 exports.ACTIONS.READ = 'R';
 exports.ACTIONS.CREATE = 'C';
 exports.ACTIONS.UPDATE = 'U';
+exports.ACTIONS.PATCH = 'P';
 exports.ACTIONS.DELETE = 'D';
 exports.ACTIONS.SUBSCRIBE = 'S';
 exports.ACTIONS.UNSUBSCRIBE = 'US';
