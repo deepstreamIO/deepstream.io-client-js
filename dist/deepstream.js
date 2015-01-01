@@ -7559,6 +7559,7 @@ var JsonPath = _dereq_( './json-path' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
 	C = _dereq_( '../constants/constants' ),
 	messageBuilder = _dereq_( '../message/message-builder' ),
+	messageParser = _dereq_( '../message/message-parser' ),
 	ALL_EVENT = 'ALL_EVENT';
 
 var Record = function( name, recordOptions, connection, options ) {
@@ -7596,6 +7597,16 @@ Record.prototype.set = function( pathOrData, data ) {
 		this.emit( 'error', 'Can\'t set record data for ' + this._name + '. Record not ready yet' );
 		return;
 	}
+	
+	if( arguments.length === 2 ) {
+		if( utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
+			return;
+		}
+	} else {
+		if( utils.deepEquals( this._$data, pathOrData ) ) {
+			return;
+		}
+	}
 
 	this._beginChange();
 	this._version++;
@@ -7620,9 +7631,31 @@ Record.prototype.set = function( pathOrData, data ) {
 	this._completeChange();
 };
 
-Record.prototype.subscribe = function( pathOrCallback, callback ) {
-	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
-	this._eventEmitter.on( event, callback );
+Record.prototype.subscribe = function( pathOrCallback, callback, triggerNow ) {
+	var i, args = {};
+
+
+	for( i = 0; i < arguments.length; i++ ) {
+		if( typeof arguments[ i ] === 'string' ) {
+			args.path = arguments[ i ];
+		}
+		else if( typeof arguments[ i ] === 'function' ) {
+			args.callback = arguments[ i ];
+		}
+		else if( typeof arguments[ i ] === 'boolean' ) {
+			args.triggerNow = arguments[ i ];
+		}
+	}
+
+	this._eventEmitter.on( args.path || ALL_EVENT, callback );
+
+	if( args.triggerNow ) {
+		if( args.path ) {
+			callback( this._getPath( args.path ).getValue() );
+		} else {
+			callback( this._$data );
+		}
+	}
 };
 
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
@@ -7646,13 +7679,37 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.SUBSCRIBE ) {
 		clearTimeout( this._readAckTimeout );
 	}
+	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
+		this._applyUpdate( message );
+	}
+};
+
+Record.prototype._applyUpdate = function( message ) {
+	var version = parseInt( message.data[ 1 ], 10 );
+
+	if( this._version + 1 !== version ) {
+		//TODO - handle gracefully and retry / merge
+		this.emit( 'error', 'received update for ' + version + ' but version is ' + this._version );
+	}
+	this._beginChange();
+	this._version = version;
+
+	if( message.action === C.ACTIONS.UPDATE ) {
+		this._$data = JSON.parse( message.data[ 2 ] );
+	} else {
+		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ] ) );
+	}
+
+	this._completeChange();
 };
 
 Record.prototype._onRead = function( message ) {
-	this._version = message.data[ 1 ];
-	this._$data = message.data[ 2 ];
+	this._beginChange();
+	this._version = parseInt( message.data[ 1 ], 10 );
+	this._$data = JSON.parse( message.data[ 2 ] );
 	this.isReady = true;
 	this.emit( 'ready' );
+	this._completeChange();
 };
 
 Record.prototype._getPath = function( path ) {
@@ -7664,7 +7721,6 @@ Record.prototype._getPath = function( path ) {
 };
 
 Record.prototype._beginChange = function() {
-	// This is very specific to the implementation of component-emitter.
 	if( !this._eventEmitter._callbacks ) {
 		return;
 	}
@@ -7710,7 +7766,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
 };
 
 module.exports = Record;
-},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js","./json-path":"c:\\dev\\deepstream.io-client-js\\src\\record\\json-path.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","../message/message-builder":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-builder.js","../message/message-parser":"c:\\dev\\deepstream.io-client-js\\src\\message\\message-parser.js","../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js","./json-path":"c:\\dev\\deepstream.io-client-js\\src\\record\\json-path.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\rpc\\rpc-handler.js":[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' ),
 	Rpc = _dereq_( './rpc' ),

@@ -15,6 +15,14 @@ ViewModel = function() {
 	this.rpcNumB = ko.observable( 4 );
 	this.rpcResponse = ko.observable('-');
 	this.rpcResponseTime = ko.observable('-');
+
+	this._record = null;
+
+	this.firstname = ko.observable();
+	this.lastname = ko.observable();
+	this.firstname.subscribe( this._updateRecord.bind( this, 'firstname' ) );
+	this.lastname.subscribe( this._updateRecord.bind( this, 'lastname' ) );
+
 	window.viewModel = this;
 	this.connectionState = ko.observable( 'CLOSED' );
 };
@@ -72,11 +80,19 @@ ViewModel.prototype.makeAddTwoRpc = function() {
 };
 
 ViewModel.prototype.getSomeUserRecord = function() {
-	window.someRecord = this._client.record.getRecord( 'someUser' );
+	this._record = this._client.record.getRecord( 'someUser' );
+	this._record.subscribe( 'firstname', this.firstname.bind( this ), true );
+	this._record.subscribe( 'lastname', this.lastname.bind( this ), true );
 };
 
 ViewModel.prototype._onLoginResult = function( result, errorEvent, errorMessage ) {
 
+};
+
+ViewModel.prototype._updateRecord = function( path ) {
+	if( this._record ) {
+		this._record.set( path, this[ path ]() );
+	}
 };
 
 ViewModel.prototype._setConnectionState = function() {

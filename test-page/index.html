@@ -53,6 +53,17 @@
 							data-bind="click: getSomeUserRecord"
 							class="inline">OK</button>
 					</li>
+					<li>
+						<label>record data</label>
+						<div class="input-with-label">
+							<input data-bind="textInput:firstname" />
+							<label>firstname</label>
+						</div>
+						<div class="input-with-label">
+							<input data-bind="textInput:lastname" />
+							<label>lastname</label>
+						</div>
+					</li>
 				</ul>
 			</fieldset>
 			<fieldset data-bind="enable:hasClient">
