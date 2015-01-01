@@ -41,7 +41,7 @@ Record.prototype.set = function( pathOrData, data ) {
 		this.emit( 'error', 'Can\'t set record data for ' + this._name + '. Record not ready yet' );
 		return;
 	}
-	
+
 	if( arguments.length === 2 ) {
 		if( utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
 			return;

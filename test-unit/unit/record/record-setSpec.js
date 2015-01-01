@@ -11,7 +11,7 @@ describe( 'setting values sends the right messages to the server', function(){
 	it( 'creates the record', function(){
 		expect( connection.lastSendMessage ).toBe( null );
 		record = new Record( 'testRecord', {}, connection, options );
-		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, {} ]} );
+		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
 		expect( record.get() ).toEqual( {} );
 		expect( connection.lastSendMessage ).toBe( msg( 'RECORD|CR|testRecord+' ) );
 	});

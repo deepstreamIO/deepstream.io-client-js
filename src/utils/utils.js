@@ -42,6 +42,7 @@ exports.deepEquals = function( objA, objB ) {
 	};
 
 	next( objA, objB );
+	next( objB, objA );
 
 	return isEqual;
 };

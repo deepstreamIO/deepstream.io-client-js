@@ -54,6 +54,18 @@ describe( 'deepEquals', function(){
 		var a = undefined, // jshint ignore:line
 			b = { x: 'y', a: [ 'b', { q: 'f' } ] };
 		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});	
+
+	it( 'handles empty objects', function(){
+		var a = {},
+			b = { firstname: 'Wolfram' };
+		expect( utils.deepEquals( a, b ) ).toBe( false );
+	});
+
+	it( 'finds additional paths on objB', function(){
+		var a = { a: 'b' },
+			b = { a: 'b', c: 'd' };
+		expect( utils.deepEquals( a, b ) ).toBe( false );
 	});
 });
 
