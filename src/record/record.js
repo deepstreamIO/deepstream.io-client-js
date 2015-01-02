@@ -17,6 +17,7 @@ var Record = function( name, recordOptions, connection, options ) {
 	this._paths = {};
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
+	this.__deleteAckTimeout = null;
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
@@ -108,7 +109,8 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 };
 
 Record.prototype.delete = function() {
-
+	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
+	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this._name ] );
 };
 
 Record.prototype.discard = function() {
@@ -120,11 +122,24 @@ Record.prototype._$onMessage = function( message ) {
 		this._clearTimeouts();
 		this._onRead( message );
 	}
-	else if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.SUBSCRIBE ) {
-		clearTimeout( this._readAckTimeout );
+	else if( message.action === C.ACTIONS.ACK ) {
+		this._processAckMessage( message );
 	}
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
 		this._applyUpdate( message );
+	}
+};
+
+Record.prototype._processAckMessage = function( message ) {
+	var acknowledgedAction = message.data[ 0 ];
+	
+	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
+		clearTimeout( this._readAckTimeout );
+	}
+
+	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
+		clearTimeout( this._deleteAckTimeout );
+		this.emit( 'deleted' );
 	}
 };
 

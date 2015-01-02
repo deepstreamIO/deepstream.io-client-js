@@ -72,6 +72,14 @@ module.exports = {
 	  */
 	 recordReadTimeout: 3000,
 
+	 /**
+	  * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
+	  *                                       	until an error is thrown since no delete ack message had been received. Please 
+	  *                                       	take into account that the deletion is only complete after the record has been
+	  *                                       	deleted from both cache and storage
+	  */
+	 recordDeleteTimeout: 3000,
+
 	/************************************************
 	* Engine.io										*
 	************************************************/

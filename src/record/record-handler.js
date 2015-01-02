@@ -12,6 +12,7 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
 		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
+		this._records[ name ].on( 'deleted', this._onRecordDeleted.bind( this, name ) );
 	}
 
 	return this._records[ name ];
@@ -55,4 +56,8 @@ module.exports = RecordHandler;
 
 RecordHandler.prototype._onRecordError = function( recordName, error ) {
 	this._client._$onError( C.TOPIC.RECORD, error, recordName );
+};
+
+RecordHandler.prototype._onRecordDeleted = function( recordName ) {
+	delete this._records[ recordName ];
 };
