@@ -85,6 +85,14 @@ ViewModel.prototype.getSomeUserRecord = function() {
 	this._record.subscribe( 'lastname', this.lastname.bind( this ), true );
 };
 
+ViewModel.prototype.unsubscribeSomeUserRecord = function() {
+	this._record.unsubscribe();
+};
+
+ViewModel.prototype.deleteSomeUserRecord = function() {
+	this._record.delete();
+};
+
 ViewModel.prototype._onLoginResult = function( result, errorEvent, errorMessage ) {
 
 };

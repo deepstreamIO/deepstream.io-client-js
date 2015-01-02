@@ -110,7 +110,7 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 
 Record.prototype.delete = function() {
 	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
-	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this._name ] );
+	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 };
 
 Record.prototype.discard = function() {

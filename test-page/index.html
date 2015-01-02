@@ -47,11 +47,19 @@
 				<legend>Record</legend>
 				<ul class="fields">
 					<li>
-						<label>subscribe to someUser</label>
+						<label>record someUser</label>
 						<button 
 							type="button"
 							data-bind="click: getSomeUserRecord"
-							class="inline">OK</button>
+							class="inline">subscribe</button>
+						<button 
+							type="button"
+							data-bind="click: unsubscribeSomeUserRecord"
+							class="inline">unsubscribe</button>
+							<button 
+							type="button"
+							data-bind="click: deleteSomeUserRecord"
+							class="inline">delete</button>
 					</li>
 					<li>
 						<label>record data</label>
