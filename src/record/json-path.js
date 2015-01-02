@@ -2,6 +2,16 @@ var utils = require( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
 
+/**
+ * This class allows to set or get specific
+ * values within a json data structure using
+ * string-based paths
+ *
+ * @param {Record} record
+ * @param {String} path A path, e.g. users[2].firstname
+ *
+ * @constructor
+ */
 var JsonPath = function( record, path ) {
 	this._record = record;
 	this._path = path;
@@ -10,6 +20,13 @@ var JsonPath = function( record, path ) {
 	this._tokenize();
 };
 
+/**
+ * Returns the value of the path or
+ * undefined if the path can't be resolved
+ *
+ * @public
+ * @returns {Mixed}
+ */
 JsonPath.prototype.getValue = function() {
 	var node = this._record._$data,
 		i;
@@ -25,10 +42,18 @@ JsonPath.prototype.getValue = function() {
 	return node;
 };
 
+/**
+ * Sets the value of the path. If the path (or parts
+ * of it) doesn't exist yet, it will be created
+ *
+ * @param {Mixed} value
+ *
+ * @public
+ * @returns {void}
+ */
 JsonPath.prototype.setValue = function( value ) {
 	var node = this._record._$data,
 		i;
-
 
 	for( i = 0; i < this._tokens.length - 1; i++ ) {
 		if( node[ this._tokens[ i ] ] !== undefined ) {
@@ -45,6 +70,13 @@ JsonPath.prototype.setValue = function( value ) {
 	node[ this._tokens[ i ] ] = value;
 };
 
+/**
+ * Parses the path. Splits it into
+ * keys for objects and indices for arrays.
+ *
+ * @private
+ * @returns {void}
+ */
 JsonPath.prototype._tokenize = function() {
 	var parts = this._path.split( SPLIT_REG_EXP ),
 		part,
