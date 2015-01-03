@@ -5,11 +5,15 @@ var Record = require( '../../../src/record/record.js' ),
 describe( 'supscriptions to local record changes', function(){
 	var record,
 		callback = jasmine.createSpy( 'firstnameCallback' ),
+		generalCallback = jasmine.createSpy( 'general' ),
 		connection = new MockConnection();
 
 	it( 'creates the record', function(){
 		record = new Record( 'testRecord', {}, connection, options );
+		record.subscribe( generalCallback );
+		expect( generalCallback ).not.toHaveBeenCalled();
 		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
+		expect( generalCallback ).not.toHaveBeenCalled();
 		expect( record.get() ).toEqual( {} );
 	});
 
@@ -20,6 +24,7 @@ describe( 'supscriptions to local record changes', function(){
 
 	it( 'sets a value', function(){
 		record.set( 'firstname', 'Wolfram' );
+		expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Wolfram' });
 		expect( callback ).toHaveBeenCalledWith( 'Wolfram' );
 		expect( callback.calls.length ).toEqual( 1 );
 		expect( record.get() ).toEqual({ firstname: 'Wolfram' });

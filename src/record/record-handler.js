@@ -1,4 +1,5 @@
 var Record = require( './record' ),
+	AnonymousRecord = require( './anonymous-record' ),
 	C = require( '../constants/constants' );
 
 /**
@@ -61,15 +62,12 @@ RecordHandler.prototype.getList = function( name, options ) {
  *
  * The only API difference to a normal record is an additional setName( name ) method.
  *
- * @param   {String} name          		the unique name of the record
- * @param   {[Object]} recordOptions 	A map of parameters for this particular record.
- *                                    	{ persist: true }
  *
  * @public
  * @returns {AnonymousRecord}
  */
-RecordHandler.prototype.getAnonymousRecord = function( name, options ) {
-
+RecordHandler.prototype.getAnonymousRecord = function() {
+	return new AnonymousRecord( this );
 };
 
 /**

@@ -26,11 +26,20 @@ exports.deepEquals = function( objA, objB ) {
 	var isEqual = true, 
 		next;
 
-	if( typeof objA !== OBJECT ) {
+	if( objA === null || objB === null ) {
+		return objA === objB;
+	}
+
+	if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
 		return objA === objB;
 	}
 
 	next = function( _objA, _objB ) {
+		if( _objA === null || _objB === null || typeof _objA !== OBJECT || typeof _objB !== OBJECT ) {
+			isEqual = objA === objB;
+			return;
+		}
+
 		for( var key in _objA ) {
 			if( typeof _objA[ key ] === OBJECT ) {
 				next( _objA[ key ], _objB[ key ] );
@@ -42,8 +51,11 @@ exports.deepEquals = function( objA, objB ) {
 	};
 
 	next( objA, objB );
-	next( objB, objA );
-
+	
+	if( isEqual ) {
+		next( objB, objA );
+	}
+	
 	return isEqual;
 };
 

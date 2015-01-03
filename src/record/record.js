@@ -29,6 +29,7 @@ var Record = function( name, recordOptions, connection, options ) {
 	this._$data = {};
 	this._version = null;
 	this._paths = {};
+	this._oldValue = null;
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this.__deleteAckTimeout = null;
@@ -134,27 +135,15 @@ Record.prototype.set = function( pathOrData, data ) {
  * @returns {void}
  */
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
-	var i, args = {};
+	var i, args = this._normalizeArguments( arguments );
 
-	for( i = 0; i < arguments.length; i++ ) {
-		if( typeof arguments[ i ] === 'string' ) {
-			args.path = arguments[ i ];
-		}
-		else if( typeof arguments[ i ] === 'function' ) {
-			args.callback = arguments[ i ];
-		}
-		else if( typeof arguments[ i ] === 'boolean' ) {
-			args.triggerNow = arguments[ i ];
-		}
-	}
+	this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
 
-	this._eventEmitter.on( args.path || ALL_EVENT, callback );
-
-	if( args.triggerNow ) {
+	if( args.triggerNow && this.isReady ) {
 		if( args.path ) {
-			callback( this._getPath( args.path ).getValue() );
+			args.callback( this._getPath( args.path ).getValue() );
 		} else {
-			callback( this._$data );
+			args.callback( this._$data );
 		}
 	}
 };
@@ -328,6 +317,10 @@ Record.prototype._beginChange = function() {
 
 	this._oldPathValues = {};
 
+	if( this._eventEmitter.hasListeners( ALL_EVENT ) ) {
+		this._oldValue = this.get();
+	}
+
 	for( i = 0; i < paths.length; i++ ) {
 		this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
 	}
@@ -342,8 +335,12 @@ Record.prototype._beginChange = function() {
  * @returns {void}
  */
 Record.prototype._completeChange = function() {
-	this._eventEmitter.emit( ALL_EVENT );
+	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
+		this._eventEmitter.emit( ALL_EVENT, this.get() );
+	}
 
+	this._oldValue = null;
+	
 	if( this._oldPathValues === null ) {
 		return;
 	}
@@ -359,6 +356,38 @@ Record.prototype._completeChange = function() {
 	}
 
 	this._oldPathValues = null;
+};
+
+/**
+ * Creates a map based on the types of the provided arguments
+ *
+ * @param {Arguments} args
+ *
+ * @private
+ * @returns {Object} arguments map
+ */
+Record.prototype._normalizeArguments = function( args ) {
+	var result = {};
+
+	// If arguments is already a map of normalized parameters
+	// (e.g. when called by AnonymousRecord), just return it.
+	if( args.length === 1 && typeof args[ 0 ] === 'object' ) {
+		return args[ 0 ];
+	}
+
+	for( i = 0; i < args.length; i++ ) {
+		if( typeof args[ i ] === 'string' ) {
+			result.path = args[ i ];
+		}
+		else if( typeof args[ i ] === 'function' ) {
+			result.callback = args[ i ];
+		}
+		else if( typeof args[ i ] === 'boolean' ) {
+			result.triggerNow = args[ i ];
+		}
+	}
+
+	return result;
 };
 
 /**
