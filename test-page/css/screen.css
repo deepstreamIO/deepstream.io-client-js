@@ -42,6 +42,7 @@ label{
 	float: left;
 }
 
+
 button{
 	background: #4BBAF5;
 	display: block;
@@ -75,6 +76,12 @@ button.inline{
 	margin: 0;
 	width: auto;
 	padding: 2px 5px;
+}
+
+button.block{
+	display: block;
+	float: left;
+	margin-right: 10px;
 }
 
 button.half:first-child{

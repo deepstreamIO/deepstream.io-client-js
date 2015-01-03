@@ -23,6 +23,10 @@ ViewModel = function() {
 	this.firstname.subscribe( this._updateRecord.bind( this, 'firstname' ) );
 	this.lastname.subscribe( this._updateRecord.bind( this, 'lastname' ) );
 
+	this.isSubscribed = ko.observable( false );
+
+	this.recordTimeDelta = ko.observable( '-' );
+
 	window.viewModel = this;
 	this.connectionState = ko.observable( 'CLOSED' );
 };
@@ -83,14 +87,26 @@ ViewModel.prototype.getSomeUserRecord = function() {
 	this._record = this._client.record.getRecord( 'someUser' );
 	this._record.subscribe( 'firstname', this.firstname.bind( this ), true );
 	this._record.subscribe( 'lastname', this.lastname.bind( this ), true );
+	this._record.subscribe( 'sendTime', this._setRecordTimeDelta.bind( this ) );
+	this.isSubscribed( true );
+};
+
+ViewModel.prototype.setTimestamp = function() {
+	this._record.set( 'sendTime', Date.now() );
+};
+
+ViewModel.prototype._setRecordTimeDelta = function( time ) {
+	this.recordTimeDelta( Date.now() - time );
 };
 
 ViewModel.prototype.unsubscribeSomeUserRecord = function() {
 	this._record.unsubscribe();
+	this.isSubscribed( false );
 };
 
 ViewModel.prototype.deleteSomeUserRecord = function() {
 	this._record.delete();
+	this.isSubscribed( false );
 };
 
 ViewModel.prototype._onLoginResult = function( result, errorEvent, errorMessage ) {

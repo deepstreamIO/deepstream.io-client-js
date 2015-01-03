@@ -50,15 +50,15 @@
 						<label>record someUser</label>
 						<button 
 							type="button"
-							data-bind="click: getSomeUserRecord"
+							data-bind="click: getSomeUserRecord, disable: isSubscribed"
 							class="inline">subscribe</button>
 						<button 
 							type="button"
-							data-bind="click: unsubscribeSomeUserRecord"
+							data-bind="click: unsubscribeSomeUserRecord, enable: isSubscribed"
 							class="inline">unsubscribe</button>
 							<button 
 							type="button"
-							data-bind="click: deleteSomeUserRecord"
+							data-bind="click: deleteSomeUserRecord, enable: isSubscribed"
 							class="inline">delete</button>
 					</li>
 					<li>
@@ -72,8 +72,19 @@
 							<label>lastname</label>
 						</div>
 					</li>
+					<li>
+						<label>performance</label>
+						<button 
+							type="button"
+							data-bind="click: setTimestamp, enable: isSubscribed"
+							class=" inline block">set timestamp</button>
+						<div class="input-with-label quarter">
+							<div data-bind="text:recordTimeDelta"></div>
+							<label>time since record was updated</label>
+						</div>
 				</ul>
 			</fieldset>
+
 			<fieldset data-bind="enable:hasClient">
 				<legend>Event</legend>
 				<ul class="fields">
