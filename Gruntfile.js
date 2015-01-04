@@ -56,12 +56,22 @@ module.exports = function(grunt) {
 		exec: {
 			runUnitTests: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --autotest --watch ./src',
 			runUnitTestsOnce: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --forceexit'
+		},
+		release: {
+			options: {
+				github: { 
+					repo: 'hoxton-one/deepstream.io-client-js',
+					usernameVar: 'GITHUB_USERNAME',
+					passwordVar: 'GITHUB_PASSWORD'
+				}
+			}
 		}
 	});
 
 	grunt.loadNpmTasks( 'grunt-browserify' );
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
 	grunt.loadNpmTasks( 'grunt-exec' );
+	grunt.loadNpmTasks( 'grunt-release' );
 	
 	grunt.registerTask( 'dev', 'Browserifies the files on every change to src', [ 'browserify:live' ] );
 	grunt.registerTask( 'test-unit', [ 'exec:runUnitTests' ]);
