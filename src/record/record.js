@@ -32,7 +32,7 @@ var Record = function( name, recordOptions, connection, options ) {
 	this._oldValue = null;
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
-	this.__deleteAckTimeout = null;
+	this._queuedMethodCalls = [];
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
@@ -81,7 +81,7 @@ Record.prototype.get = function( path ) {
  */
 Record.prototype.set = function( pathOrData, data ) {
 	if( !this.isReady ) {
-		this.emit( 'error', 'Can\'t set record data for ' + this._name + '. Record not ready yet' );
+		this._queuedMethodCalls.push({ method: 'set', args: arguments });
 		return;
 	}
 
@@ -280,9 +280,24 @@ Record.prototype._onRead = function( message ) {
 	this._beginChange();
 	this._version = parseInt( message.data[ 1 ], 10 );
 	this._$data = JSON.parse( message.data[ 2 ] );
-	this.isReady = true;
-	this.emit( 'ready' );
+	this._setReady();
 	this._completeChange();
+};
+
+/**
+ * Invokes method calls that where queued while the record wasn't ready
+ * and emits the ready event
+ *
+ * @private
+ * @returns {void}
+ */
+Record.prototype._setReady = function() {
+	this.isReady = true;
+	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
+		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
+	}
+	this._queuedMethodCalls = [];
+	this.emit( 'ready' );
 };
 
 /**
@@ -323,7 +338,9 @@ Record.prototype._beginChange = function() {
 	}
 
 	for( i = 0; i < paths.length; i++ ) {
-		this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
+		if( paths[ i ] !== ALL_EVENT ) {
+			this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
+		}
 	}
 };
 

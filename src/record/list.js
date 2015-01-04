@@ -38,10 +38,6 @@ EventEmitter( List.prototype );
  * @returns {Array} entries
  */
 List.prototype.getEntries = function() {
-	if( !this._record.isReady ) {
-		return undefined;
-	}
-
 	var entries = this._record.get();
 
 	if( !( entries instanceof Array ) ) {
@@ -186,10 +182,10 @@ List.prototype._applyUpdate = function( message ) {
 	}
 
 	if( message.data[ 2 ].charAt( 0 ) !== '[' ) {
-		message.data[ 2 ] = '{}';
+		message.data[ 2 ] = '[]';
 	}
 
-	Record.prototype._update.call( this._record, message );
+	Record.prototype._applyUpdate.call( this._record, message );
 };
 
 module.exports = List;
