@@ -7705,9 +7705,206 @@ JsonPath.prototype._tokenize = function() {
 };
 
 module.exports = JsonPath;
-},{"../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record-handler.js":[function(_dereq_,module,exports){
+},{"../utils/utils":"c:\\dev\\deepstream.io-client-js\\src\\utils\\utils.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\list.js":[function(_dereq_,module,exports){
+var EventEmitter = _dereq_( 'component-emitter' ),
+	Record = _dereq_( './record' ),
+	C = _dereq_( '../constants/constants' );
+	
+/**
+ * A List is a specialised Record that contains
+ * an Array of recordNames and provides a number
+ * of convinience methods for interacting with them.
+ *
+ * @param {RecordHanlder} recordHandler
+ * @param {String} name    The name of the list
+ *
+ * @constructor
+ */
+var List = function( recordHandler, name, options ) {
+	this._recordHandler = recordHandler;
+	this._record = this._recordHandler.getRecord( name, options );
+	this._record._applyUpdate = this._applyUpdate.bind( this );
+	
+	this._record.on( 'delete', this.emit.bind( this, 'delete' ) );
+	this._record.on( 'discard', this.emit.bind( this, 'discard' ) );
+	this._record.on( 'ready', this._onReady.bind( this ) );
+
+	this.isReady = this._record.isReady;
+	this.name = name;
+
+	this.delete = this._record.delete.bind( this._record );
+	this.discard = this._record.discard.bind( this._record );
+};
+
+EventEmitter( List.prototype );
+
+/**
+ * Returns the array of list entries or an
+ * empty array if the list hasn't been populated yet.
+ *
+ * @public
+ * @returns {Array} entries
+ */
+List.prototype.getEntries = function() {
+	if( !this._record.isReady ) {
+		return undefined;
+	}
+
+	var entries = this._record.get();
+
+	if( !( entries instanceof Array ) ) {
+		return [];
+	}
+
+	return entries;
+};
+
+/**
+ * Returns true if the list is empty
+ *
+ * @public
+ * @returns {Boolean} isEmpty
+ */
+List.prototype.isEmpty = function() {
+	return this.getEntries().length === 0;
+};
+
+/**
+ * Updates the list with a new set of entries
+ *
+ * @public
+ * @param {Array} entries
+ */
+List.prototype.setEntries = function( entries ) {
+	var errorMsg = 'entries must be an array of record names',
+		i;
+
+	if( !( entries instanceof Array ) ) {
+		throw new Error( errorMsg );
+	}
+
+	for( i = 0; i < entries.length; i++ ) {
+		if( typeof entries[ i ] !== 'string' ) {
+			throw new Error( errorMsg );
+		}
+	}
+
+	return this._record.set( entries );
+};
+
+/**
+ * Removes an entry from the list
+ *
+ * @param   {String} entry
+ *
+ * @public
+ * @returns {void}
+ */
+List.prototype.removeEntry = function( entry ) {
+	var currentEntries = this._record.get(),
+		entries = [],
+		i;
+
+	for( i = 0; i < currentEntries.length; i++ ) {
+		if( currentEntries[ i ] !== entry ) {
+			entries.push( currentEntries[ i ] );
+		}
+	}
+
+	this._record.set( entries );
+};
+
+/**
+ * Adds an entry to the list
+ *
+ * @param {String} entry
+ *
+ * @public
+ * @returns {void}
+ */
+List.prototype.addEntry = function( entry ) {
+	if( typeof entry !== 'string' ) {
+		throw new Error( 'Entry must be a recordName' );
+	}
+
+	var entries = this.getEntries();
+	entries.push( entry );
+	this._record.set( entries );
+};
+
+/**
+ * Proxies the underlying Record's subscribe method. Makes sure
+ * that no path is provided
+ *
+ * @public
+ * @returns {void}
+ */
+List.prototype.subscribe = function() {
+	var parameters = Record.prototype._normalizeArguments( arguments );
+
+	if( parameters.path ) {
+		throw new Error( 'path is not supported for List.subscribe' );
+	}
+
+	this._record.subscribe( parameters );
+};
+
+/**
+ * Proxies the underlying Record's unsubscribe method. Makes sure
+ * that no path is provided
+ *
+ * @public
+ * @returns {void}
+ */
+List.prototype.unsubscribe = function() {
+	var parameters = Record.prototype._normalizeArguments( arguments );
+
+	if( parameters.path ) {
+		throw new Error( 'path is not supported for List.unsubscribe' );
+	}
+
+	this._record.unsubscribe( parameters );
+};
+
+/**
+ * Listens for changes in the Record's ready state
+ * and applies them to this list
+ *
+ * @private
+ * @returns {void}
+ */
+List.prototype._onReady = function() {
+	this.isReady = true;
+	this.emit( 'ready' );
+};
+
+/**
+ * Proxies the underlying Record's _update method. Set's
+ * data to an empty array if no data is provided.
+ *
+ * @param   {null}   path must (should :-)) be null
+ * @param   {Array}  data
+ *
+ * @private
+ * @returns {void}
+ */
+List.prototype._applyUpdate = function( message ) {
+	if( message.action === C.ACTIONS.PATCH ) {
+		throw new Error( 'PATCH is not supported for Lists' );
+	}
+
+	if( message.data[ 2 ].charAt( 0 ) !== '[' ) {
+		message.data[ 2 ] = '{}';
+	}
+
+	Record.prototype._update.call( this._record, message );
+};
+
+module.exports = List;
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./record":"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js","component-emitter":"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record-handler.js":[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
+	List = _dereq_( './list' ),
 	C = _dereq_( '../constants/constants' );
 
 /**
@@ -7757,7 +7954,7 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
  * @returns {List}
  */
 RecordHandler.prototype.getList = function( name, options ) {
-
+	return new List( this, name, options );
 };
 
 /**
@@ -7861,7 +8058,7 @@ RecordHandler.prototype._onRecordDeleted = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./anonymous-record":"c:\\dev\\deepstream.io-client-js\\src\\record\\anonymous-record.js","./record":"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js":[function(_dereq_,module,exports){
+},{"../constants/constants":"c:\\dev\\deepstream.io-client-js\\src\\constants\\constants.js","./anonymous-record":"c:\\dev\\deepstream.io-client-js\\src\\record\\anonymous-record.js","./list":"c:\\dev\\deepstream.io-client-js\\src\\record\\list.js","./record":"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js"}],"c:\\dev\\deepstream.io-client-js\\src\\record\\record.js":[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
@@ -7893,6 +8090,7 @@ var Record = function( name, recordOptions, connection, options ) {
 	this._$data = {};
 	this._version = null;
 	this._paths = {};
+	this._oldValue = null;
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this.__deleteAckTimeout = null;
@@ -8044,6 +8242,7 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  */
 Record.prototype.discard = function() {
 	this._eventEmitter.off();
+	this.emit( 'discard' );
 	//@TODO send discard message
 };
 
@@ -8099,7 +8298,7 @@ Record.prototype._processAckMessage = function( message ) {
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
 		clearTimeout( this._deleteAckTimeout );
-		this.emit( 'deleted' );
+		this.emit( 'delete' );
 	}
 };
 
@@ -8180,6 +8379,10 @@ Record.prototype._beginChange = function() {
 
 	this._oldPathValues = {};
 
+	if( this._eventEmitter.hasListeners( ALL_EVENT ) ) {
+		this._oldValue = this.get();
+	}
+
 	for( i = 0; i < paths.length; i++ ) {
 		this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
 	}
@@ -8194,8 +8397,12 @@ Record.prototype._beginChange = function() {
  * @returns {void}
  */
 Record.prototype._completeChange = function() {
-	this._eventEmitter.emit( ALL_EVENT );
+	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
+		this._eventEmitter.emit( ALL_EVENT, this.get() );
+	}
 
+	this._oldValue = null;
+	
 	if( this._oldPathValues === null ) {
 		return;
 	}
@@ -8901,11 +9108,20 @@ exports.deepEquals = function( objA, objB ) {
 	var isEqual = true, 
 		next;
 
-	if( typeof objA !== OBJECT ) {
+	if( objA === null || objB === null ) {
+		return objA === objB;
+	}
+
+	if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
 		return objA === objB;
 	}
 
 	next = function( _objA, _objB ) {
+		if( _objA === null || _objB === null || typeof _objA !== OBJECT || typeof _objB !== OBJECT ) {
+			isEqual = objA === objB;
+			return;
+		}
+
 		for( var key in _objA ) {
 			if( typeof _objA[ key ] === OBJECT ) {
 				next( _objA[ key ], _objB[ key ] );
@@ -8917,8 +9133,11 @@ exports.deepEquals = function( objA, objB ) {
 	};
 
 	next( objA, objB );
-	next( objB, objA );
-
+	
+	if( isEqual ) {
+		next( objB, objA );
+	}
+	
 	return isEqual;
 };
 

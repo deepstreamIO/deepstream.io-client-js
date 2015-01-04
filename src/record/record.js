@@ -181,6 +181,7 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  */
 Record.prototype.discard = function() {
 	this._eventEmitter.off();
+	this.emit( 'discard' );
 	//@TODO send discard message
 };
 
@@ -236,7 +237,7 @@ Record.prototype._processAckMessage = function( message ) {
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
 		clearTimeout( this._deleteAckTimeout );
-		this.emit( 'deleted' );
+		this.emit( 'delete' );
 	}
 };
 

@@ -1,5 +1,6 @@
 var Record = require( './record' ),
 	AnonymousRecord = require( './anonymous-record' ),
+	List = require( './list' ),
 	C = require( '../constants/constants' );
 
 /**
@@ -49,7 +50,7 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
  * @returns {List}
  */
 RecordHandler.prototype.getList = function( name, options ) {
-
+	return new List( this, name, options );
 };
 
 /**
