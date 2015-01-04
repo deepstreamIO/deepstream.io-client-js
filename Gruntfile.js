@@ -55,7 +55,7 @@ module.exports = function(grunt) {
 		},
 		exec: {
 			runUnitTests: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --autotest --watch ./src',
-			runUnitTestsOnce: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit'
+			runUnitTestsOnce: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --forceexit'
 		}
 	});
 
