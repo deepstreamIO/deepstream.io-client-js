@@ -32,7 +32,8 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
 		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
-		this._records[ name ].on( 'deleted', this._onRecordDeleted.bind( this, name ) );
+		this._records[ name ].on( 'deleted', this._removeRecord.bind( this, name ) );
+		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
 	}
 	
 	this._records[ name ].usages++;
@@ -144,14 +145,14 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
 };
 
 /**
- * Callback for 'deleted' events from a record. Removes the record from
+ * Callback for 'deleted' and 'discard' events from a record. Removes the record from
  * the registry
  *
  * @param   {String} recordName
  *
  * @returns {void}
  */
-RecordHandler.prototype._onRecordDeleted = function( recordName ) {
+RecordHandler.prototype._removeRecord = function( recordName ) {
 	delete this._records[ recordName ];
 };
 
