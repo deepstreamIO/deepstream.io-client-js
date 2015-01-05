@@ -39,7 +39,7 @@ module.exports = {
 	 rpcResponseTimeout: 10000,
 
 	 /**
-	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing a RPC or subscribing
+	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing
 	 *                                      	to a record before an error is thrown
 	 */
 	 subscriptionTimeout: 2000,

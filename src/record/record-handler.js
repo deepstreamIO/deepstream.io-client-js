@@ -34,7 +34,9 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
 		this._records[ name ].on( 'deleted', this._onRecordDeleted.bind( this, name ) );
 	}
-
+	
+	this._records[ name ].usages++;
+	
 	return this._records[ name ];
 };
 

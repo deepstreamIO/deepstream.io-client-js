@@ -22,6 +22,7 @@ var JsonPath = require( './json-path' ),
  */
 var Record = function( name, recordOptions, connection, options, client ) {
 	this.name = name;
+	this.usages = 0;
 	this._recordOptions = recordOptions;
 	this._connection = connection;
 	this._client = client;
@@ -177,21 +178,20 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * Removes all change listener and notifies the server that the client is
  * no longer interested in updates for this record
  *
- * TODO - only actually discard if this is the last place this record is used in
- *
  * @public
  * @returns {void}
  */
 Record.prototype.discard = function() {
-	this._eventEmitter.off();
-	this.emit( 'discard' );
-	//@TODO send discard message
+	this.usages--;
+	
+	if( this.usages <= 0 ) {
+			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+	}
 };
 
 /**
  * Deletes the record on the server.
- *
- * TODO - discard / unsubscribe?
  * 
  * @public
  * @returns {void}
@@ -240,6 +240,11 @@ Record.prototype._processAckMessage = function( message ) {
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
 		this.emit( 'delete' );
+		this._destroy();
+	}
+	
+	else if( acknowledgedAction === C.ACTIONS.UNSUBSCRIBE ) {
+		this.emit( 'discard' );
 		this._destroy();
 	}
 };
