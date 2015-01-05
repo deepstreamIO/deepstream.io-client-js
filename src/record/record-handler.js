@@ -30,7 +30,7 @@ var RecordHandler = function( options, connection, client ) {
  */
 RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
-		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options );
+		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
 		this._records[ name ].on( 'deleted', this._onRecordDeleted.bind( this, name ) );
 	}

@@ -1,5 +1,6 @@
 var Record = require( '../../../src/record/record.js' ),
 	MockConnection = require( '../../mocks/message/connection-mock' ),
+	ClientMock = require( '../../mocks/client-mock' ),
 	options = { recordReadAckTimeout: 100, recordReadTimeout: 200 };
 
 describe( 'supscriptions to local record changes', function(){
@@ -9,7 +10,7 @@ describe( 'supscriptions to local record changes', function(){
 		connection = new MockConnection();
 
 	it( 'creates the record', function(){
-		record = new Record( 'testRecord', {}, connection, options );
+		record = new Record( 'testRecord', {}, connection, options, new ClientMock() );
 		record.subscribe( generalCallback );
 		expect( generalCallback ).not.toHaveBeenCalled();
 		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
@@ -55,7 +56,7 @@ describe( 'supscriptions to local record changes', function(){
 	});
 
 	it( 'is called when the whole record is set', function(){
-		var record2 = new Record( 'testRecord2', {}, connection, options ),
+		var record2 = new Record( 'testRecord2', {}, connection, options, new ClientMock() ),
 			firstnameCb = jasmine.createSpy( 'firstname' ),
 			brotherAgeCb = jasmine.createSpy( 'brotherAge' );
 

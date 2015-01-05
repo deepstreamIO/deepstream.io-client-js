@@ -1,6 +1,7 @@
 var Record = require( '../../../src/record/record.js' ),
 	MockConnection = require( '../../mocks/message/connection-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg,
+	ClientMock = require( '../../mocks/client-mock' ),
 	options = { recordReadAckTimeout: 100, recordReadTimeout: 200 };
 
 describe( 'setting values sends the right messages to the server', function(){
@@ -10,7 +11,7 @@ describe( 'setting values sends the right messages to the server', function(){
 
 	it( 'creates the record', function(){
 		expect( connection.lastSendMessage ).toBe( null );
-		record = new Record( 'testRecord', {}, connection, options );
+		record = new Record( 'testRecord', {}, connection, options, new ClientMock() );
 		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
 		expect( record.get() ).toEqual( {} );
 		expect( connection.lastSendMessage ).toBe( msg( 'RECORD|CR|testRecord+' ) );

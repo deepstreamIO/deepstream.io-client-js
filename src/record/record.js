@@ -16,14 +16,15 @@ var JsonPath = require( './json-path' ),
  * @param {Object} recordOptions 		A map of options, e.g. { persist: true }
  * @param {Connection} Connection		The instance of the server connection
  * @param {Object} options				Deepstream options
+ * @param {Client} client				deepstream.io client
  *
  * @constructor
  */
-var Record = function( name, recordOptions, connection, options ) {
+var Record = function( name, recordOptions, connection, options, client ) {
 	this.name = name;
 	this._recordOptions = recordOptions;
 	this._connection = connection;
-	//TODO resubscribe on reconnect
+	this._client = client;
 	this._options = options;
 	this.isReady = false;
 	this._$data = {};
@@ -33,9 +34,11 @@ var Record = function( name, recordOptions, connection, options ) {
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
+	this._isReconnecting = false;
+	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
-	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
+	this._sendRead();
 };
 
 EventEmitter( Record.prototype );
@@ -293,12 +296,43 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
+	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
 	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
 		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
 	}
 	this._queuedMethodCalls = [];
 	this.emit( 'ready' );
 };
+
+/**
+ * Sends the read message, either initially at record
+ * creation or after a lost connection has been re-established
+ * 
+ * @private
+ * @returns {void}
+ */
+ Record.prototype._sendRead = function() {
+ 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
+ };
+ 
+/**
+ * Resends subscriptions on reconnect
+ * 
+ * @private
+ * @returns {void}
+ */
+ Record.prototype._handleConnectionStateChanges = function() {
+ 	var state = this._client.getConnectionState();
+ 	
+ 	if( state === C.CONNECTION_STATE.RECONNECTING ) {
+ 		this._isReconnecting = true;
+ 	}
+ 	
+ 	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
+ 		this._isReconnecting = false;
+ 		this._sendRead();
+ 	}
+ };
 
 /**
  * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
@@ -385,7 +419,8 @@ Record.prototype._completeChange = function() {
  * @returns {Object} arguments map
  */
 Record.prototype._normalizeArguments = function( args ) {
-	var result = {};
+	var result = {},
+		i;
 
 	// If arguments is already a map of normalized parameters
 	// (e.g. when called by AnonymousRecord), just return it.
@@ -429,5 +464,16 @@ Record.prototype._onTimeout = function( timeoutType ) {
 	this._clearTimeouts();
 	this.emit( 'error', timeoutType );
 };
+
+/**
+ * Destroys the record and nulls all
+ * its dependencies
+ * 
+ * @private
+ * @returns {void}
+ */
+ Record.prototype._destroy = function() {
+ 	
+ };
 
 module.exports = Record;
