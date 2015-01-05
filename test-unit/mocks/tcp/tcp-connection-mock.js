@@ -11,6 +11,7 @@ var TcpConnectionMock = function() {
 	this.isOpen = false;
 	this.callsToOpen = 0;
 	this.lastSendMessage = null;
+	this.messages = [];
 };
 
 util.inherits( TcpConnectionMock, events.EventEmitter );
@@ -30,6 +31,7 @@ TcpConnectionMock.prototype.open = function() {
 };
 
 TcpConnectionMock.prototype.send = function( msg ) {
+	this.messages.push( msg );
 	this.lastSendMessage = msg;
 };
 

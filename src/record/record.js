@@ -239,8 +239,8 @@ Record.prototype._processAckMessage = function( message ) {
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
-		clearTimeout( this._deleteAckTimeout );
 		this.emit( 'delete' );
+		this._destroy();
 	}
 };
 
@@ -316,7 +316,16 @@ Record.prototype._setReady = function() {
  };
  
 /**
- * Resends subscriptions on reconnect
+ * Makes sure that all records are subscribed on reconnect. _sendRead is called
+ * when the connection drops - which seems counterintuitive, but in fact just means
+ * that the re-subscription message will be added to the queue of messages that
+ * need re-sending as soon as the connection is re-established.
+ * 
+ * The additional benefit is that changes to the record will be added to the queue after
+ * the subscription message
+ * 
+ * The _isReconnecting flag exists to make sure that the message is only send once per
+ * connection loss
  * 
  * @private
  * @returns {void}
@@ -324,13 +333,13 @@ Record.prototype._setReady = function() {
  Record.prototype._handleConnectionStateChanges = function() {
  	var state = this._client.getConnectionState();
  	
- 	if( state === C.CONNECTION_STATE.RECONNECTING ) {
- 		this._isReconnecting = true;
+ 	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
+ 			this._sendRead();
+ 			this._isReconnecting = true;
  	}
  	
  	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
- 		this._isReconnecting = false;
- 		this._sendRead();
+ 			this._isReconnecting = false;
  	}
  };
 
@@ -452,6 +461,7 @@ Record.prototype._normalizeArguments = function( args ) {
 Record.prototype._clearTimeouts = function() {
 	clearTimeout( this._readAckTimeout );
 	clearTimeout( this._readTimeout );
+	clearTimeout( this._deleteAckTimeout );
 };
 
 /**
@@ -473,7 +483,13 @@ Record.prototype._onTimeout = function( timeoutType ) {
  * @returns {void}
  */
  Record.prototype._destroy = function() {
- 	
+ 	this._clearTimeouts();
+ 	this._eventEmitter.off();
+ 	this._client.off( 'connectionStateChanged', this._connectionStateChangeHandler );
+ 	this._client = null;
+		this._eventEmitter = null;
+		this._connectionStateChangeHandler = null;
+		this._connection = null;
  };
 
 module.exports = Record;
