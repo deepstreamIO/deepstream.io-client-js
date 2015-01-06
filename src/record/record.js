@@ -233,7 +233,7 @@ Record.prototype._$onMessage = function( message ) {
  */
 Record.prototype._processAckMessage = function( message ) {
 	var acknowledgedAction = message.data[ 0 ];
-	
+
 	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
 		clearTimeout( this._readAckTimeout );
 	}
@@ -467,6 +467,7 @@ Record.prototype._clearTimeouts = function() {
 	clearTimeout( this._readAckTimeout );
 	clearTimeout( this._readTimeout );
 	clearTimeout( this._deleteAckTimeout );
+	clearTimeout( this._discardTimeout );
 };
 
 /**

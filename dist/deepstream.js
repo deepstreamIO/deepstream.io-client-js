@@ -6603,7 +6603,7 @@ module.exports = {
 	 rpcResponseTimeout: 10000,
 
 	 /**
-	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing a RPC or subscribing
+	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing
 	 *                                      	to a record before an error is thrown
 	 */
 	 subscriptionTimeout: 2000,
@@ -7930,11 +7930,14 @@ var RecordHandler = function( options, connection, client ) {
  */
 RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
-		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options );
+		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
-		this._records[ name ].on( 'deleted', this._onRecordDeleted.bind( this, name ) );
+		this._records[ name ].on( 'deleted', this._removeRecord.bind( this, name ) );
+		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
 	}
-
+	
+	this._records[ name ].usages++;
+	
 	return this._records[ name ];
 };
 
@@ -8042,14 +8045,14 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
 };
 
 /**
- * Callback for 'deleted' events from a record. Removes the record from
+ * Callback for 'deleted' and 'discard' events from a record. Removes the record from
  * the registry
  *
  * @param   {String} recordName
  *
  * @returns {void}
  */
-RecordHandler.prototype._onRecordDeleted = function( recordName ) {
+RecordHandler.prototype._removeRecord = function( recordName ) {
 	delete this._records[ recordName ];
 };
 
@@ -8073,14 +8076,16 @@ var JsonPath = _dereq_( './json-path' ),
  * @param {Object} recordOptions 		A map of options, e.g. { persist: true }
  * @param {Connection} Connection		The instance of the server connection
  * @param {Object} options				Deepstream options
+ * @param {Client} client				deepstream.io client
  *
  * @constructor
  */
-var Record = function( name, recordOptions, connection, options ) {
+var Record = function( name, recordOptions, connection, options, client ) {
 	this.name = name;
+	this.usages = 0;
 	this._recordOptions = recordOptions;
 	this._connection = connection;
-	//TODO resubscribe on reconnect
+	this._client = client;
 	this._options = options;
 	this.isReady = false;
 	this._$data = {};
@@ -8090,9 +8095,11 @@ var Record = function( name, recordOptions, connection, options ) {
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
+	this._isReconnecting = false;
+	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
-	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
+	this._sendRead();
 };
 
 EventEmitter( Record.prototype );
@@ -8231,21 +8238,20 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * Removes all change listener and notifies the server that the client is
  * no longer interested in updates for this record
  *
- * TODO - only actually discard if this is the last place this record is used in
- *
  * @public
  * @returns {void}
  */
 Record.prototype.discard = function() {
-	this._eventEmitter.off();
-	this.emit( 'discard' );
-	//@TODO send discard message
+	this.usages--;
+	
+	if( this.usages <= 0 ) {
+			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+	}
 };
 
 /**
  * Deletes the record on the server.
- *
- * TODO - discard / unsubscribe?
  * 
  * @public
  * @returns {void}
@@ -8287,14 +8293,19 @@ Record.prototype._$onMessage = function( message ) {
  */
 Record.prototype._processAckMessage = function( message ) {
 	var acknowledgedAction = message.data[ 0 ];
-	
+
 	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
 		clearTimeout( this._readAckTimeout );
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
-		clearTimeout( this._deleteAckTimeout );
 		this.emit( 'delete' );
+		this._destroy();
+	}
+	
+	else if( acknowledgedAction === C.ACTIONS.UNSUBSCRIBE ) {
+		this.emit( 'discard' );
+		this._destroy();
 	}
 };
 
@@ -8350,12 +8361,52 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
+	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
 	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
 		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
 	}
 	this._queuedMethodCalls = [];
 	this.emit( 'ready' );
 };
+
+/**
+ * Sends the read message, either initially at record
+ * creation or after a lost connection has been re-established
+ * 
+ * @private
+ * @returns {void}
+ */
+ Record.prototype._sendRead = function() {
+ 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
+ };
+ 
+/**
+ * Makes sure that all records are subscribed on reconnect. _sendRead is called
+ * when the connection drops - which seems counterintuitive, but in fact just means
+ * that the re-subscription message will be added to the queue of messages that
+ * need re-sending as soon as the connection is re-established.
+ * 
+ * The additional benefit is that changes to the record will be added to the queue after
+ * the subscription message
+ * 
+ * The _isReconnecting flag exists to make sure that the message is only send once per
+ * connection loss
+ * 
+ * @private
+ * @returns {void}
+ */
+ Record.prototype._handleConnectionStateChanges = function() {
+ 	var state = this._client.getConnectionState();
+ 	
+ 	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
+ 			this._sendRead();
+ 			this._isReconnecting = true;
+ 	}
+ 	
+ 	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
+ 			this._isReconnecting = false;
+ 	}
+ };
 
 /**
  * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
@@ -8442,7 +8493,8 @@ Record.prototype._completeChange = function() {
  * @returns {Object} arguments map
  */
 Record.prototype._normalizeArguments = function( args ) {
-	var result = {};
+	var result = {},
+		i;
 
 	// If arguments is already a map of normalized parameters
 	// (e.g. when called by AnonymousRecord), just return it.
@@ -8474,6 +8526,8 @@ Record.prototype._normalizeArguments = function( args ) {
 Record.prototype._clearTimeouts = function() {
 	clearTimeout( this._readAckTimeout );
 	clearTimeout( this._readTimeout );
+	clearTimeout( this._deleteAckTimeout );
+	clearTimeout( this._discardTimeout );
 };
 
 /**
@@ -8486,6 +8540,23 @@ Record.prototype._onTimeout = function( timeoutType ) {
 	this._clearTimeouts();
 	this.emit( 'error', timeoutType );
 };
+
+/**
+ * Destroys the record and nulls all
+ * its dependencies
+ * 
+ * @private
+ * @returns {void}
+ */
+ Record.prototype._destroy = function() {
+ 	this._clearTimeouts();
+ 	this._eventEmitter.off();
+ 	this._client.off( 'connectionStateChanged', this._connectionStateChangeHandler );
+ 	this._client = null;
+		this._eventEmitter = null;
+		this._connectionStateChangeHandler = null;
+		this._connection = null;
+ };
 
 module.exports = Record;
 },{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/utils":58,"./json-path":50,"component-emitter":12}],54:[function(_dereq_,module,exports){

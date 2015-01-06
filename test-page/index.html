@@ -82,6 +82,22 @@
 							<div data-bind="text:recordTimeDelta"></div>
 							<label>time since record was updated</label>
 						</div>
+					</li>
+					<li>
+						<label>Memory</label>
+						<button 
+							type="button"
+							data-bind="click: createRecords"
+							class=" inline block">create and destroy records</button>
+
+						<button 
+							type="button"
+							data-bind="click: stopCreateRecords"
+							class=" inline block">stop</button>
+
+							
+					</li>
+
 				</ul>
 			</fieldset>
 

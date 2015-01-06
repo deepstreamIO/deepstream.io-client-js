@@ -95,6 +95,29 @@ ViewModel.prototype.setTimestamp = function() {
 	this._record.set( 'sendTime', Date.now() );
 };
 
+ViewModel.prototype.createRecords = function() {
+	var i = 0;
+	this._interval = interval = setInterval(function(){
+		i++;
+		if( i === 300 ) {
+			clearInterval( interval );
+			console.log( 'DONE' );
+		}
+		var record = this._client.record.getRecord( 'testRecord' );
+		record.subscribe( 'testPath', function( val ){  });
+		record.on( 'ready', function(){
+			record.set( 'testPath', 'entry' + i );
+			setTimeout(function(){
+				record.discard();
+			}, 200 );
+		});
+	}.bind( this ), 500 );
+};
+
+ViewModel.prototype.stopCreateRecords = function() {
+	clearInterval( this._interval );
+};
+
 ViewModel.prototype._setRecordTimeDelta = function( time ) {
 	this.recordTimeDelta( Date.now() - time );
 };
