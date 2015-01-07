@@ -18,8 +18,17 @@
 				<legend>Connection State</legend>
 				<ul class="fields">
 					<li>
-						<label>Connection State</label> <span data-bind="text:connectionState"></span>
-
+						<div class="input-with-label">
+							<input data-bind="textInput:host" />
+							<label>host</label>
+						</div>
+						<div class="input-with-label">
+							<input data-bind="textInput:port" />
+							<label>port</label>
+						</div>
+						<div style="clear:left">
+							<label>Connection State</label> <span data-bind="text:connectionState"></span>
+						</div>
 						<div class="button-group">
 							<button
 								type="button" 
@@ -56,7 +65,7 @@
 							type="button"
 							data-bind="click: unsubscribeSomeUserRecord, enable: isSubscribed"
 							class="inline">unsubscribe</button>
-							<button 
+						<button 
 							type="button"
 							data-bind="click: deleteSomeUserRecord, enable: isSubscribed"
 							class="inline">delete</button>

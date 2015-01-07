@@ -3,6 +3,9 @@ ViewModel = function() {
 
 	this.hasClient = ko.observable( false );
 
+	this.host = ko.observable( 'localhost' );
+	this.port = ko.observable( 6020 );
+
 	this.username = ko.observable( 'Wolfram');
 	this.password = ko.observable( 'blah' );
 
@@ -39,7 +42,7 @@ ViewModel.prototype.login = function() {
 };
 
 ViewModel.prototype.connect = function() {
-	this._client = deepstream( 'localhost:6020' );
+	this._client = deepstream( this.host() + ':' + this.port() );
 	this._client.on( 'connectionStateChanged', this._setConnectionState.bind( this ) );
 	this.hasClient( true );
 };
