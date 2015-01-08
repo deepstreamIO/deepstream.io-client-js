@@ -41,14 +41,14 @@ describe('connects - happy path', function(){
 	it( 'sends auth parameters', function(){
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 		connection.authenticate({ user: 'Wolfram' }, authCallback );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 		expect( clientConnectionStateChangeCount ).toBe( 2 );
 		expect( authCallback ).not.toHaveBeenCalled();
 	});
 
 	it( 'processes the authentication response', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
 		expect( authCallback ).toHaveBeenCalledWith( true );
 		expect( clientConnectionStateChangeCount ).toBe( 3 );
@@ -104,17 +104,17 @@ describe( 'buffers messages whilst connection is closed', function(){
 	
 	it( 'tries to send messages whilst authenticating', function( done ) {
 	    connection.authenticate({ user: 'Wolfram' }, function(){} );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 		connection.sendMsg( 'RECORD', 'S', ['rec3'] );
 		setTimeout(function() {
-			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 			done();
 		}, 10);
 	});
 	
 	it( 'tries to send messages whilst authenticating', function( done ) {
-	    connection._endpoint.emit( 'message', msg( 'AUTH|A' ) );
+	    connection._endpoint.emit( 'message', msg( 'A|A' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
 		
 		setTimeout(function() {
@@ -146,25 +146,25 @@ describe( 'connection handles auth rejections', function(){
 	it( 'sends auth parameters', function(){
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 		connection.authenticate({ user: 'Wolfram' }, authCallback );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 		expect( authCallback ).not.toHaveBeenCalled();
 	});
 
 	it( 'receives auth rejection message', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|E|INVALID_AUTH_DATA|unknown user+' ) );
+		connection._endpoint.emit( 'message', msg( 'A|E|INVALID_AUTH_DATA|unknown user+' ) );
 		expect( authCallback ).toHaveBeenCalledWith( false, 'INVALID_AUTH_DATA', 'unknown user' );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
 
 	it( 'sends different auth parameters', function(){
 		connection.authenticate({ user: 'Egon' }, authCallback );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Egon"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Egon"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 	});
 
 	it( 'receives auth ack message', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( authCallback ).toHaveBeenCalledWith( true );
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
@@ -224,12 +224,12 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	it( 'sends auth parameters', function(){
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 		connection.authenticate({ user: 'Wolfram' }, authCallback );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 	});
 
 	it( 'receives auth ack message', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 
@@ -248,12 +248,12 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	});
 
 	it( 'sends auth message again', function(){
-		expect( connection._endpoint.lastSendMessage ).toBe(  msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe(  msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 	});
 
 	it( 'receives auth ack message', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 });
@@ -287,17 +287,17 @@ describe( 'splits messages into smaller packets', function(){
 	it( 'sends auth parameters', function(){
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 		connection.authenticate({ user: 'Wolfram' }, function(){} );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 	});
 
 	it( 'receives auth ack message', function(){
-		connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 
 	it( 'sends individual messages straight away', function(){
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		sendMessages( connection, 0, 1 );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'EVENT|EVT|w|0+' ) );
 	});

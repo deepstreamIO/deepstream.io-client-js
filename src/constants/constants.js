@@ -20,8 +20,8 @@ exports.TYPES.FALSE = 'F';
 exports.TYPES.UNDEFINED = 'U';
 
 exports.TOPIC = {};
-exports.TOPIC.AUTH = 'AUTH';
-exports.TOPIC.ERROR = 'ERROR';
+exports.TOPIC.AUTH = 'A';
+exports.TOPIC.ERROR = 'X';
 exports.TOPIC.EVENT = 'EVENT';
 exports.TOPIC.RECORD = 'RECORD';
 exports.TOPIC.RPC = 'RPC';

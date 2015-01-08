@@ -27,12 +27,12 @@ describe( 'connection losses are handled gracefully', function(){
 	it( 'logs in', function() {
 	    client.login({ username: 'Wolfram' });
 	    recordC = client.record.getRecord( 'recordC' );
-		expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"username":"Wolfram"}+' ) );
+		expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"username":"Wolfram"}+' ) );
 		expect( client.getConnectionState() ).toBe( 'AUTHENTICATING' );
 	});
 	
 	it( 'opens the connection', function() {
-	    client._connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+	    client._connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 	    expect( client.getConnectionState() ).toBe( 'OPEN' );
 	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'RECORD|CR|recordA+RECORD|CR|recordB+RECORD|CR|recordC+'));
 	    expect( recordA.isReady ).toBe( false );
@@ -63,12 +63,12 @@ describe( 'connection losses are handled gracefully', function(){
 	
 	it( 're-establishes the connection', function() {
 	    client._connection._endpoint.simulateOpen();
-	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"username":"Wolfram"}+' ) );
+	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"username":"Wolfram"}+' ) );
 	    expect( client.getConnectionState() ).toBe( 'AUTHENTICATING' );
 	});
 	
 	it( 'resubscribes on open', function() {
-		client._connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+		client._connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 	    expect( client.getConnectionState() ).toBe( 'OPEN' );
 	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'RECORD|CR|recordA+RECORD|CR|recordB+RECORD|CR|recordC+RECORD|P|recordA|2|firstname|SEgon+' ));
 	});
@@ -93,12 +93,12 @@ describe( 'connection losses are handled gracefully', function(){
 	
 	it( 're-establishes the connection', function() {
 	    client._connection._endpoint.simulateOpen();
-	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'AUTH|REQ|{"username":"Wolfram"}+' ) );
+	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"username":"Wolfram"}+' ) );
 	    expect( client.getConnectionState() ).toBe( 'AUTHENTICATING' );
 	});
 	
 	it( 'resubscribes on open', function() {
-		client._connection._endpoint.emit( 'message', msg( 'AUTH|A+' ) );
+		client._connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 	    expect( client.getConnectionState() ).toBe( 'OPEN' );
 	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'RECORD|CR|recordA+RECORD|CR|recordB+' ));
 	});
