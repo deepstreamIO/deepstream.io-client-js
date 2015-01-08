@@ -6526,11 +6526,11 @@ exports.TYPES.FALSE = 'F';
 exports.TYPES.UNDEFINED = 'U';
 
 exports.TOPIC = {};
-exports.TOPIC.AUTH = 'AUTH';
-exports.TOPIC.ERROR = 'ERROR';
-exports.TOPIC.EVENT = 'EVENT';
-exports.TOPIC.RECORD = 'RECORD';
-exports.TOPIC.RPC = 'RPC';
+exports.TOPIC.AUTH = 'A';
+exports.TOPIC.ERROR = 'X';
+exports.TOPIC.EVENT = 'E';
+exports.TOPIC.RECORD = 'R';
+exports.TOPIC.RPC = 'P';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
 
 exports.EVENT = {};
