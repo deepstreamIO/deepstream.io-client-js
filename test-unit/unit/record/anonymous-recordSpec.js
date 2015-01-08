@@ -31,7 +31,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 
 	it( 'requests a record when setName is called', function(){
 		anonymousRecord.setName( 'recordA' );
-		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'RECORD|CR|recordA+' ) );
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|CR|recordA+' ) );
 	});
 
 	it( 'updates subscriptions once the record is ready', function(){
@@ -39,7 +39,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 		expect( generalCallback ).not.toHaveBeenCalled();
 
 		recordHandler._$handle({
-			topic: 'RECORD',
+			topic: 'R',
 			action: 'R',
 			data: [ 'recordA', 1, '{"firstname":"Wolfram"}' ]
 		});
@@ -52,7 +52,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 		recordHandler.getRecord( 'recordB' );
 
 		recordHandler._$handle({
-			topic: 'RECORD',
+			topic: 'R',
 			action: 'R',
 			data: [ 'recordB', 1, '{"firstname":"Egon", "lastname":"Kowalski"}' ]
 		});

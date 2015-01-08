@@ -23,8 +23,8 @@ exports.TOPIC = {};
 exports.TOPIC.AUTH = 'A';
 exports.TOPIC.ERROR = 'X';
 exports.TOPIC.EVENT = 'E';
-exports.TOPIC.RECORD = 'RECORD';
-exports.TOPIC.RPC = 'RPC';
+exports.TOPIC.RECORD = 'R';
+exports.TOPIC.RPC = 'P';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
 
 exports.EVENT = {};

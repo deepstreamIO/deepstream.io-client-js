@@ -13,14 +13,14 @@ describe( 'sends the correct response messages - happy path', function(){
 	
 	it( 'sends an ack message automatically', function( done ){
 		setTimeout(function(){
-			expect( connectionMock.lastSendMessage ).toBe( msg( 'RPC|A|addTwo|123+' ) );
+			expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|addTwo|123+' ) );
 			done();
 		}, 10 );
 	});
 	
 	it( 'sends the response', function(){
 		response.send( 14 );
-		expect( connectionMock.lastSendMessage ).toBe( msg( 'RPC|RES|addTwo|123|N14+' ) );
+		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|RES|addTwo|123|N14+' ) );
 	});
 });
 
@@ -44,7 +44,7 @@ describe( 'sends the correct response messages - alternativ behaviour', function
 	
 	it( 'sends ack message', function() {
 	    response.ack();
-	    expect( connectionMock.lastSendMessage ).toBe( msg( 'RPC|A|addTwo|123+' ) );
+	    expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|addTwo|123+' ) );
 	});
 	
 	it( 'doesn\'t send multiple ack messages', function() {
@@ -55,7 +55,7 @@ describe( 'sends the correct response messages - alternativ behaviour', function
 	
 	it( 'rejects messages', function() {
 	    response.reject();
-	    expect( connectionMock.lastSendMessage ).toBe( msg( 'RPC|REJ|addTwo|123+' ) );
+	    expect( connectionMock.lastSendMessage ).toBe( msg( 'P|REJ|addTwo|123+' ) );
 	});
 	
 	it( 'throws an error when trying to send a completed response', function() {

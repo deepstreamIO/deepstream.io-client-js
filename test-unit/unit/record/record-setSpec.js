@@ -12,18 +12,18 @@ describe( 'setting values sends the right messages to the server', function(){
 	it( 'creates the record', function(){
 		expect( connection.lastSendMessage ).toBe( null );
 		record = new Record( 'testRecord', {}, connection, options, new ClientMock() );
-		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
+		record._$onMessage({ topic: 'R', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
 		expect( record.get() ).toEqual( {} );
-		expect( connection.lastSendMessage ).toBe( msg( 'RECORD|CR|testRecord+' ) );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|CR|testRecord+' ) );
 	});
 
 	it( 'sends update messages for entire data changes', function(){
 		record.set({ firstname: 'Wolfram' });
-		expect( connection.lastSendMessage ).toBe( msg( 'RECORD|U|testRecord|1|{"firstname":"Wolfram"}+' ) );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|U|testRecord|1|{"firstname":"Wolfram"}+' ) );
 	});
 
 	it( 'sends update messages for path changes ', function(){
 		record.set( 'lastname', 'Hempel' );
-		expect( connection.lastSendMessage ).toBe( msg( 'RECORD|P|testRecord|2|lastname|SHempel+' ) );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|P|testRecord|2|lastname|SHempel+' ) );
 	});
 });

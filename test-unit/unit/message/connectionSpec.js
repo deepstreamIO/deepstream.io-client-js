@@ -55,9 +55,9 @@ describe('connects - happy path', function(){
 	});
 
 	it( 'sends individual messages', function( done ){
-		connection.sendMsg( 'RECORD', 'S', [ 'test1' ] );
+		connection.sendMsg( 'R', 'S', [ 'test1' ] );
 		setTimeout(function(){
-			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'RECORD|S|test1+' ) );
+			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'R|S|test1+' ) );
 			done();
 		}, 10 );
 	});
@@ -85,7 +85,7 @@ describe( 'buffers messages whilst connection is closed', function(){
 	
 	it( 'tries to send messages whilst connection is closed', function( done ){
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
-		connection.sendMsg( 'RECORD', 'S', ['rec1'] );
+		connection.sendMsg( 'R', 'S', ['rec1'] );
 		setTimeout(function() {
 			expect( connection._endpoint.lastSendMessage ).toBe( null );
 			done();
@@ -95,7 +95,7 @@ describe( 'buffers messages whilst connection is closed', function(){
 	it( 'tries to send messages whilst awaiting authentication', function( done ) {
 	    connection._endpoint.simulateOpen();
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
-		connection.sendMsg( 'RECORD', 'S', ['rec2'] );
+		connection.sendMsg( 'R', 'S', ['rec2'] );
 		setTimeout(function() {
 			expect( connection._endpoint.lastSendMessage ).toBe( null );
 			done();
@@ -106,7 +106,7 @@ describe( 'buffers messages whilst connection is closed', function(){
 	    connection.authenticate({ user: 'Wolfram' }, function(){} );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
-		connection.sendMsg( 'RECORD', 'S', ['rec3'] );
+		connection.sendMsg( 'R', 'S', ['rec3'] );
 		setTimeout(function() {
 			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 			done();
@@ -118,7 +118,7 @@ describe( 'buffers messages whilst connection is closed', function(){
 		expect( connection.getState() ).toBe( 'OPEN' );
 		
 		setTimeout(function() {
-			var expected = msg( 'RECORD|S|rec1', 'RECORD|S|rec2', 'RECORD|S|rec3+' );
+			var expected = msg( 'R|S|rec1', 'R|S|rec2', 'R|S|rec3+' );
 			expect( connection._endpoint.lastSendMessage ).toBe( expected );
 			done();
 		}, 10);

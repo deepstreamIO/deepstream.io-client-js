@@ -18,7 +18,7 @@ describe( 'lists contain arrays of record names', function(){
 		list.on( 'ready', readyCallback );
 		expect( list.subscribe.bind( list, 'somePath', changeCallback ) ).toThrow();
 		expect( list.getEntries ).toBeDefined();
-		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'RECORD|CR|someList+' ) );
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|CR|someList+' ) );
 		expect( readyCallback ).not.toHaveBeenCalled();
 	});
 	
@@ -29,7 +29,7 @@ describe( 'lists contain arrays of record names', function(){
 	
 	it( 'receives a response from the server', function() {
 		recordHandler._$handle({
-			topic: 'RECORD',
+			topic: 'R',
 			action: 'R',
 			data: [ 'someList', 1, '["entryA","entryB"]' ]
 		});
@@ -43,26 +43,26 @@ describe( 'lists contain arrays of record names', function(){
 		list.addEntry( 'entryC' );
 		expect( list.getEntries() ).toEqual(['entryA', 'entryB', 'entryC' ]);
 		expect( changeCallback ).toHaveBeenCalledWith(['entryA', 'entryB', 'entryC' ]);
-		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'RECORD|U|someList|2|["entryA","entryB","entryC"]+' ) );
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|2|["entryA","entryB","entryC"]+' ) );
 	});
 	
 	it( 'removes an entry from the list', function(){
 		list.removeEntry( 'entryB' );
 		expect( list.getEntries() ).toEqual(['entryA', 'entryC' ]);
 		expect( changeCallback ).toHaveBeenCalledWith(['entryA', 'entryC' ]);
-		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'RECORD|U|someList|3|["entryA","entryC"]+' ) );
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|3|["entryA","entryC"]+' ) );
 	});
 	
 	it( 'sets the entire list', function(){
 		list.setEntries([ 'u','v' ]);
 		expect( list.getEntries() ).toEqual([ 'u','v' ]);
 		expect( changeCallback ).toHaveBeenCalledWith([ 'u','v' ]);
-		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'RECORD|U|someList|4|["u","v"]+' ) );
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|4|["u","v"]+' ) );
 	});
 	
 	it( 'handles server updates', function(){
 		recordHandler._$handle({
-			topic: 'RECORD',
+			topic: 'R',
 			action: 'R',
 			data: [ 'someList', 5, '["x","y"]' ]
 		});

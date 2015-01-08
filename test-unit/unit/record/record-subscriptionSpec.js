@@ -60,7 +60,7 @@ describe( 'supscriptions to local record changes', function(){
 			firstnameCb = jasmine.createSpy( 'firstname' ),
 			brotherAgeCb = jasmine.createSpy( 'brotherAge' );
 
-		record2._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
+		record2._$onMessage({ topic: 'R', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
 
 		record2.subscribe( 'firstname', firstnameCb );
 		record2.subscribe( 'brother.age', brotherAgeCb );
