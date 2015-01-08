@@ -4600,7 +4600,7 @@ module.exports = function(opts) {
 
 },{"has-cors":35}],23:[function(_dereq_,module,exports){
 module.exports=_dereq_(12)
-},{"c:\\dev\\deepstream.io-client-js\\node_modules\\component-emitter\\index.js":12}],24:[function(_dereq_,module,exports){
+},{"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js":12}],24:[function(_dereq_,module,exports){
 
 module.exports = function(a, b){
   var fn = function(){};
