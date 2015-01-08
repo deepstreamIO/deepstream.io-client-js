@@ -15,12 +15,12 @@ describe( 'event handler works', function(){
 	it( 'emits an event it has no listeners for', function(){
 		expect( connectionMock.lastSendMessage ).toBe( null );
 		eventHandler.emit( 'myEvent', 6 );
-		expect( connectionMock.lastSendMessage ).toBe( msg( 'EVENT|EVT|myEvent|N6+' ) );
+		expect( connectionMock.lastSendMessage ).toBe( msg( 'E|EVT|myEvent|N6+' ) );
 	});
 	
 	it( 'subscribes to an event', function() {
 	    eventHandler.subscribe( 'myEvent', callback );
-	    expect( connectionMock.lastSendMessage ).toBe( msg( 'EVENT|S|myEvent+' ) );
+	    expect( connectionMock.lastSendMessage ).toBe( msg( 'E|S|myEvent+' ) );
 	});
 	
 	it( 'notifies local listeners for local events', function() {

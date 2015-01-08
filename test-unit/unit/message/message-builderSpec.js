@@ -12,11 +12,11 @@ describe( 'messageBuilder composes valid deepstream messages', function(){
 
 	it( 'creates an event subscription message', function(){
 		var message = messageBuilder.getMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ 'someEvent' ] );
-		expect( message ).toBe( msg( 'EVENT|S|someEvent+') );
+		expect( message ).toBe( msg( 'E|S|someEvent+') );
 	});
 
 	it( 'creates an event message with serialized data', function(){
 		var message = messageBuilder.getMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ 'someEvent', { some: 'data' } ] );
-		expect( message ).toBe( msg( 'EVENT|EVT|someEvent|{"some":"data"}+' ) );
+		expect( message ).toBe( msg( 'E|EVT|someEvent|{"some":"data"}+' ) );
 	});
 });

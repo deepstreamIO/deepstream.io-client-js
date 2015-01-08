@@ -269,7 +269,7 @@ describe( 'splits messages into smaller packets', function(){
 		},
 		sendMessages = function( connection, from, to ) {
 			for( from; from < to; from++ ) {
-				connection.sendMsg( 'EVENT', 'EVT', [ 'w', from ] );
+				connection.sendMsg( 'E', 'EVT', [ 'w', from ] );
 			}
 		};
     
@@ -299,24 +299,24 @@ describe( 'splits messages into smaller packets', function(){
 	it( 'sends individual messages straight away', function(){
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		sendMessages( connection, 0, 1 );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'EVENT|EVT|w|0+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'E|EVT|w|0+' ) );
 	});
 
 	it( 'sends messages less than maxMessagesPerPacket straight away', function(){
 		sendMessages( connection, 1, 3 );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'EVENT|EVT|w|2+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'E|EVT|w|2+' ) );
 	});
 
 	it( 'buffers messages greater than maxMessagesPerPacket', function(){
 		sendMessages( connection, 4, 17 );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'EVENT|EVT|w|4+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'E|EVT|w|4+' ) );
 	});
 
 	it( 'sends buffered messages every timeBetweenSendingQueuedPackages ms', function(done){
 		var expectedMessages = [
-			msg( 'EVENT|EVT|w|5+EVENT|EVT|w|6+EVENT|EVT|w|7+EVENT|EVT|w|8+EVENT|EVT|w|9+' ),
-			msg( 'EVENT|EVT|w|10+EVENT|EVT|w|11+EVENT|EVT|w|12+EVENT|EVT|w|13+EVENT|EVT|w|14+' ),
-			msg( 'EVENT|EVT|w|15+EVENT|EVT|w|16+' )
+			msg( 'E|EVT|w|5+E|EVT|w|6+E|EVT|w|7+E|EVT|w|8+E|EVT|w|9+' ),
+			msg( 'E|EVT|w|10+E|EVT|w|11+E|EVT|w|12+E|EVT|w|13+E|EVT|w|14+' ),
+			msg( 'E|EVT|w|15+E|EVT|w|16+' )
 		],
 		currentlyExpectedMessage = 0,
 		interval;
