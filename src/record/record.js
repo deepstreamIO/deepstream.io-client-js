@@ -28,6 +28,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._client = client;
 	this._options = options;
 	this.isReady = false;
+	this.isDestroyed = false;
 	this._$data = {};
 	this._version = null;
 	this._paths = {};
@@ -84,6 +85,10 @@ Record.prototype.get = function( path ) {
  * @returns {void}
  */
 Record.prototype.set = function( pathOrData, data ) {
+	if( this._checkDestroyed( 'set' ) ) {
+		return;
+	}
+
 	if( !this.isReady ) {
 		this._queuedMethodCalls.push({ method: 'set', args: arguments });
 		return;
@@ -141,6 +146,10 @@ Record.prototype.set = function( pathOrData, data ) {
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	var i, args = this._normalizeArguments( arguments );
 
+	if( this._checkDestroyed( 'subscribe' ) ) {
+		return;
+	}
+
 	this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
 
 	if( args.triggerNow && this.isReady ) {
@@ -170,6 +179,9 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
  * @returns {void}
  */
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
+	if( this._checkDestroyed( 'unsubscribe' ) ) {
+		return;
+	}
 	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
 	this._eventEmitter.off( event, callback );
 };
@@ -197,6 +209,9 @@ Record.prototype.discard = function() {
  * @returns {void}
  */
 Record.prototype.delete = function() {
+	if( this._checkDestroyed( 'delete' ) ) {
+		return;
+	}
 	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 };
@@ -219,6 +234,10 @@ Record.prototype._$onMessage = function( message ) {
 	}
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
 		this._applyUpdate( message );
+	}
+	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
+		//@TODO
+		console.log( 'VERSION CONFLICT' );
 	}
 };
 
@@ -261,6 +280,7 @@ Record.prototype._applyUpdate = function( message ) {
 	var version = parseInt( message.data[ 1 ], 10 );
 
 	if( this._version + 1 !== version ) {
+
 		//TODO - handle gracefully and retry / merge
 		this.emit( 'error', 'received update for ' + version + ' but version is ' + this._version );
 	}
@@ -471,6 +491,23 @@ Record.prototype._clearTimeouts = function() {
 };
 
 /**
+ * A quick check that's carried out by most methods that interact with the record
+ * to make sure it hasn't been destroyed yet - and to handle it gracefully if it has.
+ *
+ * @param   {String} methodName The name of the method that invoked this check
+ *
+ * @private
+ * @returns {Boolean} is destroyed
+ */
+Record.prototype._checkDestroyed = function( methodName ) {
+	if( this.isDestroyed ) {
+		this.emit( 'error', 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed' );
+		return true;
+	}
+
+	return false;
+};
+/**
  * Generic handler for ack, read and delete timeouts
  *
  * @private
@@ -492,10 +529,12 @@ Record.prototype._onTimeout = function( timeoutType ) {
  	this._clearTimeouts();
  	this._eventEmitter.off();
  	this._client.off( 'connectionStateChanged', this._connectionStateChangeHandler );
+ 	this.isDestroyed = true;
+ 	this.isReady = false;
  	this._client = null;
-		this._eventEmitter = null;
-		this._connectionStateChangeHandler = null;
-		this._connection = null;
+	this._eventEmitter = null;
+	this._connectionStateChangeHandler = null;
+	this._connection = null;
  };
 
 module.exports = Record;

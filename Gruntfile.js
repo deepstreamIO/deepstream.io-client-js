@@ -59,6 +59,7 @@ module.exports = function(grunt) {
 		},
 		release: {
 			options: {
+				additionalFiles: ['bower.json'],
 				github: { 
 					repo: 'hoxton-one/deepstream.io-client-js',
 					usernameVar: 'GITHUB_USERNAME',
