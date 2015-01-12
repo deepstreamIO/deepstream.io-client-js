@@ -6439,13 +6439,26 @@ Client.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Client.prototype._$onError = function( topic, event, msg ) {
+	var errorMsg;
+
+	/*
+	 * Help to diagnose the problem quicker by checking for
+	 * some common problems
+	 */
+	if( event === C.EVENT.ACK_TIMEOUT || event === C.EVENT.RESPONSE_TIMEOUT ) {
+		if( this.getConnectionState() === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
+			errorMsg = 'Your message timed out because you\'re not authenticated. Have you called login()?';
+			setTimeout( this._$onError.bind( this, C.EVENT.NOT_AUTHENTICATED, C.TOPIC.ERROR, errorMsg ), 1 );
+		}
+	}
+
 	if( this.hasListeners( 'error' ) ) {
 		this.emit( 'error', msg, event, topic );
 		this.emit( event, topic, msg );
 	} else {
 		console.log( '--- You can catch all deepstream errors by subscribing to the error event ---' );
 		
-		var errorMsg = event + ': ' + msg;
+		errorMsg = event + ': ' + msg;
 		
 		if( topic ) {
 			errorMsg += ' (' + topic + ')';
@@ -6539,6 +6552,7 @@ exports.EVENT.RESPONSE_TIMEOUT = 'RESPONSE_TIMEOUT';
 exports.EVENT.UNSOLICITED_MESSAGE = 'UNSOLICITED_MESSAGE';
 exports.EVENT.MESSAGE_PARSE_ERROR = 'MESSAGE_PARSE_ERROR';
 exports.EVENT.VERSION_EXISTS = 'VERSION_EXISTS';
+exports.EVENT.NOT_AUTHENTICATED = 'NOT_AUTHENTICATED';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';
