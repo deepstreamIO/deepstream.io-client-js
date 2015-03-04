@@ -72,7 +72,7 @@ Emitter( Client.prototype );
  * @returns {Client}
  */
 Client.prototype.login = function( authParams, callback ) {
-	this._connection.authenticate( authParams, callback );
+	this._connection.authenticate( authParams || {}, callback );
 	return this;
 };
 
