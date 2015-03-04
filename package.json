@@ -1,6 +1,6 @@
 {
   "name": "deepstream.io-client-js",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "the javascript client for deepstream.io",
   "main": "src/client.js",
   "directories": {
