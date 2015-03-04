@@ -1,4 +1,4 @@
-/* global describe, it, expect */
+/* global describe, it, expect, jasmine */
 var messageParser = require( '../../../src/message/message-parser' );
 
 describe( 'message parser processes raw messages correctly', function(){
@@ -127,8 +127,12 @@ describe( 'message parser processes raw messages correctly', function(){
 	});
 
 	it( 'handles broken messages gracefully', function(){
-		expect( messageParser.parse( 'dfds' ) ).toEqual( [ null ] );
-		expect( messageParser.parse( 'record'+y+'unkn' ) ).toEqual( [ null ] );
-		expect( messageParser.parse( 'record'+y+'unkn'+y+'aaa' ) ).toEqual( [ null ] );
+		var mockClient = { _$onError: jasmine.createSpy( '_$onError' ) };
+		
+		expect( messageParser.parse( 'gibberish', mockClient ) ).toEqual( [ null ] );
+		expect( mockClient._$onError ).toHaveBeenCalledWith('X', 'MESSAGE_PARSE_ERROR', 'Insufficiant message parts');
+		
+		expect( messageParser.parse( 'record'+y+'unkn', mockClient ) ).toEqual( [ null ] );
+		expect( mockClient._$onError ).toHaveBeenCalledWith('X', 'MESSAGE_PARSE_ERROR', 'Insufficiant message parts');
 	});
 });

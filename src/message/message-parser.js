@@ -29,14 +29,14 @@ var MessageParser = function() {
  *                  	data: <array of strings>
  *                  }
  */
-MessageParser.prototype.parse = function( message ) {
+MessageParser.prototype.parse = function( message, client ) {
 	var parsedMessages = [],
 		rawMessages = message.split( C.MESSAGE_SEPERATOR ),
 		i;
 
 	for( i = 0; i < rawMessages.length; i++ ) {
 		if( rawMessages[ i ].length > 2 ) {
-			parsedMessages.push( this._parseMessage( rawMessages[ i ] ) );
+			parsedMessages.push( this._parseMessage( rawMessages[ i ], client ) );
 		}
 	}
 
@@ -119,15 +119,17 @@ MessageParser.prototype._getActions = function() {
  * 
  * @returns {Object} parsedMessage
  */
-MessageParser.prototype._parseMessage = function( message ) {
+MessageParser.prototype._parseMessage = function( message, client ) {
 	var parts = message.split( C.MESSAGE_PART_SEPERATOR ), 
 		messageObject = {};
 
 	if( parts.length < 2 ) {
+		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts' );
 		return null;
 	}
 
 	if( this._actions[ parts[ 1 ] ] === undefined ) {
+		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[ 1 ] );
 		return null;
 	}
 

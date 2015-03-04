@@ -277,11 +277,14 @@ Connection.prototype._onClose = function() {
  * @returns {void}
  */
 Connection.prototype._onMessage = function( message ) {
-	var parsedMessages = messageParser.parse( message ),
+	var parsedMessages = messageParser.parse( message, this._client ),
 		i;
 
 	for( i = 0; i < parsedMessages.length; i++ ) {
-		if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
+		if( parsedMessages[ i ] === null ) {
+			continue;
+		}
+		else if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
 			this._handleAuthResponse( parsedMessages[ i ] );
 		} else {
 			this._client._$onMessage( parsedMessages[ i ] );

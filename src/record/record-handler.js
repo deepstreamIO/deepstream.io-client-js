@@ -1,6 +1,7 @@
 var Record = require( './record' ),
 	AnonymousRecord = require( './anonymous-record' ),
 	List = require( './list' ),
+	Listener = require( './listener' ),
 	C = require( '../constants/constants' );
 
 /**
@@ -16,6 +17,7 @@ var RecordHandler = function( options, connection, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._records = {};
+	this._listener = {};
 };
 
 /**
@@ -85,8 +87,12 @@ RecordHandler.prototype.getAnonymousRecord = function() {
  * @public
  * @returns {void}
  */
-RecordHandler.prototype.listenForSubscriptions = function( pattern, callback ) {
-
+RecordHandler.prototype.listen = function( pattern, callback ) {
+	if( this._listener[ pattern ] ) {
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
+	} else {
+		this._listener[ pattern ] = new Listener( pattern, callback, this._options, this._client, this._connection );
+	}
 };
 
 /**
@@ -98,8 +104,13 @@ RecordHandler.prototype.listenForSubscriptions = function( pattern, callback ) {
  * @public
  * @returns {void}
  */
-RecordHandler.prototype.unlistenForSubscriptions = function( pattern ) {
-
+RecordHandler.prototype.unlisten = function( pattern ) {
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+		delete this._listener[ pattern ];
+	} else {
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
+	}
 };
 
 /**
@@ -124,10 +135,14 @@ RecordHandler.prototype._$handle = function( message ) {
 		name = message.data[ 0 ];
 	}
 
-	if( !this._records[ name ] ) {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
-	} else {
+	if( this._records[ name ] ) {
 		this._records[ name ]._$onMessage( message );
+	} 
+	else if( this._listener[ name ] ) {
+		this._listener[ name ]._$onMessage( message );
+	} 
+	else {
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 	}
 };
 

@@ -8,6 +8,19 @@ client.on( 'connectionStateChanged', function(){
 client.login({ username: 'Wolfram' });
 
 /****************************************
+* Record
+****************************************/
+cli.group( 'record' )
+	.command( 'listen', function() {
+	    client.record.listen( 'user/.*', function( recordName ){
+	    	console.log( 'received listener callback', recordName );
+	    })
+	})
+	.command( 'subscribe', function() {
+	    client.record.getRecord( 'user/Wolfram' );
+	});
+	
+/****************************************
 * RPC
 ****************************************/
 cli.group( 'rpc' )

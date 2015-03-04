@@ -2594,7 +2594,7 @@ module.exports = _dereq_('./socket');
  */
 module.exports.parser = _dereq_('engine.io-parser');
 
-},{"./socket":15,"engine.io-parser":27}],15:[function(_dereq_,module,exports){
+},{"./socket":15,"engine.io-parser":28}],15:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -3281,7 +3281,7 @@ Socket.prototype.filterUpgrades = function (upgrades) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./transport":16,"./transports":17,"component-emitter":12,"debug":24,"engine.io-parser":27,"indexof":36,"parsejson":37,"parseqs":38,"parseuri":39}],16:[function(_dereq_,module,exports){
+},{"./transport":16,"./transports":17,"component-emitter":23,"debug":25,"engine.io-parser":28,"indexof":37,"parsejson":38,"parseqs":39,"parseuri":40}],16:[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -3433,7 +3433,7 @@ Transport.prototype.onClose = function () {
   this.emit('close');
 };
 
-},{"component-emitter":12,"engine.io-parser":27}],17:[function(_dereq_,module,exports){
+},{"component-emitter":23,"engine.io-parser":28}],17:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies
@@ -3727,7 +3727,7 @@ JSONPPolling.prototype.doWrite = function (data, fn) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":20,"component-inherit":23}],19:[function(_dereq_,module,exports){
+},{"./polling":20,"component-inherit":24}],19:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module requirements.
@@ -4082,7 +4082,7 @@ function unloadHandler() {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":20,"component-emitter":12,"component-inherit":23,"debug":24,"xmlhttprequest":22}],20:[function(_dereq_,module,exports){
+},{"./polling":20,"component-emitter":23,"component-inherit":24,"debug":25,"xmlhttprequest":22}],20:[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -4329,7 +4329,7 @@ Polling.prototype.uri = function(){
   return schema + '://' + this.hostname + port + this.path + query;
 };
 
-},{"../transport":16,"component-inherit":23,"debug":24,"engine.io-parser":27,"parseqs":38,"xmlhttprequest":22}],21:[function(_dereq_,module,exports){
+},{"../transport":16,"component-inherit":24,"debug":25,"engine.io-parser":28,"parseqs":39,"xmlhttprequest":22}],21:[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -4560,7 +4560,7 @@ WS.prototype.check = function(){
   return !!WebSocket && !('__initialize' in WebSocket && this.name === WS.prototype.name);
 };
 
-},{"../transport":16,"component-inherit":23,"debug":24,"engine.io-parser":27,"parseqs":38,"ws":40}],22:[function(_dereq_,module,exports){
+},{"../transport":16,"component-inherit":24,"debug":25,"engine.io-parser":28,"parseqs":39,"ws":41}],22:[function(_dereq_,module,exports){
 // browser shim for xmlhttprequest module
 var hasCORS = _dereq_('has-cors');
 
@@ -4598,7 +4598,9 @@ module.exports = function(opts) {
   }
 }
 
-},{"has-cors":34}],23:[function(_dereq_,module,exports){
+},{"has-cors":35}],23:[function(_dereq_,module,exports){
+module.exports=_dereq_(12)
+},{"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js":12}],24:[function(_dereq_,module,exports){
 
 module.exports = function(a, b){
   var fn = function(){};
@@ -4606,7 +4608,7 @@ module.exports = function(a, b){
   a.prototype = new fn;
   a.prototype.constructor = a;
 };
-},{}],24:[function(_dereq_,module,exports){
+},{}],25:[function(_dereq_,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -4755,7 +4757,7 @@ function load() {
 
 exports.enable(load());
 
-},{"./debug":25}],25:[function(_dereq_,module,exports){
+},{"./debug":26}],26:[function(_dereq_,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -4954,7 +4956,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":26}],26:[function(_dereq_,module,exports){
+},{"ms":27}],27:[function(_dereq_,module,exports){
 /**
  * Helpers.
  */
@@ -5067,7 +5069,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],27:[function(_dereq_,module,exports){
+},{}],28:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -5637,7 +5639,7 @@ exports.decodePayloadAsBinary = function (data, binaryType, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./keys":28,"after":29,"arraybuffer.slice":30,"base64-arraybuffer":31,"blob":32,"utf8":33}],28:[function(_dereq_,module,exports){
+},{"./keys":29,"after":30,"arraybuffer.slice":31,"base64-arraybuffer":32,"blob":33,"utf8":34}],29:[function(_dereq_,module,exports){
 
 /**
  * Gets the keys for an object.
@@ -5658,7 +5660,7 @@ module.exports = Object.keys || function keys (obj){
   return arr;
 };
 
-},{}],29:[function(_dereq_,module,exports){
+},{}],30:[function(_dereq_,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {
@@ -5688,7 +5690,7 @@ function after(count, callback, err_cb) {
 
 function noop() {}
 
-},{}],30:[function(_dereq_,module,exports){
+},{}],31:[function(_dereq_,module,exports){
 /**
  * An abstraction for slicing an arraybuffer even when
  * ArrayBuffer.prototype.slice is not supported
@@ -5719,7 +5721,7 @@ module.exports = function(arraybuffer, start, end) {
   return result.buffer;
 };
 
-},{}],31:[function(_dereq_,module,exports){
+},{}],32:[function(_dereq_,module,exports){
 /*
  * base64-arraybuffer
  * https://github.com/niklasvh/base64-arraybuffer
@@ -5780,7 +5782,7 @@ module.exports = function(arraybuffer, start, end) {
   };
 })("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
-},{}],32:[function(_dereq_,module,exports){
+},{}],33:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Create a blob builder even when vendor prefixes exist
@@ -5833,7 +5835,7 @@ module.exports = (function() {
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],33:[function(_dereq_,module,exports){
+},{}],34:[function(_dereq_,module,exports){
 (function (global){
 /*! http://mths.be/utf8js v2.0.0 by @mathias */
 ;(function(root) {
@@ -6076,7 +6078,7 @@ module.exports = (function() {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],34:[function(_dereq_,module,exports){
+},{}],35:[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -6101,7 +6103,7 @@ try {
   module.exports = false;
 }
 
-},{"global":35}],35:[function(_dereq_,module,exports){
+},{"global":36}],36:[function(_dereq_,module,exports){
 
 /**
  * Returns `this`. Execute this without a "context" (i.e. without it being
@@ -6111,7 +6113,7 @@ try {
 
 module.exports = (function () { return this; })();
 
-},{}],36:[function(_dereq_,module,exports){
+},{}],37:[function(_dereq_,module,exports){
 
 var indexOf = [].indexOf;
 
@@ -6122,7 +6124,7 @@ module.exports = function(arr, obj){
   }
   return -1;
 };
-},{}],37:[function(_dereq_,module,exports){
+},{}],38:[function(_dereq_,module,exports){
 (function (global){
 /**
  * JSON parse.
@@ -6157,7 +6159,7 @@ module.exports = function parsejson(data) {
   }
 };
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],38:[function(_dereq_,module,exports){
+},{}],39:[function(_dereq_,module,exports){
 /**
  * Compiles a querystring
  * Returns string representation of the object
@@ -6196,7 +6198,7 @@ exports.decode = function(qs){
   return qry;
 };
 
-},{}],39:[function(_dereq_,module,exports){
+},{}],40:[function(_dereq_,module,exports){
 /**
  * Parses an URI
  *
@@ -6237,7 +6239,7 @@ module.exports = function parseuri(str) {
     return uri;
 };
 
-},{}],40:[function(_dereq_,module,exports){
+},{}],41:[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -6282,7 +6284,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],41:[function(_dereq_,module,exports){
+},{}],42:[function(_dereq_,module,exports){
 var C = _dereq_( './constants/constants' ),
 	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
@@ -6514,7 +6516,7 @@ Client.prototype._getOptions = function( options ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":42,"./default-options":43,"./event/event-handler":44,"./message/connection":45,"./record/record-handler":51,"./rpc/rpc-handler":53,"component-emitter":12}],42:[function(_dereq_,module,exports){
+},{"./constants/constants":43,"./default-options":44,"./event/event-handler":45,"./message/connection":46,"./record/record-handler":53,"./rpc/rpc-handler":55,"component-emitter":12}],43:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -6553,6 +6555,8 @@ exports.EVENT.UNSOLICITED_MESSAGE = 'UNSOLICITED_MESSAGE';
 exports.EVENT.MESSAGE_PARSE_ERROR = 'MESSAGE_PARSE_ERROR';
 exports.EVENT.VERSION_EXISTS = 'VERSION_EXISTS';
 exports.EVENT.NOT_AUTHENTICATED = 'NOT_AUTHENTICATED';
+exports.EVENT.LISTENER_EXISTS = 'LISTENER_EXISTS';
+exports.EVENT.NOT_LISTENING = 'NOT_LISTENING';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';
@@ -6564,7 +6568,10 @@ exports.ACTIONS.DELETE = 'D';
 exports.ACTIONS.SUBSCRIBE = 'S';
 exports.ACTIONS.UNSUBSCRIBE = 'US';
 exports.ACTIONS.INVOKE = 'I';
+exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND = 'SP';
+exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED = 'SR';
 exports.ACTIONS.LISTEN = 'L';
+exports.ACTIONS.UNLISTEN = 'UL';
 exports.ACTIONS.PROVIDER_UPDATE = 'PU';
 exports.ACTIONS.QUERY = 'Q';
 exports.ACTIONS.CREATEORREAD = 'CR';
@@ -6574,7 +6581,7 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
-},{}],43:[function(_dereq_,module,exports){
+},{}],44:[function(_dereq_,module,exports){
 module.exports = {
 	/************************************************
 	* Deepstream									*
@@ -6616,8 +6623,8 @@ module.exports = {
 	 rpcResponseTimeout: 10000,
 
 	 /**
-	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing
-	 *                                      	to a record before an error is thrown
+	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/
+	 * 											listening to a record before an error is thrown
 	 */
 	 subscriptionTimeout: 2000,
 
@@ -6738,7 +6745,7 @@ module.exports = {
 	 */
 	rememberUpgrade: false
 };
-},{}],44:[function(_dereq_,module,exports){
+},{}],45:[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
 	C = _dereq_( '../constants/constants' ),
@@ -6832,7 +6839,7 @@ EventHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"component-emitter":12}],45:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"component-emitter":12}],46:[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -7112,11 +7119,14 @@ Connection.prototype._onClose = function() {
  * @returns {void}
  */
 Connection.prototype._onMessage = function( message ) {
-	var parsedMessages = messageParser.parse( message ),
+	var parsedMessages = messageParser.parse( message, this._client ),
 		i;
 
 	for( i = 0; i < parsedMessages.length; i++ ) {
-		if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
+		if( parsedMessages[ i ] === null ) {
+			continue;
+		}
+		else if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
 			this._handleAuthResponse( parsedMessages[ i ] );
 		} else {
 			this._client._$onMessage( parsedMessages[ i ] );
@@ -7219,7 +7229,7 @@ Connection.prototype._clearReconnect = function() {
 };
 
 module.exports = Connection;
-},{"../constants/constants":42,"../tcp/tcp-connection":56,"../utils/utils":57,"./message-builder":46,"./message-parser":47,"engine.io-client":13}],46:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../tcp/tcp-connection":58,"../utils/utils":59,"./message-builder":47,"./message-parser":48,"engine.io-client":13}],47:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -7297,7 +7307,7 @@ exports.typed = function( value ) {
 	
 	throw new Error( 'Can\'t serialize type ' + value );
 };
-},{"../constants/constants":42}],47:[function(_dereq_,module,exports){
+},{"../constants/constants":43}],48:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -7329,14 +7339,14 @@ var MessageParser = function() {
  *                  	data: <array of strings>
  *                  }
  */
-MessageParser.prototype.parse = function( message ) {
+MessageParser.prototype.parse = function( message, client ) {
 	var parsedMessages = [],
 		rawMessages = message.split( C.MESSAGE_SEPERATOR ),
 		i;
 
 	for( i = 0; i < rawMessages.length; i++ ) {
 		if( rawMessages[ i ].length > 2 ) {
-			parsedMessages.push( this._parseMessage( rawMessages[ i ] ) );
+			parsedMessages.push( this._parseMessage( rawMessages[ i ], client ) );
 		}
 	}
 
@@ -7419,15 +7429,17 @@ MessageParser.prototype._getActions = function() {
  * 
  * @returns {Object} parsedMessage
  */
-MessageParser.prototype._parseMessage = function( message ) {
+MessageParser.prototype._parseMessage = function( message, client ) {
 	var parts = message.split( C.MESSAGE_PART_SEPERATOR ), 
 		messageObject = {};
 
 	if( parts.length < 2 ) {
+		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts' );
 		return null;
 	}
 
 	if( this._actions[ parts[ 1 ] ] === undefined ) {
+		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[ 1 ] );
 		return null;
 	}
 
@@ -7440,7 +7452,7 @@ MessageParser.prototype._parseMessage = function( message ) {
 };
 
 module.exports = new MessageParser();
-},{"../constants/constants":42}],48:[function(_dereq_,module,exports){
+},{"../constants/constants":43}],49:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' );
 
 /**
@@ -7611,7 +7623,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":52}],49:[function(_dereq_,module,exports){
+},{"./record":54}],50:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
@@ -7718,7 +7730,7 @@ JsonPath.prototype._tokenize = function() {
 };
 
 module.exports = JsonPath;
-},{"../utils/utils":57}],50:[function(_dereq_,module,exports){
+},{"../utils/utils":59}],51:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
 	C = _dereq_( '../constants/constants' );
@@ -7910,10 +7922,46 @@ List.prototype._applyUpdate = function( message ) {
 };
 
 module.exports = List;
-},{"../constants/constants":42,"./record":52,"component-emitter":12}],51:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"./record":54,"component-emitter":12}],52:[function(_dereq_,module,exports){
+var C = _dereq_( '../constants/constants' );
+
+var Listener = function( pattern, callback, options, client, connection ) {
+    this._callback = callback;
+    this._pattern = pattern;
+    this._options = options;
+    this._client = client;
+    this._connection = connection;
+    this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
+    this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.LISTEN, [ this._pattern ] );
+};
+
+Listener.prototype.destroy = function() {
+    this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNLISTEN, [ this._pattern ] );
+    this._callback = null;
+    this._pattern = null;
+    this._client = null;
+    this._connection = null;
+};
+
+Listener.prototype._$onMessage = function( message ) {
+    if( message.action === C.ACTIONS.ACK ) {
+        clearTimeout( this._ackTimeout );
+    } else {
+        var isFound = message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND;
+        this._callback( message.data[ 1 ], isFound );
+    }
+};
+
+Listener.prototype._onAckTimeout = function() {
+    this._client._$onError( C.TOPIC.RECORD, C.EVENT.ACK_TIMEOUT, 'Listening to pattern ' + this._pattern );
+};
+
+module.exports = Listener;
+},{"../constants/constants":43}],53:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
+	Listener = _dereq_( './listener' ),
 	C = _dereq_( '../constants/constants' );
 
 /**
@@ -7929,6 +7977,7 @@ var RecordHandler = function( options, connection, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._records = {};
+	this._listener = {};
 };
 
 /**
@@ -7998,8 +8047,12 @@ RecordHandler.prototype.getAnonymousRecord = function() {
  * @public
  * @returns {void}
  */
-RecordHandler.prototype.listenForSubscriptions = function( pattern, callback ) {
-
+RecordHandler.prototype.listen = function( pattern, callback ) {
+	if( this._listener[ pattern ] ) {
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
+	} else {
+		this._listener[ pattern ] = new Listener( pattern, callback, this._options, this._client, this._connection );
+	}
 };
 
 /**
@@ -8011,8 +8064,13 @@ RecordHandler.prototype.listenForSubscriptions = function( pattern, callback ) {
  * @public
  * @returns {void}
  */
-RecordHandler.prototype.unlistenForSubscriptions = function( pattern ) {
-
+RecordHandler.prototype.unlisten = function( pattern ) {
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+		delete this._listener[ pattern ];
+	} else {
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
+	}
 };
 
 /**
@@ -8037,10 +8095,14 @@ RecordHandler.prototype._$handle = function( message ) {
 		name = message.data[ 0 ];
 	}
 
-	if( !this._records[ name ] ) {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
-	} else {
+	if( this._records[ name ] ) {
 		this._records[ name ]._$onMessage( message );
+	} 
+	else if( this._listener[ name ] ) {
+		this._listener[ name ]._$onMessage( message );
+	} 
+	else {
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 	}
 };
 
@@ -8070,7 +8132,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":42,"./anonymous-record":48,"./list":50,"./record":52}],52:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"./anonymous-record":49,"./list":51,"./listener":52,"./record":54}],54:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
@@ -8611,7 +8673,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
  };
 
 module.exports = Record;
-},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"../utils/utils":57,"./json-path":49,"component-emitter":12}],53:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/utils":59,"./json-path":50,"component-emitter":12}],55:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' ),
 	Rpc = _dereq_( './rpc' ),
@@ -8821,7 +8883,7 @@ RpcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = RpcHandler;
-},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"./rpc":55,"./rpc-response":54}],54:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"./rpc":57,"./rpc-response":56}],56:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
 	messageBuilder = _dereq_( '../message/message-builder' );
@@ -8913,7 +8975,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":42,"../message/message-builder":46,"../utils/utils":57}],55:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../utils/utils":59}],57:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
 
@@ -8991,7 +9053,7 @@ Rpc.prototype._complete = function() {
 };
 
 module.exports = Rpc;
-},{"../constants/constants":42,"../message/message-parser":47}],56:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-parser":48}],58:[function(_dereq_,module,exports){
 (function (process){
 var net = _dereq_( 'net' ),
 	URL = _dereq_( 'url' ),
@@ -9214,7 +9276,7 @@ TcpConnection.prototype._destroy = function() {
 module.exports = TcpConnection;
 
 }).call(this,_dereq_('_process'))
-},{"../constants/constants":42,"_process":4,"events":2,"net":1,"url":9,"util":11}],57:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"_process":4,"events":2,"net":1,"url":9,"util":11}],59:[function(_dereq_,module,exports){
 (function (process){
 exports.isNode = function() {
 	return typeof process !== 'undefined' && process.toString() === '[object process]';
@@ -9301,5 +9363,5 @@ exports.shallowCopy = function( obj ) {
 	return copy;
 };
 }).call(this,_dereq_('_process'))
-},{"_process":4}]},{},[41])(41)
+},{"_process":4}]},{},[42])(42)
 });
