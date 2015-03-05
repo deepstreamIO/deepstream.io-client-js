@@ -7081,7 +7081,7 @@ Connection.prototype._onOpen = function() {
  */
 Connection.prototype._onError = function( error ) {
 	this._setState( C.CONNECTION_STATE.ERROR );
-	
+	throw error;
 	/*
 	 * If the implementation isn't listening on the error event this will throw
 	 * an error. So let's defer it to allow the reconnection to kick in.
