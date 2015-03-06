@@ -63,7 +63,7 @@ Emitter( Client.prototype );
  * like { username: 'someName', password: 'somePass' } will probably make the most sense.
  *
  * login can be called multiple times until either the connection is authenticated or
- * forcefully closed by the server since its maxAuthAttempts threshhold has been exceeded
+ * forcefully closed by the server since its maxAuthAttempts threshold has been exceeded
  * 
  * @param   {Object}   authParams JSON.serializable authentication data
  * @param   {Function} callback   Will be called with either (true) or (false, errorType, errorMessage)

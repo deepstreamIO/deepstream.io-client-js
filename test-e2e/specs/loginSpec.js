@@ -28,6 +28,7 @@ describe( 'record', function() {
         deepstreamServer.on( 'started', done );
         deepstreamServer.set( 'logger', logger );
         deepstreamServer.set( 'showLogo', false );
+        deepstreamServer.set( 'maxAuthAttempts', 2 );
         deepstreamServer.set( 'permissionHandler', permissionHandler );
         deepstreamServer.start();
     });
@@ -35,11 +36,29 @@ describe( 'record', function() {
     /**************** TESTS ****************/
     it( 'tries to log in with an invalid user', function( done ) {
         clientA = deepstreamClient( 'localhost:6021' );
-        clientA.login({ username: 'Egon'}, function( success, event, error ){ 
+        clientA.login({ username: 'Egon'}, function( success, event, error ){
             expect( success ).toBe( false );
             expect( event ).toBe( 'INVALID_AUTH_DATA' );
             expect( error ).toBe( 'Invalid user' );
             done();
+        });
+    });
+    
+    it( 'tries to log in a second time and exceeds maxAuthAttempts', function(done) {
+        var firstcall = true;
+        
+        clientA.login({ username: 'Egon'}, function( success, event, error ){
+            if( firstcall ) {
+                expect( success ).toBe( false );
+                expect( event ).toBe( 'INVALID_AUTH_DATA' );
+                expect( error ).toBe( 'Invalid user' );
+                firstcall = false;
+            } else {
+                expect( success ).toBe( false );
+                expect( event ).toBe( 'TOO_MANY_AUTH_ATTEMPTS' );
+                expect( error ).toBe( 'too many authentication attempts' );
+                done();
+            }
         });
     });
     

@@ -239,7 +239,7 @@ Connection.prototype._onOpen = function() {
  */
 Connection.prototype._onError = function( error ) {
 	this._setState( C.CONNECTION_STATE.ERROR );
-	throw error;
+
 	/*
 	 * If the implementation isn't listening on the error event this will throw
 	 * an error. So let's defer it to allow the reconnection to kick in.
@@ -305,10 +305,17 @@ Connection.prototype._onMessage = function( message ) {
  */
 Connection.prototype._handleAuthResponse = function( message ) {
 	if( message.action === C.ACTIONS.ERROR ) {
+		
+		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
+			this.close();
+		} else {
+			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
+		}
+		
 		if( this._authCallback ) {
 			this._authCallback( false, message.data[ 0 ], message.data[ 1 ] );
 		}
-		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
+	
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
 		
