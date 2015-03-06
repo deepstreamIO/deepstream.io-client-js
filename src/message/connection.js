@@ -66,6 +66,11 @@ Connection.prototype.getState = function() {
  * @returns {void}
  */
 Connection.prototype.authenticate = function( authParams, callback ) {
+	if( this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED ) {
+		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
+		return;
+	}
+	
 	this._authParams = authParams;
 	this._authCallback = callback;
 
@@ -307,7 +312,7 @@ Connection.prototype._handleAuthResponse = function( message ) {
 	if( message.action === C.ACTIONS.ERROR ) {
 		
 		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
-			this.close();
+			this._deliberateClose = true;
 		} else {
 			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		}

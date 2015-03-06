@@ -3,7 +3,7 @@ var DeepstreamServer = require( 'deepstream.io' ),
     deepstreamClient = require( '../../src/client' ),
     TestLogger = require( '../tools/test-logger' );
     
-describe( 'record', function() {
+describe( 'login', function() {
     var deepstreamServer,
         logger = new TestLogger(),
         clientA,
@@ -46,7 +46,7 @@ describe( 'record', function() {
     
     it( 'tries to log in a second time and exceeds maxAuthAttempts', function(done) {
         var firstcall = true;
-        
+ 
         clientA.login({ username: 'Egon'}, function( success, event, error ){
             if( firstcall ) {
                 expect( success ).toBe( false );
@@ -59,6 +59,18 @@ describe( 'record', function() {
                 expect( error ).toBe( 'too many authentication attempts' );
                 done();
             }
+        });
+    });
+    
+    it( 'tries to log in again after the client has been kicked', function(done) {
+        clientA.on( 'error', function( error, event, topic ){
+            expect( topic ).toBe( 'X' );
+            expect( event ).toBe( 'IS_CLOSED' );
+            done();
+        });
+        
+        clientA.login({ username: 'Egon'}, function( success, event, error ){
+            expect( this ).toBe( 'never called' );
         });
     });
     

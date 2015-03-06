@@ -3,7 +3,7 @@ var DeepstreamServer = require( 'deepstream.io' ),
     deepstreamClient = require( '../../src/client' ),
     TestLogger = require( '../tools/test-logger' );
     
-describe( 'record', function() {
+describe( 'anonymous record', function() {
     var deepstreamServer,
         logger = new TestLogger(),
         clientA,
