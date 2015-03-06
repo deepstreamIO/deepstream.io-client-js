@@ -70,7 +70,8 @@ describe( 'record', function() {
                done();
            }, 50 );
         }, 20 );
-    })
+    });
+    
      /**************** TEAR DOWN ****************/
     it( 'closes the clients', function() {
         clientA.close();

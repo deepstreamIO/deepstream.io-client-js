@@ -20,12 +20,18 @@ describe( 'record', function() {
     
     it( 'creates clientA', function( done ) {
         clientA = deepstreamClient( 'localhost:6021' );
-        clientA.login( null, function(){ done(); });
+        clientA.login( null, function( success ){
+            expect( success ).toBe( true );
+            done(); 
+        });
     });
     
     it( 'creates clientB', function( done ) {
         clientB = deepstreamClient( 'localhost:6021' );
-        clientB.login( null, function(){ done(); });
+        clientB.login( null, function( success ){
+            expect( success ).toBe( true );
+            done(); 
+        });
     });
     
      /**************** TEST ****************/
