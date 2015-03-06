@@ -23,6 +23,7 @@ var List = function( recordHandler, name, options ) {
 
 	this.isReady = this._record.isReady;
 	this.name = name;
+	this._queuedMethods = [];
 
 	this.delete = this._record.delete.bind( this._record );
 	this.discard = this._record.discard.bind( this._record );
@@ -76,8 +77,12 @@ List.prototype.setEntries = function( entries ) {
 			throw new Error( errorMsg );
 		}
 	}
-
-	return this._record.set( entries );
+	
+	if( this._record.isReady === false ) {
+		this._queuedMethods.push( this.setEntries.bind( this, entries ) );
+	} else {
+		return this._record.set( entries );
+	}
 };
 
 /**
@@ -89,6 +94,11 @@ List.prototype.setEntries = function( entries ) {
  * @returns {void}
  */
 List.prototype.removeEntry = function( entry ) {
+	if( this._record.isReady === false ) {
+		this._queuedMethods.push( this.removeEntry.bind( this, entry ) );
+		return;
+	}
+	
 	var currentEntries = this._record.get(),
 		entries = [],
 		i;
@@ -113,6 +123,11 @@ List.prototype.removeEntry = function( entry ) {
 List.prototype.addEntry = function( entry ) {
 	if( typeof entry !== 'string' ) {
 		throw new Error( 'Entry must be a recordName' );
+	}
+	
+	if( this._record.isReady === false ) {
+		this._queuedMethods.push( this.addEntry.bind( this, entry ) );
+		return;
 	}
 
 	var entries = this.getEntries();
@@ -163,6 +178,11 @@ List.prototype.unsubscribe = function() {
  */
 List.prototype._onReady = function() {
 	this.isReady = true;
+	
+	for( var i = 0; i < this._queuedMethods.length; i++ ) {
+		this._queuedMethods[ i ]();
+	}
+	
 	this.emit( 'ready' );
 };
 
