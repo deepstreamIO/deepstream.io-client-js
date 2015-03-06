@@ -187,7 +187,7 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 };
 
 /**
- * Removes all change listener and notifies the server that the client is
+ * Removes all change listeners and notifies the server that the client is
  * no longer interested in updates for this record
  *
  * @public
@@ -195,10 +195,10 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  */
 Record.prototype.discard = function() {
 	this.usages--;
-	
+
 	if( this.usages <= 0 ) {
-			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 	}
 };
 
