@@ -74,6 +74,17 @@ describe( 'login', function() {
         });
     });
     
+    it( 'recreates the client and logs in successfully', function(done){
+        clientA = deepstreamClient( 'localhost:6021' );
+        clientA.on( 'error', function(){
+            console.log( 'clientA error', arguments );
+        })
+        clientA.login({ username: 'validUserA'}, function( success, event, error ){
+            expect( success ).toBe( true );
+            done();
+        });
+    });
+    
      /**************** TEAR DOWN ****************/
     it( 'closes the clients', function() {
         clientA.close();
