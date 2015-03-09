@@ -22,7 +22,8 @@ var TcpConnection = function( url ) {
 	this._socket = null;
 	this._url = url;
 	this._messageBuffer = '';
-	process.on( 'exit', this._destroy.bind( this ) );
+	this._destroyFn = this._destroy.bind( this );
+	process.on( 'exit', this._destroyFn );
 	this.open();
 	this._isOpen = false;
 };
@@ -78,6 +79,7 @@ TcpConnection.prototype.send = function( message ) {
  */
 TcpConnection.prototype.close = function() {
 	this._isOpen = false;
+	process.removeListener( 'exit', this._destroyFn );
 	this._socket.end();
 };
 
