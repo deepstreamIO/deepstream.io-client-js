@@ -1,71 +1,37 @@
 /* global describe, it, expect, jasmine */
-var DeepstreamServer = require( 'deepstream.io' ),
-    MessageConnector = require( 'deepstream.io-msg-direct' ),
-    deepstreamClient = require( '../../src/client' ),
-    TestLogger = require( '../tools/test-logger' );
+var Cluster = require( '../tools/cluster'),
+    deepstreamClient = require( '../../src/client' );
     
 describe( 'event', function() {
-    var deepstreamServerOne,
-        deepstreamServerTwo,
-        logger = new TestLogger(),
+    var cluster,
+        
         clientA,
         clientB,
-        recordA,
-        recordB,
-        anonymousRecord,
-        currentPet;
-    
+        clientC,
+
+        callbackA = jasmine.createSpy( 'callbackA' ), 
+        callbackB = jasmine.createSpy( 'callbackB' ), 
+        callbackC = jasmine.createSpy( 'callbackC' );
+
     /**************** SETUP ****************/
-    it( 'starts both servers', function( done ){
-        var checkReady = function() {
-            if( deepstreamServerOne.isRunning && deepstreamServerTwo.isRunning ) {
-                done();
-            }
-        };
-
-        // Start Server One
-        deepstreamServerOne = new DeepstreamServer();
-        deepstreamServerOne.on( 'started', checkReady );
-        deepstreamServerOne.set( 'tcpPort', 6001 );
-        deepstreamServerOne.set( 'port', 6011 );
-        deepstreamServerOne.set( 'messageConnector', new MessageConnector({
-            localport: 3001, 
-            localhost: 'localhost', 
-            remoteUrls: [ 'localhost:3002' ],
-            reconnectInterval: 100,
-            maxReconnectAttepts: 10,
-            securityToken: 'bla'
-        }));
-        deepstreamServerOne.set( 'logger', logger );
-        deepstreamServerOne.set( 'showLogo', false );
-        deepstreamServerOne.start();
-
-        // Start Server Two
-        deepstreamServerTwo = new DeepstreamServer();
-        deepstreamServerTwo.on( 'started', checkReady );
-        deepstreamServerTwo.set( 'tcpPort', 6002 );
-        deepstreamServerTwo.set( 'port', 6022 );
-        deepstreamServerTwo.set( 'messageConnector', new MessageConnector({
-            localport: 3002, 
-            localhost: 'localhost', 
-            remoteUrls: [ 'localhost:3001' ],
-            reconnectInterval: 100,
-            maxReconnectAttepts: 10,
-            securityToken: 'bla'
-        }));
-        deepstreamServerTwo.set( 'logger', logger );
-        deepstreamServerTwo.set( 'showLogo', false );
-        deepstreamServerTwo.start();
+    it( 'starts two servers', function( done ){
+        cluster = new Cluster( [ 6001, 6002, 6003 ], false );
+        cluster.on( 'ready', done );
     });
 
     it( 'creates clientA', function( done ) {
         clientA = deepstreamClient( 'localhost:6001' );
-        clientA.login( null, function(){ done(); });
+        clientA.login( { username: 'clientA' }, function(){ done(); });
     });
     
     it( 'creates clientB', function( done ) {
         clientB = deepstreamClient( 'localhost:6002' );
-        clientB.login( null, function(){ done(); });
+        clientB.login( { username: 'clientB' }, function(){ done(); });
+    });
+    
+    it( 'creates clientB', function( done ) {
+        clientC = deepstreamClient( 'localhost:6003' );
+        clientC.login( { username: 'clientC' }, function(){ done(); });
     });
     
      /**************** TEST ****************/
@@ -119,19 +85,50 @@ describe( 'event', function() {
         clientB.event.emit( 'event3', { an: 'object' } );
     });
     
+    it( 'sends events across multiple cluster nodes', function( done ){
+        clientA.event.subscribe( 'event4', callbackA );
+        clientB.event.subscribe( 'event4', callbackB );
+        clientC.event.subscribe( 'event4', callbackC );
+        
+        setTimeout( done, 30 );
+    });
+    
+    it( 'sends events', function( done ){
+        clientA.event.emit( 'event4', 'value1' );
+        clientB.event.emit( 'event4', 'value2' );
+        clientC.event.emit( 'event4', 'value3' );
+        
+        setTimeout( done, 30 );
+    });
+    
+    xit( 'all client have received all events', function( done ){
+        expect( callbackA.calls.length ).toBe( 3 );
+        expect( callbackA ).toHaveBeenCalledWith( 'value1' );
+        expect( callbackA ).toHaveBeenCalledWith( 'value2' );
+        expect( callbackA ).toHaveBeenCalledWith( 'value3' );
+        
+        expect( callbackB.calls.length ).toBe( 3 );
+        expect( callbackB ).toHaveBeenCalledWith( 'value1' );
+        expect( callbackB ).toHaveBeenCalledWith( 'value2' );
+        expect( callbackB ).toHaveBeenCalledWith( 'value3' );
+        
+        expect( callbackC.calls.length ).toBe( 3 );
+        expect( callbackC ).toHaveBeenCalledWith( 'value1' );
+        expect( callbackC ).toHaveBeenCalledWith( 'value2' );
+        expect( callbackC ).toHaveBeenCalledWith( 'value3' );
+            
+        done();
+    });
+    
      /**************** TEAR DOWN ****************/
     it( 'closes the clients', function() {
         clientA.close();
         clientB.close();
+        clientC.close();
     });
     
-    it( 'stops server one', function(done) {
-      deepstreamServerOne.on( 'stopped', done );
-      deepstreamServerOne.stop();
-    });
-
-    it( 'stops server two', function(done) {
-      deepstreamServerTwo.on( 'stopped', done );
-      deepstreamServerTwo.stop();
+    it( 'stops both servers', function(done) {
+        cluster.on( 'stopped', done );
+        cluster.stop();
     });
 });
