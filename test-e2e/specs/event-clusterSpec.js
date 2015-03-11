@@ -2,7 +2,7 @@
 var Cluster = require( '../tools/cluster'),
     deepstreamClient = require( '../../src/client' );
     
-describe( 'event', function() {
+describe( 'event cluster', function() {
     var cluster,
         
         clientA,
@@ -29,7 +29,7 @@ describe( 'event', function() {
         clientB.login( { username: 'clientB' }, function(){ done(); });
     });
     
-    it( 'creates clientB', function( done ) {
+    it( 'creates clientC', function( done ) {
         clientC = deepstreamClient( 'localhost:6003' );
         clientC.login( { username: 'clientC' }, function(){ done(); });
     });
@@ -101,7 +101,7 @@ describe( 'event', function() {
         setTimeout( done, 30 );
     });
     
-    xit( 'all client have received all events', function( done ){
+    it( 'all client have received all events', function( done ){
         expect( callbackA.calls.length ).toBe( 3 );
         expect( callbackA ).toHaveBeenCalledWith( 'value1' );
         expect( callbackA ).toHaveBeenCalledWith( 'value2' );
