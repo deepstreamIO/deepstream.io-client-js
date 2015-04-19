@@ -2594,7 +2594,7 @@ module.exports = _dereq_('./socket');
  */
 module.exports.parser = _dereq_('engine.io-parser');
 
-},{"./socket":15,"engine.io-parser":28}],15:[function(_dereq_,module,exports){
+},{"./socket":15,"engine.io-parser":27}],15:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -3281,7 +3281,7 @@ Socket.prototype.filterUpgrades = function (upgrades) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./transport":16,"./transports":17,"component-emitter":23,"debug":25,"engine.io-parser":28,"indexof":37,"parsejson":38,"parseqs":39,"parseuri":40}],16:[function(_dereq_,module,exports){
+},{"./transport":16,"./transports":17,"component-emitter":12,"debug":24,"engine.io-parser":27,"indexof":36,"parsejson":37,"parseqs":38,"parseuri":39}],16:[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -3433,7 +3433,7 @@ Transport.prototype.onClose = function () {
   this.emit('close');
 };
 
-},{"component-emitter":23,"engine.io-parser":28}],17:[function(_dereq_,module,exports){
+},{"component-emitter":12,"engine.io-parser":27}],17:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies
@@ -3727,7 +3727,7 @@ JSONPPolling.prototype.doWrite = function (data, fn) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":20,"component-inherit":24}],19:[function(_dereq_,module,exports){
+},{"./polling":20,"component-inherit":23}],19:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module requirements.
@@ -4082,7 +4082,7 @@ function unloadHandler() {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":20,"component-emitter":23,"component-inherit":24,"debug":25,"xmlhttprequest":22}],20:[function(_dereq_,module,exports){
+},{"./polling":20,"component-emitter":12,"component-inherit":23,"debug":24,"xmlhttprequest":22}],20:[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -4329,7 +4329,7 @@ Polling.prototype.uri = function(){
   return schema + '://' + this.hostname + port + this.path + query;
 };
 
-},{"../transport":16,"component-inherit":24,"debug":25,"engine.io-parser":28,"parseqs":39,"xmlhttprequest":22}],21:[function(_dereq_,module,exports){
+},{"../transport":16,"component-inherit":23,"debug":24,"engine.io-parser":27,"parseqs":38,"xmlhttprequest":22}],21:[function(_dereq_,module,exports){
 /**
  * Module dependencies.
  */
@@ -4560,7 +4560,7 @@ WS.prototype.check = function(){
   return !!WebSocket && !('__initialize' in WebSocket && this.name === WS.prototype.name);
 };
 
-},{"../transport":16,"component-inherit":24,"debug":25,"engine.io-parser":28,"parseqs":39,"ws":41}],22:[function(_dereq_,module,exports){
+},{"../transport":16,"component-inherit":23,"debug":24,"engine.io-parser":27,"parseqs":38,"ws":40}],22:[function(_dereq_,module,exports){
 // browser shim for xmlhttprequest module
 var hasCORS = _dereq_('has-cors');
 
@@ -4598,9 +4598,7 @@ module.exports = function(opts) {
   }
 }
 
-},{"has-cors":35}],23:[function(_dereq_,module,exports){
-module.exports=_dereq_(12)
-},{"/home/ubuntu/workspace/deepstream.io-client-js/node_modules/component-emitter/index.js":12}],24:[function(_dereq_,module,exports){
+},{"has-cors":34}],23:[function(_dereq_,module,exports){
 
 module.exports = function(a, b){
   var fn = function(){};
@@ -4608,7 +4606,7 @@ module.exports = function(a, b){
   a.prototype = new fn;
   a.prototype.constructor = a;
 };
-},{}],25:[function(_dereq_,module,exports){
+},{}],24:[function(_dereq_,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -4757,7 +4755,7 @@ function load() {
 
 exports.enable(load());
 
-},{"./debug":26}],26:[function(_dereq_,module,exports){
+},{"./debug":25}],25:[function(_dereq_,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -4956,7 +4954,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":27}],27:[function(_dereq_,module,exports){
+},{"ms":26}],26:[function(_dereq_,module,exports){
 /**
  * Helpers.
  */
@@ -5069,7 +5067,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],28:[function(_dereq_,module,exports){
+},{}],27:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -5639,7 +5637,7 @@ exports.decodePayloadAsBinary = function (data, binaryType, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./keys":29,"after":30,"arraybuffer.slice":31,"base64-arraybuffer":32,"blob":33,"utf8":34}],29:[function(_dereq_,module,exports){
+},{"./keys":28,"after":29,"arraybuffer.slice":30,"base64-arraybuffer":31,"blob":32,"utf8":33}],28:[function(_dereq_,module,exports){
 
 /**
  * Gets the keys for an object.
@@ -5660,7 +5658,7 @@ module.exports = Object.keys || function keys (obj){
   return arr;
 };
 
-},{}],30:[function(_dereq_,module,exports){
+},{}],29:[function(_dereq_,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {
@@ -5690,7 +5688,7 @@ function after(count, callback, err_cb) {
 
 function noop() {}
 
-},{}],31:[function(_dereq_,module,exports){
+},{}],30:[function(_dereq_,module,exports){
 /**
  * An abstraction for slicing an arraybuffer even when
  * ArrayBuffer.prototype.slice is not supported
@@ -5721,7 +5719,7 @@ module.exports = function(arraybuffer, start, end) {
   return result.buffer;
 };
 
-},{}],32:[function(_dereq_,module,exports){
+},{}],31:[function(_dereq_,module,exports){
 /*
  * base64-arraybuffer
  * https://github.com/niklasvh/base64-arraybuffer
@@ -5782,7 +5780,7 @@ module.exports = function(arraybuffer, start, end) {
   };
 })("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
-},{}],33:[function(_dereq_,module,exports){
+},{}],32:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Create a blob builder even when vendor prefixes exist
@@ -5835,7 +5833,7 @@ module.exports = (function() {
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],34:[function(_dereq_,module,exports){
+},{}],33:[function(_dereq_,module,exports){
 (function (global){
 /*! http://mths.be/utf8js v2.0.0 by @mathias */
 ;(function(root) {
@@ -6078,7 +6076,7 @@ module.exports = (function() {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],35:[function(_dereq_,module,exports){
+},{}],34:[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -6103,7 +6101,7 @@ try {
   module.exports = false;
 }
 
-},{"global":36}],36:[function(_dereq_,module,exports){
+},{"global":35}],35:[function(_dereq_,module,exports){
 
 /**
  * Returns `this`. Execute this without a "context" (i.e. without it being
@@ -6113,7 +6111,7 @@ try {
 
 module.exports = (function () { return this; })();
 
-},{}],37:[function(_dereq_,module,exports){
+},{}],36:[function(_dereq_,module,exports){
 
 var indexOf = [].indexOf;
 
@@ -6124,7 +6122,7 @@ module.exports = function(arr, obj){
   }
   return -1;
 };
-},{}],38:[function(_dereq_,module,exports){
+},{}],37:[function(_dereq_,module,exports){
 (function (global){
 /**
  * JSON parse.
@@ -6159,7 +6157,7 @@ module.exports = function parsejson(data) {
   }
 };
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],39:[function(_dereq_,module,exports){
+},{}],38:[function(_dereq_,module,exports){
 /**
  * Compiles a querystring
  * Returns string representation of the object
@@ -6198,7 +6196,7 @@ exports.decode = function(qs){
   return qry;
 };
 
-},{}],40:[function(_dereq_,module,exports){
+},{}],39:[function(_dereq_,module,exports){
 /**
  * Parses an URI
  *
@@ -6239,7 +6237,7 @@ module.exports = function parseuri(str) {
     return uri;
 };
 
-},{}],41:[function(_dereq_,module,exports){
+},{}],40:[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -6284,7 +6282,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],42:[function(_dereq_,module,exports){
+},{}],41:[function(_dereq_,module,exports){
 var C = _dereq_( './constants/constants' ),
 	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
@@ -6516,7 +6514,7 @@ Client.prototype._getOptions = function( options ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":43,"./default-options":44,"./event/event-handler":45,"./message/connection":46,"./record/record-handler":53,"./rpc/rpc-handler":55,"component-emitter":12}],43:[function(_dereq_,module,exports){
+},{"./constants/constants":42,"./default-options":43,"./event/event-handler":44,"./message/connection":45,"./record/record-handler":52,"./rpc/rpc-handler":54,"component-emitter":12}],42:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -6583,7 +6581,7 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
-},{}],44:[function(_dereq_,module,exports){
+},{}],43:[function(_dereq_,module,exports){
 module.exports = {
 	/************************************************
 	* Deepstream									*
@@ -6747,7 +6745,7 @@ module.exports = {
 	 */
 	rememberUpgrade: false
 };
-},{}],45:[function(_dereq_,module,exports){
+},{}],44:[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
 	C = _dereq_( '../constants/constants' ),
@@ -6841,7 +6839,7 @@ EventHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"component-emitter":12}],46:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"component-emitter":12}],45:[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -7243,7 +7241,7 @@ Connection.prototype._clearReconnect = function() {
 };
 
 module.exports = Connection;
-},{"../constants/constants":43,"../tcp/tcp-connection":58,"../utils/utils":59,"./message-builder":47,"./message-parser":48,"engine.io-client":13}],47:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../tcp/tcp-connection":57,"../utils/utils":58,"./message-builder":46,"./message-parser":47,"engine.io-client":13}],46:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -7321,7 +7319,7 @@ exports.typed = function( value ) {
 	
 	throw new Error( 'Can\'t serialize type ' + value );
 };
-},{"../constants/constants":43}],48:[function(_dereq_,module,exports){
+},{"../constants/constants":42}],47:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -7466,7 +7464,7 @@ MessageParser.prototype._parseMessage = function( message, client ) {
 };
 
 module.exports = new MessageParser();
-},{"../constants/constants":43}],49:[function(_dereq_,module,exports){
+},{"../constants/constants":42}],48:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' );
 
 /**
@@ -7637,7 +7635,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":54}],50:[function(_dereq_,module,exports){
+},{"./record":53}],49:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
@@ -7744,7 +7742,7 @@ JsonPath.prototype._tokenize = function() {
 };
 
 module.exports = JsonPath;
-},{"../utils/utils":59}],51:[function(_dereq_,module,exports){
+},{"../utils/utils":58}],50:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
 	C = _dereq_( '../constants/constants' );
@@ -7956,7 +7954,7 @@ List.prototype._applyUpdate = function( message ) {
 };
 
 module.exports = List;
-},{"../constants/constants":43,"./record":54,"component-emitter":12}],52:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"./record":53,"component-emitter":12}],51:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 var Listener = function( pattern, callback, options, client, connection ) {
@@ -7991,7 +7989,7 @@ Listener.prototype._onAckTimeout = function() {
 };
 
 module.exports = Listener;
-},{"../constants/constants":43}],53:[function(_dereq_,module,exports){
+},{"../constants/constants":42}],52:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
@@ -8166,7 +8164,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":43,"./anonymous-record":49,"./list":51,"./listener":52,"./record":54}],54:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"./anonymous-record":48,"./list":50,"./listener":51,"./record":53}],53:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
@@ -8707,7 +8705,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
  };
 
 module.exports = Record;
-},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/utils":59,"./json-path":50,"component-emitter":12}],55:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"../utils/utils":58,"./json-path":49,"component-emitter":12}],54:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' ),
 	Rpc = _dereq_( './rpc' ),
@@ -8917,7 +8915,7 @@ RpcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = RpcHandler;
-},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"./rpc":57,"./rpc-response":56}],56:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"./rpc":56,"./rpc-response":55}],55:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
 	messageBuilder = _dereq_( '../message/message-builder' );
@@ -9009,7 +9007,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":43,"../message/message-builder":47,"../utils/utils":59}],57:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../utils/utils":58}],56:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
 
@@ -9087,7 +9085,7 @@ Rpc.prototype._complete = function() {
 };
 
 module.exports = Rpc;
-},{"../constants/constants":43,"../message/message-parser":48}],58:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-parser":47}],57:[function(_dereq_,module,exports){
 (function (process){
 var net = _dereq_( 'net' ),
 	URL = _dereq_( 'url' ),
@@ -9312,7 +9310,7 @@ TcpConnection.prototype._destroy = function() {
 module.exports = TcpConnection;
 
 }).call(this,_dereq_('_process'))
-},{"../constants/constants":43,"_process":4,"events":2,"net":1,"url":9,"util":11}],59:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"_process":4,"events":2,"net":1,"url":9,"util":11}],58:[function(_dereq_,module,exports){
 (function (process){
 exports.isNode = function() {
 	return typeof process !== 'undefined' && process.toString() === '[object process]';
@@ -9399,5 +9397,5 @@ exports.shallowCopy = function( obj ) {
 	return copy;
 };
 }).call(this,_dereq_('_process'))
-},{"_process":4}]},{},[42])(42)
+},{"_process":4}]},{},[41])(41)
 });
