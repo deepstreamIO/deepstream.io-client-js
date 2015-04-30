@@ -217,6 +217,24 @@ Record.prototype.delete = function() {
 };
 
 /**
+ * Convenience method, similar to promises. Executes callback
+ * whenever the record is ready, either immediatly or once the ready
+ * event is fired
+ *
+ * @param   {Function} callback Will be called when the record is ready
+ *
+ * @private
+ * @returns {void}
+ */
+Record.prototype.whenReady = function( callback ) {
+	if( this.isReady === true ) {
+		callback();
+	} else {
+		this.once( 'ready', callback );
+	}
+};
+
+/**
  * Callback for incoming messages from the message handler
  *
  * @param   {Object} message parsed and validated deepstream message

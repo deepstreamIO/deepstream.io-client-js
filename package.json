@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit test-e2e --forceexit",
+    "test": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit test-e2e --captureExceptions",
     "watch": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --captureExceptions --autotest --watch ./src",
     "e2e": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-e2e --captureExceptions",
     "unit": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --captureExceptions"
@@ -32,7 +32,7 @@
     "jasmine-node": "1.14.5",
     "grunt-release": "0.9.0",
     "deepstream.io": "latest",
-    "deepstream.io-msg-direct": "latest"
+    "deepstream.io-msg-redis": "latest"
   },
   "author": "Wolfram Hempel",
   "license": "MIT",

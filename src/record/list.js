@@ -27,6 +27,7 @@ var List = function( recordHandler, name, options ) {
 
 	this.delete = this._record.delete.bind( this._record );
 	this.discard = this._record.discard.bind( this._record );
+	this.whenReady = this._record.whenReady.bind( this._record );
 };
 
 EventEmitter( List.prototype );

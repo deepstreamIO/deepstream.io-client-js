@@ -7772,6 +7772,7 @@ var List = function( recordHandler, name, options ) {
 
 	this.delete = this._record.delete.bind( this._record );
 	this.discard = this._record.discard.bind( this._record );
+	this.whenReady = this._record.whenReady.bind( this._record );
 };
 
 EventEmitter( List.prototype );
@@ -8381,6 +8382,24 @@ Record.prototype.delete = function() {
 	}
 	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
+};
+
+/**
+ * Convenience method, similar to promises. Executes callback
+ * whenever the record is ready, either immediatly or once the ready
+ * event is fired
+ *
+ * @param   {Function} callback Will be called when the record is ready
+ *
+ * @private
+ * @returns {void}
+ */
+Record.prototype.whenReady = function( callback ) {
+	if( this.isReady === true ) {
+		callback();
+	} else {
+		this.once( 'ready', callback );
+	}
 };
 
 /**

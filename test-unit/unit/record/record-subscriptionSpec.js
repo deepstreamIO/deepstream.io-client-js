@@ -82,4 +82,28 @@ describe( 'supscriptions to local record changes', function(){
 		expect( brotherAgeCb ).toHaveBeenCalledWith( 28 );
 		expect( brotherAgeCb.calls.length ).toBe( 1 );
 	});
+
+	it( 'gets notified when the record is ready', function(){
+		var record3 = new Record( 'testRecord', {}, connection, options, new ClientMock() ),
+			readyEventListener = jasmine.createSpy( 'readyEventListener' ),
+			readyCallback = jasmine.createSpy( 'readyCallback' );
+
+		expect( record3.isReady ).toBe( false );
+
+		record3.on( 'ready', readyEventListener );
+		record3.whenReady( readyCallback );
+
+		expect( readyEventListener ).not.toHaveBeenCalled();
+		expect( readyCallback ).not.toHaveBeenCalled();
+
+		record3._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
+
+		expect( record3.isReady ).toBe( true );
+		expect( readyEventListener.calls.length ).toBe( 1 );
+		expect( readyCallback.calls.length ).toBe( 1 );
+
+		record3.whenReady( readyCallback );
+
+		expect( readyCallback.calls.length ).toBe( 2 );
+	});
 });
