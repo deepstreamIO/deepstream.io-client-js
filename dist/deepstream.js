@@ -7484,6 +7484,7 @@ var Record = _dereq_( './record' );
  * @constructor
  */
 var AnonymousRecord = function( recordHandler ) {
+	this.name = null;
 	this._recordHandler = recordHandler;
 	this._record = null;
 	this._subscriptions = [];
@@ -7580,6 +7581,8 @@ AnonymousRecord.prototype.unsubscribe = function() {
  * @returns {void}
  */
 AnonymousRecord.prototype.setName = function( recordName ) {
+	this.name = recordName;
+	
 	var i;
 
 	if( this._record !== null ) {
