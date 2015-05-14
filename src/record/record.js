@@ -85,6 +85,10 @@ Record.prototype.get = function( path ) {
  * @returns {void}
  */
 Record.prototype.set = function( pathOrData, data ) {
+	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
+		throw new Error( 'Invalid record data ' + pathOrData + ': Record data must be an object' );
+	}
+
 	if( this._checkDestroyed( 'set' ) ) {
 		return;
 	}

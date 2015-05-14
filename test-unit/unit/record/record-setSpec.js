@@ -26,4 +26,8 @@ describe( 'setting values sends the right messages to the server', function(){
 		record.set( 'lastname', 'Hempel' );
 		expect( connection.lastSendMessage ).toBe( msg( 'R|P|testRecord|2|lastname|SHempel+' ) );
 	});
+
+	it( 'throws error for invalid record data', function(){ 
+		expect(function(){ record.set( undefined ); }).toThrow();
+	});
 });
