@@ -7585,7 +7585,7 @@ AnonymousRecord.prototype.setName = function( recordName ) {
 	
 	var i;
 
-	if( this._record !== null ) {
+	if( this._record !== null && !this._record.isDestroyed) {
 		for( i = 0; i < this._subscriptions.length; i++ ) {
 			this._record.unsubscribe( this._subscriptions[ i ] );
 		}
