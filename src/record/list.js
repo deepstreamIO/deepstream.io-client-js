@@ -228,11 +228,11 @@ List.prototype._applyUpdate = function( message ) {
 List.prototype._hasIndex = function( index ) {
 	var hasIndex = false;
 	var entries = this.getEntries();
-	if( typeof index !== 'undefined' ) {
+	if( index !== undefined ) {
 		if( isNaN( index ) ) {
 			throw new Error( 'Index must be a number' );
 		}
-		if( index > entries.length || index < 0 ) {
+		if( index >= entries.length || index < 0 ) {
 			throw new Error( 'Index must be within current entries' );
 		}
 		hasIndex = true;
