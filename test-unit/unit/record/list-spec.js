@@ -11,7 +11,7 @@ describe( 'lists contain arrays of record names', function(){
 		recordHandler = new RecordHandler( options, new ConnectionMock(), new ClientMock() ),
 		readyCallback = jasmine.createSpy( 'ready' ),
 		changeCallback = jasmine.createSpy( 'change' );
-	
+
 	it( 'creates the list', function(){
 		list = new List( recordHandler, 'someList', {} );
 		list.subscribe( changeCallback );
@@ -21,12 +21,12 @@ describe( 'lists contain arrays of record names', function(){
 		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|CR|someList+' ) );
 		expect( readyCallback ).not.toHaveBeenCalled();
 	});
-	
+
 	it( 'starts with an empty array', function(){
 		expect( list.getEntries() ).toEqual( [] );
 		expect( list.isEmpty() ).toBe( true );
 	});
-	
+
 	it( 'receives a response from the server', function() {
 		recordHandler._$handle({
 			topic: 'R',
@@ -38,28 +38,42 @@ describe( 'lists contain arrays of record names', function(){
 		expect( readyCallback ).toHaveBeenCalled();
 		expect( list.isEmpty() ).toBe( false );
 	});
-	
-	it( 'adds an entry to the list', function(){
+
+	it( 'adds an entry to the end of list', function(){
 		list.addEntry( 'entryC' );
 		expect( list.getEntries() ).toEqual(['entryA', 'entryB', 'entryC' ]);
 		expect( changeCallback ).toHaveBeenCalledWith(['entryA', 'entryB', 'entryC' ]);
 		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|2|["entryA","entryB","entryC"]+' ) );
 	});
-	
+
 	it( 'removes an entry from the list', function(){
 		list.removeEntry( 'entryB' );
 		expect( list.getEntries() ).toEqual(['entryA', 'entryC' ]);
 		expect( changeCallback ).toHaveBeenCalledWith(['entryA', 'entryC' ]);
 		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|3|["entryA","entryC"]+' ) );
 	});
-	
+
+	it( 'adds an entry to the list at a explicit index', function(){
+		list.addEntry( 'entryD', 1 );
+		expect( list.getEntries() ).toEqual(['entryA', 'entryD', 'entryC' ]);
+		expect( changeCallback ).toHaveBeenCalledWith(['entryA', 'entryD', 'entryC' ]);
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|4|["entryA","entryD","entryC"]+' ) );
+	});
+
+	it( 'removes an entry to the list at a explicit index', function(){
+		list.removeEntry( 'entryD', 1 );
+		expect( list.getEntries() ).toEqual(['entryA', 'entryC' ]);
+		expect( changeCallback ).toHaveBeenCalledWith(['entryA', 'entryC' ]);
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|5|["entryA","entryC"]+' ) );
+	});
+
 	it( 'sets the entire list', function(){
 		list.setEntries([ 'u','v' ]);
 		expect( list.getEntries() ).toEqual([ 'u','v' ]);
 		expect( changeCallback ).toHaveBeenCalledWith([ 'u','v' ]);
-		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|4|["u","v"]+' ) );
+		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|U|someList|6|["u","v"]+' ) );
 	});
-	
+
 	it( 'handles server updates', function(){
 		recordHandler._$handle({
 			topic: 'R',
@@ -69,11 +83,11 @@ describe( 'lists contain arrays of record names', function(){
 		expect( list.getEntries() ).toEqual([ 'x','y' ]);
 		expect( changeCallback ).toHaveBeenCalledWith([ 'x','y' ]);
 	});
-	
+
 	it( 'unsubscribes', function(){
-		expect( changeCallback.calls.length ).toBe( 5 );
+		expect( changeCallback.calls.length ).toBe( 7 );
 		list.unsubscribe( changeCallback );
 		list.setEntries([ 'q' ]);
-		expect( changeCallback.calls.length ).toBe( 5 );
+		expect( changeCallback.calls.length ).toBe( 7 );
 	});
 });
