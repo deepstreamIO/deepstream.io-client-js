@@ -17,7 +17,7 @@ describe( 'rpc cluster', function() {
 
     /**************** SETUP ****************/
     it( 'starts two servers', function( done ){
-        cluster = new Cluster( [ 6001, 6002, 6003 ], true );
+        cluster = new Cluster( [ 6001, 6002, 6003 ], false );
         cluster.on( 'ready', done );
     });
 
