@@ -344,9 +344,7 @@ Record.prototype._onRead = function( message ) {
 	this._beginChange();
 	this._version = parseInt( message.data[ 1 ], 10 );
 	this._$data = JSON.parse( message.data[ 2 ] );
-	if( this.isReady === false ) {
-		this._setReady();
-	}
+	this._setReady();
 	this._completeChange();
 };
 
