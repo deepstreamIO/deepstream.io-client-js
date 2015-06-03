@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --captureExceptions",
+    "test": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --captureExceptions --forceexit",
     "all": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit test-e2e --captureExceptions",
     "watch": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --captureExceptions --autotest --watch ./src",
     "e2e": "node node_modules/jasmine-node/lib/jasmine-node/cli.js test-e2e --captureExceptions",
