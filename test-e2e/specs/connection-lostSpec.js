@@ -2,14 +2,14 @@
 var DeepstreamServer = require( 'deepstream.io' ),
     deepstreamClient = require( '../../src/client' ),
     TestLogger = require( '../tools/test-logger' );
-    
-describe( 'it recovers a connection without loosing record updates', function() {
+
+ddescribe( 'it recovers a connection without losing record updates', function() {
     var deepstreamServer,
         logger = new TestLogger(),
         clientA,
         record,
         clientAErrors = [];
-    
+
     /**************** SETUP ****************/
     it( 'starts the server', function( done ){
         deepstreamServer = new DeepstreamServer();
@@ -18,16 +18,17 @@ describe( 'it recovers a connection without loosing record updates', function() 
         deepstreamServer.set( 'showLogo', false );
         deepstreamServer.start();
     });
-    
+
     /**************** TESTS ****************/
     it( 'connects', function( done ) {
         clientA = deepstreamClient( 'localhost:6021' );
         clientA.on( 'error', function(){
             clientAErrors.push( arguments );
+            console.log( arguments );
         });
         clientA.login( null, function(){ done(); });
     });
-    
+
     it( 'requests a record', function( done ){
         record = clientA.record.getRecord( 'recordA1' );
         record.whenReady( done );
@@ -40,7 +41,7 @@ describe( 'it recovers a connection without loosing record updates', function() 
                 i++;
                 if( i === 3 ) {
                     clearInterval( interval );
-                    done(); 
+                    done();
                 }
             }, 30 );
     });
@@ -67,7 +68,7 @@ describe( 'it recovers a connection without loosing record updates', function() 
                 i++;
                 if( i === 7 ) {
                     clearInterval( interval );
-                    done(); 
+                    done();
                 }
             }, 30 );
     });
@@ -89,16 +90,16 @@ describe( 'it recovers a connection without loosing record updates', function() 
         record.set( 'somePath', 8 );
         setTimeout( done, 500 );
     });
-  
+
     it( 'has received one VERSION_EXISTS error', function() {
         expect( clientAErrors.length ).toBe( 2 );
     });
-    
+
      /**************** TEAR DOWN ****************/
     it( 'closes the clients', function() {
         clientA.close();
     });
-    
+
     it( 'shuts clients and server down', function(done) {
       deepstreamServer.on( 'stopped', done );
       deepstreamServer.stop();
