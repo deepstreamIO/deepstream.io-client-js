@@ -1,6 +1,7 @@
 /* global describe, it, expect, jasmine */
 var Cluster = require( '../tools/cluster'),
-    deepstreamClient = require( '../../src/client' );
+    deepstreamClient = require( '../../src/client' ),
+    config = require( '../config' );
     
 describe( 'event cluster', function() {
     var cluster,
@@ -78,7 +79,7 @@ describe( 'event cluster', function() {
                 setTimeout(function(){
                     expect( calls ).toBe( 1 );
                     done();
-                }, 30 );
+                }, config.messageTimeout );
             };
         
         clientA.event.subscribe( 'event3', callback );
@@ -90,7 +91,7 @@ describe( 'event cluster', function() {
         clientB.event.subscribe( 'event4', callbackB );
         clientC.event.subscribe( 'event4', callbackC );
         
-        setTimeout( done, 30 );
+        setTimeout( done, config.messageTimeout );
     });
     
     it( 'sends events', function( done ){
@@ -98,7 +99,7 @@ describe( 'event cluster', function() {
         clientB.event.emit( 'event4', 'value2' );
         clientC.event.emit( 'event4', 'value3' );
         
-        setTimeout( done, 30 );
+        setTimeout( done, config.messageTimeout );
     });
     
     it( 'all client have received all events', function( done ){

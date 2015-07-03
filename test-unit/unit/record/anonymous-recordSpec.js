@@ -75,4 +75,19 @@ describe( 'anonymous record allows switching of underlying records', function(){
 		anonymousRecord.set( 'lastname', 'Schrader' );
 		expect( recordHandler.getRecord( 'recordB' ).get( 'lastname' ) ).toBe( 'Schrader' );
 	});
+
+	it( 'doesn\'t throw error if record is reset after being destroyed', function(){
+		var errorCallback = jasmine.createSpy( 'errorCallback' );
+		anonymousRecord._record.on( 'error', errorCallback );
+
+		recordHandler._$handle({
+			topic: 'R',
+			action: 'A',
+			data: [ 'D', 'recordB', 1 ]
+		});
+
+	    anonymousRecord.setName( 'recordC' );
+
+	    expect( errorCallback ).not.toHaveBeenCalled();
+	});
 });

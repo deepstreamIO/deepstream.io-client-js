@@ -129,7 +129,7 @@ RecordHandler.prototype._$handle = function( message ) {
 		return;
 	}
 	
-	if( message.action === C.ACTIONS.ACK ) {
+	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
 	} else {
 		name = message.data[ 0 ];

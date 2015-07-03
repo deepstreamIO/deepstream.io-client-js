@@ -58,7 +58,6 @@ exports.ACTIONS.UNLISTEN = 'UL';
 exports.ACTIONS.PROVIDER_UPDATE = 'PU';
 exports.ACTIONS.QUERY = 'Q';
 exports.ACTIONS.CREATEORREAD = 'CR';
-exports.ACTIONS.RPC = 'RPC';
 exports.ACTIONS.EVENT = 'EVT';
 exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';

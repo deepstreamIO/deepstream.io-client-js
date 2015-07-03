@@ -1,10 +1,9 @@
 var DeepstreamServer = require( 'deepstream.io' ),
-    MessageConnector = require( 'deepstream.io-msg-direct' ),
+    RedisConnector = require( 'deepstream.io-msg-redis' ),
     Logger = require( './test-logger' ),
     util = require( 'util' ),
+    config = require( '../config' ),
     EventEmitter = require( 'events' ).EventEmitter;
-    
-var RedisConnector = require( 'deepstream.io-msg-redis' );
     
 var Cluster = function( ports, enableLogging ) {
     this._ports = ports;
@@ -36,8 +35,8 @@ Cluster.prototype._startServer = function( port ) {
     //     securityToken: 'bla'
     // }));
     this.servers[ port ].set( 'messageConnector', new RedisConnector({
-        port: 6379, 
-        host: 'localhost'
+        port: config.redisPort, 
+        host: config.redisHost
     }));
     if( this._enableLogging !== true ) {
         this.servers[ port ].set( 'logger', new Logger() );

@@ -1,6 +1,7 @@
 /* global describe, it, expect, jasmine */
 var Cluster = require( '../tools/cluster'),
-    deepstreamClient = require( '../../src/client' );
+    deepstreamClient = require( '../../src/client' ),
+    config = require( '../config' );
     
 describe( 'record cluster', function() {
     var cluster,
@@ -61,19 +62,19 @@ describe( 'record cluster', function() {
             expect( recordB.get( 'color' ) ).toBe( 'red' );
             expect( recordC.get( 'color' ) ).toBe( 'red' );
             done();
-       }, 30 );
+       }, config.messageTimeout );
     });
     
     it( 'subscribes to a path', function( done ){
         recordA.subscribe( 'doors[2]', callbackA ); 
         recordB.subscribe( 'doors[2]', callbackB ); 
         recordC.subscribe( 'doors[2]', callbackC );
-        setTimeout( done, 30 );
+        setTimeout( done, config.messageTimeout );
     });
     
     it( 'sets the path', function( done ){
         recordB.set( 'doors[ 2 ]', 'driverDoor' );
-        setTimeout( done, 30 );
+        setTimeout( done, config.messageTimeout );
     });
     
     it( 'has updated all records and called their callbacks', function(){
