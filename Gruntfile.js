@@ -57,8 +57,9 @@ module.exports = function(grunt) {
 			runUnitTests: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --autotest --watch ./src',
 			runUnitTestsOnce: 'node node_modules/jasmine-node/lib/jasmine-node/cli.js test-unit --forceexit'
 		},
-		release: {
+		_release: {
 			options: {
+				beforeBump: ['build'],
 				additionalFiles: ['bower.json'],
 				github: { 
 					repo: 'hoxton-one/deepstream.io-client-js',
@@ -73,7 +74,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
 	grunt.loadNpmTasks( 'grunt-exec' );
 	grunt.loadNpmTasks( 'grunt-release' );
-	
+	grunt.renameTask( 'release', '_release' );
 	grunt.registerTask( 'dev', 'Browserifies the files on every change to src', [ 'browserify:live' ] );
 	grunt.registerTask( 'test-unit', [ 'exec:runUnitTests' ]);
 
@@ -84,5 +85,6 @@ module.exports = function(grunt) {
 	]);
 
 	grunt.registerTask( 'default', [ 'build' ] );
+	grunt.registerTask( 'release', [ 'build', '_release' ] );
 
 };
