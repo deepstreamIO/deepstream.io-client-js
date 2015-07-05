@@ -25,6 +25,7 @@ exports.TOPIC.ERROR = 'X';
 exports.TOPIC.EVENT = 'E';
 exports.TOPIC.RECORD = 'R';
 exports.TOPIC.RPC = 'P';
+exports.TOPIC.WEBRTC = 'W';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
 
 exports.EVENT = {};
@@ -40,6 +41,7 @@ exports.EVENT.LISTENER_EXISTS = 'LISTENER_EXISTS';
 exports.EVENT.NOT_LISTENING = 'NOT_LISTENING';
 exports.EVENT.TOO_MANY_AUTH_ATTEMPTS = 'TOO_MANY_AUTH_ATTEMPTS';
 exports.EVENT.IS_CLOSED = 'IS_CLOSED';
+exports.EVENT.UNKNOWN_CALLEE = 'UNKNOWN_CALLEE';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';
@@ -63,3 +65,9 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
+
+//WebRtc
+exports.ACTIONS.WEBRTC_REGISTER_CALLEE = 'RC';
+exports.ACTIONS.WEBRTC_OFFER = 'OF';
+exports.ACTIONS.WEBRTC_ANSWER = 'AN';
+exports.ACTIONS.WEBRTC_ICE_CANDIDATE = 'IC';

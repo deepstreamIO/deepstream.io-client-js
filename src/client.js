@@ -4,6 +4,7 @@ var C = require( './constants/constants' ),
 	EventHandler = require( './event/event-handler' ),
 	RpcHandler = require( './rpc/rpc-handler' ),
 	RecordHandler = require( './record/record-handler' ),
+	WebRtcHandler = require( './webrtc/webrtc-handler' ),
 	defaultOptions = require( './default-options' );
 
 /**
@@ -34,8 +35,10 @@ var Client = function( url, options ) {
 	this.event = new EventHandler( this._options, this._connection );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
+	this.webrtc = new WebRtcHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
+	this._messageCallbacks[ C.TOPIC.WEBRTC ] = this.webrtc._$handle.bind( this.webrtc );
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
