@@ -6575,12 +6575,12 @@ exports.ACTIONS.UNLISTEN = 'UL';
 exports.ACTIONS.PROVIDER_UPDATE = 'PU';
 exports.ACTIONS.QUERY = 'Q';
 exports.ACTIONS.CREATEORREAD = 'CR';
-exports.ACTIONS.RPC = 'RPC';
 exports.ACTIONS.EVENT = 'EVT';
 exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
+
 },{}],43:[function(_dereq_,module,exports){
 module.exports = {
 	/************************************************
@@ -8157,7 +8157,7 @@ RecordHandler.prototype._$handle = function( message ) {
 		return;
 	}
 	
-	if( message.action === C.ACTIONS.ACK ) {
+	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
 	} else {
 		name = message.data[ 0 ];
@@ -8461,9 +8461,21 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message );
 	}
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
-		//@TODO
-		console.log( 'VERSION CONFLICT' );
+		this._recoverRecord();
 	}
+};
+
+/**
+ * @todo This resets the record to the latest version the server has whenever a version conflict
+ * occurs.
+ *
+ * Instead it should find a more sophisticated merge strategy
+ *
+ * @private
+ * @returns {void} 
+ */
+Record.prototype._recoverRecord = function() {
+
 };
 
 /**
@@ -8504,8 +8516,10 @@ Record.prototype._processAckMessage = function( message ) {
 Record.prototype._applyUpdate = function( message ) {
 	var version = parseInt( message.data[ 1 ], 10 );
 
-	if( this._version + 1 !== version ) {
-
+	if( this._version === null ) {
+		this._version = version;
+	}
+	else if( this._version + 1 !== version ) {
 		//TODO - handle gracefully and retry / merge
 		this.emit( 'error', 'received update for ' + version + ' but version is ' + this._version );
 	}
