@@ -47,6 +47,9 @@ module.exports = function(grunt) {
 		},
 		
 		uglify: {
+			options: {
+				banner: '/*! <%= pkg.name %> <%= pkg.version %> (c)2014 hoxton-one, with parts (c)2014 Joyent and contributers  @licence <%= pkg.licence %>*/\n'
+				},
 			dist: {
 				files: {
 					'dist/deepstream.min.js': [ 'dist/deepstream.js' ]
