@@ -1,6 +1,7 @@
 var C = require( '../constants/constants' ),
 	WebRtcConnection = require( './webrtc-connection' ),
-	WebRtcResponse = require( './webrtc-response' );
+	WebRtcCall = require( './webrtc-call' );
+
 /**
  * The main class for web rtc operations
  * 
@@ -19,7 +20,7 @@ var WebRtcHandler = function( options, connection, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._callees = {};
-	this._webRtcConnections = {};
+	this._calls = {};
 };
 
 /**
@@ -69,14 +70,21 @@ WebRtcHandler.prototype.registerCallee = function( name, options, onCallFn ) {
  *
  * @returns {[type]}
  */
-WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream, onResponse ) {
-	if( this._webRtcConnections[ calleeName ] ) {
+WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream ) {
+	if( this._calls[ calleeName ] ) {
 		throw new Error( 'Call with ' + calleeName + ' is already in progress' );
 	}
 
 	var localId = this._client.getUid();
-	this._webRtcConnections[ localId ] = new WebRtcConnection( this._connection, localId, calleeName );
-	this._webRtcConnections[ localId ].initiate( localStream );
+
+	return this._createCall( localId, {
+		isOutgoing: true,
+		connection: this._connection, 
+		localId: localId, 
+		remoteId: calleeName, 
+		localStream: localStream,
+		offer: null
+	});
 };
  
 WebRtcHandler.prototype.listenForCallees = function() {
@@ -87,70 +95,49 @@ WebRtcHandler.prototype.unlistenForCallees = function() {
 
 };
 
-WebRtcHandler.prototype._establishCall = function( calleeName, onResponse, remoteStream ) {
-	onResponse( null, remoteStream, {} );
-};
-
-
-WebRtcHandler.prototype._getWebRtcConnection = function( message ) {
-	if( this._webRtcConnections[ message.data[ 0 ] ] ) {
-		return this._webRtcConnections[ message.data[ 0 ] ];
-	} 
-	else if( this._webRtcConnections[ message.data[ 1 ] ] ) {
-		return this._webRtcConnections[ message.data[ 1 ] ];
-	}
-	else {
-		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.EVENT.UNSOLICITED_MESSAGE, message.raw );
-		return null;
-	}
-};
-
 WebRtcHandler.prototype._handleIncomingCall = function( message ) {
 	var remoteId = message.data[ 0 ],
 		localId = message.data[ 1 ],
-		offer = JSON.parse( message.data[ 2 ] ),
-		response = new WebRtcResponse();
+		call = this._createCall( remoteId, {
+			isOutgoing: false,
+			connection: this._connection, 
+			localId: localId, 
+			remoteId: remoteId, 
+			localStream: null,
+			offer: JSON.parse( message.data[ 2 ] )
+		});
 
-	response.on( 'accepted', function( localStream, callback ){
-		this._webRtcConnections[ remoteId ] = new WebRtcConnection( this._connection, localId, remoteId );
-		this._webRtcConnections[ remoteId ].setRemoteDescription( new RTCSessionDescription( offer ) );
-		this._webRtcConnections[ remoteId ].createAnswer();
-		this._webRtcConnections[ remoteId ].on( 'stream', this._incomingCallReady.bind( this ) );
-	}.bind( this ));
-
-	response.on( 'declined', function( reason ){
-		this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.CALL_DECLINED, [ localId, remoteId ] );
-	}.bind( this ) );
-
-	this._callees[ localId ].callback( response, {} );
+	this._callees[ localId ].callback( call );
 };
 
-WebRtcHandler.prototype._incomingCallReady = function( localId, remoteId, remoteStream ) {
-	
-	
+WebRtcHandler.prototype._removeCall = function( id ) {
+	delete this._calls[ id ];
 };
 
-WebRtcHandler.prototype._handleAnswer = function( message ) {
-	var webRtcConnection = this._getWebRtcConnection( message );
-	
-	if( webRtcConnection ) {
-		webRtcConnection.setRemoteDescription( new RTCSessionDescription( JSON.parse( message.data[ 2 ] ) ) );
-	}
+WebRtcHandler.prototype._createCall = function( id, settings ) {
+	this._calls[ id ] = new WebRtcCall( settings );
+	this._calls[ id ].on( 'destroy', this._removeCall.bind( this, id ) );
+	return this._calls[ id ];
 };
 
-WebRtcHandler.prototype._addIceCandidate = function( message ) {
-	var webRtcConnection = this._getWebRtcConnection( message );
-	
-	if( webRtcConnection ) {
-		webRtcConnection.addIceCandidate( new RTCIceCandidate( JSON.parse( message.data[ 2 ] ) ) );
-	}
-};
 
 WebRtcHandler.prototype._ackCalleeRegistration = function( message ) {
 
 };
 
+WebRtcHandler.prototype._isValidMessage = function( message ) {
+	return message.data.length === 3 &&
+	typeof message.data[ 0 ] === 'string' &&
+	typeof message.data[ 1 ] === 'string' &&
+	typeof message.data[ 2 ] === 'string';
+};
+
+
 WebRtcHandler.prototype._$handle = function( message ) {
+	var call,
+		sessionDescription,
+		iceCandidate;
+
 	if( message.action === C.ACTIONS.ERROR ) {
 		this._client._$onError( C.TOPIC.WEBRTC, message.data[ 0 ], message.data[ 1 ] );
 		return;
@@ -161,28 +148,36 @@ WebRtcHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
-	var isValidMessage = message.data.length === 3 &&
-						typeof message.data[ 0 ] === 'string' &&
-						typeof message.data[ 1 ] === 'string' &&
-						typeof message.data[ 2 ] === 'string';
-
-	if( !isValidMessage ) {
+	if( !this._isValidMessage( message ) ) {
 		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.MESSAGE_PARSE_ERROR, message );
 		return;
 	}
 
 	if( message.action === C.ACTIONS.WEBRTC_OFFER ) {
 		this._handleIncomingCall( message );
+		return;
 	}
-	else if ( message.action === C.ACTIONS.WEBRTC_ANSWER ) {
-		this._handleAnswer( message );
+
+	call = this._calls[ message.data[ 0 ] ] || this._calls[ message.data[ 1 ] ];
+
+	if( !call ) {
+		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
+		return;
 	}
-	else if( message.action === C.ACTIONS.WEBRTC_ICE_CANDIDATE ) {
-		this._addIceCandidate( message );
+	
+	if ( message.action === C.ACTIONS.WEBRTC_ANSWER ) {
+		sessionDescription = new RTCSessionDescription( JSON.parse( message.data[ 2 ] ) );
+		call._$webRtcConnection.setRemoteDescription( sessionDescription );
+		return;
 	}
-	else {
-		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.EVENT.MESSAGE_PARSE_ERROR, 'unsupported action ' + message.action );
+	
+	if( message.action === C.ACTIONS.WEBRTC_ICE_CANDIDATE ) {
+		iceCandidate = new RTCIceCandidate( JSON.parse( message.data[ 2 ] ) );
+		call._$webRtcConnection.addIceCandidate( iceCandidate );
+		return;
 	}
+	
+	this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.EVENT.MESSAGE_PARSE_ERROR, 'unsupported action ' + message.action );
 };
 
 module.exports = WebRtcHandler;
