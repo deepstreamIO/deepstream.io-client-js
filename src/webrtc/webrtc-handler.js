@@ -1,5 +1,6 @@
 var C = require( '../constants/constants' ),
-	WebRtcConnection = require( './webrtc-connection' );
+	WebRtcConnection = require( './webrtc-connection' ),
+	WebRtcResponse = require( './webrtc-response' );
 /**
  * The main class for web rtc operations
  * 
@@ -27,8 +28,7 @@ var WebRtcHandler = function( options, connection, client ) {
  * @param   {String} 	name     A name that can be used in makeCall to establish a connection to a callee
  * @param   {Map} 	 	options  Defines the kind of streams this client can receive
  *                            	 in the format { video: <Bool>, audio: <Bool>, data: <Bool> }
- * @param   {Function} 	onCallFn Callback for incoming calls. Will be invoked with a remoteStream and a
- *                               WebRtcResponse object.
+ * @param   {Function} 	onCallFn Callback for incoming calls. Will be invoked with call data and a WebRtc Response object
  *
  * @public
  * @returns {void}
@@ -63,12 +63,13 @@ WebRtcHandler.prototype.registerCallee = function( name, options, onCallFn ) {
  * [makeCall description]
  *
  * @param   {String} calleeName  The name of a previously registered callee
+ * @param 	{Object} metaData	Additional information that should be passed to the receiver's onCall function
  * @param   {[MediaStream]} localStream A local media stream. Can be ommited if the call is used purely for data.
  * @param   {[type]} onResponse  Will be called with an error (or null), a remote stream (or null) and a Webrtc Call object
  *
  * @returns {[type]}
  */
-WebRtcHandler.prototype.makeCall = function( calleeName, localStream, onResponse ) {
+WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream, onResponse ) {
 	if( this._webRtcConnections[ calleeName ] ) {
 		throw new Error( 'Call with ' + calleeName + ' is already in progress' );
 	}
@@ -107,14 +108,26 @@ WebRtcHandler.prototype._getWebRtcConnection = function( message ) {
 WebRtcHandler.prototype._handleIncomingCall = function( message ) {
 	var remoteId = message.data[ 0 ],
 		localId = message.data[ 1 ],
-		offer = JSON.parse( message.data[ 2 ] );
+		offer = JSON.parse( message.data[ 2 ] ),
+		response = new WebRtcResponse();
 
-	this._webRtcConnections[ remoteId ] = new WebRtcConnection( this._connection, localId, remoteId );
-	this._webRtcConnections[ remoteId ].setRemoteDescription( new RTCSessionDescription( offer ) );
-	this._webRtcConnections[ remoteId ].createAnswer();
-	this._webRtcConnections[ remoteId ].on( 'stream', function( stream ){
-		this._callees[ localId ].callback( stream, {} );
+	response.on( 'accepted', function( localStream, callback ){
+		this._webRtcConnections[ remoteId ] = new WebRtcConnection( this._connection, localId, remoteId );
+		this._webRtcConnections[ remoteId ].setRemoteDescription( new RTCSessionDescription( offer ) );
+		this._webRtcConnections[ remoteId ].createAnswer();
+		this._webRtcConnections[ remoteId ].on( 'stream', this._incomingCallReady.bind( this ) );
+	}.bind( this ));
+
+	response.on( 'declined', function( reason ){
+		this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.CALL_DECLINED, [ localId, remoteId ] );
 	}.bind( this ) );
+
+	this._callees[ localId ].callback( response, {} );
+};
+
+WebRtcHandler.prototype._incomingCallReady = function( localId, remoteId, remoteStream ) {
+	
+	
 };
 
 WebRtcHandler.prototype._handleAnswer = function( message ) {

@@ -19,6 +19,14 @@ WebRtcConnection.prototype.initiate = function( stream ) {
 	this._peerConnection.createOffer( this._onOfferCreated.bind( this ), this._onError.bind( this ) );
 };
 
+WebRtcConnection.prototype.close = function() {
+	this._peerConnection.close();
+};
+
+WebRtcConnection.prototype.addStream = function( stream ) {
+	this._peerConnection.addStream( stream );
+};
+
 WebRtcConnection.prototype.setRemoteDescription = function( remoteDescription ) {
 	this._peerConnection.setRemoteDescription( remoteDescription, this._onRemoteDescriptionSuccess.bind( this ), this._onError.bind( this ) );
 };
