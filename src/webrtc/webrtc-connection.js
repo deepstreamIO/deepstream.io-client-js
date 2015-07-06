@@ -44,6 +44,7 @@ WebRtcConnection.prototype._onAddIceCandidateSuccess = function() {
 };
 
 WebRtcConnection.prototype._onStream = function( event ) {
+	console.log( 'GOT STREAM', event );
 	this.emit( 'stream', event.stream );
 };
 

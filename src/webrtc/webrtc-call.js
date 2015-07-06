@@ -56,12 +56,11 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	this.isAccepted = true;
 
 	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
-	this._$webRtcConnection.setRemoteDescription( new RTCSessionDescription( this._offer ) );
-	this._$webRtcConnection.createAnswer();
-
 	if( localStream ) {
 		this._$webRtcConnection.addStream( localStream );
 	}
+	this._$webRtcConnection.setRemoteDescription( new RTCSessionDescription( this._offer ) );
+	this._$webRtcConnection.createAnswer();
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
 };
 
