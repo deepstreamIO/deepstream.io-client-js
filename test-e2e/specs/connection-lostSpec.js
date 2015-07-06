@@ -3,7 +3,7 @@ var DeepstreamServer = require( 'deepstream.io' ),
     deepstreamClient = require( '../../src/client' ),
     TestLogger = require( '../tools/test-logger' );
 
-ddescribe( 'it recovers a connection without losing record updates', function() {
+describe( 'it recovers a connection without losing record updates', function() {
     var deepstreamServer,
         logger = new TestLogger(),
         clientA,
