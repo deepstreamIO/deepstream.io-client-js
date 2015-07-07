@@ -31,8 +31,8 @@ var WebRtcCall = function( settings ) {
 	this._bufferedIceCandidates = [];
 
 	this.state = C.CALL_STATE.INITIAL;
-	this.metaData = null;
-	this.callee = '<string>';
+	this.metaData = settings.metaData || null;
+	this.callee = settings.isOutgoing ? settings.remoteId : settings.localId;
 	this.isOutgoing = settings.isOutgoing;
 	this.isIncoming = !settings.isOutgoing;
 	this.isAccepted = false;
@@ -67,6 +67,8 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	for( var i = 0; i < this._bufferedIceCandidates.length; i++ ) {
 		this._$webRtcConnection.addIceCandidate( this._bufferedIceCandidates[ i ] );
 	}
+
+	this._stateChange( C.CALL_STATE.ACCEPTED );
 };
 
 WebRtcCall.prototype.decline = function( reason ) {
@@ -80,9 +82,11 @@ WebRtcCall.prototype.decline = function( reason ) {
 
 	this.isDeclined = true;
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_DECLINED, [ this._localId, this._remoteId, reason || null ] );
+	this._$declineReceived( reason || null );
 };
 
 WebRtcCall.prototype.end = function() {
+	this._stateChange( C.CALL_STATE.ENDED );
 	this._$webRtcConnection.close();
 };
 
@@ -107,12 +111,14 @@ WebRtcCall.prototype._stateChange = function( state ) {
 };
 
 WebRtcCall.prototype._initiate = function() {
+	this._stateChange( C.CALL_STATE.CONNECTING );
 	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
-	this._$webRtcConnection.initiate( this._localStream );
+	this._$webRtcConnection.initiate( this._localStream, this.metaData );
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
 };
 
 WebRtcCall.prototype._onEstablished = function( stream ) {
+	this._stateChange( C.CALL_STATE.ESTABLISHED );
 	this.emit( 'established', stream );
 };
 

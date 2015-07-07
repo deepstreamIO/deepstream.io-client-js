@@ -14,9 +14,9 @@ var WebRtcConnection = function( connection, localId, remoteId ) {
 
 Emitter( WebRtcConnection.prototype );
 
-WebRtcConnection.prototype.initiate = function( stream ) {
+WebRtcConnection.prototype.initiate = function( stream, metaData ) {
 	this._peerConnection.addStream( stream );
-	this._peerConnection.createOffer( this._onOfferCreated.bind( this ), this._onError.bind( this ) );
+	this._peerConnection.createOffer( this._onOfferCreated.bind( this, metaData ), this._onError.bind( this ) );
 };
 
 WebRtcConnection.prototype.close = function() {
@@ -48,8 +48,12 @@ WebRtcConnection.prototype._onStream = function( event ) {
 	this.emit( 'stream', event.stream );
 };
 
-WebRtcConnection.prototype._onOfferCreated = function( offer ) {
-	this._sendMsg( C.ACTIONS.WEBRTC_OFFER, offer.toJSON() );
+WebRtcConnection.prototype._onOfferCreated = function( metaData, offer ) {
+	this._sendMsg( C.ACTIONS.WEBRTC_OFFER, JSON.stringify({
+		sdp: offer.sdp,
+		type: offer.type,
+		meta: metaData
+	}));
 	this._peerConnection.setLocalDescription( 
 		offer, 
 		this._onLocalDescriptionSuccess.bind( this ),

@@ -27,37 +27,26 @@ var WebRtcHandler = function( options, connection, client ) {
  * Register a "callee" (an endpoint that can receive video, audio or data streams)
  *
  * @param   {String} 	name     A name that can be used in makeCall to establish a connection to a callee
- * @param   {Map} 	 	options  Defines the kind of streams this client can receive
- *                            	 in the format { video: <Bool>, audio: <Bool>, data: <Bool> }
  * @param   {Function} 	onCallFn Callback for incoming calls. Will be invoked with call data and a WebRtc Response object
  *
  * @public
  * @returns {void}
  */
-WebRtcHandler.prototype.registerCallee = function( name, options, onCallFn ) {
+WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
 	if( typeof name !== 'string' ) {
 		throw new Error( 'Invalid callee name ' + name );
+	}
+
+	if( typeof onCallFn !== 'function' ) {
+		throw new Error( 'Callback is not a function' );
 	}
 
 	if( this._callees[ name ] ) {
 		throw new Error( 'Callee ' + name + ' is already registered' );
 	}
 
-	if( arguments.length === 2 ) {
-		onCallFn = arguments[ 1 ];
-		options = {};
-	}
-
-	options.audio = options.audio === false ? false : true;
-	options.video = options.video === false ? false : true;
-	options.data = options.data === false ? false : true;
-
-	this._callees[ name ] = {
-		callback: onCallFn,
-		options: options
-	};
-
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name, options ] );
+	this._callees[ name ] = onCallFn;
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name ] );
 };
 
 /**
@@ -83,7 +72,8 @@ WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream )
 		localId: localId, 
 		remoteId: calleeName, 
 		localStream: localStream,
-		offer: null
+		offer: null,
+		metaData: metaData
 	});
 };
  
@@ -98,16 +88,18 @@ WebRtcHandler.prototype.unlistenForCallees = function() {
 WebRtcHandler.prototype._handleIncomingCall = function( message ) {
 	var remoteId = message.data[ 0 ],
 		localId = message.data[ 1 ],
+		offer = JSON.parse( message.data[ 2 ] ),
 		call = this._createCall( remoteId, {
 			isOutgoing: false,
 			connection: this._connection, 
 			localId: localId, 
 			remoteId: remoteId, 
 			localStream: null,
-			offer: JSON.parse( message.data[ 2 ] )
+			metaData: offer.meta,
+			offer: offer
 		});
 
-	this._callees[ localId ].callback( call );
+	this._callees[ localId ]( call, offer.meta );
 };
 
 WebRtcHandler.prototype._removeCall = function( id ) {

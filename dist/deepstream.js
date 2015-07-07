@@ -6595,9 +6595,10 @@ exports.ACTIONS.WEBRTC_CALL_DECLINED = 'CD';
 
 exports.CALL_STATE = {};
 exports.CALL_STATE.INITIAL = 'INITIAL';
+exports.CALL_STATE.CONNECTING = 'CONNECTING';
+exports.CALL_STATE.ESTABLISHED = 'ESTABLISHED';
 exports.CALL_STATE.ACCEPTED = 'ACCEPTED';
 exports.CALL_STATE.DECLINED = 'DECLINED';
-exports.CALL_STATE.ESTABLISHED = 'ESTABLISHED';
 exports.CALL_STATE.ENDED = 'ENDED';
 exports.CALL_STATE.ERROR = 'ERROR';
 },{}],"c:\\dev\\deepstream.io-client-js\\src\\default-options.js":[function(_dereq_,module,exports){
@@ -9522,8 +9523,8 @@ var WebRtcCall = function( settings ) {
 	this._bufferedIceCandidates = [];
 
 	this.state = C.CALL_STATE.INITIAL;
-	this.metaData = null;
-	this.callee = '<string>';
+	this.metaData = settings.metaData || null;
+	this.callee = settings.isOutgoing ? settings.remoteId : settings.localId;
 	this.isOutgoing = settings.isOutgoing;
 	this.isIncoming = !settings.isOutgoing;
 	this.isAccepted = false;
@@ -9558,6 +9559,8 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	for( var i = 0; i < this._bufferedIceCandidates.length; i++ ) {
 		this._$webRtcConnection.addIceCandidate( this._bufferedIceCandidates[ i ] );
 	}
+
+	this._stateChange( C.CALL_STATE.ACCEPTED );
 };
 
 WebRtcCall.prototype.decline = function( reason ) {
@@ -9571,9 +9574,11 @@ WebRtcCall.prototype.decline = function( reason ) {
 
 	this.isDeclined = true;
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_DECLINED, [ this._localId, this._remoteId, reason || null ] );
+	this._$declineReceived( reason || null );
 };
 
 WebRtcCall.prototype.end = function() {
+	this._stateChange( C.CALL_STATE.ENDED );
 	this._$webRtcConnection.close();
 };
 
@@ -9598,12 +9603,14 @@ WebRtcCall.prototype._stateChange = function( state ) {
 };
 
 WebRtcCall.prototype._initiate = function() {
+	this._stateChange( C.CALL_STATE.CONNECTING );
 	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
-	this._$webRtcConnection.initiate( this._localStream );
+	this._$webRtcConnection.initiate( this._localStream, this.metaData );
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
 };
 
 WebRtcCall.prototype._onEstablished = function( stream ) {
+	this._stateChange( C.CALL_STATE.ESTABLISHED );
 	this.emit( 'established', stream );
 };
 
@@ -9625,9 +9632,9 @@ var WebRtcConnection = function( connection, localId, remoteId ) {
 
 Emitter( WebRtcConnection.prototype );
 
-WebRtcConnection.prototype.initiate = function( stream ) {
+WebRtcConnection.prototype.initiate = function( stream, metaData ) {
 	this._peerConnection.addStream( stream );
-	this._peerConnection.createOffer( this._onOfferCreated.bind( this ), this._onError.bind( this ) );
+	this._peerConnection.createOffer( this._onOfferCreated.bind( this, metaData ), this._onError.bind( this ) );
 };
 
 WebRtcConnection.prototype.close = function() {
@@ -9659,8 +9666,12 @@ WebRtcConnection.prototype._onStream = function( event ) {
 	this.emit( 'stream', event.stream );
 };
 
-WebRtcConnection.prototype._onOfferCreated = function( offer ) {
-	this._sendMsg( C.ACTIONS.WEBRTC_OFFER, offer.toJSON() );
+WebRtcConnection.prototype._onOfferCreated = function( metaData, offer ) {
+	this._sendMsg( C.ACTIONS.WEBRTC_OFFER, JSON.stringify({
+		sdp: offer.sdp,
+		type: offer.type,
+		meta: metaData
+	}));
 	this._peerConnection.setLocalDescription( 
 		offer, 
 		this._onLocalDescriptionSuccess.bind( this ),
@@ -9737,37 +9748,26 @@ var WebRtcHandler = function( options, connection, client ) {
  * Register a "callee" (an endpoint that can receive video, audio or data streams)
  *
  * @param   {String} 	name     A name that can be used in makeCall to establish a connection to a callee
- * @param   {Map} 	 	options  Defines the kind of streams this client can receive
- *                            	 in the format { video: <Bool>, audio: <Bool>, data: <Bool> }
  * @param   {Function} 	onCallFn Callback for incoming calls. Will be invoked with call data and a WebRtc Response object
  *
  * @public
  * @returns {void}
  */
-WebRtcHandler.prototype.registerCallee = function( name, options, onCallFn ) {
+WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
 	if( typeof name !== 'string' ) {
 		throw new Error( 'Invalid callee name ' + name );
+	}
+
+	if( typeof onCallFn !== 'function' ) {
+		throw new Error( 'Callback is not a function' );
 	}
 
 	if( this._callees[ name ] ) {
 		throw new Error( 'Callee ' + name + ' is already registered' );
 	}
 
-	if( arguments.length === 2 ) {
-		onCallFn = arguments[ 1 ];
-		options = {};
-	}
-
-	options.audio = options.audio === false ? false : true;
-	options.video = options.video === false ? false : true;
-	options.data = options.data === false ? false : true;
-
-	this._callees[ name ] = {
-		callback: onCallFn,
-		options: options
-	};
-
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name, options ] );
+	this._callees[ name ] = onCallFn;
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name ] );
 };
 
 /**
@@ -9793,7 +9793,8 @@ WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream )
 		localId: localId, 
 		remoteId: calleeName, 
 		localStream: localStream,
-		offer: null
+		offer: null,
+		metaData: metaData
 	});
 };
  
@@ -9808,16 +9809,18 @@ WebRtcHandler.prototype.unlistenForCallees = function() {
 WebRtcHandler.prototype._handleIncomingCall = function( message ) {
 	var remoteId = message.data[ 0 ],
 		localId = message.data[ 1 ],
+		offer = JSON.parse( message.data[ 2 ] ),
 		call = this._createCall( remoteId, {
 			isOutgoing: false,
 			connection: this._connection, 
 			localId: localId, 
 			remoteId: remoteId, 
 			localStream: null,
-			offer: JSON.parse( message.data[ 2 ] )
+			metaData: offer.meta,
+			offer: offer
 		});
 
-	this._callees[ localId ].callback( call );
+	this._callees[ localId ]( call, offer.meta );
 };
 
 WebRtcHandler.prototype._removeCall = function( id ) {
