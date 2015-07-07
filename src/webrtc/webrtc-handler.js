@@ -173,7 +173,12 @@ WebRtcHandler.prototype._$handle = function( message ) {
 	
 	if( message.action === C.ACTIONS.WEBRTC_ICE_CANDIDATE ) {
 		iceCandidate = new RTCIceCandidate( JSON.parse( message.data[ 2 ] ) );
-		call._$webRtcConnection.addIceCandidate( iceCandidate );
+		call._$addIceCandidate( iceCandidate );
+		return;
+	}
+
+	if( message.action === C.ACTIONS.WEBRTC_CALL_DECLINED ) {
+		call._$declineReceived( message.data[ 2 ] );
 		return;
 	}
 	

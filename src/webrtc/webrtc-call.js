@@ -28,6 +28,7 @@ var WebRtcCall = function( settings ) {
 	this._localStream = settings.localStream;
 	this._offer = settings.offer;
 	this._$webRtcConnection = null;
+	this._bufferedIceCandidates = [];
 
 	this.state = C.CALL_STATE.INITIAL;
 	this.metaData = null;
@@ -62,6 +63,10 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	this._$webRtcConnection.setRemoteDescription( new RTCSessionDescription( this._offer ) );
 	this._$webRtcConnection.createAnswer();
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
+
+	for( var i = 0; i < this._bufferedIceCandidates.length; i++ ) {
+		this._$webRtcConnection.addIceCandidate( this._bufferedIceCandidates[ i ] );
+	}
 };
 
 WebRtcCall.prototype.decline = function( reason ) {
@@ -74,11 +79,31 @@ WebRtcCall.prototype.decline = function( reason ) {
 	}
 
 	this.isDeclined = true;
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.CALL_DECLINED, [ this._localId, this._remoteId ] );
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_DECLINED, [ this._localId, this._remoteId, reason || null ] );
 };
 
 WebRtcCall.prototype.end = function() {
 	this._$webRtcConnection.close();
+};
+
+WebRtcCall.prototype._$addIceCandidate = function( iceCandidate ) {
+	if( this.isIncoming && this.isAccepted === false ) {
+		this._bufferedIceCandidates.push( iceCandidate );
+	} else {
+		this._$webRtcConnection.addIceCandidate( iceCandidate );
+	}
+};
+
+WebRtcCall.prototype._$declineReceived = function( reason ) {
+	this.isDeclined = true;
+	this.isAccepted = false;
+	this._stateChange( C.CALL_STATE.DECLINED );
+	this.emit( 'declined', reason );
+};
+
+WebRtcCall.prototype._stateChange = function( state ) {
+	this.state = state;
+	this.emit( 'stateChange', state );
 };
 
 WebRtcCall.prototype._initiate = function() {
