@@ -6592,6 +6592,11 @@ exports.ACTIONS.WEBRTC_OFFER = 'OF';
 exports.ACTIONS.WEBRTC_ANSWER = 'AN';
 exports.ACTIONS.WEBRTC_ICE_CANDIDATE = 'IC';
 exports.ACTIONS.WEBRTC_CALL_DECLINED = 'CD';
+exports.ACTIONS.WEBRTC_LISTEN_FOR_CALLEES = 'LC';
+exports.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES = 'ULC';
+exports.ACTIONS.WEBRTC_ALL_CALLEES = 'WAC';
+exports.ACTIONS.WEBRTC_CALLEE_ADDED = 'WCA';
+exports.ACTIONS.WEBRTC_CALLEE_REMOVED = 'WCR';
 
 exports.CALL_STATE = {};
 exports.CALL_STATE.INITIAL = 'INITIAL';
@@ -9740,7 +9745,9 @@ var WebRtcHandler = function( options, connection, client ) {
 	this._options = options;
 	this._connection = connection;
 	this._client = client;
-	this._callees = {};
+	this._localCallees = {};
+	this._remoteCallees = [];
+	this._remoteCalleesCallback = null;
 	this._calls = {};
 };
 
@@ -9762,11 +9769,11 @@ WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
 		throw new Error( 'Callback is not a function' );
 	}
 
-	if( this._callees[ name ] ) {
+	if( this._localCallees[ name ] ) {
 		throw new Error( 'Callee ' + name + ' is already registered' );
 	}
 
-	this._callees[ name ] = onCallFn;
+	this._localCallees[ name ] = onCallFn;
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name ] );
 };
 
@@ -9798,12 +9805,17 @@ WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream )
 	});
 };
  
-WebRtcHandler.prototype.listenForCallees = function() {
-
+WebRtcHandler.prototype.listenForCallees = function( callback ) {
+	if( this._remoteCalleesCallback !== null ) {
+		throw new Error( 'Already listening for callees' );
+	}
+	this._remoteCalleesCallback = callback;
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_LISTEN_FOR_CALLEES );
 };
 
 WebRtcHandler.prototype.unlistenForCallees = function() {
-
+	this._remoteCalleesCallback = null;
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES );
 };
 
 WebRtcHandler.prototype._handleIncomingCall = function( message ) {
@@ -9820,7 +9832,7 @@ WebRtcHandler.prototype._handleIncomingCall = function( message ) {
 			offer: offer
 		});
 
-	this._callees[ localId ]( call, offer.meta );
+	this._localCallees[ localId ]( call, offer.meta );
 };
 
 WebRtcHandler.prototype._removeCall = function( id ) {
@@ -9845,6 +9857,39 @@ WebRtcHandler.prototype._isValidMessage = function( message ) {
 	typeof message.data[ 2 ] === 'string';
 };
 
+WebRtcHandler.prototype._isCalleeUpdate = function( message ) {
+	return 	message.action === C.ACTIONS.WEBRTC_ALL_CALLEES ||
+			message.action === C.ACTIONS.WEBRTC_CALLEE_ADDED ||
+			message.action === C.ACTIONS.WEBRTC_CALLEE_REMOVED;
+};
+
+WebRtcHandler.prototype._processCalleeUpdate = function( message ) {
+	if( this._remoteCalleesCallback === null ) {
+		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
+		return;
+	}
+console.log( 'cu', message );
+	if( message.action === C.ACTIONS.WEBRTC_ALL_CALLEES ) {
+		this._remoteCallees = message.data;
+	}
+
+	var index = this._remoteCallees.indexOf( message.data[ 0 ] );
+	
+	if( message.action === C.ACTIONS.WEBRTC_CALLEE_ADDED ) {
+		if( index !== -1 ) {
+			return;
+		}
+		this._remoteCallees.push( message.data[ 0 ] );
+	}
+	else if ( message.action === C.ACTIONS.WEBRTC_CALLEE_REMOVED ) {
+		if( index === -1 ) {
+			return;
+		}
+		this._remoteCallees.splice( index, 1 );
+	}
+
+	this._remoteCalleesCallback( this._remoteCallees );
+};
 
 WebRtcHandler.prototype._$handle = function( message ) {
 	var call,
@@ -9859,6 +9904,11 @@ WebRtcHandler.prototype._$handle = function( message ) {
 	if( message.action === C.ACTIONS.ACK ) {
 		this._ackCalleeRegistration( message );
 		return;
+	}
+
+	if( this._isCalleeUpdate( message ) ) {
+		this._processCalleeUpdate( message );
+		return;	
 	}
 
 	if( !this._isValidMessage( message ) ) {
