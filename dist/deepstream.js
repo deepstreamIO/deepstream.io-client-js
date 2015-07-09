@@ -9868,7 +9868,7 @@ WebRtcHandler.prototype._processCalleeUpdate = function( message ) {
 		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
 		return;
 	}
-console.log( 'cu', message );
+
 	if( message.action === C.ACTIONS.WEBRTC_ALL_CALLEES ) {
 		this._remoteCallees = message.data;
 	}
