@@ -88,6 +88,7 @@ WebRtcCall.prototype.decline = function( reason ) {
 WebRtcCall.prototype.end = function() {
 	this._stateChange( C.CALL_STATE.ENDED );
 	this._$webRtcConnection.close();
+	this.emit( 'ended' );
 };
 
 WebRtcCall.prototype._$addIceCandidate = function( iceCandidate ) {
