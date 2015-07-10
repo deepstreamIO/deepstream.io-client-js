@@ -6592,6 +6592,7 @@ exports.ACTIONS.WEBRTC_OFFER = 'OF';
 exports.ACTIONS.WEBRTC_ANSWER = 'AN';
 exports.ACTIONS.WEBRTC_ICE_CANDIDATE = 'IC';
 exports.ACTIONS.WEBRTC_CALL_DECLINED = 'CD';
+exports.ACTIONS.WEBRTC_CALL_ENDED = 'CE';
 exports.ACTIONS.WEBRTC_LISTEN_FOR_CALLEES = 'LC';
 exports.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES = 'ULC';
 exports.ACTIONS.WEBRTC_ALL_CALLEES = 'WAC';
@@ -9554,9 +9555,11 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	this.isAccepted = true;
 
 	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
+	
 	if( localStream ) {
 		this._$webRtcConnection.addStream( localStream );
 	}
+	
 	this._$webRtcConnection.setRemoteDescription( new RTCSessionDescription( this._offer ) );
 	this._$webRtcConnection.createAnswer();
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
@@ -9583,8 +9586,14 @@ WebRtcCall.prototype.decline = function( reason ) {
 };
 
 WebRtcCall.prototype.end = function() {
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_ENDED, [ this._localId, this._remoteId, null ] );
+	this._$close();
+};
+
+WebRtcCall.prototype._$close = function() {
 	this._stateChange( C.CALL_STATE.ENDED );
 	this._$webRtcConnection.close();
+	this.emit( 'ended' );
 };
 
 WebRtcCall.prototype._$addIceCandidate = function( iceCandidate ) {
@@ -9667,7 +9676,6 @@ WebRtcConnection.prototype._onAddIceCandidateSuccess = function() {
 };
 
 WebRtcConnection.prototype._onStream = function( event ) {
-	console.log( 'GOT STREAM', event );
 	this.emit( 'stream', event.stream );
 };
 
@@ -9691,7 +9699,9 @@ WebRtcConnection.prototype._onAnswerCreated = function( answer ) {
 		this._onError.bind( this ) );
 };	
 
-WebRtcConnection.prototype._sendMsg = function( action, data ) {
+WebRtcConnection.prototype._sendMsg = function( action, data ) {console.log( 'Sending', C.TOPIC.WEBRTC,
+		action,
+		[ this._localId, this._remoteId, data ]);
 	this._connection.sendMsg( 
 		C.TOPIC.WEBRTC,
 		action,
@@ -9709,8 +9719,22 @@ WebRtcConnection.prototype._onIceCandidate = function( event ) {
 	}
 };
 
+/**
+ * "new": the ICE agent is gathering addresses or waiting for remote candidates (or both).
+ * "checking": the ICE agent has remote candidates, on at least one component, and is check them, though it has not found a connection yet. At the same time, it may still be gathering candidates.
+ * "connected": the ICE agent has found a usable connection for each component, but is still testing more remote candidates for a better connection. At the same time, it may still be gathering candidates.
+ * "completed": the ICE agent has found a usable connection for each component, and is no more testing remote candidates.
+ * "failed": the ICE agent has checked all the remote candidates and didn't find a match for at least one component. Connections may have been found for some components.
+ * "disconnected": liveness check has failed for at least one component. This may be a transient state, e. g. on a flaky network, that can recover by itself.
+ * "closed": the ICE agent has shutdown and is not answering to requests.
+ *
+ * @param   {[type]} event [description]
+ *
+ * @returns {[type]}
+ */
 WebRtcConnection.prototype._onIceConnectionStateChange = function( event ) {
-	console.log( '_onIceConnectionStateChange', event );
+	//iceConnectionState
+	console.log( '_onIceConnectionStateChange', this._peerConnection.iceConnectionState );
 };
 
 WebRtcConnection.prototype._onLocalDescriptionSuccess = function() {
@@ -9945,6 +9969,11 @@ WebRtcHandler.prototype._$handle = function( message ) {
 		return;
 	}
 	
+	if( message.action === C.ACTIONS.WEBRTC_CALL_ENDED ) {
+		call._$close();
+		return;
+	}
+
 	this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.EVENT.MESSAGE_PARSE_ERROR, 'unsupported action ' + message.action );
 };
 

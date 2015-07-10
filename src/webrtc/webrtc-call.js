@@ -57,9 +57,11 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	this.isAccepted = true;
 
 	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
+	
 	if( localStream ) {
 		this._$webRtcConnection.addStream( localStream );
 	}
+	
 	this._$webRtcConnection.setRemoteDescription( new RTCSessionDescription( this._offer ) );
 	this._$webRtcConnection.createAnswer();
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
@@ -86,6 +88,11 @@ WebRtcCall.prototype.decline = function( reason ) {
 };
 
 WebRtcCall.prototype.end = function() {
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_ENDED, [ this._localId, this._remoteId, null ] );
+	this._$close();
+};
+
+WebRtcCall.prototype._$close = function() {
 	this._stateChange( C.CALL_STATE.ENDED );
 	this._$webRtcConnection.close();
 	this.emit( 'ended' );

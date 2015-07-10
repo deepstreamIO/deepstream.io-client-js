@@ -219,6 +219,11 @@ WebRtcHandler.prototype._$handle = function( message ) {
 		return;
 	}
 	
+	if( message.action === C.ACTIONS.WEBRTC_CALL_ENDED ) {
+		call._$close();
+		return;
+	}
+
 	this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.EVENT.MESSAGE_PARSE_ERROR, 'unsupported action ' + message.action );
 };
 
