@@ -94,7 +94,9 @@ WebRtcCall.prototype.end = function() {
 
 WebRtcCall.prototype._$close = function() {
 	this._stateChange( C.CALL_STATE.ENDED );
-	this._$webRtcConnection.close();
+	if( this._$webRtcConnection ) {
+		this._$webRtcConnection.close();
+	}
 	this.emit( 'ended' );
 };
 

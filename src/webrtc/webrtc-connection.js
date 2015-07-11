@@ -67,9 +67,7 @@ WebRtcConnection.prototype._onAnswerCreated = function( answer ) {
 		this._onError.bind( this ) );
 };	
 
-WebRtcConnection.prototype._sendMsg = function( action, data ) {console.log( 'Sending', C.TOPIC.WEBRTC,
-		action,
-		[ this._localId, this._remoteId, data ]);
+WebRtcConnection.prototype._sendMsg = function( action, data ) {
 	this._connection.sendMsg( 
 		C.TOPIC.WEBRTC,
 		action,
@@ -102,11 +100,11 @@ WebRtcConnection.prototype._onIceCandidate = function( event ) {
  */
 WebRtcConnection.prototype._onIceConnectionStateChange = function( event ) {
 	//iceConnectionState
-	console.log( '_onIceConnectionStateChange', this._peerConnection.iceConnectionState );
+	//console.log( '_onIceConnectionStateChange', this._peerConnection.iceConnectionState );
 };
 
 WebRtcConnection.prototype._onLocalDescriptionSuccess = function() {
-	console.log( '_onLocalDescriptionSuccess', arguments );
+	//console.log( '_onLocalDescriptionSuccess', arguments );
 };
 
 WebRtcConnection.prototype._onError = function( error ) {
