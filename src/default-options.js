@@ -80,6 +80,12 @@ module.exports = {
 	  */
 	 recordDeleteTimeout: 3000,
 
+	 /**
+	  * @param {Number} calleeAckTimeout 		The number of milliseconds from the moment webrtc.registerCallee has been
+	  *                                    		called until an error is thrown since no ACK response has been received
+	  */
+	 calleeAckTimeout: 3000,
+
 	/************************************************
 	* Engine.io										*
 	************************************************/

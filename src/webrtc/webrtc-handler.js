@@ -1,6 +1,8 @@
 var C = require( '../constants/constants' ),
 	WebRtcConnection = require( './webrtc-connection' ),
-	WebRtcCall = require( './webrtc-call' );
+	WebRtcCall = require( './webrtc-call' ),
+	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
+	CALLEE_UPDATE_EVENT = 'callee-update';
 
 /**
  * The main class for web rtc operations
@@ -22,6 +24,8 @@ var WebRtcHandler = function( options, connection, client ) {
 	this._localCallees = {};
 	this._remoteCallees = [];
 	this._remoteCalleesCallback = null;
+	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.WEBRTC, this._options.calleeAckTimeout );
+	this._ackTimeoutRegistry.on( 'timeout', this._removeCallee.bind( this ) );
 	this._calls = {};
 };
 
@@ -35,6 +39,8 @@ var WebRtcHandler = function( options, connection, client ) {
  * @returns {void}
  */
 WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
+	this._checkCompatibility();
+
 	if( typeof name !== 'string' ) {
 		throw new Error( 'Invalid callee name ' + name );
 	}
@@ -48,7 +54,12 @@ WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
 	}
 
 	this._localCallees[ name ] = onCallFn;
+	this._ackTimeoutRegistry.add( name );
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name ] );
+};
+
+WebRtcHandler.prototype.unregisterCallee = function( name ) {
+	//TODO
 };
 
 /**
@@ -62,6 +73,8 @@ WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
  * @returns {[type]}
  */
 WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream ) {
+	this._checkCompatibility();
+
 	if( this._calls[ calleeName ] ) {
 		throw new Error( 'Call with ' + calleeName + ' is already in progress' );
 	}
@@ -84,6 +97,7 @@ WebRtcHandler.prototype.listenForCallees = function( callback ) {
 		throw new Error( 'Already listening for callees' );
 	}
 	this._remoteCalleesCallback = callback;
+	this._ackTimeoutRegistry.add( CALLEE_UPDATE_EVENT );
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_LISTEN_FOR_CALLEES );
 };
 
@@ -119,11 +133,6 @@ WebRtcHandler.prototype._createCall = function( id, settings ) {
 	return this._calls[ id ];
 };
 
-
-WebRtcHandler.prototype._ackCalleeRegistration = function( message ) {
-
-};
-
 WebRtcHandler.prototype._isValidMessage = function( message ) {
 	return message.data.length === 3 &&
 	typeof message.data[ 0 ] === 'string' &&
@@ -135,6 +144,25 @@ WebRtcHandler.prototype._isCalleeUpdate = function( message ) {
 	return 	message.action === C.ACTIONS.WEBRTC_ALL_CALLEES ||
 			message.action === C.ACTIONS.WEBRTC_CALLEE_ADDED ||
 			message.action === C.ACTIONS.WEBRTC_CALLEE_REMOVED;
+};
+
+WebRtcHandler.prototype._checkCompatibility = function() {
+	if(
+		typeof RTCPeerConnection === 'undefined' ||
+		typeof RTCSessionDescription === 'undefined' ||
+		typeof RTCIceCandidate === 'undefined'
+	){
+		var msg =  'RTC global objects not detected. \n';
+			msg += 'deepstream expects a standardized WebRtc implementation (e.g. no vendor prefixes etc.) \n';
+			msg += 'until WebRtc is fully supported, we recommend including the official WebRTC adapter script \n';
+			msg += 'which can be found at https://github.com/webrtc/adapter';
+
+		throw new Error( msg );
+	}
+};
+
+WebRtcHandler.prototype._removeCallee = function( calleeName ) {
+	delete this._localCallees[ calleeName ];
 };
 
 WebRtcHandler.prototype._processCalleeUpdate = function( message ) {
@@ -176,7 +204,7 @@ WebRtcHandler.prototype._$handle = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ACK ) {
-		this._ackCalleeRegistration( message );
+		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
 
