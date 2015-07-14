@@ -5,10 +5,18 @@ var C = require( '../constants/constants' ),
 	CALLEE_UPDATE_EVENT = 'callee-update';
 
 /**
- * The main class for web rtc operations
+ * The main class for webrtc operations
  * 
  * Provides an interface to register callees, make calls and listen 
  * for callee registrations
+ *
+ * WebRTC (Web Real Time Communication) is a standard that allows browsers
+ * to share video, audio and data-streams via a peer connection. A server is only
+ * used to establish and end calls
+ *
+ * To learn more, please have a look at the WebRTC documentation on MDN
+ *
+ * https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API
  * 
  * @param {Object} options deepstream configuration options
  * @param {Connection} connection
@@ -30,10 +38,12 @@ var WebRtcHandler = function( options, connection, client ) {
 };
 
 /**
- * Register a "callee" (an endpoint that can receive video, audio or data streams)
+ * Register a "callee" (an endpoint that can receive incoming audio and video streams). Callees are comparable
+ * to entries in a phonebook. They have a unique identifier (their name) and an on-call function that will be invoked
+ * whenever another client calls makeCall.
  *
- * @param   {String} 	name     A name that can be used in makeCall to establish a connection to a callee
- * @param   {Function} 	onCallFn Callback for incoming calls. Will be invoked with call data and a WebRtc Response object
+ * @param   {String} 	name     A name that can be used in makeCall to establish a connection to this callee
+ * @param   {Function} 	onCallFn Callback for incoming calls. Will be invoked with a <webrtc-call> object and meta-data
  *
  * @public
  * @returns {void}
@@ -58,19 +68,35 @@ WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name ] );
 };
 
+/**
+ * Removes a callee that was previously registered with WebRtcHandler.registerCallee
+ *
+ * @param   {String} name calleeName
+ *
+ * @public
+ * @returns {void}
+ */
 WebRtcHandler.prototype.unregisterCallee = function( name ) {
-	//TODO
+	if( !this._localCallees[ name ] ) {
+		throw new Error( 'Callee is not registered' );
+	}
+	
+	this._removeCallee( name );
+	this._ackTimeoutRegistry.add( name );
+	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_UNREGISTER_CALLEE, [ name ] );
 };
 
 /**
- * [makeCall description]
+ * Creates a call to another registered callee. This call can still be declined or remain unanswered. The call
+ * object that this method returns will emit an 'established' event once the other side has accepted it and shares
+ * its video/audio stream.
  *
  * @param   {String} calleeName  The name of a previously registered callee
- * @param 	{Object} metaData	Additional information that should be passed to the receiver's onCall function
+ * @param 	{Object} metaData	Additional information that will be passed to the receiver's onCall function
  * @param   {[MediaStream]} localStream A local media stream. Can be ommited if the call is used purely for data.
- * @param   {[type]} onResponse  Will be called with an error (or null), a remote stream (or null) and a Webrtc Call object
- *
- * @returns {[type]}
+
+ * @public
+ * @returns {WebRtcCall}
  */
 WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream ) {
 	this._checkCompatibility();
@@ -92,6 +118,15 @@ WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream )
 	});
 };
  
+/**
+ * Register a listener that will be invoked with all callees that are currently registered. This is
+ * useful to create a "phone-book" display. Only one listener can be registered at a time
+ *
+ * @param   {Function} callback Will be invoked initially and every time a callee is added or removed
+ *
+ * @public
+ * @returns {void}
+ */
 WebRtcHandler.prototype.listenForCallees = function( callback ) {
 	if( this._remoteCalleesCallback !== null ) {
 		throw new Error( 'Already listening for callees' );
@@ -101,11 +136,26 @@ WebRtcHandler.prototype.listenForCallees = function( callback ) {
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_LISTEN_FOR_CALLEES );
 };
 
+/**
+ * Removes the listener that was previously registered with listenForCallees
+ *
+ * @public
+ * @returns {void}
+ */
 WebRtcHandler.prototype.unlistenForCallees = function() {
 	this._remoteCalleesCallback = null;
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES );
 };
 
+/**
+ * This method is invoked whenever an incoming call message is received. It constracts
+ * a call object and passes it to the callback function that was registered with registerCallee
+ *
+ * @param   {Object} message parsed deepstream message
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcHandler.prototype._handleIncomingCall = function( message ) {
 	var remoteId = message.data[ 0 ],
 		localId = message.data[ 1 ],
@@ -123,16 +173,46 @@ WebRtcHandler.prototype._handleIncomingCall = function( message ) {
 	this._localCallees[ localId ]( call, offer.meta );
 };
 
+/**
+ * Removes a call from the internal cache. This can be the result of a call ending, being
+ * declined or erroring.
+ *
+ * @param   {String} id The temporary id (receiverName for incoming-, senderName for outgoing calls)
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcHandler.prototype._removeCall = function( id ) {
 	delete this._calls[ id ];
 };
 
+/**
+ * Creates a new instance of WebRtcCall
+ *
+ * @param   {String} id The temporary id (receiverName for incoming-, senderName for outgoing calls)
+ * @param   {Object} settings Call settings. Please see WebRtcCall for details
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcHandler.prototype._createCall = function( id, settings ) {
 	this._calls[ id ] = new WebRtcCall( settings );
 	this._calls[ id ].on( 'destroy', this._removeCall.bind( this, id ) );
 	return this._calls[ id ];
 };
 
+/**
+ * All call-related messages (offer, answer, ice candidate, decline, end etc.) share the same data signature.
+ *
+ * [ senderName, receiverName, arbitrary data string ]
+ *
+ * This method makes sure the message is in the correct format.
+ *
+ * @param   {Object}  message A parsed deepstream message
+ *
+ * @private
+ * @returns {Boolean}
+ */
 WebRtcHandler.prototype._isValidMessage = function( message ) {
 	return message.data.length === 3 &&
 	typeof message.data[ 0 ] === 'string' &&
@@ -140,12 +220,44 @@ WebRtcHandler.prototype._isValidMessage = function( message ) {
 	typeof message.data[ 2 ] === 'string';
 };
 
+/**
+ * Returns true if the messages is an update to the list of updated callees
+ *
+ * @param   {Object}  message A parsed deepstream message
+ *
+ * @private
+ * @returns {Boolean}
+ */
 WebRtcHandler.prototype._isCalleeUpdate = function( message ) {
 	return 	message.action === C.ACTIONS.WEBRTC_ALL_CALLEES ||
 			message.action === C.ACTIONS.WEBRTC_CALLEE_ADDED ||
 			message.action === C.ACTIONS.WEBRTC_CALLEE_REMOVED;
 };
 
+/**
+ * The WebRTC specification is still very much in flux and implementations are fairly unstandardized. To
+ * get WebRTC to work across all supporting browsers it is therefor crucial to use a shim / adapter script
+ * to normalize implementation specifities.
+ *
+ * This adapter script however is not included with the client. This is for three reasons:
+ * 
+ * - Whilst WebRTC is a great feature of deepstream, it is not a central one. Most usecases will probably
+ *   focus on Records, Events and RPCs. We've therefor choosen to rather reduce the client size and leave
+ *   it to WebRTC users to include the script themselves
+ *
+ * - Since the API differences are still subject to frequent change it is likely that updates to the WebRTC
+ *   adapter script will be quite frequent. By making it a seperate dependency it can be updated individually
+ *   as soon as it is released.
+ *
+ * - Whilst working well, the code quality of adapter is rather poor. It lives in the global namespace, adds
+ *   console logs etc.
+ *
+ * This method checks if all the WebRTC related objects that it will use further down the line are present
+ * and if not recommends usage of the WebRTC adapter script
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcHandler.prototype._checkCompatibility = function() {
 	if(
 		typeof RTCPeerConnection === 'undefined' ||
@@ -161,10 +273,29 @@ WebRtcHandler.prototype._checkCompatibility = function() {
 	}
 };
 
+/**
+ * Removes a callee from the internal cache as a result of an ACK timeout or the callee being unregistered.
+ *
+ * @param   {String} calleeName A local callee that was previously registered using registerCallee
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcHandler.prototype._removeCallee = function( calleeName ) {
 	delete this._localCallees[ calleeName ];
 };
 
+/**
+ * Processes an update to the list of callees that are registered with deepstream. When listenForCallees
+ * is initally called, it receives a full list of all registered callees. From there on it is only
+ * send deltas. This method merges the delta updates into the full array of registered callees and
+ * invokes the listener callback with the result.
+ *
+ * @param   {Object} message a parsed deepstream message
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcHandler.prototype._processCalleeUpdate = function( message ) {
 	if( this._remoteCalleesCallback === null ) {
 		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
@@ -193,6 +324,14 @@ WebRtcHandler.prototype._processCalleeUpdate = function( message ) {
 	this._remoteCalleesCallback( this._remoteCallees );
 };
 
+/**
+ * The main method for incoming WebRTC messages.
+ *
+ * @param   {Object} message a parsed deepstream message
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcHandler.prototype._$handle = function( message ) {
 	var call,
 		sessionDescription,

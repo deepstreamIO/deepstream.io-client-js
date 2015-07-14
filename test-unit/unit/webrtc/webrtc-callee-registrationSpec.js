@@ -5,7 +5,7 @@ var WebRtcHandler = require( '../../../src/webrtc/webrtc-handler.js' ),
 	options = { calleeAckTimeout: 5 };
 
 
-describe( 'webrtc sends correct messages', function(){
+describe( 'webrtc callee registration', function(){
 	var webrtcHandler,
 		incomingCallCbA = jasmine.createSpy( 'incoming call callbackA' ),
 		mockConnection = new MockConnection(),
@@ -72,6 +72,64 @@ describe( 'webrtc sends correct messages', function(){
 			'action': 'A',
 			'data': [ 'S', 'calleeA' ]
 		});
+
+		setTimeout(function(){
+			expect( mockClient.lastError ).toBe( null );
+			done();
+		});
+	});
+
+	it( 'unregisteres a callee, but gets no response', function( done ){
+		expect(function(){
+			webrtcHandler.unregisterCallee( 'is not registered' );
+		}).toThrow();
+		
+		expect(function(){
+			webrtcHandler.registerCallee( 'calleeA', function(){} );
+		}).toThrow();
+
+		mockClient.lastError = null;
+		webrtcHandler.unregisterCallee( 'calleeA' );
+		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|URC|calleeA+' ) );
+		expect( mockClient.lastError ).toBe( null );
+
+		setTimeout(function(){
+			expect( mockClient.lastError ).toEqual([ 'W', 'ACK_TIMEOUT', 'No ACK message received in time for calleeA' ]);
+			done();
+		}, 20 );
+	});
+
+	it( 'unregisteres a callee successfully', function( done ){
+		mockClient.lastError = null;
+		webrtcHandler.registerCallee( 'calleeA', function(){} );
+		webrtcHandler._$handle({
+			'raw': msg( 'W|A|S|calleeA+' ),
+			'topic': 'W',
+			'action': 'A',
+			'data': [ 'S', 'calleeA' ]
+		});
+
+		expect(function(){
+			webrtcHandler.registerCallee( 'calleeA', function(){} );
+		}).toThrow();
+
+		webrtcHandler.unregisterCallee( 'calleeA' );
+		webrtcHandler._$handle({
+			'raw': msg( 'W|A|US|calleeA+' ),
+			'topic': 'W',
+			'action': 'A',
+			'data': [ 'US', 'calleeA' ]
+		});
+
+		expect(function(){
+			webrtcHandler.registerCallee( 'calleeA', function(){} );
+			webrtcHandler._$handle({
+				'raw': msg( 'W|A|S|calleeA+' ),
+				'topic': 'W',
+				'action': 'A',
+				'data': [ 'S', 'calleeA' ]
+			});
+		}).not.toThrow();
 
 		setTimeout(function(){
 			expect( mockClient.lastError ).toBe( null );
