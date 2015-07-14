@@ -14,9 +14,9 @@ var WebRtcConnection = require( './webrtc-connection' ),
  *
  * {
  * 		isOutgoing, 
- * 		connection, 
- * 		localId, 
- * 		remoteId, 
+ * 		connection,
+ * 		localId,
+ * 		remoteId,
  * 		localStream,
  * 		offer
  * }
@@ -128,6 +128,8 @@ WebRtcCall.prototype._initiate = function() {
 };
 
 WebRtcCall.prototype._onEstablished = function( stream ) {
+	this.isDeclined = false;
+	this.isAccepted = true;
 	this._stateChange( C.CALL_STATE.ESTABLISHED );
 	this.emit( 'established', stream );
 };
