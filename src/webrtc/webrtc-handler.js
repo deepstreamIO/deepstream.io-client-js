@@ -143,6 +143,9 @@ WebRtcHandler.prototype.listenForCallees = function( callback ) {
  * @returns {void}
  */
 WebRtcHandler.prototype.unlistenForCallees = function() {
+	if( !this._remoteCalleesCallback ) {
+		throw new Error( 'Not listening for callees' );
+	}
 	this._remoteCalleesCallback = null;
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES );
 };
