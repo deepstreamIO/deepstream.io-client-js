@@ -69,7 +69,7 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	for( var i = 0; i < this._bufferedIceCandidates.length; i++ ) {
 		this._$webRtcConnection.addIceCandidate( this._bufferedIceCandidates[ i ] );
 	}
-
+	this._bufferedIceCandidates = [];
 	this._stateChange( C.CALL_STATE.ACCEPTED );
 };
 

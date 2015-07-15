@@ -2,15 +2,18 @@ var WebRtcCall = require( '../../../src/webrtc/webrtc-call.js' ),
 	MockConnection = require( '../../mocks/message/connection-mock' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg,
+	webrtcMock = require( '../../mocks/webrtc/webrtc-mock' ),
 	options = { calleeAckTimeout: 5 };
 
-global.RTCPeerConnection = require( '../../mocks/webrtc/peer-connection-mock' );
-global.RTCSessionDescription = function(){};
 
 describe( 'incoming call gets declined', function(){
 	var webrtcCall,
 		localStream = {},
 		mockConnection = new MockConnection();
+
+	it( 'creates global objects', function(){
+		webrtcMock.on();
+	});
 
 	it( 'incoming calls start in initial', function(){
 		webrtcCall = new WebRtcCall({
@@ -144,5 +147,9 @@ describe( 'outgoing call gets accepted', function(){
 		webrtcCall.end();
 		expect( webrtcCall._$webRtcConnection._peerConnection.close ).toHaveBeenCalled();
 		expect( webrtcCall.state ).toBe( 'ENDED' );
+	});
+
+	it( 'removes global objects', function(){
+		webrtcMock.off();
 	});
 });
