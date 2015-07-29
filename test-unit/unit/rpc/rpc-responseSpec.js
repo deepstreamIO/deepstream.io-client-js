@@ -24,7 +24,7 @@ describe( 'sends the correct response messages - happy path', function(){
 	});
 });
 
-describe( 'sends the correct response messages - alternativ behaviour', function(){
+describe( 'sends the correct response messages - ack behaviour', function(){
 	var response;
 	
 	it( 'creates the response object', function(){
@@ -53,9 +53,37 @@ describe( 'sends the correct response messages - alternativ behaviour', function
 	    expect( connectionMock.lastSendMessage ).toBe( null );
 	});
 	
+});
+
+describe( 'sends the correct response messages - reject behaviour', function(){
+	var response;
+	
+	it( 'creates the response object', function(){
+		response = new RpcResponse( connectionMock, 'addTwo', '123' );
+		expect( response.send ).toBeDefined();
+	});
+	
 	it( 'rejects messages', function() {
 	    response.reject();
 	    expect( connectionMock.lastSendMessage ).toBe( msg( 'P|REJ|addTwo|123+' ) );
+	});
+	
+	it( 'throws an error when trying to send a completed response', function() {
+		expect(function(){ response.send( 'bla' ); }).toThrow(); 
+	});
+});
+
+describe( 'sends the correct response messages - error behaviour', function(){
+	var response;
+	
+	it( 'creates the response object', function(){
+		response = new RpcResponse( connectionMock, 'addTwo', '123' );
+		expect( response.send ).toBeDefined();
+	});
+	
+	it( 'errors messages', function() {
+	    response.error( 'Error Message');
+	    expect( connectionMock.lastSendMessage ).toBe( msg( 'P|E|Error Message|addTwo|123+' ) );
 	});
 	
 	it( 'throws an error when trying to send a completed response', function() {
