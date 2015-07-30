@@ -90,4 +90,14 @@ describe( 'anonymous record allows switching of underlying records', function(){
 
 	    expect( errorCallback ).not.toHaveBeenCalled();
 	});
+
+	it( 'emits an nameChanged event when setName is called', function() {
+		var readyEventListener = jasmine.createSpy( 'nameChanged' );
+		anonymousRecord.on( 'nameChanged', readyEventListener );
+		
+		anonymousRecord.setName( 'recordC' );
+		
+		expect( readyEventListener ).toHaveBeenCalled();
+		expect( readyEventListener ).toHaveBeenCalledWith( 'recordC' );
+	} );
 });
