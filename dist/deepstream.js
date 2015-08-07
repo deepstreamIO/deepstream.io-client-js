@@ -7465,7 +7465,8 @@ MessageParser.prototype._parseMessage = function( message, client ) {
 
 module.exports = new MessageParser();
 },{"../constants/constants":42}],48:[function(_dereq_,module,exports){
-var Record = _dereq_( './record' );
+var Record = _dereq_( './record' ),
+	EventEmitter = _dereq_( 'component-emitter' );
 
 /**
  * An AnonymousRecord is a record without a predefined name. It
@@ -7493,6 +7494,8 @@ var AnonymousRecord = function( recordHandler ) {
 	this._proxyMethod( 'unsubscribe' );
 	this._proxyMethod( 'discard' );
 };
+
+EventEmitter( AnonymousRecord.prototype );
 
 /**
  * Proxies the actual record's get method. It is valid
@@ -7598,6 +7601,8 @@ AnonymousRecord.prototype.setName = function( recordName ) {
 	for( i = 0; i < this._subscriptions.length; i++ ) {
 		this._record.subscribe( this._subscriptions[ i ] );
 	}
+
+	this.emit( 'nameChanged', recordName );
 };
 
 /**
@@ -7638,7 +7643,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":53}],49:[function(_dereq_,module,exports){
+},{"./record":53,"component-emitter":12}],49:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
@@ -9043,10 +9048,25 @@ RpcResponse.prototype.reject = function() {
 };
 
 /**
+ * Notifies the server that an error has occured while trying to process the request. 
+ * This will complete the rpc.
+ *
+ * @param {String} errorMsg the message used to describe the error that occured
+ * @public
+ * @returns	{void}
+ */
+RpcResponse.prototype.error = function( errorMsg ) {
+	this.autoAck = false;
+	this._isComplete = true;
+	this._isAcknowledged = true;
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ERROR, [ errorMsg, this._name, this._correlationId ] );
+};
+
+/**
  * Completes the request by sending the response data
  * to the server. If data is an array or object it will
  * automatically be serialised.
- * If autoAck is disabled and the response is send before
+ * If autoAck is disabled and the response is sent before
  * the ack message the request will still be completed and the
  * ack message ignored
  * 
