@@ -227,7 +227,6 @@ Record.prototype.delete = function() {
  *
  * @param   {Function} callback Will be called when the record is ready
  *
- * @private
  * @returns {void}
  */
 Record.prototype.whenReady = function( callback ) {
