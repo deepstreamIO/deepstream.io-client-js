@@ -24,14 +24,13 @@ describe( 'it recovers a connection without losing record updates', function() {
         clientA = deepstreamClient( 'localhost:6021' );
         clientA.on( 'error', function(){
             clientAErrors.push( arguments );
-            console.log( arguments );
         });
         clientA.login( null, function(){ done(); });
     });
 
     it( 'requests a record', function( done ){
         record = clientA.record.getRecord( 'recordA1' );
-        record.whenReady( done );
+        record.whenReady(function(){ done(); });
     });
 
     it( 'updates the record whilst connected', function( done ){
