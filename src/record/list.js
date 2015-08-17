@@ -232,7 +232,7 @@ List.prototype._hasIndex = function( index ) {
 		if( isNaN( index ) ) {
 			throw new Error( 'Index must be a number' );
 		}
-		if( index >= entries.length || index < 0 ) {
+		if( index !== entries.length && ( index >= entries.length || index < 0 ) ) {
 			throw new Error( 'Index must be within current entries' );
 		}
 		hasIndex = true;
