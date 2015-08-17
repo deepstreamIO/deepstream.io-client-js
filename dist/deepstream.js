@@ -7985,7 +7985,7 @@ List.prototype._hasIndex = function( index ) {
 		if( isNaN( index ) ) {
 			throw new Error( 'Index must be a number' );
 		}
-		if( index >= entries.length || index < 0 ) {
+		if( index !== entries.length && ( index >= entries.length || index < 0 ) ) {
 			throw new Error( 'Index must be within current entries' );
 		}
 		hasIndex = true;
@@ -8035,7 +8035,8 @@ var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
 	Listener = _dereq_( './listener' ),
-	C = _dereq_( '../constants/constants' );
+	C = _dereq_( '../constants/constants' ),
+	EventEmitter = _dereq_( 'component-emitter' );
 
 /**
  * A collection of factories for records. This class
@@ -8051,6 +8052,7 @@ var RecordHandler = function( options, connection, client ) {
 	this._client = client;
 	this._records = {};
 	this._listener = {};
+	this._destroyEventEmitter = new EventEmitter();
 };
 
 /**
@@ -8067,6 +8069,7 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
 		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
+		this._records[ name ].on( 'destroyPending', this._onDestroyPending.bind( this, name ) );
 		this._records[ name ].on( 'deleted', this._removeRecord.bind( this, name ) );
 		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
 	}
@@ -8164,6 +8167,23 @@ RecordHandler.prototype._$handle = function( message ) {
 	
 	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
+
+		/*
+		 * The following prevents errors that occur when a record is discarded or deleted and
+		 * recreated before the discard / delete ack message is received.
+		 *
+		 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
+		 * between another clients creation and read message for the same record
+		 */
+		if( message.data[ 0 ] === C.ACTIONS.DELETE || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) {
+			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
+			
+			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
+				this._records[ name ]._$onMessage( message );
+			}
+
+			return;
+		}
 	} else {
 		name = message.data[ 0 ];
 	}
@@ -8193,6 +8213,23 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
 };
 
 /**
+ * When the client calls discard or delete on a record, there is a short delay
+ * before the corresponding ACK message is received from the server. To avoid
+ * race conditions if the record is re-requested straight away the old record is
+ * removed from the cache straight awy and will only listen for one last ACK message
+ *
+ * @param   {String} recordName The name of the record that was just deleted / discarded
+ *
+ * @private
+ * @returns {void}
+ */
+RecordHandler.prototype._onDestroyPending = function( recordName ) {
+	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
+	this._destroyEventEmitter.once( 'destroy_ack_' + recordName, onMessage );
+	this._removeRecord( recordName );
+};
+
+/**
  * Callback for 'deleted' and 'discard' events from a record. Removes the record from
  * the registry
  *
@@ -8205,7 +8242,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":42,"./anonymous-record":48,"./list":50,"./listener":51,"./record":53}],53:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"./anonymous-record":48,"./list":50,"./listener":51,"./record":53,"component-emitter":12}],53:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
@@ -8409,6 +8446,7 @@ Record.prototype.discard = function() {
 	this.usages--;
 
 	if( this.usages <= 0 ) {
+		this.emit( 'destroyPending' );
 		this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 	}
@@ -8424,6 +8462,7 @@ Record.prototype.delete = function() {
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
+	this.emit( 'destroyPending' );
 	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 };
@@ -8435,14 +8474,13 @@ Record.prototype.delete = function() {
  *
  * @param   {Function} callback Will be called when the record is ready
  *
- * @private
  * @returns {void}
  */
 Record.prototype.whenReady = function( callback ) {
 	if( this.isReady === true ) {
-		callback();
+		callback( this );
 	} else {
-		this.once( 'ready', callback );
+		this.once( 'ready', callback.bind( this, this ) );
 	}
 };
 
