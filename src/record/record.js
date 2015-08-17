@@ -231,9 +231,9 @@ Record.prototype.delete = function() {
  */
 Record.prototype.whenReady = function( callback ) {
 	if( this.isReady === true ) {
-		callback();
+		callback( this );
 	} else {
-		this.once( 'ready', callback );
+		this.once( 'ready', callback.bind( this, this ) );
 	}
 };
 
