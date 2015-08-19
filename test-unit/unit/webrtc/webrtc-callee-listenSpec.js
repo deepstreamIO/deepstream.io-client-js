@@ -18,7 +18,10 @@ describe( 'webrtc listen for callees', function(){
 
 	it( 'registers a listener', function(){
 		webrtcHandler.listenForCallees( calleeListener );
+		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|LC+' ) );
+	});
 
+	it( 'throws an error if trying to register multiple listeners', function(){
 		expect(function(){
 			webrtcHandler.listenForCallees( calleeListener );
 		}).toThrow();
@@ -88,10 +91,15 @@ describe( 'webrtc listen for callees', function(){
 		]);
 	});
 
-	it( 'removes the callee listener', function(){
+	it( 'unregisters the callee listener', function(){
 		webrtcHandler.unlistenForCallees();
+
+		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|ULC+' ) );
 		expect( calleeListener.calls.length ).toBe( 4 );
 		expect( mockClient.lastError ).toBe( null );
+	});
+
+	it( 'does not process any further callee updates', function(){
 		webrtcHandler._$handle({
 			'raw': msg( 'W|WCA|calleeE+' ),
 			'topic': 'W',
@@ -101,7 +109,9 @@ describe( 'webrtc listen for callees', function(){
 
 		expect( calleeListener.calls.length ).toBe( 4 );
 		expect( mockClient.lastError ).toEqual([ 'W', 'UNSOLICITED_MESSAGE', msg('W|WCA|calleeE+') ]);
+	});
 
+	it( 'throws an error if trying to unregister callee listener mutliple times', function(){
 		expect(function(){
 			webrtcHandler.unlistenForCallees();
 		}).toThrow();
