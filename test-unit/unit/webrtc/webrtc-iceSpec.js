@@ -40,7 +40,7 @@ describe( 'webrtc interactive connection establishing works for outgoing calls',
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|OF|1|calleeA|{"sdp":"offer sdp","type":"offer type","meta":{"some":"metaData"}}+' ) );
 	});
 
-	it( 'receives an icecandidate and adds it immediatly', function(){
+	it( 'receives an icecandidate and adds it immediately', function(){
 		expect( webrtcCall._$webRtcConnection._peerConnection.addIceCandidate ).not.toHaveBeenCalled();
 		webrtcHandler._$handle({
 			raw: msg( 'W|IC|calleeA|1|{"icecandidate":"C"}+' ),
