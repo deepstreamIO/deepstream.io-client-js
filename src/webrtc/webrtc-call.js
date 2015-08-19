@@ -1,24 +1,31 @@
 var WebRtcConnection = require( './webrtc-connection' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' );
+
 /**
- * [WebRtcCall description]
+ * This class represents a single call between two peers
+ * in all its states. It's returned by ds.webrtc.makeCall
+ * as well as passed to the callback of 
+ * ds.webrtc.registerCallee( name, callback );
+ *
+ * @constructor
+ * @extends {EventEmitter}
  *
  * @event established <remoteStream>
  * @event declined <reason>
  * @event error <error>
  * @event stateChange <state>
- * @event destroy
+ * @event ended
  *
  * @param {Object} settings
  *
  * {
- * 		isOutgoing, 
- * 		connection,
- * 		localId,
- * 		remoteId,
- * 		localStream,
- * 		offer
+ * 		isOutgoing: <Boolean>, 
+ * 		connection: <Deepstream Connection>,
+ * 		localId: <String>,
+ * 		remoteId: <String>,
+ * 		localStream: <MediaStream>,
+ * 		offer: <Offer SDP>
  * }
  */
 var WebRtcCall = function( settings ) {
@@ -45,6 +52,14 @@ var WebRtcCall = function( settings ) {
 
 EventEmitter( WebRtcCall.prototype );
 
+/**
+ * Accept an incoming call
+ *
+ * @param   {MediaStream} localStream
+ *
+ * @public
+ * @returns {void}
+ */
 WebRtcCall.prototype.accept = function( localStream ) {
 	if( this.isAccepted ) {
 		throw new Error( 'Incoming call is already accepted' );
@@ -73,6 +88,14 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	this._stateChange( C.CALL_STATE.ACCEPTED );
 };
 
+/**
+ * Decline an incoming call
+ *
+ * @param   {[String]} reason An optional reason as to why the call was declined
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcCall.prototype.decline = function( reason ) {
 	if( this.isAccepted ) {
 		throw new Error( 'Can\'t decline incoming call. Call was already accepted' );
@@ -87,11 +110,24 @@ WebRtcCall.prototype.decline = function( reason ) {
 	this._$declineReceived( reason || null );
 };
 
+/**
+ * Ends a call that's in progress.
+ *
+ * @public
+ * @returns {void}
+ */
 WebRtcCall.prototype.end = function() {
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_ENDED, [ this._localId, this._remoteId, null ] );
 	this._$close();
 };
 
+/**
+ * Closes the connection and ends the call. This can be invoked from the
+ * outside as a result of an incoming end message as well as by calling end()
+ *
+ * @protected
+ * @returns {void}
+ */
 WebRtcCall.prototype._$close = function() {
 	this._stateChange( C.CALL_STATE.ENDED );
 	if( this._$webRtcConnection ) {
@@ -100,6 +136,15 @@ WebRtcCall.prototype._$close = function() {
 	this.emit( 'ended' );
 };
 
+/**
+ * Add an ICE (Interactive Connection Establishing) Candidate
+ *
+ * @param   {RTCIceCandidate} iceCandidate An object, describing a host and port combination
+ *                                         that the peers can try to connect on
+ *
+ * @protected
+ * @returns {void}
+ */
 WebRtcCall.prototype._$addIceCandidate = function( iceCandidate ) {
 	if( this.isIncoming && this.isAccepted === false ) {
 		this._bufferedIceCandidates.push( iceCandidate );
@@ -108,6 +153,14 @@ WebRtcCall.prototype._$addIceCandidate = function( iceCandidate ) {
 	}
 };
 
+/**
+ * Will be invoked by the webrtcHandler if a decline message is received from the other party
+ *
+ * @param   {[String]} reason Optional reason as to why the call was declined
+ *
+ * @protected
+ * @returns {void}
+ */
 WebRtcCall.prototype._$declineReceived = function( reason ) {
 	this.isDeclined = true;
 	this.isAccepted = false;
@@ -115,11 +168,25 @@ WebRtcCall.prototype._$declineReceived = function( reason ) {
 	this.emit( 'declined', reason );
 };
 
+/**
+ * Is invoked for every stateChange
+ *
+ * @param   {String} state one of C.CALL_STATE
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcCall.prototype._stateChange = function( state ) {
 	this.state = state;
 	this.emit( 'stateChange', state );
 };
 
+/**
+ * Initiates the an outgoing call
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcCall.prototype._initiate = function() {
 	this._stateChange( C.CALL_STATE.CONNECTING );
 	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
@@ -127,6 +194,14 @@ WebRtcCall.prototype._initiate = function() {
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
 };
 
+/**
+ * Callback for accept messages. Sets the call to established and informs the client
+ *
+ * @param   {MediaStream} stream
+ *
+ * @private
+ * @returns {void}
+ */
 WebRtcCall.prototype._onEstablished = function( stream ) {
 	this.isDeclined = false;
 	this.isAccepted = true;
