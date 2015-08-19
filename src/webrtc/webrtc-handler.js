@@ -101,13 +101,21 @@ WebRtcHandler.prototype.unregisterCallee = function( name ) {
 WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream ) {
 	this._checkCompatibility();
 
+	if( typeof calleeName !== 'string' ) {
+		throw new Error( 'Callee must be provided as string' );
+	}
+
+	if( typeof metaData !== 'object' ) {
+		throw new Error( 'metaData must be provided' );
+	}
+
 	if( this._calls[ calleeName ] ) {
 		throw new Error( 'Call with ' + calleeName + ' is already in progress' );
 	}
 
 	var localId = this._client.getUid();
 
-	return this._createCall( localId, {
+	return this._createCall( calleeName, {
 		isOutgoing: true,
 		connection: this._connection, 
 		localId: localId, 
