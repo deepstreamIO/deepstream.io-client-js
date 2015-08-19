@@ -147,6 +147,7 @@ WebRtcHandler.prototype.unlistenForCallees = function() {
 		throw new Error( 'Not listening for callees' );
 	}
 	this._remoteCalleesCallback = null;
+	this._ackTimeoutRegistry.add( CALLEE_UPDATE_EVENT );
 	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES );
 };
 
@@ -332,7 +333,9 @@ WebRtcHandler.prototype._processCalleeUpdate = function( message ) {
  *
  * @param   {Object} message a parsed deepstream message
  *
+ *
  * @private
+ * 
  * @returns {void}
  */
 WebRtcHandler.prototype._$handle = function( message ) {

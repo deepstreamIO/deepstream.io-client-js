@@ -21,6 +21,16 @@ describe( 'webrtc listen for callees', function(){
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|LC+' ) );
 	});
 
+	it( 'emits an error if no ack message is received for the callee listen', function( done ){
+		expect( mockClient.lastError ).toBe( null );
+		setTimeout(function(){
+			var errorParams = [ 'W', 'ACK_TIMEOUT', 'No ACK message received in time for callee-update' ];
+			expect( mockClient.lastError ).toEqual( errorParams );
+			mockClient.lastError = null;
+			done();
+		}, 20 );
+	});
+
 	it( 'throws an error if trying to register multiple listeners', function(){
 		expect(function(){
 			webrtcHandler.listenForCallees( calleeListener );
@@ -99,6 +109,16 @@ describe( 'webrtc listen for callees', function(){
 		expect( mockClient.lastError ).toBe( null );
 	});
 
+	it( 'emits an error if no ack message is received for the callee unlisten', function( done ){
+		expect( mockClient.lastError ).toBe( null );
+		setTimeout(function(){
+			var errorParams = [ 'W', 'ACK_TIMEOUT', 'No ACK message received in time for callee-update' ];
+			expect( mockClient.lastError ).toEqual( errorParams );
+			mockClient.lastError = null;
+			done();
+		}, 20 );
+	});
+
 	it( 'does not process any further callee updates', function(){
 		webrtcHandler._$handle({
 			'raw': msg( 'W|WCA|calleeE+' ),
@@ -111,7 +131,7 @@ describe( 'webrtc listen for callees', function(){
 		expect( mockClient.lastError ).toEqual([ 'W', 'UNSOLICITED_MESSAGE', msg('W|WCA|calleeE+') ]);
 	});
 
-	it( 'throws an error if trying to unregister callee listener mutliple times', function(){
+	it( 'throws an error if trying to unregister callee listener multiple times', function(){
 		expect(function(){
 			webrtcHandler.unlistenForCallees();
 		}).toThrow();
