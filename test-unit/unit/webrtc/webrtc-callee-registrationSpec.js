@@ -20,18 +20,15 @@ describe( 'webrtc callee registration', function(){
 		expect(function(){
 			webrtcHandler.registerCallee( 'calleeB', incomingCallCbA );
 		}).toThrow();
-
+	});
+	
+	it( 'defines RTC globals', function(){
 		RTCPeerConnection = function(){};
 		RTCSessionDescription = function(){};
 		RTCIceCandidate = function(){};
-
-		expect(function(){
-			webrtcHandler.registerCallee( 'calleeB', incomingCallCbA );
-		}).not.toThrow();
-		mockConnection.lastSendMessage = null;
-	});
+	});	
 	
-	it( 'throws errors for incorrect callee registration parameter', function(){
+	it( 'throws errors for incorrect callee registration parameters', function(){
 		expect(function(){
 			webrtcHandler.registerCallee( function(){} );
 		}).toThrow();
@@ -79,7 +76,7 @@ describe( 'webrtc callee registration', function(){
 		});
 	});
 
-	it( 'unregisteres a callee, but gets no response', function( done ){
+	it( 'throws errors for incorrect callee unregister parameters', function(){
 		expect(function(){
 			webrtcHandler.unregisterCallee( 'is not registered' );
 		}).toThrow();
@@ -87,49 +84,35 @@ describe( 'webrtc callee registration', function(){
 		expect(function(){
 			webrtcHandler.registerCallee( 'calleeA', function(){} );
 		}).toThrow();
+	});
 
+	it( 'unregisteres a callee, but gets no response', function(){
 		mockClient.lastError = null;
 		webrtcHandler.unregisterCallee( 'calleeA' );
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|URC|calleeA+' ) );
 		expect( mockClient.lastError ).toBe( null );
+	});
 
+	it( 'emits an error if no ack message is received for the callee unregistration', function( done ){
 		setTimeout(function(){
 			expect( mockClient.lastError ).toEqual([ 'W', 'ACK_TIMEOUT', 'No ACK message received in time for calleeA' ]);
 			done();
 		}, 20 );
 	});
 
-	it( 'unregisteres a callee successfully', function( done ){
+	it( 'can reregister callee', function( done ){
 		mockClient.lastError = null;
-		webrtcHandler.registerCallee( 'calleeA', function(){} );
-		webrtcHandler._$handle({
-			'raw': msg( 'W|A|S|calleeA+' ),
-			'topic': 'W',
-			'action': 'A',
-			'data': [ 'S', 'calleeA' ]
-		});
 
 		expect(function(){
 			webrtcHandler.registerCallee( 'calleeA', function(){} );
-		}).toThrow();
+		}).not.toThrow();
 
-		webrtcHandler.unregisterCallee( 'calleeA' );
 		webrtcHandler._$handle({
-			'raw': msg( 'W|A|US|calleeA+' ),
-			'topic': 'W',
-			'action': 'A',
-			'data': [ 'US', 'calleeA' ]
-		});
-
-		expect(function(){
-			webrtcHandler.registerCallee( 'calleeA', function(){} );
-			webrtcHandler._$handle({
 				'raw': msg( 'W|A|S|calleeA+' ),
 				'topic': 'W',
 				'action': 'A',
 				'data': [ 'S', 'calleeA' ]
-			});
-		}).not.toThrow();
+		});
 
 		setTimeout(function(){
 			expect( mockClient.lastError ).toBe( null );

@@ -136,7 +136,7 @@ describe( 'webrtc interactive connection establishing works for incoming calls',
 		setTimeout( done, 10 );
 	});
 
-	it( 'has send the answer message', function(){
+	it( 'has sent the answer message', function(){
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|AN|calleeA|1|{"sdp":"answer sdp","type":"answer type"}+' ) );
 	});
 });
