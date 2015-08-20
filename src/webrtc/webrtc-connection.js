@@ -100,7 +100,17 @@ WebRtcConnection.prototype._onIceCandidate = function( event ) {
  */
 WebRtcConnection.prototype._onIceConnectionStateChange = function( event ) {
 	//iceConnectionState
-	//console.log( '_onIceConnectionStateChange', this._peerConnection.iceConnectionState );
+	//disconnected
+	//closed
+	console.log( '_onIceConnectionStateChange', this._peerConnection.iceConnectionState );
+
+	if( this._peerConnection.iceConnectionState === 'disconnected' ) {
+		this._connection.sendMsg( 
+			C.TOPIC.WEBRTC,
+			C.ACTIONS.WEBRTC_IS_ALIVE,
+			[ this._remoteId ]
+		);
+	}
 };
 
 WebRtcConnection.prototype._onLocalDescriptionSuccess = function() {

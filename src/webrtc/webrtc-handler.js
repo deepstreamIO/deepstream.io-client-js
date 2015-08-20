@@ -115,6 +115,8 @@ WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream )
 
 	var localId = this._client.getUid();
 
+	this._ackTimeoutRegistry.add( localId );
+
 	return this._createCall( calleeName, {
 		isOutgoing: true,
 		connection: this._connection, 
@@ -209,7 +211,7 @@ WebRtcHandler.prototype._removeCall = function( id ) {
  */
 WebRtcHandler.prototype._createCall = function( id, settings ) {
 	this._calls[ id ] = new WebRtcCall( settings );
-	this._calls[ id ].on( 'destroy', this._removeCall.bind( this, id ) );
+	this._calls[ id ].on( 'ended', this._removeCall.bind( this, id ) );
 	return this._calls[ id ];
 };
 
@@ -364,6 +366,13 @@ WebRtcHandler.prototype._$handle = function( message ) {
 	if( this._isCalleeUpdate( message ) ) {
 		this._processCalleeUpdate( message );
 		return;	
+	}
+
+	if( message.action === C.ACTIONS.WEBRTC_IS_ALIVE ) {
+		if( message.data[ 1 ] === 'false' && this._calls[ message.data[ 0 ] ] ) {
+			this._calls[ message.data[ 0 ] ]._$close();
+		}
+		return;
 	}
 
 	if( !this._isValidMessage( message ) ) {
