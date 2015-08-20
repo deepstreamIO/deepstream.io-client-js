@@ -7,4 +7,4 @@ The Browser / Node Client for [deepstream.io](http://deepstream.io/)
 
 For API documentation see the [documentation page](http://deepstream.io/docs/)!
 
-For tuturials see the [tutorial page](http://deepstream.io/tutorials/)!
+For tutorials see the [tutorial page](http://deepstream.io/tutorials/)!

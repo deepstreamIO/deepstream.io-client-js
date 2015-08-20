@@ -53,10 +53,25 @@ RpcResponse.prototype.reject = function() {
 };
 
 /**
+ * Notifies the server that an error has occured while trying to process the request. 
+ * This will complete the rpc.
+ *
+ * @param {String} errorMsg the message used to describe the error that occured
+ * @public
+ * @returns	{void}
+ */
+RpcResponse.prototype.error = function( errorMsg ) {
+	this.autoAck = false;
+	this._isComplete = true;
+	this._isAcknowledged = true;
+	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ERROR, [ errorMsg, this._name, this._correlationId ] );
+};
+
+/**
  * Completes the request by sending the response data
  * to the server. If data is an array or object it will
  * automatically be serialised.
- * If autoAck is disabled and the response is send before
+ * If autoAck is disabled and the response is sent before
  * the ack message the request will still be completed and the
  * ack message ignored
  * 

@@ -84,10 +84,22 @@ describe( 'lists contain arrays of record names', function(){
 		expect( changeCallback ).toHaveBeenCalledWith([ 'x','y' ]);
 	});
 
+	it( 'handles empty lists', function(){
+		list.setEntries([]);
+		expect( list.getEntries() ).toEqual([]);
+		expect( list.isEmpty() ).toBe( true );
+		list.addEntry( 'someEntry', 0 );
+		expect( list.getEntries() ).toEqual([ 'someEntry' ]);
+		expect( list.isEmpty() ).toBe( false );
+		list.removeEntry( 'someEntry', 0 );
+		expect( list.getEntries() ).toEqual([ ]);
+		expect( list.isEmpty() ).toBe( true );
+	});
+
 	it( 'unsubscribes', function(){
-		expect( changeCallback.calls.length ).toBe( 7 );
+		expect( changeCallback.calls.length ).toBe( 10 );
 		list.unsubscribe( changeCallback );
 		list.setEntries([ 'q' ]);
-		expect( changeCallback.calls.length ).toBe( 7 );
+		expect( changeCallback.calls.length ).toBe( 10 );
 	});
 });

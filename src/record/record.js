@@ -201,6 +201,7 @@ Record.prototype.discard = function() {
 	this.usages--;
 
 	if( this.usages <= 0 ) {
+		this.emit( 'destroyPending' );
 		this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 	}
@@ -216,6 +217,7 @@ Record.prototype.delete = function() {
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
+	this.emit( 'destroyPending' );
 	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 };
@@ -227,14 +229,13 @@ Record.prototype.delete = function() {
  *
  * @param   {Function} callback Will be called when the record is ready
  *
- * @private
  * @returns {void}
  */
 Record.prototype.whenReady = function( callback ) {
 	if( this.isReady === true ) {
-		callback();
+		callback( this );
 	} else {
-		this.once( 'ready', callback );
+		this.once( 'ready', callback.bind( this, this ) );
 	}
 };
 

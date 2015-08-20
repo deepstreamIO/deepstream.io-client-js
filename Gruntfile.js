@@ -1,6 +1,6 @@
 var derequire = require( 'derequire' );
 
-module.exports = function(grunt) {
+module.exports = function( grunt ) {
 
 	var dereqCallback = function( err, src, next ) {
 		if( err ) {
@@ -10,8 +10,8 @@ module.exports = function(grunt) {
 		next( err, derequire( src ) );
 	};
 
-	grunt.initConfig({
-		
+	grunt.initConfig( {
+
 		pkg: grunt.file.readJSON( 'package.json' ),
 
 		browserify: {
@@ -19,9 +19,9 @@ module.exports = function(grunt) {
 				files: {
 					'dist/deepstream.js': [ 'src/client.js' ]
 				},
-				options:{
+				options: {
 					postBundleCB: dereqCallback,
-					browserifyOptions: { 
+					browserifyOptions: {
 						standalone: 'deepstream',
 						// insertGlobalVars: 'global',
 						// detectGlobals: false
@@ -37,7 +37,7 @@ module.exports = function(grunt) {
 					watch: true,
 					keepAlive: true,
 					postBundleCB: dereqCallback,
-					browserifyOptions: { 
+					browserifyOptions: {
 						standalone: 'deepstream',
 						// insertGlobalVars: 'global',
 						// detectGlobals: false
@@ -45,8 +45,11 @@ module.exports = function(grunt) {
 				}
 			}
 		},
-		
+
 		uglify: {
+			options: {
+				banner: '/*! <%= pkg.name %> <%= pkg.version %> (c)<%= grunt.template.today("yyyy") %> hoxton-one, with parts (c)<%= grunt.template.today("yyyy") %> Joyent and contributers  @licence <%= pkg.license %>*/\n'
+			},
 			dist: {
 				files: {
 					'dist/deepstream.min.js': [ 'dist/deepstream.js' ]
@@ -59,16 +62,16 @@ module.exports = function(grunt) {
 		},
 		_release: {
 			options: {
-				beforeBump: ['build'],
-				additionalFiles: ['bower.json'],
-				github: { 
+				beforeBump: [ 'build' ],
+				additionalFiles: [ 'bower.json' ],
+				github: {
 					repo: 'hoxton-one/deepstream.io-client-js',
 					usernameVar: 'GITHUB_USERNAME',
 					passwordVar: 'GITHUB_PASSWORD'
 				}
 			}
 		}
-	});
+	} );
 
 	grunt.loadNpmTasks( 'grunt-browserify' );
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
@@ -76,13 +79,13 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks( 'grunt-release' );
 	grunt.renameTask( 'release', '_release' );
 	grunt.registerTask( 'dev', 'Browserifies the files on every change to src', [ 'browserify:live' ] );
-	grunt.registerTask( 'test-unit', [ 'exec:runUnitTests' ]);
+	grunt.registerTask( 'test-unit', [ 'exec:runUnitTests' ] );
 
 	grunt.registerTask( 'build', 'Browserifies, tests and minifies the client file', [
 		'browserify:dist',
 		'exec:runUnitTestsOnce',
 		'uglify:dist'
-	]);
+	] );
 
 	grunt.registerTask( 'default', [ 'build' ] );
 	grunt.registerTask( 'release', [ 'build', '_release' ] );

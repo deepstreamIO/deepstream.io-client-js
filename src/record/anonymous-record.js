@@ -1,4 +1,5 @@
-var Record = require( './record' );
+var Record = require( './record' ),
+	EventEmitter = require( 'component-emitter' );
 
 /**
  * An AnonymousRecord is a record without a predefined name. It
@@ -26,6 +27,8 @@ var AnonymousRecord = function( recordHandler ) {
 	this._proxyMethod( 'unsubscribe' );
 	this._proxyMethod( 'discard' );
 };
+
+EventEmitter( AnonymousRecord.prototype );
 
 /**
  * Proxies the actual record's get method. It is valid
@@ -131,6 +134,8 @@ AnonymousRecord.prototype.setName = function( recordName ) {
 	for( i = 0; i < this._subscriptions.length; i++ ) {
 		this._record.subscribe( this._subscriptions[ i ] );
 	}
+
+	this.emit( 'nameChanged', recordName );
 };
 
 /**
