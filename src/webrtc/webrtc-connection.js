@@ -20,7 +20,11 @@ var WebRtcConnection = function( connection, localId, remoteId ) {
 	this._connection = connection;
 	this._remoteId = remoteId;
 	this._localId = localId;
-	this._peerConnection = new RTCPeerConnection( null );
+
+	this._peerConnection = new RTCPeerConnection({'iceServers': [
+		{'url': 'stun:stun.services.mozilla.com'}, 
+		{'url': 'stun:stun.l.google.com:19302'}
+	]} );
 	this._peerConnection.onaddstream = this._onStream.bind( this );
 	this._peerConnection.onicecandidate = this._onIceCandidate.bind( this );
 	this._peerConnection.oniceconnectionstatechange = this._onIceConnectionStateChange.bind( this );
