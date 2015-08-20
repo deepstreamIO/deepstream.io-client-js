@@ -6586,7 +6586,6 @@ exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
 
-<<<<<<< HEAD
 //WebRtc
 exports.ACTIONS.WEBRTC_REGISTER_CALLEE = 'RC';
 exports.ACTIONS.WEBRTC_UNREGISTER_CALLEE = 'URC';
@@ -6610,8 +6609,6 @@ exports.CALL_STATE.ACCEPTED = 'ACCEPTED';
 exports.CALL_STATE.DECLINED = 'DECLINED';
 exports.CALL_STATE.ENDED = 'ENDED';
 exports.CALL_STATE.ERROR = 'ERROR';
-=======
->>>>>>> master
 },{}],43:[function(_dereq_,module,exports){
 module.exports = {
 	/************************************************
@@ -10437,7 +10434,9 @@ WebRtcHandler.prototype._$handle = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ACK ) {
-		this._ackTimeoutRegistry.clear( message );
+		if( message.data[ 0 ] !== C.ACTIONS.UNSUBSCRIBE ) {
+			this._ackTimeoutRegistry.clear( message );
+		}
 		return;
 	}
 
