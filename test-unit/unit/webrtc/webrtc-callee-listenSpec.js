@@ -136,4 +136,14 @@ describe( 'webrtc listen for callees', function(){
 			webrtcHandler.unlistenForCallees();
 		}).toThrow();
 	});
+
+	it( 'ignores unsubscribe acks', function(){
+		webrtcHandler._$handle({
+			'raw': msg( 'W|A|US+' ),
+			'topic': 'W',
+			'action': 'A',
+			'data': [ 'US' ]
+		});
+		expect( mockClient.lastError ).toEqual([ 'W', 'UNSOLICITED_MESSAGE', msg('W|WCA|calleeE+') ]);
+	});
 });

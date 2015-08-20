@@ -359,7 +359,9 @@ WebRtcHandler.prototype._$handle = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ACK ) {
-		this._ackTimeoutRegistry.clear( message );
+		if( message.data[ 0 ] !== C.ACTIONS.UNSUBSCRIBE ) {
+			this._ackTimeoutRegistry.clear( message );
+		}
 		return;
 	}
 
