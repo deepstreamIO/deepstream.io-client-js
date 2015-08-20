@@ -80,10 +80,12 @@ WebRtcCall.prototype.accept = function( localStream ) {
 	this._$webRtcConnection.setRemoteDescription( new RTCSessionDescription( this._offer ) );
 	this._$webRtcConnection.createAnswer();
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
+	this._$webRtcConnection.on( 'error', this.emit.bind( this, 'error' ) );
 
 	for( var i = 0; i < this._bufferedIceCandidates.length; i++ ) {
 		this._$webRtcConnection.addIceCandidate( this._bufferedIceCandidates[ i ] );
 	}
+	
 	this._bufferedIceCandidates = [];
 	this._stateChange( C.CALL_STATE.ACCEPTED );
 };
