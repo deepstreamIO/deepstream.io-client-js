@@ -210,7 +210,7 @@ WebRtcHandler.prototype._removeCall = function( id ) {
  * @returns {void}
  */
 WebRtcHandler.prototype._createCall = function( id, settings ) {
-	this._calls[ id ] = new WebRtcCall( settings );
+	this._calls[ id ] = new WebRtcCall( settings, this._options );
 	this._calls[ id ].on( 'ended', this._removeCall.bind( this, id ) );
 	return this._calls[ id ];
 };

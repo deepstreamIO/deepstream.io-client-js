@@ -27,8 +27,10 @@ var WebRtcConnection = require( './webrtc-connection' ),
  * 		localStream: <MediaStream>,
  * 		offer: <Offer SDP>
  * }
+ *
+ * @param {Object} options deepstream options
  */
-var WebRtcCall = function( settings ) {
+var WebRtcCall = function( settings, options ) {
 	this._connection = settings.connection;
 	this._localId = settings.localId;
 	this._remoteId = settings.remoteId;
@@ -36,6 +38,7 @@ var WebRtcCall = function( settings ) {
 	this._offer = settings.offer;
 	this._$webRtcConnection = null;
 	this._bufferedIceCandidates = [];
+	this._options = options;
 
 	this.state = C.CALL_STATE.INITIAL;
 	this.metaData = settings.metaData || null;
@@ -71,7 +74,7 @@ WebRtcCall.prototype.accept = function( localStream ) {
 
 	this.isAccepted = true;
 
-	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
+	this._$webRtcConnection = new WebRtcConnection( this._connection, this._options, this._localId, this._remoteId );
 	
 	if( localStream ) {
 		this._$webRtcConnection.addStream( localStream );
@@ -191,7 +194,7 @@ WebRtcCall.prototype._stateChange = function( state ) {
  */
 WebRtcCall.prototype._initiate = function() {
 	this._stateChange( C.CALL_STATE.CONNECTING );
-	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
+	this._$webRtcConnection = new WebRtcConnection( this._connection, this._options, this._localId, this._remoteId );
 	this._$webRtcConnection.initiate( this._localStream, this.metaData );
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
 };

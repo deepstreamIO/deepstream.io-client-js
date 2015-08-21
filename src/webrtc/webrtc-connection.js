@@ -13,18 +13,16 @@ var noop = function(){};
  * @event stream {MediaStream}
  * 
  * @param {Connection} connection deepstream connection
+ * @param {Object} options deepstream options
  * @param {String} localId    either a random id for outgoing calls or a callee name for incoming calls
  * @param {String} remoteId   either a random id for incoming calls or a callee name for outgoing calls
  */
-var WebRtcConnection = function( connection, localId, remoteId ) {
+var WebRtcConnection = function( connection, options, localId, remoteId ) {
 	this._connection = connection;
 	this._remoteId = remoteId;
 	this._localId = localId;
 
-	this._peerConnection = new RTCPeerConnection({'iceServers': [
-		{'url': 'stun:stun.services.mozilla.com'}, 
-		{'url': 'stun:stun.l.google.com:19302'}
-	]} );
+	this._peerConnection = new RTCPeerConnection( options.rtcPeerConnectionConfig );
 	this._peerConnection.onaddstream = this._onStream.bind( this );
 	this._peerConnection.onicecandidate = this._onIceCandidate.bind( this );
 	this._peerConnection.oniceconnectionstatechange = this._onIceConnectionStateChange.bind( this );
