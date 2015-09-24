@@ -189,7 +189,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
 
-	it( 'looses the connection', function( done ){
+	it( 'loses the connection', function( done ){
 		expect( connection._endpoint.callsToOpen ).toBe( 0 );
 		connection._endpoint.close();
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
@@ -233,7 +233,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 
-	it( 'looses an authenticated connection', function( done ){
+	it( 'loses an authenticated connection', function( done ){
 		connection._endpoint.lastSendMessage = null;
 		connection._endpoint.close();
 		expect( connection.getState() ).toBe( 'RECONNECTING' );

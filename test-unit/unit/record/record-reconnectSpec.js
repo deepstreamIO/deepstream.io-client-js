@@ -54,7 +54,7 @@ describe( 'connection losses are handled gracefully', function(){
 	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'R|P|recordB|2|firstname|SWolfram+' ) );
 	});
 	
-	it( 'looses the connection', function() {
+	it( 'loses the connection', function() {
 	    client._connection._endpoint.close();
 	    expect( client.getConnectionState() ).toBe( 'RECONNECTING' );
 	    recordA.set( 'firstname', 'Egon' );
@@ -86,7 +86,7 @@ describe( 'connection losses are handled gracefully', function(){
 	    expect( deletionCallback ).toHaveBeenCalled();
 	});
 	
-	it( 'looses the connection', function() {
+	it( 'loses the connection', function() {
 	    client._connection._endpoint.close();
 	    expect( client.getConnectionState() ).toBe( 'RECONNECTING' );
 	});
