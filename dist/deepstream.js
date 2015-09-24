@@ -6994,9 +6994,7 @@ Connection.prototype.send = function( message ) {
 		this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
 		this._sendQueuedMessages();
 	}
-
-	if( this._queuedMessages.length >= this._options.maxMessagesPerPacket &&
-		this._sendNextPacketTimeout === null ) {
+	else if( this._sendNextPacketTimeout === null ) {
 		this._queueNextPacket();
 	}
 };
@@ -7054,6 +7052,8 @@ Connection.prototype._sendQueuedMessages = function() {
 
 	if( this._queuedMessages.length !== 0 ) {
 		this._queueNextPacket();
+	} else {
+		this._sendNextPacketTimeout = null;
 	}
 
 	this._endpoint.send( message );
