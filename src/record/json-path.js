@@ -14,7 +14,7 @@ var utils = require( '../utils/utils' ),
  */
 var JsonPath = function( record, path ) {
 	this._record = record;
-	this._path = path;
+	this._path = String( path );
 	this._tokens = [];
 
 	this._tokenize();

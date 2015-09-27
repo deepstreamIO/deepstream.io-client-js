@@ -10,7 +10,8 @@ describe('paths are tokenized and retrieved correctly', function(){
 		pastAdresses: [
 			{ street: 'firststreet', postCode: 1001 },
 			{ street: 'secondstreet', postCode: 2002 }
-		]
+		],
+		1234: 'integer index'
 	}};
 
 	it( 'retrieves simple paths', function(){
@@ -41,6 +42,11 @@ describe('paths are tokenized and retrieved correctly', function(){
 	it( 'handles whitespace', function(){
 		var jsonPath = new JsonPath( testRecord, ' pastAdresses[ 1 ].postCode ' );
 		expect( jsonPath.getValue() ).toBe( 2002 );
+	});
+
+	it( 'handles integers', function(){
+		var jsonPath = new JsonPath( testRecord, 1234 );
+		expect( jsonPath.getValue() ).toBe( 'integer index' );
 	});
 
 	it( 'returns undefined for non existing keys', function(){
