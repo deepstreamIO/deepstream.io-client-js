@@ -189,7 +189,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
 
-	it( 'looses the connection', function( done ){
+	it( 'loses the connection', function( done ){
 		expect( connection._endpoint.callsToOpen ).toBe( 0 );
 		connection._endpoint.close();
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
@@ -233,7 +233,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 
-	it( 'looses an authenticated connection', function( done ){
+	it( 'loses an authenticated connection', function( done ){
 		connection._endpoint.lastSendMessage = null;
 		connection._endpoint.close();
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
@@ -308,26 +308,34 @@ describe( 'splits messages into smaller packets', function(){
 	});
 
 	it( 'buffers messages greater than maxMessagesPerPacket', function(){
-		sendMessages( connection, 4, 17 );
+		sendMessages( connection, 4, 8 );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'E|EVT|w|4+' ) );
 	});
 
-	it( 'sends buffered messages every timeBetweenSendingQueuedPackages ms', function(done){
-		var expectedMessages = [
-			msg( 'E|EVT|w|5+E|EVT|w|6+E|EVT|w|7+E|EVT|w|8+E|EVT|w|9+' ),
-			msg( 'E|EVT|w|10+E|EVT|w|11+E|EVT|w|12+E|EVT|w|13+E|EVT|w|14+' ),
-			msg( 'E|EVT|w|15+E|EVT|w|16+' )
-		],
-		currentlyExpectedMessage = 0,
-		interval;
+	it( 'sends messages that are buffered when currentPacketMessageCount exceeds maxMessagesPerPacket', function(done){
+		var expectedMessage = msg( 'E|EVT|w|5+E|EVT|w|6+E|EVT|w|7+' );
 
-		interval = setInterval(function(){
+		setTimeout(function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( expectedMessage );
+			done();
+		}, 100 );
+	});
+
+	it( 'sends buffered messages that are buffered when messageQueue exceeds maxMessagesPerPacket', function(done){
+
+		sendMessages( connection, 9, 17 );
+
+		var expectedMessages = [
+			msg( 'E|EVT|w|12+' ),
+			msg( 'E|EVT|w|13+E|EVT|w|14+E|EVT|w|15+E|EVT|w|16+' )
+		],
+		currentlyExpectedMessage = 0;
+
+		setInterval( function(){
 			if( connection._endpoint.lastSendMessage === expectedMessages[ currentlyExpectedMessage ] ) {
 				currentlyExpectedMessage++;
 			}
-
 			if( currentlyExpectedMessage === expectedMessages.length ) {
-				expect( true ).toBe( true );
 				done();
 			}
 		}, 1);
