@@ -3,7 +3,7 @@ var WebRtcCall = require( '../../../src/webrtc/webrtc-call.js' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg,
 	webrtcMock = require( '../../mocks/webrtc/webrtc-mock' ),
-	options = { calleeAckTimeout: 5 };
+	options = { calleeAckTimeout: 5, rtcPeerConnectionConfig: {} };
 
 var declinedListener;
 var establishedListener;
@@ -11,7 +11,7 @@ var stateChangeListener;
 var endedListener;
 
 function createCall( outgoing, mockConnection ) {
-	declinedListener = jasmine.createSpy(),
+	declinedListener = jasmine.createSpy();
 	stateChangeListener = jasmine.createSpy();
 	establishedListener = jasmine.createSpy();
 	endedListener = jasmine.createSpy();
@@ -23,7 +23,7 @@ function createCall( outgoing, mockConnection ) {
 			localStream: {},
 			offer: null,
 			metaData: { some: 'meta-data' }
-	});
+	}, options );
 	webrtcCall.on( 'declined', declinedListener );
 	webrtcCall.on( 'stateChange', stateChangeListener );
 	webrtcCall.on( 'ended', endedListener );

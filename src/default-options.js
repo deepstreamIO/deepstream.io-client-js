@@ -86,6 +86,16 @@ module.exports = {
 	  */
 	 calleeAckTimeout: 3000,
 
+	 /**
+	  * @param {Object} rtcPeerConnectionConfig An RTCConfiguration (https://developer.mozilla.org/en/docs/Web/API/RTCConfiguration). This
+	  *                                         is used to establish your public IP address when behind a NAT (Network Address Translation)
+	  *                                         Set to null if you only intend to use WebRTC within your local network
+	  */
+	 rtcPeerConnectionConfig: { iceServers: [
+		{ url: 'stun:stun.services.mozilla.com' }, 
+		{ url: 'stun:stun.l.google.com:19302' }
+	]},
+
 	/************************************************
 	* Engine.io										*
 	************************************************/

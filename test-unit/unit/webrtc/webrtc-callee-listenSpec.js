@@ -2,7 +2,7 @@ var WebRtcHandler = require( '../../../src/webrtc/webrtc-handler.js' ),
 	MockConnection = require( '../../mocks/message/connection-mock' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg,
-	options = { calleeAckTimeout: 5 };
+	options = { calleeAckTimeout: 5, rtcPeerConnectionConfig: {} };
 
 
 describe( 'webrtc listen for callees', function(){
@@ -12,7 +12,7 @@ describe( 'webrtc listen for callees', function(){
 		mockClient = new ClientMock();
 
 	it( 'initialises the handler', function(){
-		webrtcHandler = new WebRtcHandler( {}, mockConnection, mockClient );
+		webrtcHandler = new WebRtcHandler( options, mockConnection, mockClient );
 		expect( typeof webrtcHandler.registerCallee ).toBe( 'function' );
 	});
 

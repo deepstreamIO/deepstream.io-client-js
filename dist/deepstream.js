@@ -6698,6 +6698,16 @@ module.exports = {
 	  */
 	 calleeAckTimeout: 3000,
 
+	 /**
+	  * @param {Object} rtcPeerConnectionConfig An RTCConfiguration (https://developer.mozilla.org/en/docs/Web/API/RTCConfiguration). This
+	  *                                         is used to establish your public IP address when behind a NAT (Network Address Translation)
+	  *                                         Set to null if you only intend to use WebRTC within your local network
+	  */
+	 rtcPeerConnectionConfig: { iceServers: [
+		{ url: 'stun:stun.services.mozilla.com' }, 
+		{ url: 'stun:stun.l.google.com:19302' }
+	]},
+
 	/************************************************
 	* Engine.io										*
 	************************************************/
@@ -9670,8 +9680,10 @@ var WebRtcConnection = _dereq_( './webrtc-connection' ),
  * 		localStream: <MediaStream>,
  * 		offer: <Offer SDP>
  * }
+ *
+ * @param {Object} options deepstream options
  */
-var WebRtcCall = function( settings ) {
+var WebRtcCall = function( settings, options ) {
 	this._connection = settings.connection;
 	this._localId = settings.localId;
 	this._remoteId = settings.remoteId;
@@ -9679,6 +9691,7 @@ var WebRtcCall = function( settings ) {
 	this._offer = settings.offer;
 	this._$webRtcConnection = null;
 	this._bufferedIceCandidates = [];
+	this._options = options;
 
 	this.state = C.CALL_STATE.INITIAL;
 	this.metaData = settings.metaData || null;
@@ -9714,7 +9727,7 @@ WebRtcCall.prototype.accept = function( localStream ) {
 
 	this.isAccepted = true;
 
-	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
+	this._$webRtcConnection = new WebRtcConnection( this._connection, this._options, this._localId, this._remoteId );
 	
 	if( localStream ) {
 		this._$webRtcConnection.addStream( localStream );
@@ -9834,7 +9847,7 @@ WebRtcCall.prototype._stateChange = function( state ) {
  */
 WebRtcCall.prototype._initiate = function() {
 	this._stateChange( C.CALL_STATE.CONNECTING );
-	this._$webRtcConnection = new WebRtcConnection( this._connection, this._localId, this._remoteId );
+	this._$webRtcConnection = new WebRtcConnection( this._connection, this._options, this._localId, this._remoteId );
 	this._$webRtcConnection.initiate( this._localStream, this.metaData );
 	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
 };
@@ -9871,18 +9884,16 @@ var noop = function(){};
  * @event stream {MediaStream}
  * 
  * @param {Connection} connection deepstream connection
+ * @param {Object} options deepstream options
  * @param {String} localId    either a random id for outgoing calls or a callee name for incoming calls
  * @param {String} remoteId   either a random id for incoming calls or a callee name for outgoing calls
  */
-var WebRtcConnection = function( connection, localId, remoteId ) {
+var WebRtcConnection = function( connection, options, localId, remoteId ) {
 	this._connection = connection;
 	this._remoteId = remoteId;
 	this._localId = localId;
 
-	this._peerConnection = new RTCPeerConnection({'iceServers': [
-		{'url': 'stun:stun.services.mozilla.com'}, 
-		{'url': 'stun:stun.l.google.com:19302'}
-	]} );
+	this._peerConnection = new RTCPeerConnection( options.rtcPeerConnectionConfig );
 	this._peerConnection.onaddstream = this._onStream.bind( this );
 	this._peerConnection.onicecandidate = this._onIceCandidate.bind( this );
 	this._peerConnection.oniceconnectionstatechange = this._onIceConnectionStateChange.bind( this );
@@ -10289,7 +10300,7 @@ WebRtcHandler.prototype._removeCall = function( id ) {
  * @returns {void}
  */
 WebRtcHandler.prototype._createCall = function( id, settings ) {
-	this._calls[ id ] = new WebRtcCall( settings );
+	this._calls[ id ] = new WebRtcCall( settings, this._options );
 	this._calls[ id ].on( 'ended', this._removeCall.bind( this, id ) );
 	return this._calls[ id ];
 };
