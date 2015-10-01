@@ -6517,7 +6517,7 @@ Client.prototype._getOptions = function( options ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":42,"./default-options":43,"./event/event-handler":44,"./message/connection":45,"./record/record-handler":52,"./rpc/rpc-handler":54,"./webrtc/webrtc-handler":62,"component-emitter":12}],42:[function(_dereq_,module,exports){
+},{"./constants/constants":42,"./default-options":43,"./event/event-handler":44,"./message/connection":45,"./record/record-handler":51,"./rpc/rpc-handler":53,"./webrtc/webrtc-handler":62,"component-emitter":12}],42:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -6793,6 +6793,7 @@ module.exports = {
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
 	C = _dereq_( '../constants/constants' ),
+	Listener = _dereq_( '../utils/listener' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
 /**
@@ -6810,6 +6811,7 @@ var EventHandler = function( options, connection ) {
 	this._options = options;
 	this._connection = connection;
 	this._emitter = new EventEmitter();
+	this._listener = {};
 };
 
 /**
@@ -6865,6 +6867,43 @@ EventHandler.prototype.emit = function( name, data ) {
 };
 
 /**
+ * Allows to listen for event subscriptions made by this or other clients. This
+ * is useful to create "active" data providers, e.g. providers that only provide
+ * data for a particular event if a user is actually interested in it
+ *
+ * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
+ * @param   {Function} callback
+ *
+ * @public
+ * @returns {void}
+ */
+EventHandler.prototype.listen = function( pattern, callback ) {
+	if( this._listener[ pattern ] ) {
+		this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
+	} else {
+		this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
+	}
+};
+
+/**
+ * Removes a listener that was previously registered with listenForSubscriptions
+ *
+ * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
+ * @param   {Function} callback
+ *
+ * @public
+ * @returns {void}
+ */
+EventHandler.prototype.unlisten = function( pattern ) {
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+		delete this._listener[ pattern ];
+	} else {
+		this._client._$onError( C.TOPIC.EVENT, C.EVENT.NOT_LISTENING, pattern );
+	}
+};
+
+/**
  * Handles incoming messages from the server
  *
  * @param   {Object} message parsed deepstream message
@@ -6873,6 +6912,8 @@ EventHandler.prototype.emit = function( name, data ) {
  * @returns {void}
  */
 EventHandler.prototype._$handle = function( message ) {
+	var name;
+	
 	if( message.action === C.ACTIONS.EVENT ) {
 		if( message.data && message.data.length === 2 ) {
 			this._emitter.emit( message.data[ 0 ], messageParser.convertTyped( message.data[ 1 ] ) );
@@ -6880,10 +6921,20 @@ EventHandler.prototype._$handle = function( message ) {
 			this._emitter.emit( message.data[ 0 ] );
 		}
 	}
+
+	if( message.action === C.ACTIONS.ACK) {
+		name = message.data[ 1 ];
+	} else {
+		name = message.data[ 0 ];
+	}
+
+	if( this._listener[ name ] ) {
+		this._listener[ name ]._$onMessage( message );
+	} 
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"component-emitter":12}],45:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"../utils/listener":58,"component-emitter":12}],45:[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -7285,7 +7336,7 @@ Connection.prototype._clearReconnect = function() {
 };
 
 module.exports = Connection;
-},{"../constants/constants":42,"../tcp/tcp-connection":57,"../utils/utils":59,"./message-builder":46,"./message-parser":47,"engine.io-client":13}],46:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../tcp/tcp-connection":56,"../utils/utils":59,"./message-builder":46,"./message-parser":47,"engine.io-client":13}],46:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -7687,7 +7738,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":53,"component-emitter":12}],49:[function(_dereq_,module,exports){
+},{"./record":52,"component-emitter":12}],49:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
@@ -7704,7 +7755,7 @@ var utils = _dereq_( '../utils/utils' ),
  */
 var JsonPath = function( record, path ) {
 	this._record = record;
-	this._path = path;
+	this._path = String( path );
 	this._tokens = [];
 
 	this._tokenize();
@@ -8039,46 +8090,11 @@ List.prototype._hasIndex = function( index ) {
 
 module.exports = List;
 
-},{"../constants/constants":42,"./record":53,"component-emitter":12}],51:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' );
-
-var Listener = function( pattern, callback, options, client, connection ) {
-    this._callback = callback;
-    this._pattern = pattern;
-    this._options = options;
-    this._client = client;
-    this._connection = connection;
-    this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
-    this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.LISTEN, [ this._pattern ] );
-};
-
-Listener.prototype.destroy = function() {
-    this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNLISTEN, [ this._pattern ] );
-    this._callback = null;
-    this._pattern = null;
-    this._client = null;
-    this._connection = null;
-};
-
-Listener.prototype._$onMessage = function( message ) {
-    if( message.action === C.ACTIONS.ACK ) {
-        clearTimeout( this._ackTimeout );
-    } else {
-        var isFound = message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND;
-        this._callback( message.data[ 1 ], isFound );
-    }
-};
-
-Listener.prototype._onAckTimeout = function() {
-    this._client._$onError( C.TOPIC.RECORD, C.EVENT.ACK_TIMEOUT, 'Listening to pattern ' + this._pattern );
-};
-
-module.exports = Listener;
-},{"../constants/constants":42}],52:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"./record":52,"component-emitter":12}],51:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
-	Listener = _dereq_( './listener' ),
+	Listener = _dereq_( '../utils/listener' ),
 	C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -8158,7 +8174,7 @@ RecordHandler.prototype.getAnonymousRecord = function() {
 
 /**
  * Allows to listen for record subscriptions made by this or other clients. This
- * is usefull to create "active" data providers, e.g. providers that only provide
+ * is useful to create "active" data providers, e.g. providers that only provide
  * data for a particular record if a user is actually interested in it
  *
  * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
@@ -8171,7 +8187,7 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
 	if( this._listener[ pattern ] ) {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
 	} else {
-		this._listener[ pattern ] = new Listener( pattern, callback, this._options, this._client, this._connection );
+		this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
 	}
 };
 
@@ -8286,7 +8302,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":42,"./anonymous-record":48,"./list":50,"./listener":51,"./record":53,"component-emitter":12}],53:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../utils/listener":58,"./anonymous-record":48,"./list":50,"./record":52,"component-emitter":12}],52:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
@@ -8864,7 +8880,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
  };
 
 module.exports = Record;
-},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"../utils/utils":59,"./json-path":49,"component-emitter":12}],54:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"../utils/utils":59,"./json-path":49,"component-emitter":12}],53:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	RpcResponse = _dereq_( './rpc-response' ),
 	Rpc = _dereq_( './rpc' ),
@@ -9074,7 +9090,7 @@ RpcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = RpcHandler;
-},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"./rpc":56,"./rpc-response":55}],55:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../message/message-parser":47,"./rpc":55,"./rpc-response":54}],54:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
 	messageBuilder = _dereq_( '../message/message-builder' );
@@ -9181,7 +9197,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":42,"../message/message-builder":46,"../utils/utils":59}],56:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-builder":46,"../utils/utils":59}],55:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
 
@@ -9259,7 +9275,7 @@ Rpc.prototype._complete = function() {
 };
 
 module.exports = Rpc;
-},{"../constants/constants":42,"../message/message-parser":47}],57:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"../message/message-parser":47}],56:[function(_dereq_,module,exports){
 (function (process){
 var net = _dereq_( 'net' ),
 	URL = _dereq_( 'url' ),
@@ -9484,7 +9500,7 @@ TcpConnection.prototype._destroy = function() {
 module.exports = TcpConnection;
 
 }).call(this,_dereq_('_process'))
-},{"../constants/constants":42,"_process":4,"events":2,"net":1,"url":9,"util":11}],58:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"_process":4,"events":2,"net":1,"url":9,"util":11}],57:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -9563,7 +9579,43 @@ AckTimeoutRegistry.prototype._onTimeout = function( name ) {
 };
 
 module.exports = AckTimeoutRegistry;
-},{"../constants/constants":42,"component-emitter":12}],59:[function(_dereq_,module,exports){
+},{"../constants/constants":42,"component-emitter":12}],58:[function(_dereq_,module,exports){
+var C = _dereq_( '../constants/constants' );
+
+var Listener = function( type, pattern, callback, options, client, connection ) {
+    this._type = type;
+    this._callback = callback;
+    this._pattern = pattern;
+    this._options = options;
+    this._client = client;
+    this._connection = connection;
+    this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
+    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
+};
+
+Listener.prototype.destroy = function() {
+    this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
+    this._callback = null;
+    this._pattern = null;
+    this._client = null;
+    this._connection = null;
+};
+
+Listener.prototype._$onMessage = function( message ) {
+    if( message.action === C.ACTIONS.ACK ) {
+        clearTimeout( this._ackTimeout );
+    } else {
+        var isFound = message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND;
+        this._callback( message.data[ 1 ], isFound );
+    }
+};
+
+Listener.prototype._onAckTimeout = function() {
+    this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'Listening to pattern ' + this._pattern );
+};
+
+module.exports = Listener;
+},{"../constants/constants":42}],59:[function(_dereq_,module,exports){
 (function (process){
 exports.isNode = function() {
 	return typeof process !== 'undefined' && process.toString() === '[object process]';
@@ -10510,5 +10562,5 @@ WebRtcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = WebRtcHandler;
-},{"../constants/constants":42,"../utils/ack-timeout-registry":58,"./webrtc-call":60,"./webrtc-connection":61}]},{},[41])(41)
+},{"../constants/constants":42,"../utils/ack-timeout-registry":57,"./webrtc-call":60,"./webrtc-connection":61}]},{},[41])(41)
 });

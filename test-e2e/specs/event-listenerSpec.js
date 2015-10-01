@@ -3,7 +3,7 @@ var DeepstreamServer = require( 'deepstream.io' ),
     deepstreamClient = require( '../../src/client' ),
     TestLogger = require( '../tools/test-logger' );
     
-ddescribe( 'event listener', function() {
+describe( 'event listener', function() {
     var deepstreamServer,
         logger = new TestLogger(),
         clientA,
