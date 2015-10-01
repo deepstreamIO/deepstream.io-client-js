@@ -1,6 +1,7 @@
 var messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
 	C = require( '../constants/constants' ),
+	Listener = require( '../utils/listener' ),
 	EventEmitter = require( 'component-emitter' );
 
 /**
@@ -18,6 +19,7 @@ var EventHandler = function( options, connection ) {
 	this._options = options;
 	this._connection = connection;
 	this._emitter = new EventEmitter();
+	this._listener = {};
 };
 
 /**
@@ -73,6 +75,43 @@ EventHandler.prototype.emit = function( name, data ) {
 };
 
 /**
+ * Allows to listen for event subscriptions made by this or other clients. This
+ * is useful to create "active" data providers, e.g. providers that only provide
+ * data for a particular event if a user is actually interested in it
+ *
+ * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
+ * @param   {Function} callback
+ *
+ * @public
+ * @returns {void}
+ */
+EventHandler.prototype.listen = function( pattern, callback ) {
+	if( this._listener[ pattern ] ) {
+		this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
+	} else {
+		this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
+	}
+};
+
+/**
+ * Removes a listener that was previously registered with listenForSubscriptions
+ *
+ * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
+ * @param   {Function} callback
+ *
+ * @public
+ * @returns {void}
+ */
+EventHandler.prototype.unlisten = function( pattern ) {
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+		delete this._listener[ pattern ];
+	} else {
+		this._client._$onError( C.TOPIC.EVENT, C.EVENT.NOT_LISTENING, pattern );
+	}
+};
+
+/**
  * Handles incoming messages from the server
  *
  * @param   {Object} message parsed deepstream message
@@ -81,6 +120,8 @@ EventHandler.prototype.emit = function( name, data ) {
  * @returns {void}
  */
 EventHandler.prototype._$handle = function( message ) {
+	var name;
+	
 	if( message.action === C.ACTIONS.EVENT ) {
 		if( message.data && message.data.length === 2 ) {
 			this._emitter.emit( message.data[ 0 ], messageParser.convertTyped( message.data[ 1 ] ) );
@@ -88,6 +129,16 @@ EventHandler.prototype._$handle = function( message ) {
 			this._emitter.emit( message.data[ 0 ] );
 		}
 	}
+
+	if( message.action === C.ACTIONS.ACK) {
+		name = message.data[ 1 ];
+	} else {
+		name = message.data[ 0 ];
+	}
+
+	if( this._listener[ name ] ) {
+		this._listener[ name ]._$onMessage( message );
+	} 
 };
 
 module.exports = EventHandler;

@@ -1,7 +1,7 @@
 var Record = require( './record' ),
 	AnonymousRecord = require( './anonymous-record' ),
 	List = require( './list' ),
-	Listener = require( './listener' ),
+	Listener = require( '../utils/listener' ),
 	C = require( '../constants/constants' ),
 	EventEmitter = require( 'component-emitter' );
 
@@ -81,7 +81,7 @@ RecordHandler.prototype.getAnonymousRecord = function() {
 
 /**
  * Allows to listen for record subscriptions made by this or other clients. This
- * is usefull to create "active" data providers, e.g. providers that only provide
+ * is useful to create "active" data providers, e.g. providers that only provide
  * data for a particular record if a user is actually interested in it
  *
  * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
@@ -94,7 +94,7 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
 	if( this._listener[ pattern ] ) {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
 	} else {
-		this._listener[ pattern ] = new Listener( pattern, callback, this._options, this._client, this._connection );
+		this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
 	}
 };
 
