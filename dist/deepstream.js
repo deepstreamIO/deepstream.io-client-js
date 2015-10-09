@@ -7848,7 +7848,10 @@ module.exports = JsonPath;
 },{"../utils/utils":59}],50:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
-	C = _dereq_( '../constants/constants' );
+	C = _dereq_( '../constants/constants' ),
+	ENTRY_ADDED_EVENT = 'entry-added',
+	ENTRY_REMOVED_EVENT = 'entry-removed',
+	ENTRY_MOVED_EVENT = 'entry-moved';
 
 /**
  * A List is a specialised Record that contains
@@ -7872,6 +7875,10 @@ var List = function( recordHandler, name, options ) {
 	this.isReady = this._record.isReady;
 	this.name = name;
 	this._queuedMethods = [];
+	this._beforeStructure = null;
+	this._hasAddListener = null;
+	this._hasRemoveListener = null;
+	this._hasMoveListener = null;
 
 	this.delete = this._record.delete.bind( this._record );
 	this.discard = this._record.discard.bind( this._record );
@@ -7930,7 +7937,9 @@ List.prototype.setEntries = function( entries ) {
 	if( this._record.isReady === false ) {
 		this._queuedMethods.push( this.setEntries.bind( this, entries ) );
 	} else {
-		return this._record.set( entries );
+		this._beforeChange();
+		this._record.set( entries );
+		this._afterChange();
 	}
 };
 
@@ -7959,8 +7968,9 @@ List.prototype.removeEntry = function( entry, index ) {
 			entries.push( currentEntries[i] );
 		}
 	}
-
+	this._beforeChange();
 	this._record.set( entries );
+	this._afterChange();
 };
 
 /**
@@ -7989,7 +7999,9 @@ List.prototype.addEntry = function( entry, index ) {
 	} else {
 		entries.push( entry );
 	}
+	this._beforeChange();
 	this._record.set( entries );
+	this._afterChange();
 };
 
 /**
@@ -8062,7 +8074,9 @@ List.prototype._applyUpdate = function( message ) {
 		message.data[ 2 ] = '[]';
 	}
 
+	this._beforeChange();
 	Record.prototype._applyUpdate.call( this._record, message );
+	this._afterChange();
 };
 
 /**
@@ -8086,6 +8100,104 @@ List.prototype._hasIndex = function( index ) {
 		hasIndex = true;
 	}
 	return hasIndex;
+};
+
+/**
+ * Establishes the current structure of the list, provided the client has attached any
+ * add / move / remove listener 
+ *
+ * This will be called before any change to the list, regardsless if the change was triggered
+ * by an incoming message from the server or by the client
+ *
+ * @private
+ * @returns {void}
+ */
+List.prototype._beforeChange = function() {
+	this._hasAddListener = this.listeners( ENTRY_ADDED_EVENT ).length > 0;
+	this._hasRemoveListener = this.listeners( ENTRY_REMOVED_EVENT ).length > 0;
+	this._hasMoveListener = this.listeners( ENTRY_MOVED_EVENT ).length > 0;
+
+	if( this._hasAddListener || this._hasRemoveListener || this._hasMoveListener ) {
+		this._beforeStructure = this._getStructure();
+	} else {
+		this._beforeStructure = null;
+	}
+};
+
+/**
+ * Compares the structure of the list after a change to its previous structure and notifies
+ * any add / move / remove listener. Won't do anything if no listeners are attached.
+ *
+ * @private
+ * @returns {void}
+ */
+List.prototype._afterChange = function() {
+	if( this._beforeStructure === null ) {
+		return;
+	}
+
+	var after = this._getStructure();
+	var before = this._beforeStructure;
+	var entry, i;
+
+	if( this._hasRemoveListener ) {
+		for( entry in before ) {
+			for( i = 0; i < before[ entry ].length; i++ ) {
+				if( after[ entry ] === undefined || after[ entry ][ i ] === undefined ) {
+					this.emit( ENTRY_REMOVED_EVENT, entry, before[ entry ][ i ] );
+				}
+			}
+		}
+	}
+	
+	if( this._hasAddListener || this._hasMoveListener ) {
+		for( entry in after ) {
+			if( before[ entry ] === undefined ) {
+				for( i = 0; i < after[ entry ].length; i++ ) {
+					this.emit( ENTRY_ADDED_EVENT, entry, after[ entry ][ i ] );
+				}
+			} else {
+				for( i = 0; i < after[ entry ].length; i++ ) {
+					if( before[ entry ][ i ] !== after[ entry ][ i ] ) {
+						if( before[ entry ][ i ] === undefined ) {
+							this.emit( ENTRY_ADDED_EVENT, entry, after[ entry ][ i ] );
+						} else {
+							this.emit( ENTRY_MOVED_EVENT, entry, after[ entry ][ i ] );
+						}
+					}
+				}
+			}
+		}
+	}
+};
+
+/**
+ * Iterates through the list and creates a map with the entry as a key
+ * and an array of its position(s) within the list as a value, e.g.
+ *
+ * {
+ * 	'recordA': [ 0, 3 ],
+ * 	'recordB': [ 1 ],
+ * 	'recordC': [ 2 ] 
+ * }
+ *
+ * @private
+ * @returns {Array} structure
+ */
+List.prototype._getStructure = function() {
+	var structure = {};
+	var i;
+	var entries = this._record.get();
+
+	for( i = 0; i < entries.length; i++ ) {
+		if( structure[ entries[ i ] ] === undefined ) {
+			structure[ entries[ i ] ] = [ i ];
+		} else {
+			structure[ entries[ i ] ].push( i );
+		}
+	}
+
+	return structure;
 };
 
 module.exports = List;
