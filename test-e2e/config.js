@@ -1,5 +1,5 @@
 module.exports = {
-	redisPort: 6379, 
-	redisHost: '178.62.87.119',
+	redisPort: 18741, 
+	redisHost: 'pub-redis-18741.us-east-1-4.4.ec2.garantiadata.com',
 	messageTimeout: 1000
 };
