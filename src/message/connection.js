@@ -22,25 +22,17 @@ var Connection = function( client, url, options ) {
 	this._authParams = null;
 	this._authCallback = null;
 	this._deliberateClose = false;
+	this._tooManyAuthAttempts = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
 	this._reconnectionAttempt = 0;
 	this._currentPacketMessageCount = 0;
 	this._sendNextPacketTimeout = null;
 	this._currentMessageResetTimeout = null;
+	this._endpoint = null;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
-
-	if( utils.isNode() ) {
-		this._endpoint = new TcpConnection( url );
-	} else {
-		this._endpoint = engineIoClient( url, options );
-	}
-
-	this._endpoint.on( 'open', this._onOpen.bind( this ) );
-	this._endpoint.on( 'error', this._onError.bind( this ) );
-	this._endpoint.on( 'close', this._onClose.bind( this ) );
-	this._endpoint.on( 'message', this._onMessage.bind( this ) );
+	this._createEndpoint();
 };
 
 /**
@@ -66,8 +58,14 @@ Connection.prototype.getState = function() {
  * @returns {void}
  */
 Connection.prototype.authenticate = function( authParams, callback ) {
-	if( this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED ) {
+	if( this._tooManyAuthAttempts ) {
 		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
+		return;
+	}
+	else if( this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED ) {
+		this._createEndpoint();
+		this._deliberateClose = false;
+		this._client.once( C.EVENT.CONNECTION_STATE_CHANGED, this.authenticate.bind( authParams, callback ) );
 		return;
 	}
 	
@@ -134,6 +132,26 @@ Connection.prototype.send = function( message ) {
 Connection.prototype.close = function() {
 	this._deliberateClose = true;
 	this._endpoint.close();
+};
+
+/**
+ * Creates the endpoint to connect to using the url deepstream
+ * was initialised with. If running in node automatically uses TCP
+ * for better performance
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._createEndpoint = function() {
+	if( utils.isNode() ) {
+		this._endpoint = new TcpConnection( this._url );
+	} else {
+		this._endpoint = engineIoClient( this._url, this._options );
+	}
+
+	this._endpoint.on( 'open', this._onOpen.bind( this ) );
+	this._endpoint.on( 'error', this._onError.bind( this ) );
+	this._endpoint.on( 'close', this._onClose.bind( this ) );
+	this._endpoint.on( 'message', this._onMessage.bind( this ) );
 };
 
 /**
@@ -313,6 +331,7 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		
 		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
 			this._deliberateClose = true;
+			this._tooManyAuthAttempts = true;
 		} else {
 			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		}
