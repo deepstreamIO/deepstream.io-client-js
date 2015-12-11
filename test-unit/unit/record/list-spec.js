@@ -15,7 +15,7 @@ describe( 'lists contain arrays of record names', function(){
 	it( 'creates the list', function(){
 		list = new List( recordHandler, 'someList', {} );
 		list.subscribe( changeCallback );
-		list.on( 'ready', readyCallback );
+		list.whenReady( readyCallback );
 		expect( list.subscribe.bind( list, 'somePath', changeCallback ) ).toThrow();
 		expect( list.getEntries ).toBeDefined();
 		expect( recordHandler._connection.lastSendMessage ).toBe( msg( 'R|CR|someList+' ) );
@@ -36,6 +36,7 @@ describe( 'lists contain arrays of record names', function(){
 		expect( list.getEntries() ).toEqual(['entryA', 'entryB' ]);
 		expect( changeCallback ).toHaveBeenCalledWith(['entryA', 'entryB' ]);
 		expect( readyCallback ).toHaveBeenCalled();
+		expect( readyCallback ).toHaveBeenCalledWith( list );
 		expect( list.isEmpty() ).toBe( false );
 	});
 
