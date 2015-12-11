@@ -63,6 +63,17 @@ describe( 'record', function() {
             done();
         }, 20 );
     });
+
+    it( 'sets a path with null', function( done ) {
+        clientB.record.getRecord( 'record1' ).set( 'city', null );
+        expect( clientB.record.getRecord( 'record1' ).get( 'city' ) ).toBeNull();
+        expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBe( 'London' );
+        
+        setTimeout(function(){
+            expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBeNull();
+            done();
+        }, 20 );
+    });
     
      it( 'subscribes and unsubscribes', function( done ) {
         var pet,

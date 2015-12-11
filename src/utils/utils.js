@@ -60,6 +60,10 @@ exports.deepEquals = function( objA, objB ) {
 };
 
 exports.shallowCopy = function( obj ) {
+	if( obj === null ) {
+		return null;
+	}
+
 	if( typeof obj !== OBJECT ) {
 		return obj;
 	}
