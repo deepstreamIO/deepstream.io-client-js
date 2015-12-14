@@ -107,3 +107,30 @@ describe( 'supscriptions to local record changes', function(){
 		expect( readyCallback.calls.length ).toBe( 2 );
 	});
 });
+
+describe( 'record subscriptions callbacks', function(){
+	var record,
+		generalCallbackInWhenReady = jasmine.createSpy( 'generalInWhenReady' ),
+		generalCallback = jasmine.createSpy( 'general' ),
+		connection = new MockConnection();
+
+	it( 'creates the record', function(){
+		record = new Record( 'testRecord', {}, connection, options, new ClientMock() );
+		
+		record.subscribe( generalCallback );
+		record.whenReady( function() {
+			record.subscribe( generalCallbackInWhenReady, false );
+		});
+		expect( generalCallback ).not.toHaveBeenCalled();
+
+		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{ "firstName": "oldName" }' ]} );
+	});
+
+	it( 'only triggers callbacks in subscribe methods in whenReady when explicitly set', function() {
+		expect( generalCallbackInWhenReady ).not.toHaveBeenCalled();
+	});
+
+	it( 'triggers subscribes outside of whenReady on read', function() {
+		expect( generalCallback ).toHaveBeenCalled();
+	});
+});
