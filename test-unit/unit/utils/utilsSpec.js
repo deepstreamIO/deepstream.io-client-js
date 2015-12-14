@@ -91,4 +91,17 @@ describe( 'shallow copy', function(){
 		expect( copy ).toEqual( original );
 		expect( copy ).not.toBe( original );
 	});
+
+	it( 'copies objects with null values', function(){
+		var original = { firstname: 'Wolfram', lastname: null },
+			copy = utils.shallowCopy( original );
+		
+		expect( copy ).toEqual( original );
+		expect( copy ).not.toBe( original );
+	});
+
+	it( 'copies null values', function(){
+		var copy = utils.shallowCopy( null );
+		expect( copy ).toBeNull();
+	});
 });
