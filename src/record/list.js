@@ -170,6 +170,7 @@ List.prototype.subscribe = function() {
 		throw new Error( 'path is not supported for List.subscribe' );
 	}
 
+	//Make sure the callback is invoked with an empty array for new records
 	parameters.callback = function( callback ) {
 		callback( this.getEntries() );
 	}.bind( this, parameters.callback );

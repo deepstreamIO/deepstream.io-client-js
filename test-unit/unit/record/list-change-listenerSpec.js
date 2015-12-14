@@ -33,7 +33,7 @@ describe( 'lists contain arrays of record names', function(){
 
 		list.whenReady( function() {
 			list.subscribe( callback, true );
-			expect( callback ).toHaveBeenCalledWith( [] );
+			expect( callback.calls[ 0 ].args[ 0 ] ).toEqual( [] );
 			done();
 		});
 	});
