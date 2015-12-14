@@ -17,15 +17,25 @@ describe( 'lists contain arrays of record names', function(){
 		return callback;
 	}
 	
-	it( 'creates the list', function(){
+	it( 'creates the list', function( done ){
+		var callback = jasmine.createSpy( 'empty-subscribe' );
+
 		list = new List( recordHandler, 'someList', {} );
+
 		recordHandler._$handle({
 			topic: 'R',
 			action: 'R',
-			data: [ 'someList', 1, '[]' ]
+			data: [ 'someList', 1, '{}' ]
 		});
+
 		expect( list.getEntries() ).toEqual( [] );
 		expect( list.isEmpty() ).toBe( true );
+
+		list.whenReady( function() {
+			list.subscribe( callback, true );
+			expect( callback.calls[ 0 ].args[ 0 ] ).toEqual( [] );
+			done();
+		});
 	});
 
 	it( 'works without any listeners', function(){
