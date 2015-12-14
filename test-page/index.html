@@ -33,7 +33,7 @@
 							<button
 								type="button" 
 								class="half" 
-								data-bind="click:connect, enable:connectionState()==='CLOSED'">connect</button>
+								data-bind="click:connect, enable:connectionState()==='CLOSED' && !hasClient()">connect</button>
 							<button 
 								type="button" 
 								class="half" 

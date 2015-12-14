@@ -42,8 +42,12 @@ ViewModel.prototype.login = function() {
 };
 
 ViewModel.prototype.connect = function() {
-	this._client = deepstream( this.host() + ':' + this.port() );
-	this._client.on( 'connectionStateChanged', this._setConnectionState.bind( this ) );
+	if( !this._client ) {
+		this._client = deepstream( this.host() + ':' + this.port() );
+		this._client.on( 'connectionStateChanged', this._setConnectionState.bind( this ) );	
+	} else {
+		this._client.start();
+	}
 	this.hasClient( true );
 };
 

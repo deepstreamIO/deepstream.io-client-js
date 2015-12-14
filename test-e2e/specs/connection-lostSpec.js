@@ -94,6 +94,24 @@ describe( 'it recovers a connection without losing record updates', function() {
         expect( clientAErrors.length ).toBe( 2 );
     });
 
+    it( 'disconnects from server', function(done){
+        clientA.close();
+        clientA.on( 'connectionStateChanged', function(){
+            if( clientA.getConnectionState() === 'CLOSED' ) {
+                done();
+            }
+        });
+    });
+
+    it( 'can reconnect to server', function(done){
+        clientA.login( null, function(){ done(); });
+        clientA.on( 'connectionStateChanged', function(){
+            if( clientA.getConnectionState() === 'OPEN' ) {
+                done();
+            }
+        });
+    });
+
      /**************** TEAR DOWN ****************/
     it( 'closes the clients', function() {
         clientA.close();
