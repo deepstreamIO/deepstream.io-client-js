@@ -32,7 +32,7 @@ var Client = function( url, options ) {
 	
 	this._connection = new Connection( this, this._url, this._options );
 	
-	this.event = new EventHandler( this._options, this._connection );
+	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
 	this.webrtc = new WebRtcHandler( this._options, this._connection, this );

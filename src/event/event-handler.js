@@ -11,13 +11,14 @@ var messageBuilder = require( '../message/message-builder' ),
  *
  * @param {Object} options    deepstream options
  * @param {Connection} connection
- *
+ * @param {Client} client
  * @public
  * @constructor
  */
-var EventHandler = function( options, connection ) {
+var EventHandler = function( options, connection, client ) {
 	this._options = options;
 	this._connection = connection;
+	this._client = client;
 	this._emitter = new EventEmitter();
 	this._listener = {};
 };
@@ -121,24 +122,27 @@ EventHandler.prototype.unlisten = function( pattern ) {
  */
 EventHandler.prototype._$handle = function( message ) {
 	var name;
-	
+
 	if( message.action === C.ACTIONS.EVENT ) {
 		if( message.data && message.data.length === 2 ) {
 			this._emitter.emit( message.data[ 0 ], messageParser.convertTyped( message.data[ 1 ] ) );
 		} else {
 			this._emitter.emit( message.data[ 0 ] );
 		}
-	}
-
-	if( message.action === C.ACTIONS.ACK) {
-		name = message.data[ 1 ];
 	} else {
-		name = message.data[ 0 ];
-	}
+		if( message.action === C.ACTIONS.ACK) {
+			name = message.data[ 1 ];
+		} else {
+			name = message.data[ 0 ];
+		}
 
-	if( this._listener[ name ] ) {
-		this._listener[ name ]._$onMessage( message );
-	} 
+		if( this._listener[ name ] ) {
+			this._listener[ name ]._$onMessage( message );
+		} 
+		else {
+			this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
+		}
+	}
 };
 
 module.exports = EventHandler;
