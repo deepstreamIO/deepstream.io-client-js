@@ -64,7 +64,7 @@ describe( 'webrtc callee registration', function(){
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|RC|calleeA+' ) );
 		mockClient.lastError = null;
 		webrtcHandler._$handle({
-			'raw': msg( 'W|A|S|Wolfram+' ),
+			'raw': msg( 'W|A|S|calleeA+' ),
 			'topic': 'W',
 			'action': 'A',
 			'data': [ 'S', 'calleeA' ]
