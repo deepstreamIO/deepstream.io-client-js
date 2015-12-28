@@ -1,14 +1,16 @@
 /* global describe, expect, it, jasmine */
 var EventHandler = require( '../../../src/event/event-handler' ),
 	connectionMock = new (require( '../../mocks/message/connection-mock' ))(),
-	msg = require( '../../test-helper/test-helper' ).msg;
+	mockClient = new (require( '../../mocks/client-mock' ))(),
+	msg = require( '../../test-helper/test-helper' ).msg,
+	options = { calleeAckTimeout: 5 };
 	
 describe( 'event handler works', function(){
 	var eventHandler,
 		callback = jasmine.createSpy( 'eventCallback' );
 	
 	it( 'creates the eventHandler', function(){
-		eventHandler = new EventHandler( {}, connectionMock );
+		eventHandler = new EventHandler( options, connectionMock, mockClient );
 		expect( eventHandler.emit ).toBeDefined();
 	});
 	
@@ -21,6 +23,16 @@ describe( 'event handler works', function(){
 	it( 'subscribes to an event', function() {
 	    eventHandler.subscribe( 'myEvent', callback );
 	    expect( connectionMock.lastSendMessage ).toBe( msg( 'E|S|myEvent+' ) );
+	});
+
+	it( 'emits an error if no ack message is received for the subscribe', function( done ){
+		expect( mockClient.lastError ).toBe( null );
+		setTimeout(function(){
+			var errorParams = [ 'E', 'ACK_TIMEOUT', 'No ACK message received in time for SmyEvent' ];
+			expect( mockClient.lastError ).toEqual( errorParams );
+			mockClient.lastError = null;
+			done();
+		}, 20 );
 	});
 	
 	it( 'notifies local listeners for local events', function() {
@@ -55,6 +67,16 @@ describe( 'event handler works', function(){
 		expect( callback ).toHaveBeenCalledWith();
 	});
 	
+	it( 'emits an error if no ack message is received for the unsubscribe', function( done ){
+		expect( mockClient.lastError ).toBe( null );
+		setTimeout(function(){
+			var errorParams = [ 'E', 'ACK_TIMEOUT', 'No ACK message received in time for USmyEvent' ];
+			expect( mockClient.lastError ).toEqual( errorParams );
+			mockClient.lastError = null;
+			done();
+		}, 20 );
+	});
+
 	it( 'doesn\'t do anything for unsolicited event messages', function() {
 		eventHandler._$handle({
 			topic: 'EVENT',

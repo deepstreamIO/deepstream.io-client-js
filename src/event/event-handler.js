@@ -1,5 +1,6 @@
 var messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
+	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
 	C = require( '../constants/constants' ),
 	Listener = require( '../utils/listener' ),
 	EventEmitter = require( 'component-emitter' );
@@ -21,6 +22,7 @@ var EventHandler = function( options, connection, client ) {
 	this._client = client;
 	this._emitter = new EventEmitter();
 	this._listener = {};
+	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.calleeAckTimeout );
 };
 
 /**
@@ -35,6 +37,7 @@ var EventHandler = function( options, connection, client ) {
  */
 EventHandler.prototype.subscribe = function( eventName, callback ) {
 	if( !this._emitter.hasListeners( eventName ) ) {
+		this._ackTimeoutRegistry.add( C.ACTIONS.SUBSCRIBE + eventName );
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
 	}
 
@@ -56,6 +59,7 @@ EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 	this._emitter.off( eventName, callback );
 	
 	if( !this._emitter.hasListeners( eventName ) ) {
+		this._ackTimeoutRegistry.add( C.ACTIONS.UNSUBSCRIBE + eventName );
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ eventName ] );
 	}
 };
@@ -129,20 +133,22 @@ EventHandler.prototype._$handle = function( message ) {
 		} else {
 			this._emitter.emit( message.data[ 0 ] );
 		}
-	} else {
-		if( message.action === C.ACTIONS.ACK) {
-			name = message.data[ 1 ];
-		} else {
-			name = message.data[ 0 ];
-		}
-
-		if( this._listener[ name ] ) {
-			this._listener[ name ]._$onMessage( message );
-		} 
-		else {
-			this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
-		}
+		return;
 	}
+
+	name = message.action === C.ACTIONS.ACK ? message.data[ 1 ] : message.data[ 0 ];
+
+	if( message.action === C.ACTIONS.SUBSCRIBE || message.action === C.ACTIONS.UNSUBSCRIBE ) {
+		this._ackTimeoutRegistry.clear( message.action + name );
+		return;
+	}
+
+	if( this._listener[ name ] ) {
+		this._listener[ name ]._$onMessage( message );
+		return;
+	}
+	
+	this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 };
 
 module.exports = EventHandler;
