@@ -3,9 +3,9 @@ var EventHandler = require( '../../../src/event/event-handler' ),
 	connectionMock = new (require( '../../mocks/message/connection-mock' ))(),
 	mockClient = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,
-	options = { calleeAckTimeout: 5 };
+	options = { subscriptionTimeout: 5 };
 	
-describe( 'event handler works', function(){
+describe( 'event handler', function(){
 	var eventHandler,
 		callback = jasmine.createSpy( 'eventCallback' );
 	
@@ -28,7 +28,7 @@ describe( 'event handler works', function(){
 	it( 'emits an error if no ack message is received for the subscribe', function( done ){
 		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
-			var errorParams = [ 'E', 'ACK_TIMEOUT', 'No ACK message received in time for SmyEvent' ];
+			var errorParams = [ 'E', 'ACK_TIMEOUT', 'No ACK message received in time for myEvent' ];
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();
@@ -70,7 +70,7 @@ describe( 'event handler works', function(){
 	it( 'emits an error if no ack message is received for the unsubscribe', function( done ){
 		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
-			var errorParams = [ 'E', 'ACK_TIMEOUT', 'No ACK message received in time for USmyEvent' ];
+			var errorParams = [ 'E', 'ACK_TIMEOUT', 'No ACK message received in time for myEvent' ];
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();
