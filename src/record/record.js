@@ -249,17 +249,17 @@ Record.prototype.whenReady = function( callback ) {
  */
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
-		this._clearTimeouts();
+		clearTimeout( this._readTimeout );
 		this._onRead( message );
 	}
 	else if( message.action === C.ACTIONS.ACK ) {
 		this._processAckMessage( message );
 	}
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
-		this._applyUpdate( message );
+		this._applyUpdate( message, this._client );
 	}
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
-		this._recoverRecord();
+		this._recoverRecord( message );
 	}
 };
 
@@ -272,8 +272,9 @@ Record.prototype._$onMessage = function( message ) {
  * @private
  * @returns {void} 
  */
-Record.prototype._recoverRecord = function() {
-
+Record.prototype._recoverRecord = function( message ) {
+	message.processedError = true;
+	this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + message.version + ' but version is ' + this._version );
 };
 
 /**
@@ -318,16 +319,16 @@ Record.prototype._applyUpdate = function( message ) {
 		this._version = version;
 	}
 	else if( this._version + 1 !== version ) {
-		//TODO - handle gracefully and retry / merge
-		this.emit( 'error', 'received update for ' + version + ' but version is ' + this._version );
+		this._recoverRecord( message );
 	}
+
 	this._beginChange();
 	this._version = version;
 
 	if( message.action === C.ACTIONS.UPDATE ) {
 		this._$data = JSON.parse( message.data[ 2 ] );
 	} else {
-		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ] ) );
+		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ], this._client ) );
 	}
 
 	this._completeChange();
@@ -522,7 +523,6 @@ Record.prototype._normalizeArguments = function( args ) {
  */
 Record.prototype._clearTimeouts = function() {
 	clearTimeout( this._readAckTimeout );
-	clearTimeout( this._readTimeout );
 	clearTimeout( this._deleteAckTimeout );
 	clearTimeout( this._discardTimeout );
 };
