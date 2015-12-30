@@ -60,10 +60,12 @@ MessageParser.prototype.convertTyped = function( value, client ) {
 	}
 	
 	if( type === C.TYPES.OBJECT ) {
-		try{
+		try {
 			return JSON.parse( value.substr( 1 ) );
 		} catch( e ) {
+			message.processedError = true;
 			client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')' );
+			return;
 		}
 	}
 	
@@ -87,6 +89,7 @@ MessageParser.prototype.convertTyped = function( value, client ) {
 		return undefined;
 	}
 	
+	message.processedError = true;
 	client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')' );
 };
 
@@ -124,11 +127,13 @@ MessageParser.prototype._parseMessage = function( message, client ) {
 		messageObject = {};
 
 	if( parts.length < 2 ) {
+		message.processedError = true;
 		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts' );
 		return null;
 	}
 
 	if( this._actions[ parts[ 1 ] ] === undefined ) {
+		message.processedError = true;
 		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[ 1 ] );
 		return null;
 	}

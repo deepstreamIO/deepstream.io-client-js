@@ -146,6 +146,12 @@ EventHandler.prototype._$handle = function( message ) {
 		return;
 	}
 	
+	if( message.action === C.ACTIONS.ERROR ) {
+		message.processedError = true;
+		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
+		return;
+	}
+
 	this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 };
 

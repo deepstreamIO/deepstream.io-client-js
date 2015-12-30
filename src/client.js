@@ -128,7 +128,8 @@ Client.prototype._$onMessage = function( message ) {
 	if( this._messageCallbacks[ message.topic ] ) {
 		this._messageCallbacks[ message.topic ]( message );
 	} else {
-		this._$onError( message.topic, message.action, 'received message for unknown topic ' + message.topic );
+		message.processedError = true;
+		this._$onError( message.topic, C.EVENT.MESSAGE_PARSE_ERROR, 'Received message for unknown topic ' + message.topic );
 	}
 
 	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
