@@ -1,6 +1,7 @@
 var messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
 	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
+	ReconnectionNotifier = require( '../utils/reconnection-notifier' ),
 	C = require( '../constants/constants' ),
 	Listener = require( '../utils/listener' ),
 	EventEmitter = require( 'component-emitter' );
@@ -23,6 +24,7 @@ var EventHandler = function( options, connection, client ) {
 	this._emitter = new EventEmitter();
 	this._listener = {};
 	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
+	this._reconnectionNotifier = new ReconnectionNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
 /**
@@ -154,6 +156,16 @@ EventHandler.prototype._$handle = function( message ) {
 	}
 
 	this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
+};
+
+
+/**
+ */
+EventHandler.prototype._resubscribe = function() {
+	var callbacks = this._emitter._callbacks;
+	for( var eventName in callbacks ) {
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+	}
 };
 
 module.exports = EventHandler;

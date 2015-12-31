@@ -1,5 +1,6 @@
 var JsonPath = require( './json-path' ),
 	utils = require( '../utils/utils' ),
+	ReconnectionNotifier = require( '../utils/reconnection-notifier' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
@@ -36,8 +37,8 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
-	this._isReconnecting = false;
-	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
+	
+	this._reconnectionNotifier = new ReconnectionNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._sendRead();
@@ -359,7 +360,6 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
-	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
 	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
 		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
 	}
@@ -378,33 +378,6 @@ Record.prototype._setReady = function() {
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
  
-/**
- * Makes sure that all records are subscribed on reconnect. _sendRead is called
- * when the connection drops - which seems counterintuitive, but in fact just means
- * that the re-subscription message will be added to the queue of messages that
- * need re-sending as soon as the connection is re-established.
- * 
- * The additional benefit is that changes to the record will be added to the queue after
- * the subscription message
- * 
- * The _isReconnecting flag exists to make sure that the message is only send once per
- * connection loss
- * 
- * @private
- * @returns {void}
- */
- Record.prototype._handleConnectionStateChanges = function() {
- 	var state = this._client.getConnectionState();
- 	
- 	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
- 			this._sendRead();
- 			this._isReconnecting = true;
- 	}
- 	
- 	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
- 			this._isReconnecting = false;
- 	}
- };
 
 /**
  * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
@@ -565,12 +538,11 @@ Record.prototype._onTimeout = function( timeoutType ) {
  Record.prototype._destroy = function() {
  	this._clearTimeouts();
  	this._eventEmitter.off();
- 	this._client.off( 'connectionStateChanged', this._connectionStateChangeHandler );
+ 	this._reconnectionNotifier.destroy();
  	this.isDestroyed = true;
  	this.isReady = false;
  	this._client = null;
 	this._eventEmitter = null;
-	this._connectionStateChangeHandler = null;
 	this._connection = null;
  };
 
