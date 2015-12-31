@@ -1,7 +1,7 @@
 var messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
 	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
-	ReconnectionNotifier = require( '../utils/reconnection-notifier' ),
+	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	C = require( '../constants/constants' ),
 	Listener = require( '../utils/listener' ),
 	EventEmitter = require( 'component-emitter' );
@@ -24,7 +24,7 @@ var EventHandler = function( options, connection, client ) {
 	this._emitter = new EventEmitter();
 	this._listener = {};
 	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
-	this._reconnectionNotifier = new ReconnectionNotifier( this._client, this._resubscribe.bind( this ) );
+	this._ResubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
 /**

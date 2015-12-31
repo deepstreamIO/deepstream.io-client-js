@@ -1,5 +1,5 @@
 var C = require( '../constants/constants' );
-var ReconnectionNotifier = require( './reconnection-notifier' );
+var ResubscribeNotifier = require( './resubscribe-notifier' );
 
 var Listener = function( type, pattern, callback, options, client, connection ) {
     this._type = type;
@@ -9,13 +9,13 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
     this._client = client;
     this._connection = connection;
     this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
-    this._reconnectionNotifier = new ReconnectionNotifier( client, this._sendListen.bind( this ) );
+    this._ResubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
     this._sendListen();
 };
 
 Listener.prototype.destroy = function() {
     this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
-    this._reconnectionNotifier.destroy();
+    this._ResubscribeNotifier.destroy();
     this._callback = null;
     this._pattern = null;
     this._client = null;

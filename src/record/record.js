@@ -1,6 +1,6 @@
 var JsonPath = require( './json-path' ),
 	utils = require( '../utils/utils' ),
-	ReconnectionNotifier = require( '../utils/reconnection-notifier' ),
+	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
@@ -38,7 +38,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
 	
-	this._reconnectionNotifier = new ReconnectionNotifier( this._client, this._sendRead.bind( this ) );
+	this._ResubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._sendRead();
@@ -538,7 +538,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
  Record.prototype._destroy = function() {
  	this._clearTimeouts();
  	this._eventEmitter.off();
- 	this._reconnectionNotifier.destroy();
+ 	this._ResubscribeNotifier.destroy();
  	this.isDestroyed = true;
  	this.isReady = false;
  	this._client = null;
