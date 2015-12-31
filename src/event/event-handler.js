@@ -109,6 +109,7 @@ EventHandler.prototype.listen = function( pattern, callback ) {
  */
 EventHandler.prototype.unlisten = function( pattern ) {
 	if( this._listener[ pattern ] ) {
+		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
 		this._listener[ pattern ].destroy();
 		delete this._listener[ pattern ];
 	} else {
