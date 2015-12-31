@@ -89,7 +89,6 @@ MessageParser.prototype.convertTyped = function( value, client ) {
 		return undefined;
 	}
 	
-	message.processedError = true;
 	client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')' );
 };
 

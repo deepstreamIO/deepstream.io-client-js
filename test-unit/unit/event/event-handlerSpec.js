@@ -61,6 +61,18 @@ describe( 'event handler', function(){
 	    expect( callback ).toHaveBeenCalledWith();
 	});
 	
+	it( 'emits error if event data is not typed', function() {
+		eventHandler._$handle({
+			topic: 'EVENT',
+			action: 'EVT',
+			data: [ 'myEvent', 'notTypes' ]
+		});
+		
+		var errorParams = [ 'X', 'MESSAGE_PARSE_ERROR', 'UNKNOWN_TYPE (notTypes)' ];
+		expect( mockClient.lastError ).toEqual( errorParams );
+		mockClient.lastError = null;
+	});
+
 	it( 'removes local listeners', function() {
 		eventHandler.unsubscribe( 'myEvent', callback );
 		eventHandler.emit( 'myEvent', 11 );
@@ -77,11 +89,15 @@ describe( 'event handler', function(){
 		}, 20 );
 	});
 
-	it( 'doesn\'t do anything for unsolicited event messages', function() {
+	it( 'emits an error event for unsolicited event messages', function() {
 		eventHandler._$handle({
 			topic: 'EVENT',
-			action: 'EVT',
+			action: 'L',
 			data: [ 'myEvent' ]
 		});
+
+		var errorParams = [ 'E', 'UNSOLICITED_MESSAGE', 'myEvent' ];
+		expect( mockClient.lastError ).toEqual( errorParams );
+		mockClient.lastError = null;
 	});
 });

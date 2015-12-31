@@ -124,15 +124,15 @@ EventHandler.prototype.unlisten = function( pattern ) {
  *
  * @param   {Object} message parsed deepstream message
  *
- * @package privat
+ * @package private
  * @returns {void}
  */
 EventHandler.prototype._$handle = function( message ) {
-	var name = message.action === C.ACTIONS.ACK ? message.data[ 1 ] : message.data[ 0 ];
+	var name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
 
 	if( message.action === C.ACTIONS.EVENT ) {
 		if( message.data && message.data.length === 2 ) {
-			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ] ) );
+			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
 		} else {
 			this._emitter.emit( name );
 		}
@@ -155,11 +155,15 @@ EventHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
-	this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
+	this._client._$onError( C.TOPIC.EVENT, C.EVENT.UNSOLICITED_MESSAGE, name );
 };
 
 
 /**
+ * Resubscribes to events when connection is lost
+ *
+ * @package private
+ * @returns {void}
  */
 EventHandler.prototype._resubscribe = function() {
 	var callbacks = this._emitter._callbacks;
