@@ -133,7 +133,7 @@ Client.prototype._$onMessage = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
-		this._$onError( message.topic, message.action, message.data[ 0 ] );
+		this._onErrorMessage( message );
 	}
 };
 
@@ -197,7 +197,16 @@ Client.prototype._$onError = function( topic, event, msg ) {
  * @returns {void}
  */
 Client.prototype._onErrorMessage = function( errorMessage ) {
-	this._$onError( errorMessage.topic, errorMessage.data[ 0 ], errorMessage.data[ 1 ] );
+	var action;
+	var message;
+	if( message.action === C.ACTIONS.ACK ) {
+		action = message.data[ 0 ];
+		message = message.data[ 1 ];
+	} else {
+		action = message.action;
+		message = message.data[ 0 ];
+	}
+	this._$onError( message.topic, action, message );
 };
 
 /**
