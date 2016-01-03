@@ -9,7 +9,7 @@ var C = require( '../constants/constants' );
  * Resubscribe logic should only occur once per connection loss
  *
  * @param {Client} client          The deepstream client
- * @param {Function} reconnect     Function to call to allow resubscribing
+ * @param {Function} resubscribe   Function to call to allow resubscribing
  *
  * @constructor
  */
