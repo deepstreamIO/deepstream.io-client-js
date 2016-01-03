@@ -43,10 +43,10 @@ ResubscribeNotifier.prototype.destroy = function() {
         
     if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
         this._isReconnecting = true;
-        this._resubscribe();
     }
     if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
         this._isReconnecting = false;
+        this._resubscribe();
     }
  };
 

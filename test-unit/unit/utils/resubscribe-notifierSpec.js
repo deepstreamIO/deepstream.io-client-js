@@ -1,44 +1,35 @@
 var C = require( '../../../src/constants/constants' ),
-	ReconnectionNotifier = require( '../../../src/utils/reconnection-notifier' ),
+	ResubscribeNotifier = require( '../../../src/utils/resubscribe-notifier' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg;
 
 
-describe( 'reconnection notifier', function(){
+describe( 'resubscribe notifier', function(){
 	var registry,
-		reconnectionNotifier,
+		resubscribeNotifier,
 		mockClient = new ClientMock(),
-		reconnectCallback = jasmine.createSpy( 'reconnect callback' );
+		resubscribeCallback = jasmine.createSpy( 'resubscribeCallback' );
 
 	it( 'creates connection notifier', function() {
-		reconnectionNotifier = new ReconnectionNotifier( mockClient, reconnectCallback );
+		resubscribeNotifier = new ResubscribeNotifier( mockClient, resubscribeCallback );
 	});
 
-	it( 'calls reconnect when it loses the connection', function() {
+	it( 'doesn\'t call resubscribe when it loses the connection', function() {
 		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.RECONNECTING );
-
-		expect( reconnectCallback.callCount ).toEqual( 1 );
+		expect( resubscribeCallback.callCount ).toEqual( 0 );
 	});
 
-	it( 'does not call reconnect again if connection hasn\'t been recreated', function() {
-		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.RECONNECTING );
-
-		expect( reconnectCallback.callCount ).toEqual( 1 );
-	});
-
-	it( 'calls reconnect if it loses the connection again', function() {
+	it( 'calls resubscribe once connection is back open ( which is also authenticated )', function() {
 		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.OPEN );
-		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.RECONNECTING );
-
-		expect( reconnectCallback.callCount ).toEqual( 2 );
+		expect( resubscribeCallback.callCount ).toEqual( 1 );
 	});
 
 	it( 'no longer listens to connectionState after being destroyed', function() {
-		reconnectionNotifier.destroy();
+		resubscribeNotifier.destroy();
 
-		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.OPEN );
 		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.RECONNECTING );
+		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.OPEN );
 		
-		expect( reconnectCallback.callCount ).toEqual( 2 );
+		expect( resubscribeCallback.callCount ).toEqual( 1 );
 	});
 });

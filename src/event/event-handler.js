@@ -24,7 +24,7 @@ var EventHandler = function( options, connection, client ) {
 	this._emitter = new EventEmitter();
 	this._listener = {};
 	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
-	this._ResubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
+	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
 /**
