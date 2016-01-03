@@ -250,8 +250,12 @@ Record.prototype.whenReady = function( callback ) {
  */
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
-		clearTimeout( this._readTimeout );
-		this._onRead( message );
+		if( this._version === null ) {
+			clearTimeout( this._readTimeout );
+			this._onRead( message );
+		} else {
+			this._applyUpdate( message, this._client );	
+		}
 	}
 	else if( message.action === C.ACTIONS.ACK ) {
 		this._processAckMessage( message );
@@ -326,10 +330,10 @@ Record.prototype._applyUpdate = function( message ) {
 	this._beginChange();
 	this._version = version;
 
-	if( message.action === C.ACTIONS.UPDATE ) {
-		this._$data = JSON.parse( message.data[ 2 ] );
-	} else {
+	if( message.action === C.ACTIONS.PATCH ) {
 		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ], this._client ) );
+	} else {
+		this._$data = JSON.parse( message.data[ 2 ] );
 	}
 
 	this._completeChange();

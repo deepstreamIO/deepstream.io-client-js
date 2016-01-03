@@ -83,6 +83,21 @@ describe( 'connection losses are handled gracefully', function(){
 	    ] );
 	});
 	
+	it( 'applies an update on resubscription read event and does not call onReady', function() {
+		var onReadySpy = jasmine.createSpy( 'onReady' );
+		var onErrorSpy = jasmine.createSpy( 'onError' );		
+		
+		recordA.on( 'ready', onReadySpy );
+		client.on( 'error', onErrorSpy);
+
+		client._connection._endpoint.emit( 'message', msg( 'R|R|recordA|5|{}' ) );
+
+		expect( onReadySpy ).not.toHaveBeenCalled();
+		
+		expect( onErrorSpy ).toHaveBeenCalled();
+		expect( onErrorSpy ).toHaveBeenCalledWith( 'recordA', 'VERSION_EXISTS', 'R' );
+	});
+
 	it( 'deletes a record', function() {
 		var deletionCallback = jasmine.createSpy( 'deletionCallback' );
 		recordC.on( 'delete', deletionCallback );
