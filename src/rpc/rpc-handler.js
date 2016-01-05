@@ -1,4 +1,6 @@
 var C = require( '../constants/constants' ),
+	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
+	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	RpcResponse = require( './rpc-response' ),
 	Rpc = require( './rpc' ),
 	messageParser= require( '../message/message-parser' ),
@@ -24,6 +26,8 @@ var RpcHandler = function( options, connection, client ) {
 	this._rpcs = {};
 	this._providers = {};
 	this._provideAckTimeouts = {};
+	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.RPC, this._options.subscriptionTimeout );
+	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._reprovide.bind( this ) );
 };
 
 /**
@@ -44,11 +48,11 @@ var RpcHandler = function( options, connection, client ) {
  */
 RpcHandler.prototype.provide = function( name, callback ) {
 	if( this._providers[ name ] ) {
-		throw new Error( 'rpc ' + name + ' already registered' );
+		throw new Error( 'RPC ' + name + ' already registered' );
 	}
 
+	this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
 	this._providers[ name ] = callback;
-	this._provideAckTimeouts[ name ] = setTimeout( this._provideTimedOut.bind( this, name ), this._options.subscriptionTimeout );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ name ] );
 };
 
@@ -63,6 +67,7 @@ RpcHandler.prototype.provide = function( name, callback ) {
 RpcHandler.prototype.unprovide = function( name ) {
 	if( this._providers[ name ] ) {
 		delete this._providers[ name ];
+		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
@@ -123,7 +128,7 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 		correlationId = message.data[ 1 ],
 		data = null,
 		response;
-		
+
 	if( message.data[ 2 ] ) {
 		data = messageParser.convertTyped( message.data[ 2 ], this._client );
 	}
@@ -137,17 +142,6 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 };
 
 /**
- * Callback if a call to provide hasn't received an ACK message in time
- *
- * @param   {String} name
- *
- * @returns {void}
- */
-RpcHandler.prototype._provideTimedOut = function( name ) {
-	this._client._$onError( C.TOPIC.RPC, C.EVENT.ACK_TIMEOUT, 'rpc:' + name );
-};
-
-/**
  * Distributes incoming messages from the server
  * based on their action
  *
@@ -158,7 +152,7 @@ RpcHandler.prototype._provideTimedOut = function( name ) {
  */
 RpcHandler.prototype._$handle = function( message ) {
 	var rpcName, correlationId, rpc;
-	
+
 	// RPC Requests
 	if( message.action === C.ACTIONS.REQUEST ) {
 		this._respondToRpc( message );
@@ -166,8 +160,9 @@ RpcHandler.prototype._$handle = function( message ) {
 	}
 
 	// RPC subscription Acks
-	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.SUBSCRIBE ) {
-		clearTimeout( this._provideAckTimeouts[ message.data[ 1 ] ] );
+	if( message.action === C.ACTIONS.ACK && 
+		( message.data[ 0 ] === C.ACTIONS.SUBSCRIBE  || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) ) {
+		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
 	
@@ -205,5 +200,18 @@ RpcHandler.prototype._$handle = function( message ) {
 		delete this._rpcs[ correlationId ];
 	}
 };
+
+/**
+ * Reregister providers to events when connection is lost
+ *
+ * @package private
+ * @returns {void}
+ */
+RpcHandler.prototype._reprovide = function() {
+	for( var rpcName in this._providers ) {
+		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ rpcName ] );
+	}
+};
+
 
 module.exports = RpcHandler;
