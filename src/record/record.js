@@ -1,5 +1,6 @@
 var JsonPath = require( './json-path' ),
 	utils = require( '../utils/utils' ),
+	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
@@ -36,8 +37,8 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
-	this._isReconnecting = false;
-	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
+	
+	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._sendRead();
@@ -249,17 +250,21 @@ Record.prototype.whenReady = function( callback ) {
  */
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
-		this._clearTimeouts();
-		this._onRead( message );
+		if( this._version === null ) {
+			clearTimeout( this._readTimeout );
+			this._onRead( message );
+		} else {
+			this._applyUpdate( message, this._client );	
+		}
 	}
 	else if( message.action === C.ACTIONS.ACK ) {
 		this._processAckMessage( message );
 	}
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
-		this._applyUpdate( message );
+		this._applyUpdate( message, this._client );
 	}
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
-		this._recoverRecord();
+		this._recoverRecord( message );
 	}
 };
 
@@ -272,8 +277,9 @@ Record.prototype._$onMessage = function( message ) {
  * @private
  * @returns {void} 
  */
-Record.prototype._recoverRecord = function() {
-
+Record.prototype._recoverRecord = function( message ) {
+	message.processedError = true;
+	this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + message.version + ' but version is ' + this._version );
 };
 
 /**
@@ -318,16 +324,16 @@ Record.prototype._applyUpdate = function( message ) {
 		this._version = version;
 	}
 	else if( this._version + 1 !== version ) {
-		//TODO - handle gracefully and retry / merge
-		this.emit( 'error', 'received update for ' + version + ' but version is ' + this._version );
+		this._recoverRecord( message );
 	}
+
 	this._beginChange();
 	this._version = version;
 
-	if( message.action === C.ACTIONS.UPDATE ) {
-		this._$data = JSON.parse( message.data[ 2 ] );
+	if( message.action === C.ACTIONS.PATCH ) {
+		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ], this._client ) );
 	} else {
-		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ] ) );
+		this._$data = JSON.parse( message.data[ 2 ] );
 	}
 
 	this._completeChange();
@@ -358,7 +364,6 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
-	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
 	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
 		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
 	}
@@ -377,33 +382,6 @@ Record.prototype._setReady = function() {
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
  
-/**
- * Makes sure that all records are subscribed on reconnect. _sendRead is called
- * when the connection drops - which seems counterintuitive, but in fact just means
- * that the re-subscription message will be added to the queue of messages that
- * need re-sending as soon as the connection is re-established.
- * 
- * The additional benefit is that changes to the record will be added to the queue after
- * the subscription message
- * 
- * The _isReconnecting flag exists to make sure that the message is only send once per
- * connection loss
- * 
- * @private
- * @returns {void}
- */
- Record.prototype._handleConnectionStateChanges = function() {
- 	var state = this._client.getConnectionState();
- 	
- 	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
- 			this._sendRead();
- 			this._isReconnecting = true;
- 	}
- 	
- 	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
- 			this._isReconnecting = false;
- 	}
- };
 
 /**
  * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
@@ -522,7 +500,6 @@ Record.prototype._normalizeArguments = function( args ) {
  */
 Record.prototype._clearTimeouts = function() {
 	clearTimeout( this._readAckTimeout );
-	clearTimeout( this._readTimeout );
 	clearTimeout( this._deleteAckTimeout );
 	clearTimeout( this._discardTimeout );
 };
@@ -565,12 +542,11 @@ Record.prototype._onTimeout = function( timeoutType ) {
  Record.prototype._destroy = function() {
  	this._clearTimeouts();
  	this._eventEmitter.off();
- 	this._client.off( 'connectionStateChanged', this._connectionStateChangeHandler );
+ 	this._resubscribeNotifier.destroy();
  	this.isDestroyed = true;
  	this.isReady = false;
  	this._client = null;
 	this._eventEmitter = null;
-	this._connectionStateChangeHandler = null;
 	this._connection = null;
  };
 

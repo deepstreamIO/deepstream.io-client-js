@@ -80,14 +80,10 @@ describe( 'it recovers a connection without losing record updates', function() {
     it( 'waits for the client to reconnect', function( done ){
         clientA.on( 'connectionStateChanged', function(){
             if( clientA.getConnectionState() === 'OPEN' ) {
-                done();
+                //Time needed for reads to come back once connection is reestablished
+                setTimeout( done, 200 ); 
             }
         });
-    });
-
-    it( 'sets the record', function( done ){
-        record.set( 'somePath', 8 );
-        setTimeout( done, 500 );
     });
 
     it( 'has received one VERSION_EXISTS error', function() {

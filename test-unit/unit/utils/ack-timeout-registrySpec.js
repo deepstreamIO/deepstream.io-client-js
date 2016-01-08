@@ -3,7 +3,7 @@ var AckTimeoutRegistry = require( '../../../src/utils/ack-timeout-registry' ),
 	msg = require( '../../test-helper/test-helper' ).msg;
 
 
-describe( 'webrtc sends correct messages', function(){
+describe( 'ack timeout', function(){
 	var registry,
 		mockClient = new ClientMock();
 
@@ -13,28 +13,29 @@ describe( 'webrtc sends correct messages', function(){
 	});
 
 	it( 'adds an entry', function(){
-		expect( mockClient.lastError ).toBe( null );
 		registry.add( 'testA' );
 		expect( mockClient.lastError ).toBe( null );
-		expect(function(){
-			registry.add( 'testA' );
-		}).toThrow();
 	});
 
 	it( 'invokes the error callback once the timeout has occured', function( done ){
 		setTimeout(function(){
 			expect( mockClient.lastError ).toEqual([ 'X', 'ACK_TIMEOUT', 'No ACK message received in time for testA' ]);
+			mockClient.lastError = null;
 			done();
 		}, 10 );
 	});
 
-	it( 'has removed the timed-out entry', function(){
-		expect(function(){
-			registry.add( 'testA' );
-		}).not.toThrow();
+	it( 'adds an entry with action', function(){
+		registry.add( 'testA', 'S' );
+		expect( mockClient.lastError ).toBe( null );
 	});
 
-	it( 'receives an ACK message', function( done ){
+	it( 'adding an entry twice does not throw error', function(){
+		registry.add( 'testA', 'S' );
+		expect( mockClient.lastError ).toBe( null );
+	});
+
+	it( 'receives an ACK message clears timeout', function( done ){
 		mockClient.lastError = null;
 
 		registry.clear({

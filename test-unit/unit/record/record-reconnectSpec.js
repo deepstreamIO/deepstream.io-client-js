@@ -70,9 +70,34 @@ describe( 'connection losses are handled gracefully', function(){
 	it( 'resubscribes on open', function() {
 		client._connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 	    expect( client.getConnectionState() ).toBe( 'OPEN' );
-	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'R|CR|recordA+R|CR|recordB+R|CR|recordC+R|P|recordA|2|firstname|SEgon+' ));
+
+	    /**
+	    * The first message is concatendated since the path message was queued when connection was lost
+	    * and the request of recordA flushed the queue
+	    */
+		var sentMessages = client._connection._endpoint.messages;
+	    expect( sentMessages.slice( sentMessages.length - 3 ) ).toEqual( [
+	    	msg( 'R|P|recordA|2|firstname|SEgon+R|CR|recordA+' ),
+	    	msg( 'R|CR|recordB+' ),
+	    	msg( 'R|CR|recordC+' ),
+	    ] );
 	});
 	
+	it( 'applies an update on resubscription read event and does not call onReady', function() {
+		var onReadySpy = jasmine.createSpy( 'onReady' );
+		var onErrorSpy = jasmine.createSpy( 'onError' );		
+		
+		recordA.on( 'ready', onReadySpy );
+		client.on( 'error', onErrorSpy);
+
+		client._connection._endpoint.emit( 'message', msg( 'R|R|recordA|5|{}' ) );
+
+		expect( onReadySpy ).not.toHaveBeenCalled();
+		
+		expect( onErrorSpy ).toHaveBeenCalled();
+		expect( onErrorSpy ).toHaveBeenCalledWith( 'recordA', 'VERSION_EXISTS', 'R' );
+	});
+
 	it( 'deletes a record', function() {
 		var deletionCallback = jasmine.createSpy( 'deletionCallback' );
 		recordC.on( 'delete', deletionCallback );
@@ -100,6 +125,11 @@ describe( 'connection losses are handled gracefully', function(){
 	it( 'resubscribes on open', function() {
 		client._connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 	    expect( client.getConnectionState() ).toBe( 'OPEN' );
-	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'R|CR|recordA+R|CR|recordB+' ));
+
+	    var sentMessages = client._connection._endpoint.messages;
+	    expect( sentMessages.slice( sentMessages.length - 2 ) ).toEqual( [
+	    	msg( 'R|CR|recordA+' ),
+	    	msg( 'R|CR|recordB+' ),
+	    ] );
 	});
 });
