@@ -76,6 +76,8 @@ describe( 'event cluster', function() {
                 calls++;
                 expect( calls ).toBe( 1 );
                 clientA.event.unsubscribe( 'event3', callback );
+                clientB.event.emit( 'event3', { an: 'object' } );
+                
                 setTimeout(function(){
                     expect( calls ).toBe( 1 );
                     done();

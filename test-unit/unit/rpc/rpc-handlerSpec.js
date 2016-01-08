@@ -35,12 +35,14 @@ describe( 'handles rpc providers', function() {
 		expect( rpcCalls ).toBe( 0 );
 	});
 
-	it( 'receives ack message', function(){
-		rpcHandler._$handle({
-			topic: 'RPC',
-			action: 'A',
-			data: [ 'S', 'addTwo' ]
-		});
+	it( 'emits an error if no ack message is received for the provide', function( done ){
+		expect( clientMock.lastError ).toBe( null );
+		setTimeout(function(){
+			var errorParams = [ 'P', 'ACK_TIMEOUT', 'No ACK message received in time for addTwo' ];
+			expect( clientMock.lastError ).toEqual( errorParams );
+			clientMock.lastError = null;
+			done();
+		}, 100 );
 	});
 	
 	it( 'replies to sync rpc request', function(){
@@ -84,7 +86,17 @@ describe( 'handles rpc providers', function() {
 	    rpcHandler.unprovide( 'addTwo' );
 	    expect( connectionMock.lastSendMessage ).toBe( msg( 'P|US|addTwo+' ) );
 	});
-	
+
+	it( 'emits an error if no ack message is received for the provide', function( done ){
+		expect( clientMock.lastError ).toBe( null );
+		setTimeout(function(){
+			var errorParams = [ 'P', 'ACK_TIMEOUT', 'No ACK message received in time for addTwo' ];
+			expect( clientMock.lastError ).toEqual( errorParams );
+			clientMock.lastError = null;
+			done();
+		}, 200 );
+	});
+
 	it( 'doesn\'t call deregistered provider', function() {
 	    rpcHandler._$handle({
 			topic: 'RPC',
