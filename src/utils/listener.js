@@ -36,7 +36,7 @@ Listener.prototype._sendListen = function() {
 };
 
 Listener.prototype._onAckTimeout = function() {
-    this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'Listening to pattern ' + this._pattern );
+    this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
 };
 
 module.exports = Listener;
