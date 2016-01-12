@@ -17,7 +17,7 @@
     "url": "https://github.com/hoxton-one/deepstream.io-client-js.git"
   },
   "dependencies": {
-    "engine.io-client": "1.4.3",
+    "engine.io-client": "1.6.4",
     "component-emitter": "1.1.2"
   },
   "devDependencies": {
