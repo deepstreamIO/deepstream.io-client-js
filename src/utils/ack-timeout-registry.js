@@ -59,7 +59,6 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
 
 	if( timeout ) {
 		clearTimeout( timeout );
-		delete timeout;
 	} else {
 		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
 	}
