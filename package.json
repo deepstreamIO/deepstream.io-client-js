@@ -28,7 +28,7 @@
     "browserify": "6.3.3",
     "grunt-browserify": "3.2.1",
     "derequire": "1.2.0",
-    "proxyquire": "1.3.0",
+    "proxyquire": "1.7.4",
     "jasmine-node": "1.14.5",
     "grunt-release": "0.9.0",
     "deepstream.io": "latest",
