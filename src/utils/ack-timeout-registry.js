@@ -32,12 +32,16 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.add = function( name ) {
-	if( this._register[ name ] ) {
-		throw new Error( 'Timeout ' + name + ' is already registered' );
+AckTimeoutRegistry.prototype.add = function( name, action ) {
+	var uniqueName = action ? action + name : name;
+	
+	if( this._register[ uniqueName ] ) {
+		this.clear( {
+			data: [ action, name ]
+		} );
 	}
 
-	this._register[ name ] = setTimeout( this._onTimeout.bind( this, name ), this._timeoutDuration );
+	this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
 };
 
 /**
@@ -50,10 +54,11 @@ AckTimeoutRegistry.prototype.add = function( name ) {
  */
 AckTimeoutRegistry.prototype.clear = function( message ) {
 	var name = message.data[ 1 ];
+	var uniqueName = message.data[ 0 ] + name;
+	var timeout =  this._register[ uniqueName ] || this._register[ name ];
 
-	if( this._register[ name ] ) {
-		clearTimeout( this._register[ name ] );
-		delete this._register[ name ];
+	if( timeout ) {
+		clearTimeout( timeout );
 	} else {
 		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
 	}
@@ -68,8 +73,8 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onTimeout = function( name ) {
-	delete this._register[ name ];
+AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
+	delete this._register[ uniqueName ];
 	var msg = 'No ACK message received in time for ' + name;
 	this._client._$onError( this._topic, C.EVENT.ACK_TIMEOUT, msg );
 	this.emit( 'timeout', name );

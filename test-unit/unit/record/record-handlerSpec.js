@@ -48,7 +48,7 @@ describe( 'record handler returns the right records', function(){
 		expect( connection.lastSendMessage ).toBe( msg( 'R|CR|recordA+' ) );
 	});
 
-	it( 'has destroyes recorA when discard ack is received', function(){
+	it( 'has destroyed record A when discard ack is received', function(){
 		recordHandler._$handle({
 			topic: 'R',
 			action: 'A',

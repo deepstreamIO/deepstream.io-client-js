@@ -1,5 +1,7 @@
 var messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
+	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
+	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	C = require( '../constants/constants' ),
 	Listener = require( '../utils/listener' ),
 	EventEmitter = require( 'component-emitter' );
@@ -11,15 +13,18 @@ var messageBuilder = require( '../message/message-builder' ),
  *
  * @param {Object} options    deepstream options
  * @param {Connection} connection
- *
+ * @param {Client} client
  * @public
  * @constructor
  */
-var EventHandler = function( options, connection ) {
+var EventHandler = function( options, connection, client ) {
 	this._options = options;
 	this._connection = connection;
+	this._client = client;
 	this._emitter = new EventEmitter();
 	this._listener = {};
+	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
+	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
 /**
@@ -34,6 +39,7 @@ var EventHandler = function( options, connection ) {
  */
 EventHandler.prototype.subscribe = function( eventName, callback ) {
 	if( !this._emitter.hasListeners( eventName ) ) {
+		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.SUBSCRIBE );
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
 	}
 
@@ -55,6 +61,7 @@ EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 	this._emitter.off( eventName, callback );
 	
 	if( !this._emitter.hasListeners( eventName ) ) {
+		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.UNSUBSCRIBE );
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ eventName ] );
 	}
 };
@@ -104,6 +111,7 @@ EventHandler.prototype.listen = function( pattern, callback ) {
  */
 EventHandler.prototype.unlisten = function( pattern ) {
 	if( this._listener[ pattern ] ) {
+		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
 		this._listener[ pattern ].destroy();
 		delete this._listener[ pattern ];
 	} else {
@@ -116,29 +124,52 @@ EventHandler.prototype.unlisten = function( pattern ) {
  *
  * @param   {Object} message parsed deepstream message
  *
- * @package privat
+ * @package private
  * @returns {void}
  */
 EventHandler.prototype._$handle = function( message ) {
-	var name;
-	
+	var name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
+
 	if( message.action === C.ACTIONS.EVENT ) {
 		if( message.data && message.data.length === 2 ) {
-			this._emitter.emit( message.data[ 0 ], messageParser.convertTyped( message.data[ 1 ] ) );
+			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
 		} else {
-			this._emitter.emit( message.data[ 0 ] );
+			this._emitter.emit( name );
 		}
-	}
-
-	if( message.action === C.ACTIONS.ACK) {
-		name = message.data[ 1 ];
-	} else {
-		name = message.data[ 0 ];
+		return;
 	}
 
 	if( this._listener[ name ] ) {
 		this._listener[ name ]._$onMessage( message );
-	} 
+		return;
+	}
+
+	if( message.action === C.ACTIONS.ACK ) {
+		this._ackTimeoutRegistry.clear( message );
+		return;
+	}
+	
+	if( message.action === C.ACTIONS.ERROR ) {
+		message.processedError = true;
+		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
+		return;
+	}
+
+	this._client._$onError( C.TOPIC.EVENT, C.EVENT.UNSOLICITED_MESSAGE, name );
+};
+
+
+/**
+ * Resubscribes to events when connection is lost
+ *
+ * @package private
+ * @returns {void}
+ */
+EventHandler.prototype._resubscribe = function() {
+	var callbacks = this._emitter._callbacks;
+	for( var eventName in callbacks ) {
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+	}
 };
 
 module.exports = EventHandler;

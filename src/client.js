@@ -32,7 +32,7 @@ var Client = function( url, options ) {
 	
 	this._connection = new Connection( this, this._url, this._options );
 	
-	this.event = new EventHandler( this._options, this._connection );
+	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
 	this.webrtc = new WebRtcHandler( this._options, this._connection, this );
@@ -128,7 +128,8 @@ Client.prototype._$onMessage = function( message ) {
 	if( this._messageCallbacks[ message.topic ] ) {
 		this._messageCallbacks[ message.topic ]( message );
 	} else {
-		this._$onError( message.topic, message.action, 'received message for unknown topic ' + message.topic );
+		message.processedError = true;
+		this._$onError( message.topic, C.EVENT.MESSAGE_PARSE_ERROR, 'Received message for unknown topic ' + message.topic );
 	}
 
 	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
