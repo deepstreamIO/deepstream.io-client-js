@@ -21,7 +21,7 @@
     "component-emitter": "1.1.2"
   },
   "devDependencies": {
-    "jasmine-core": "~2.1.2",
+    "jasmine-core": "~2.4.1",
     "grunt-browserify": "4.0.1",
     "derequire": "2.0.3",
     "grunt": "~0.4.5",
