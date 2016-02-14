@@ -125,7 +125,6 @@ AnonymousRecord.prototype.setName = function( recordName ) {
 		for( i = 0; i < this._subscriptions.length; i++ ) {
 			this._record.unsubscribe( this._subscriptions[ i ] );
 		}
-
 		this._record.discard();
 	}
 
@@ -135,6 +134,7 @@ AnonymousRecord.prototype.setName = function( recordName ) {
 		this._record.subscribe( this._subscriptions[ i ] );
 	}
 
+	this._record.whenReady( this.emit.bind( this, 'ready' ) );
 	this.emit( 'nameChanged', recordName );
 };
 

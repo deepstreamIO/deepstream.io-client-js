@@ -53,21 +53,21 @@ describe( 'anonymous record', function() {
     });
     
     it( 'sets recordA', function(done) {
-        anonymousRecord.setName( 'recordA' );
-        setTimeout(function(){
-            expect( currentPet ).toBe( 'hamster' );
+        anonymousRecord.once( 'ready', function(){
             expect( anonymousRecord.get() ).toEqual({ pet: 'hamster' });
+            expect( currentPet ).toBe( 'hamster' );
             done();
-        }, 20);
+        });
+        anonymousRecord.setName( 'recordA' );
     });
     
     it( 'sets recordB', function(done) {
-        anonymousRecord.setName( 'recordB' );
-        setTimeout(function(){
-            expect( currentPet ).toBe( 'pug' );
+        anonymousRecord.once( 'ready', function(){
             expect( anonymousRecord.get() ).toEqual({ pet: 'pug' });
+            expect( currentPet ).toBe( 'pug' );
             done();
-        }, 20);
+        });
+        anonymousRecord.setName( 'recordB' );
     });
     
      /**************** TEAR DOWN ****************/
