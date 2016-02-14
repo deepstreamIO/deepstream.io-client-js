@@ -214,7 +214,11 @@ Client.prototype._getOptions = function( options ) {
 		key;
 
 	for( key in defaultOptions ) {
-		mergedOptions[ key ] = options[ key ] || defaultOptions[ key ];
+		if( typeof options[ key ] === 'undefined' ) {
+			mergedOptions[ key ] = defaultOptions[ key ];
+		} else {
+			mergedOptions[ key ] = options[ key ];
+		}
 	}
 
 	return mergedOptions;
