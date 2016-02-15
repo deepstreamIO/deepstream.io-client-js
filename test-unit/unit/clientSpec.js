@@ -16,4 +16,14 @@ describe( 'connects', function(){
 	it( 'receives a different uid for every call', function(){
 		expect( client.getUid() ).not.toBe( client.getUid() );
 	});
+
+	it( 'merges options correctly', function(){
+		client = deepstream( 'someUrl', {
+			recordPersistDefault: false,
+			recordDeleteTimeout: 34852
+		});
+		expect( client._options.recordPersistDefault ).toBe( false );
+		expect( client._options.recordReadTimeout ).toBe( 3000 );
+		expect( client._options.recordDeleteTimeout ).toBe( 34852 );
+	});
 });
