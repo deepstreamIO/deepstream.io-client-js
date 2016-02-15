@@ -8,7 +8,7 @@ describe( 'connects', function(){
 		stateChangeCallback = jasmine.createSpy( 'stateChangeCallback' );
 	
 	it( 'creates the client', function() {
-		client = deepstream( 'someUrl', {} );
+		client = deepstream( 'someUrl' );
 		expect( client.getConnectionState() ).toBe( 'CLOSED' );
 		expect( client._connection.lastSendMessage ).toBe( null );
 	});
@@ -19,8 +19,11 @@ describe( 'connects', function(){
 
 	it( 'merges options correctly', function(){
 		client = deepstream( 'someUrl', {
-			recordPersistDefault: false
-		} );
+			recordPersistDefault: false,
+			recordDeleteTimeout: 34852
+		});
 		expect( client._options.recordPersistDefault ).toBe( false );
+		expect( client._options.recordReadTimeout ).toBe( 3000 );
+		expect( client._options.recordDeleteTimeout ).toBe( 34852 );
 	});
 });
