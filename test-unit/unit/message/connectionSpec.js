@@ -50,7 +50,7 @@ describe('connects - happy path', function(){
 	it( 'processes the authentication response', function(){
 		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
-		expect( authCallback ).toHaveBeenCalledWith( true, undefined, undefined, undefined );
+		expect( authCallback ).toHaveBeenCalledWith( true, undefined, undefined );
 		expect( clientConnectionStateChangeCount ).toBe( 3 );
 	});
 
@@ -152,7 +152,7 @@ describe( 'connection handles auth rejections', function(){
 	});
 
 	it( 'receives auth rejection message', function(){
-		connection._endpoint.emit( 'message', msg( 'A|E|INVALID_AUTH_DATA|unknown user+' ) );
+		connection._endpoint.emit( 'message', msg( 'A|E|INVALID_AUTH_DATA|Sunknown user+' ) );
 		expect( authCallback ).toHaveBeenCalledWith( false, 'INVALID_AUTH_DATA', 'unknown user' );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
@@ -165,7 +165,40 @@ describe( 'connection handles auth rejections', function(){
 
 	it( 'receives auth ack message', function(){
 		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
-		expect( authCallback ).toHaveBeenCalledWith( true, undefined, undefined, undefined );
+		expect( authCallback ).toHaveBeenCalledWith( true, undefined, undefined );
+		expect( connection.getState() ).toBe( 'OPEN' );
+	});
+});
+
+/*****************************************
+* Login With Return Data
+*****************************************/
+describe( 'connection handles data associated with login', function(){
+	var connection,
+		authCallback = jasmine.createSpy( 'login with return data' );
+
+    it( 'creates the connection', function(){
+		connection = new Connection( clientMock, url, options );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+		expect( connection._endpoint.lastSendMessage ).toBe( null );
+	});
+
+	it( 'opens the connection', function(){
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+	});
+
+	it( 'sends auth parameters', function(){
+		expect( connection._endpoint.lastSendMessage ).toBe( null );
+		connection.authenticate({ user: 'Wolfram' }, authCallback );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
+		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
+		expect( authCallback ).not.toHaveBeenCalled();
+	});
+
+	it( 'receives auth ack message', function(){
+		connection._endpoint.emit( 'message', msg( 'A|A|O{"id":12345}+' ) );
+		expect( authCallback ).toHaveBeenCalledWith( true, undefined, { id: 12345 } );
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 });

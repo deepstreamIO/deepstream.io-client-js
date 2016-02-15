@@ -37,7 +37,7 @@ var Connection = function( client, url, options ) {
 
 /**
  * Returns the current connection state.
- * (One of constants.CONNECTION_STATE)
+ * (One of constants.CONNECTION_STATE) 
  *
  * @public
  * @returns {String} connectionState
@@ -68,7 +68,7 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 		this._client.once( C.EVENT.CONNECTION_STATE_CHANGED, this.authenticate.bind( authParams, callback ) );
 		return;
 	}
-
+	
 	this._authParams = authParams;
 	this._authCallback = callback;
 
@@ -111,7 +111,7 @@ Connection.prototype.send = function( message ) {
 		this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
 	}
 
-	if( this._state === C.CONNECTION_STATE.OPEN &&
+	if( this._state === C.CONNECTION_STATE.OPEN && 
 		this._queuedMessages.length < this._options.maxMessagesPerPacket &&
 		this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
 		this._sendQueuedMessages();
@@ -242,7 +242,7 @@ Connection.prototype._sendAuthParams = function() {
 Connection.prototype._onOpen = function() {
 	this._clearReconnect();
 	this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
-
+	
 	if( this._authParams ) {
 		this._sendAuthParams();
 	}
@@ -327,24 +327,28 @@ Connection.prototype._onMessage = function( message ) {
  * @returns {void}
  */
 Connection.prototype._handleAuthResponse = function( message ) {
-	if( message.action === C.ACTIONS.ERROR ) {
+	var data;
 
+	if( message.action === C.ACTIONS.ERROR ) {
+		
 		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
 			this._deliberateClose = true;
 			this._tooManyAuthAttempts = true;
 		} else {
 			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		}
-
+		
 		if( this._authCallback ) {
-			this._authCallback( false, message.data[ 0 ], message.data[ 1 ] );
+			data = message.data[ 1 ] && messageParser.convertTyped( message.data[ 1 ], this._client );
+			this._authCallback( false, message.data[ 0 ], data );
 		}
-
+	
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
-
+		
 		if( this._authCallback ) {
-			this._authCallback( true, undefined, undefined, message.data[ 0 ] );
+			data = message.data[ 0 ] && messageParser.convertTyped( message.data[ 0 ], this._client );
+			this._authCallback( true, undefined, data );
 		}
 
 		this._sendQueuedMessages();
@@ -352,7 +356,7 @@ Connection.prototype._handleAuthResponse = function( message ) {
 };
 
 /**
- * Updates the connection state and emits the
+ * Updates the connection state and emits the 
  * connectionStateChanged event on the client
  *
  * @private
@@ -369,7 +373,7 @@ Connection.prototype._setState = function( state ) {
  *
  * If the number of failed reconnection attempts exceeds
  * options.maxReconnectAttempts the connection is closed
- *
+ * 
  * @private
  * @returns {void}
  */
@@ -382,7 +386,7 @@ Connection.prototype._tryReconnect = function() {
 		this._setState( C.CONNECTION_STATE.RECONNECTING );
 		this._reconnectTimeout = setTimeout(
 			this._tryOpen.bind( this ),
-			this._options.reconnectIntervalIncrement * this._reconnectionAttempt
+			this._options.reconnectIntervalIncrement * this._reconnectionAttempt 
 		);
 		this._reconnectionAttempt++;
 	} else {
@@ -393,7 +397,7 @@ Connection.prototype._tryReconnect = function() {
 
 /**
  * Attempts to open a errourosly closed connection
- *
+ * 
  * @private
  * @returns {void}
  */
