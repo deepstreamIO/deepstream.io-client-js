@@ -339,20 +339,33 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		}
 		
 		if( this._authCallback ) {
-			data = message.data[ 1 ] && messageParser.convertTyped( message.data[ 1 ], this._client );
-			this._authCallback( false, message.data[ 0 ], data );
+			this._authCallback( false, message.data[ 0 ], this._getAuthData( message.data[ 1 ] ) );
 		}
 	
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
 		
 		if( this._authCallback ) {
-			data = message.data[ 0 ] && messageParser.convertTyped( message.data[ 0 ], this._client );
-			this._authCallback( true, undefined, data );
+			this._authCallback( true, undefined, this._getAuthData( message.data[ 0 ] ) );
 		}
 
 		this._sendQueuedMessages();
 	}
+};
+
+/**
+ * Checks if data is present with login ack and converts it
+ * to the correct type
+ *
+ * @private
+ * @returns {object}
+ */
+Connection.prototype._getAuthData = function( data ) {
+	var result;
+	if( typeof data !== 'undefined' ) {
+		result = messageParser.convertTyped( data, this._client );
+	}
+	return result;
 };
 
 /**
