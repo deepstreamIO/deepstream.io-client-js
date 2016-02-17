@@ -327,6 +327,8 @@ Connection.prototype._onMessage = function( message ) {
  * @returns {void}
  */
 Connection.prototype._handleAuthResponse = function( message ) {
+	var data;
+
 	if( message.action === C.ACTIONS.ERROR ) {
 		
 		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
@@ -337,18 +339,33 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		}
 		
 		if( this._authCallback ) {
-			this._authCallback( false, message.data[ 0 ], message.data[ 1 ] );
+			this._authCallback( false, message.data[ 0 ], this._getAuthData( message.data[ 1 ] ) );
 		}
 	
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
 		
 		if( this._authCallback ) {
-			this._authCallback( true );
+			this._authCallback( true, undefined, this._getAuthData( message.data[ 0 ] ) );
 		}
 
 		this._sendQueuedMessages();
 	}
+};
+
+/**
+ * Checks if data is present with login ack and converts it
+ * to the correct type
+ *
+ * @private
+ * @returns {object}
+ */
+Connection.prototype._getAuthData = function( data ) {
+	var result;
+	if( typeof data !== 'undefined' ) {
+		result = messageParser.convertTyped( data, this._client );
+	}
+	return result;
 };
 
 /**
