@@ -69,7 +69,7 @@ describe( 'deepEquals', function(){
 	});
 });
 
-describe( 'deep copy', function(){
+describe( 'deepCopy', function(){
 
 	it( 'copies primitives', function(){
 		expect( utils.deepCopy( 'bla' ) ).toBe( 'bla' );
@@ -103,5 +103,48 @@ describe( 'deep copy', function(){
 	it( 'copies null values', function(){
 		var copy = utils.deepCopy( null );
 		expect( copy ).toBeNull();
+	});
+
+	it( 'copies nested values', function(){
+		var original = { a: { b: 'c', d: 4 } };
+		var copy = utils.deepCopy( original );
+		expect( original ).toEqual( copy );
+		expect( original.a ).not.toBe( copy.a );
+	});
+
+	it( 'copies nested arrays', function(){
+		var original = { a: { b: 'c', d: [ 'a', { x: 'y' }] } };
+		var copy = utils.deepCopy( original );
+		expect( original ).toEqual( copy );
+		expect( original.a.d ).not.toBe( copy.a.d );
+		expect( Array.isArray( copy.a.d ) ).toBe( true );
+		expect( copy.a.d[ 1 ] ).toEqual( { x: 'y' });
+		expect( original.a.d[ 1 ] === copy.a.d[ 1 ] ).toBe( false );
+	});
+
+	//This is a JSON.stringify specific behaviour. Not too sure it's ideal,
+	//but it is something that will break behaviour when changed, so let's
+	//keep an eye on it
+	it( 'converts undefined', function(){
+		var copy = utils.deepCopy([ undefined ]);
+		expect( copy[ 0 ] ).toBe( null );
+
+		copy = utils.deepCopy({ x: undefined });
+		expect( copy ).toEqual( {} );
+	});
+});
+
+describe( 'utils.trim removes whitespace', function(){
+	it( 'removes various kinds of whitespace', function(){
+		expect( utils.trim( 'a  	') ).toEqual( 'a' );
+		expect( utils.trim( ' 	b  	') ).toEqual( 'b' );
+		expect( utils.trim( ' 	c d  	') ).toEqual( 'c d' );
+	});
+});
+
+describe( 'utils.isNode detects the environment', function(){
+	//As these tests are only ever run in node, this is a bit pointless
+	it( 'has detected something', function(){
+		expect( typeof utils.isNode ).toBe( 'boolean' );
 	});
 });
