@@ -7515,11 +7515,12 @@ Connection.prototype.close = function() {
  * Creates the endpoint to connect to using the url deepstream
  * was initialised with. If running in node automatically uses TCP
  * for better performance
+ *
  * @private
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function() {
-	if( utils.isNode() ) {
+	if( utils.isNode ) {
 		this._endpoint = new TcpConnection( this._url );
 	} else {
 		this._endpoint = engineIoClient( this._url, this._options );
@@ -10264,15 +10265,42 @@ ResubscribeNotifier.prototype.destroy = function() {
 module.exports = ResubscribeNotifier;
 },{"../constants/constants":44}],62:[function(_dereq_,module,exports){
 (function (process){
+/**
+ * A regular expression that matches whitespace on either side, but
+ * not in the center of a string
+ *
+ * @type {RegExp}
+ */
 var TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+
+/**
+ * Used in typeof comparisons
+ *
+ * @type {String}
+ */
 var OBJECT = 'object';
 
-exports.isNode = function() {
-	return typeof process !== 'undefined' && process.toString() === '[object process]';
-};
+/**
+ * True if environment is node, false if it's a browser
+ * This seems somewhat inelegant, if anyone knows a better solution,
+ * let's change this (must identify browserify's pseudo node implementation though)
+ *
+ * @public
+ * @type {Boolean}
+ */
+exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
 
+/**
+ * Provides as soon as possible async execution in a cross
+ * platform way
+ *
+ * @param   {Function} fn the function to be executed in an asynchronous fashion
+ *
+ * @public
+ * @returns {void}
+ */
 exports.nextTick = function( fn ) {
-	if( exports.isNode() ) {
+	if( exports.isNode ) {
 		process.nextTick( fn );
 	} else {
 		setTimeout( fn, 0 );
@@ -10343,7 +10371,11 @@ exports.deepEquals= function( objA, objB ) {
  * @returns {Mixed} clone
  */
 exports.deepCopy = function( obj ) {
-	return JSON.parse( JSON.stringify( obj ) );
+	if( typeof obj === OBJECT ) {
+		return JSON.parse( JSON.stringify( obj ) );
+	} else {
+		return obj;
+	}
 };
 }).call(this,_dereq_('_process'))
 },{"_process":35}],63:[function(_dereq_,module,exports){
