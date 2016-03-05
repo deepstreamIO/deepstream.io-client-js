@@ -138,11 +138,12 @@ Connection.prototype.close = function() {
  * Creates the endpoint to connect to using the url deepstream
  * was initialised with. If running in node automatically uses TCP
  * for better performance
+ *
  * @private
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function() {
-	if( utils.isNode() ) {
+	if( utils.isNode ) {
 		this._endpoint = new TcpConnection( this._url );
 	} else {
 		this._endpoint = engineIoClient( this._url, this._options );
