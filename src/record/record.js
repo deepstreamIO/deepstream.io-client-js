@@ -37,7 +37,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
-	
+
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
@@ -69,7 +69,7 @@ Record.prototype.get = function( path ) {
 		value = this._$data;
 	}
 
-	return utils.shallowCopy( value );
+	return utils.deepCopy( value );
 };
 
 /**
@@ -112,17 +112,17 @@ Record.prototype.set = function( pathOrData, data ) {
 	if( arguments.length === 1 ) {
 		this._$data = pathOrData;
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-			this.name, 
-			this._version, 
-			this._$data 
+			this.name,
+			this._version,
+			this._$data
 		]);
 	} else {
 		this._getPath( pathOrData ).setValue( data );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [ 
-			this.name, 
-			this._version, 
-			pathOrData, 
-			messageBuilder.typed( data ) 
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
+			this.name,
+			this._version,
+			pathOrData,
+			messageBuilder.typed( data )
 		]);
 	}
 
@@ -210,7 +210,7 @@ Record.prototype.discard = function() {
 
 /**
  * Deletes the record on the server.
- * 
+ *
  * @public
  * @returns {void}
  */
@@ -254,7 +254,7 @@ Record.prototype._$onMessage = function( message ) {
 			clearTimeout( this._readTimeout );
 			this._onRead( message );
 		} else {
-			this._applyUpdate( message, this._client );	
+			this._applyUpdate( message, this._client );
 		}
 	}
 	else if( message.action === C.ACTIONS.ACK ) {
@@ -275,7 +275,7 @@ Record.prototype._$onMessage = function( message ) {
  * Instead it should find a more sophisticated merge strategy
  *
  * @private
- * @returns {void} 
+ * @returns {void}
  */
 Record.prototype._recoverRecord = function( message ) {
 	message.processedError = true;
@@ -302,7 +302,7 @@ Record.prototype._processAckMessage = function( message ) {
 		this.emit( 'delete' );
 		this._destroy();
 	}
-	
+
 	else if( acknowledgedAction === C.ACTIONS.UNSUBSCRIBE ) {
 		this.emit( 'discard' );
 		this._destroy();
@@ -341,7 +341,7 @@ Record.prototype._applyUpdate = function( message ) {
 
 /**
  * Callback for incoming read messages
- * 
+ *
  * @param   {Object} message parsed and validated deepstream message
  *
  * @private
@@ -374,14 +374,14 @@ Record.prototype._setReady = function() {
 /**
  * Sends the read message, either initially at record
  * creation or after a lost connection has been re-established
- * 
+ *
  * @private
  * @returns {void}
  */
  Record.prototype._sendRead = function() {
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
- 
+
 
 /**
  * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
@@ -441,7 +441,7 @@ Record.prototype._completeChange = function() {
 	}
 
 	this._oldValue = null;
-	
+
 	if( this._oldPathValues === null ) {
 		return;
 	}
@@ -535,7 +535,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
 /**
  * Destroys the record and nulls all
  * its dependencies
- * 
+ *
  * @private
  * @returns {void}
  */

@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hoxton-one/deepstream.io-client-js.git"
+    "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
     "engine.io-client": "1.6.8",
@@ -34,10 +34,10 @@
     "deepstream.io": "latest",
     "deepstream.io-msg-redis": "latest"
   },
-  "author": "Wolfram Hempel",
+  "author": "deepstreamHub GmbH i. Gr.",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hoxton-one/deepstream.io-client-js/issues"
+    "url": "https://github.com/deepstreamIO/deepstream.io-client-js/issues"
   },
   "homepage": "http://deepstream.io"
 }

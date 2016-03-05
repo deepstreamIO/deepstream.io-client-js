@@ -116,7 +116,7 @@ describe( 'record subscriptions callbacks', function(){
 
 	it( 'creates the record', function(){
 		record = new Record( 'testRecord', {}, connection, options, new ClientMock() );
-		
+
 		record.subscribe( generalCallback );
 		record.whenReady( function() {
 			record.subscribe( generalCallbackInWhenReady, false );
@@ -132,5 +132,39 @@ describe( 'record subscriptions callbacks', function(){
 
 	it( 'triggers subscribes outside of whenReady on read', function() {
 		expect( generalCallback ).toHaveBeenCalled();
+	});
+});
+
+describe( 'it triggers the general callback for changes to nested objects', function(){
+	var record;
+	var generalCallback = jasmine.createSpy( 'general' );
+
+	it( 'creates the record', function(){
+		record = new Record( 'testRecord', {}, new MockConnection(), options, new ClientMock() );
+		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
+	});
+
+	it( 'subscribes to any change', function(){
+		record.subscribe( generalCallback );
+		expect( generalCallback ).not.toHaveBeenCalled();
+	});
+
+	it( 'sets an initial value', function(){
+		record.set({
+			a: {
+				b: 'c'
+			}
+		});
+		expect( generalCallback.calls.length ).toBe( 1 );
+	});
+
+	it( 'invokes the general callback for changes to nested values', function(){
+		record.set({
+			a: {
+				b: 'c'
+			}
+		});
+		record.set( 'a.b', 'd' );
+		expect( generalCallback.calls.length ).toBe( 2 );
 	});
 });
