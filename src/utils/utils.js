@@ -1,3 +1,6 @@
+var TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+var OBJECT = 'object';
+
 exports.isNode = function() {
 	return typeof process !== 'undefined' && process.toString() === '[object process]';
 };
@@ -10,79 +13,69 @@ exports.nextTick = function( fn ) {
 	}
 };
 
+/**
+ * Removes whitespace from the beginning and end of a string
+ *
+ * @param   {String} inputString
+ *
+ * @public
+ * @returns {String} trimmedString
+ */
 exports.trim = function( inputString ) {
 	if( inputString.trim ) {
 		return inputString.trim();
 	} else {
-		return inputString.replace( trimRegExp, '' );
+		return inputString.replace( TRIM_REGULAR_EXPRESSION, '' );
 	}
 };
 
-var trimRegExp = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-
-var OBJECT = 'object';
-
-exports.deepEquals = function( objA, objB ) {
-	var isEqual = true, 
-		next;
-
-	if( objA === null || objB === null ) {
-		return objA === objB;
-	}
-
+/**
+ * Compares two objects for deep (recoursive) equality
+ *
+ * This used to be a significantly more complex custom implementation,
+ * but JSON.stringify has gotten so fast that it now outperforms the custom
+ * way by a factor of 1.5 to 3.
+ *
+ * In IE11 / Edge the custom implementation is still slightly faster, but for
+ * consistencies sake and the upsides of leaving edge-case handling to the native
+ * browser / node implementation we'll go for JSON.stringify from here on.
+ *
+ * Please find performance test results here
+ *
+ * http://jsperf.com/deep-equals-code-vs-json
+ *
+ * @param   {Mixed} objA
+ * @param   {Mixed} objB
+ *
+ * @public
+ * @returns {Boolean} isEqual
+ */
+exports.deepEquals= function( objA, objB ) {
 	if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
 		return objA === objB;
+	} else {
+		return JSON.stringify( objA ) === JSON.stringify( objB );
 	}
-
-	next = function( _objA, _objB ) {
-		if( _objA === null || _objB === null || typeof _objA !== OBJECT || typeof _objB !== OBJECT ) {
-			isEqual = objA === objB;
-			return;
-		}
-
-		for( var key in _objA ) {
-			if( typeof _objA[ key ] === OBJECT ) {
-				next( _objA[ key ], _objB[ key ] );
-			} else if( _objA[ key ] !== _objB[ key ] ) {
-				isEqual = false;
-				return;
-			}
-		}
-	};
-
-	next( objA, objB );
-	
-	if( isEqual ) {
-		next( objB, objA );
-	}
-	
-	return isEqual;
 };
 
-exports.shallowCopy = function( obj ) {
-	if( obj === null ) {
-		return null;
-	}
-
-	if( typeof obj !== OBJECT ) {
-		return obj;
-	}
-
-	var copy, i;
-
-	if( obj instanceof Array ) {
-		copy = [];
-
-		for( i = 0; i < obj.length; i++ ) {
-			copy[ i ] = obj[ i ];
-		}
-	} else {
-		copy = {};
-
-		for( i in obj ) {
-			copy[ i ] = obj[ i ];
-		}
-	}
-
-	return copy;
+/**
+ * Similar to deepEquals above, tests have shown that JSON stringify outperforms any attempt of
+ * a code based implementation by 50% - 100% whilst also handling edge-cases and keeping implementation
+ * complexity low.
+ *
+ * If ES6/7 ever decides to implement deep copying natively (what happened to Object.clone? that was briefly
+ * a thing...), let's switch it for the native implementation. For now though, even Object.assign({}, obj) only
+ * provides a shallow copy.
+ *
+ * Please find performance test results backing these statements here:
+ *
+ * http://jsperf.com/object-deep-copy-assign
+ *
+ * @param   {Mixed} obj the object that should be cloned
+ *
+ * @public
+ * @returns {Mixed} clone
+ */
+exports.deepCopy = function( obj ) {
+	return JSON.parse( JSON.stringify( obj ) );
 };

@@ -54,7 +54,7 @@ describe( 'deepEquals', function(){
 		var a = undefined, // jshint ignore:line
 			b = { x: 'y', a: [ 'b', { q: 'f' } ] };
 		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});	
+	});
 
 	it( 'handles empty objects', function(){
 		var a = {},
@@ -69,39 +69,39 @@ describe( 'deepEquals', function(){
 	});
 });
 
-describe( 'shallow copy', function(){
+describe( 'deep copy', function(){
 
 	it( 'copies primitives', function(){
-		expect( utils.shallowCopy( 'bla' ) ).toBe( 'bla' );
-		expect( utils.shallowCopy( 42 ) ).toBe( 42 );
+		expect( utils.deepCopy( 'bla' ) ).toBe( 'bla' );
+		expect( utils.deepCopy( 42 ) ).toBe( 42 );
 	});
 
 	it( 'copies arrays', function(){
 		var original = [ 'a', 'b', 2 ],
-			copy = utils.shallowCopy( original );
-		
+			copy = utils.deepCopy( original );
+
 		expect( copy ).toEqual( original );
 		expect( copy ).not.toBe( original );
 	});
 
 	it( 'copies objects', function(){
 		var original = { firstname: 'Wolfram', lastname:' Hempel' },
-			copy = utils.shallowCopy( original );
-		
+			copy = utils.deepCopy( original );
+
 		expect( copy ).toEqual( original );
 		expect( copy ).not.toBe( original );
 	});
 
 	it( 'copies objects with null values', function(){
 		var original = { firstname: 'Wolfram', lastname: null },
-			copy = utils.shallowCopy( original );
-		
+			copy = utils.deepCopy( original );
+
 		expect( copy ).toEqual( original );
 		expect( copy ).not.toBe( original );
 	});
 
 	it( 'copies null values', function(){
-		var copy = utils.shallowCopy( null );
+		var copy = utils.deepCopy( null );
 		expect( copy ).toBeNull();
 	});
 });
