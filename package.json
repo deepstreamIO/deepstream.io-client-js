@@ -20,6 +20,9 @@
     "engine.io-client": "1.6.8",
     "component-emitter": "1.1.2"
   },
+   "browser": {
+    "net": false
+  },
   "devDependencies": {
     "jasmine-core": "~2.4.1",
     "grunt-browserify": "4.0.1",
