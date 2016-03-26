@@ -20,7 +20,6 @@ Logger.prototype.log = function( logLevel, event, logMessage ) {
     this.lastLog = log;
 
     if( logLevel === 3 ) {
-        console.log( 'error occured', event, logMessage);
         throw new Error( 'Critical error occured on deepstream', event, logMessage );
     }
 };
