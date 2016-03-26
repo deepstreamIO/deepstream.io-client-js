@@ -5,8 +5,6 @@ var WebRtcHandler = require( '../../../src/webrtc/webrtc-handler.js' ),
 	webrtcMock = require( '../../mocks/webrtc/webrtc-mock' ),
 	options = { calleeAckTimeout: 5, rtcPeerConnectionConfig: {} };
 
-
-
 describe( 'webrtc interactive connection establishing works for outgoing calls', function(){
 	var webrtcHandler,
 		webrtcCall,
@@ -36,7 +34,7 @@ describe( 'webrtc interactive connection establishing works for outgoing calls',
 		setTimeout( done, 10 );
 	});
 
-	it( 'has send the offer', function(){
+	it( 'has sent the offer', function(){
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|OF|1|calleeA|{"sdp":"offer sdp","type":"offer type","meta":{"some":"metaData"}}+' ) );
 	});
 
@@ -48,14 +46,17 @@ describe( 'webrtc interactive connection establishing works for outgoing calls',
 			action: 'IC',
 			data: [ 'calleeA', '1', '{"icecandidate":"C"}' ]
 		});
-		expect( webrtcCall._$webRtcConnection._peerConnection.addIceCandidate.calls[ 0 ].args[ 0 ] ).toEqual({ candidate:{ icecandidate: 'C' }});
+
+		//TODO: Check why equals doesn't work
+		var actual = webrtcCall._$webRtcConnection._peerConnection.addIceCandidate.calls.argsFor( 0 )[ 0 ];
+		var expected = { candidate:{ icecandidate: 'C' } };
+		expect( JSON.stringify( actual ) ).toEqual( JSON.stringify( expected ) );
 	});
 
 	it( 'removes global objects', function(){
 		webrtcMock.off();
 	});
 });
-
 
 describe( 'webrtc interactive connection establishing works for incoming calls', function(){
 	var webrtcHandler,
@@ -90,8 +91,8 @@ describe( 'webrtc interactive connection establishing works for incoming calls',
 		});
 
 		expect( onCall ).toHaveBeenCalled();
-		expect( onCall.calls[ 0 ].args[ 1 ] ).toEqual({ some: 'data' });
-		incomingCall = onCall.calls[ 0 ].args[ 0 ];
+		expect( onCall.calls.argsFor( 0 )[ 1 ] ).toEqual({ some: 'data' });
+		incomingCall = onCall.calls.argsFor( 0 )[ 0 ];
 
 		expect( incomingCall.isAccepted ).toBe( false );
 		expect( incomingCall.isIncoming ).toBe( true );
@@ -129,9 +130,9 @@ describe( 'webrtc interactive connection establishing works for incoming calls',
 		expect( incomingCall._$webRtcConnection ).not.toBe( null );
 		expect( incomingCall.isAccepted ).toBe( true );
 		var addIceCandidateCalls = incomingCall._$webRtcConnection._peerConnection.addIceCandidate.calls;
-		expect( addIceCandidateCalls.length ).toBe( 2 );
-		expect( addIceCandidateCalls[ 0 ].args[ 0 ].candidate.icecandidate ).toBe( 'G' );
-		expect( addIceCandidateCalls[ 1 ].args[ 0 ].candidate.icecandidate ).toBe( 'H' );
+		expect( addIceCandidateCalls.count() ).toBe( 2 );
+		expect( addIceCandidateCalls.argsFor( 0 )[ 0 ].candidate.icecandidate ).toBe( 'G' );
+		expect( addIceCandidateCalls.argsFor( 1 )[ 0 ].candidate.icecandidate ).toBe( 'H' );
 		expect( incomingCall._bufferedIceCandidates.length ).toBe( 0 );
 		setTimeout( done, 10 );
 	});

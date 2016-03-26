@@ -98,9 +98,9 @@ describe( 'lists contain arrays of record names', function(){
 	});
 
 	it( 'unsubscribes', function(){
-		expect( changeCallback.calls.length ).toBe( 10 );
+		expect( changeCallback.calls.count() ).toBe( 10 );
 		list.unsubscribe( changeCallback );
 		list.setEntries([ 'q' ]);
-		expect( changeCallback.calls.length ).toBe( 10 );
+		expect( changeCallback.calls.count() ).toBe( 10 );
 	});
 });

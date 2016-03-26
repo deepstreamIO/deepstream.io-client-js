@@ -105,7 +105,7 @@ describe( 'webrtc listen for callees', function(){
 		webrtcHandler.unlistenForCallees();
 
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|ULC+' ) );
-		expect( calleeListener.calls.length ).toBe( 4 );
+		expect( calleeListener.calls.count() ).toBe( 4 );
 		expect( mockClient.lastError ).toBe( null );
 	});
 
@@ -127,7 +127,7 @@ describe( 'webrtc listen for callees', function(){
 			'data': [ 'calleeF' ]
 		});
 
-		expect( calleeListener.calls.length ).toBe( 4 );
+		expect( calleeListener.calls.count() ).toBe( 4 );
 		expect( mockClient.lastError ).toEqual([ 'W', 'UNSOLICITED_MESSAGE', msg('W|WCA|calleeE+') ]);
 	});
 

@@ -91,7 +91,7 @@ describe( 'WEBRTC call spec', function() {
 			
 			expect( webrtcCall.isDeclined ).toBe( false );
 			expect( webrtcCall.isAccepted ).toBe( true );
-			expect( webrtcCall._$webRtcConnection._peerConnection.addStream.calls.length ).toBe( 0 );
+			expect( webrtcCall._$webRtcConnection._peerConnection.addStream.calls.count() ).toBe( 0 );
 			expect( webrtcCall.state ).toBe( 'ACCEPTED' );
 			expect( stateChangeListener ).toHaveBeenCalledWith( 'ACCEPTED' );
 		});
