@@ -2,7 +2,9 @@ var Record = require( './record' ),
 	AnonymousRecord = require( './anonymous-record' ),
 	List = require( './list' ),
 	Listener = require( '../utils/listener' ),
+	SingleNotifier = require( '../utils/single-notifier' ),
 	C = require( '../constants/constants' ),
+	messageParser = require( '../message/message-parser' ),
 	EventEmitter = require( 'component-emitter' );
 
 /**
@@ -20,6 +22,9 @@ var RecordHandler = function( options, connection, client ) {
 	this._records = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
+
+	this._hasRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout );
+	this._snapshotRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout );
 };
 
 /**
@@ -117,6 +122,38 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 };
 
 /**
+ * Retrieve the current record data without subscribing to changes
+ *
+ * @param   {String}	name the unique name of the record
+ * @param   {Function}	callback
+ *
+ * @public
+ */
+RecordHandler.prototype.snapshot = function( name, callback ) {
+	if( this._records[ name ] ) {
+		callback( null, this._records[ name ].get() );
+	} else {
+		this._snapshotRegistry.request( name, callback );
+	}
+};
+
+/**
+ * Allows the user to query to see whether or not the record exists.
+ *
+ * @param   {String}	name the unique name of the record
+ * @param   {Function}	callback
+ *
+ * @public
+ */
+RecordHandler.prototype.has = function( name, callback ) {
+	if( this._records[ name ] ) {
+		callback( null, true );
+	} else {
+		this._hasRegistry.request( name, callback );
+	}
+};
+
+/**
  * Will be called by the client for incoming messages on the RECORD topic
  *
  * @param   {Object} message parsed and validated deepstream message
@@ -127,12 +164,14 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
-	if( message.action === C.ACTIONS.ERROR && message.data[ 0 ] !== C.EVENT.VERSION_EXISTS ) {
+	if( message.action === C.ACTIONS.ERROR && 
+		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS ) 
+	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
 		return;
 	}
-	
+
 	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
 
@@ -152,17 +191,46 @@ RecordHandler.prototype._$handle = function( message ) {
 
 			return;
 		}
+
+		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
+			message.processedError = true;
+			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
+			return;
+		}
+
+		if( message.data[ 0 ] === C.ACTIONS.HAS ) {
+			message.processedError = true;
+			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
+			return;
+		}
+
 	} else {
 		name = message.data[ 0 ];
 	}
 
+	var processed = false;
+
 	if( this._records[ name ] ) {
+		processed = true;
 		this._records[ name ]._$onMessage( message );
 	} 
-	else if( this._listener[ name ] ) {
+	
+	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
+		processed = true;
+		this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
+	}
+	
+	if( message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest( name ) ) {
+		processed = true;
+		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
+	}
+	
+	if( this._listener[ name ] ) {
+		processed = true;
 		this._listener[ name ]._$onMessage( message );
 	} 
-	else {
+	
+	if( !processed ) {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 	}
 };
