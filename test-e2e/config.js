@@ -1,13 +1,5 @@
-// Remote
-// module.exports = {
-// 	redisPort: 18741, 
-// 	redisHost: 'pub-redis-18741.us-east-1-4.4.ec2.garantiadata.com',
-// 	messageTimeout: 2000
-// };
-
-//Local
 module.exports = {
-	redisPort: 6379, 
-	redisHost: 'localhost',
+	redisPort: process.env.REDIS_PORT || 6379, 
+	redisHost: process.env.REDIS_HOST || 'localhost',
 	messageTimeout: 2000
 };

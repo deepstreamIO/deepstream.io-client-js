@@ -35,13 +35,13 @@ describe( 'webrtc call initate', function(){
 	it( 'throws an error if calleeName is not a string', function(){
 		expect(function(){
 			webrtcHandler.makeCall( {}, {} );
-		}).toThrow( 'Callee must be provided as string' );
+		}).toThrow( new Error( 'Callee must be provided as string' ) );
 	});
 
 	it( 'throws an error if metaData is not provided', function(){
 		expect(function(){
 			webrtcHandler.makeCall( 'calleeA' );
-		}).toThrow( 'metaData must be provided' );
+		}).toThrow( new Error( 'metaData must be provided' ) );
 	});
 
 	it( 'creates a call', function(){
@@ -52,7 +52,7 @@ describe( 'webrtc call initate', function(){
 	it( 'can\'t call same callee at same time', function(){
 		expect(function(){
 			webrtcHandler.makeCall( 'calleeA', {} );
-		}).toThrow( 'Call with calleeA is already in progress' );
+		}).toThrow( new Error( 'Call with calleeA is already in progress' ) );
 	}); 
 
 	it( 'removes global objects', function(){

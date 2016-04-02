@@ -18,6 +18,10 @@ Logger.prototype.log = function( logLevel, event, logMessage ) {
 
     this.logs.push( log );
     this.lastLog = log;
+
+    if( logLevel === 3 ) {
+        throw new Error( 'Critical error occured on deepstream', event, logMessage );
+    }
 };
 
 Logger.prototype.setLogLevel = function(){};

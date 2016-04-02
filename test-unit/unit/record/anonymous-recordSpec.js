@@ -11,7 +11,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 		generalCallback = jasmine.createSpy( 'general' ),
 		firstnameCallback = jasmine.createSpy( 'firstname' ),
 		readyCallback = jasmine.createSpy( 'ready' );
-
+ 
 	it( 'creates the anonymous record', function(){
 		anonymousRecord = new AnonymousRecord( recordHandler );
 		expect( anonymousRecord.setName ).toBeDefined();
@@ -49,7 +49,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 			data: [ 'recordA', 1, '{"firstname":"Wolfram"}' ]
 		});
 
-		expect( readyCallback.calls.length ).toBe( 1 );
+		expect( readyCallback.calls.count() ).toBe( 1 );
 		expect( firstnameCallback ).toHaveBeenCalledWith( 'Wolfram' );
 		expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Wolfram' });
 	});
@@ -63,7 +63,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 			data: [ 'recordB', 1, '{"firstname":"Egon", "lastname":"Kowalski"}' ]
 		});
 
-		expect( readyCallback.calls.length ).toBe( 1 );
+		expect( readyCallback.calls.count() ).toBe( 1 );
 		expect( firstnameCallback ).toHaveBeenCalledWith( 'Wolfram' );
 		expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Wolfram' });
 	});
@@ -71,7 +71,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 	it( 'updates subscriptions when the record changes to an existing record', function(){
 		anonymousRecord.setName( 'recordB' );
 		expect( anonymousRecord.name ).toBe( 'recordB' );
-		expect( readyCallback.calls.length ).toBe( 2 );
+		expect( readyCallback.calls.count() ).toBe( 2 );
 		expect( firstnameCallback ).toHaveBeenCalledWith( 'Egon' );
 		expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Kowalski' });
 	});
@@ -93,7 +93,7 @@ describe( 'anonymous record allows switching of underlying records', function(){
 		});
 
 	    anonymousRecord.setName( 'recordC' );
-	    expect( readyCallback.calls.length ).toBe( 2 );
+	    expect( readyCallback.calls.count() ).toBe( 2 );
 	    expect( errorCallback ).not.toHaveBeenCalled();
 	});
 
@@ -108,13 +108,13 @@ describe( 'anonymous record allows switching of underlying records', function(){
 	});
 
 	it( 'emits an additional ready event once the new record becomes available', function(){
-		expect( readyCallback.calls.length ).toBe( 2 );
+		expect( readyCallback.calls.count() ).toBe( 2 );
 		recordHandler._$handle({
 			topic: 'R',
 			action: 'R',
 			data: [ 'recordC', 1, '{"firstname":"Egon", "lastname":"Kowalski"}' ]
 		});
-		expect( readyCallback.calls.length ).toBe( 3 );
+		expect( readyCallback.calls.count() ).toBe( 3 );
 	});
 
 });

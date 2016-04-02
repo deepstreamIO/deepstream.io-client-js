@@ -1,7 +1,7 @@
 /* global describe, it, expect, jasmine */
-var Cluster = require( '../tools/cluster'),
-    deepstreamClient = require( '../../src/client' ),
-    config = require( '../config' );
+var Cluster = require( '../../tools/cluster'),
+    deepstreamClient = require( '../../../src/client' ),
+    config = require( '../../config' );
     
 describe( 'event cluster', function() {
     var cluster,
@@ -15,7 +15,7 @@ describe( 'event cluster', function() {
         callbackC = jasmine.createSpy( 'callbackC' );
 
     /**************** SETUP ****************/
-    it( 'starts two servers', function( done ){
+    it( 'starts two servers', function( done ) {
         cluster = new Cluster( [ 6001, 6002, 6003 ], false );
         cluster.on( 'ready', done );
     });
@@ -105,17 +105,17 @@ describe( 'event cluster', function() {
     });
     
     it( 'all client have received all events', function( done ){
-        expect( callbackA.calls.length ).toBe( 3 );
+        expect( callbackA.calls.count() ).toBe( 3 );
         expect( callbackA ).toHaveBeenCalledWith( 'value1' );
         expect( callbackA ).toHaveBeenCalledWith( 'value2' );
         expect( callbackA ).toHaveBeenCalledWith( 'value3' );
         
-        expect( callbackB.calls.length ).toBe( 3 );
+        expect( callbackB.calls.count() ).toBe( 3 );
         expect( callbackB ).toHaveBeenCalledWith( 'value1' );
         expect( callbackB ).toHaveBeenCalledWith( 'value2' );
         expect( callbackB ).toHaveBeenCalledWith( 'value3' );
         
-        expect( callbackC.calls.length ).toBe( 3 );
+        expect( callbackC.calls.count() ).toBe( 3 );
         expect( callbackC ).toHaveBeenCalledWith( 'value1' );
         expect( callbackC ).toHaveBeenCalledWith( 'value2' );
         expect( callbackC ).toHaveBeenCalledWith( 'value3' );

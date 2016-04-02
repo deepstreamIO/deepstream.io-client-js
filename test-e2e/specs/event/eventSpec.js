@@ -1,12 +1,9 @@
 /* global describe, it, expect, jasmine */
-var DeepstreamServer = require( 'deepstream.io' ),
-    deepstreamClient = require( '../../src/client' ),
-    TestLogger = require( '../tools/test-logger' );
+var singleServer = require( '../../tools/single'),
+    deepstreamClient = require( '../../../src/client' );
     
 describe( 'event', function() {
-    var deepstreamServer,
-        logger = new TestLogger(),
-        clientA,
+    var clientA,
         clientB,
         recordA,
         recordB,
@@ -14,13 +11,7 @@ describe( 'event', function() {
         currentPet;
     
     /**************** SETUP ****************/
-    it( 'starts the server', function( done ){
-        deepstreamServer = new DeepstreamServer();
-        deepstreamServer.on( 'started', done );
-        deepstreamServer.set( 'logger', logger );
-        deepstreamServer.set( 'showLogo', false );
-        deepstreamServer.start();
-    });
+    it( 'starts the server', singleServer.start );
     
     it( 'creates clientA', function( done ) {
         clientA = deepstreamClient( 'localhost:6021' );
@@ -89,8 +80,5 @@ describe( 'event', function() {
         clientB.close();
     });
     
-    it( 'shuts clients and server down', function(done) {
-      deepstreamServer.on( 'stopped', done );
-      deepstreamServer.stop();
-    });
+    it( 'shuts clients and server down', singleServer.close );
 });
