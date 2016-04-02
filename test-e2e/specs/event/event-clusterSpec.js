@@ -1,7 +1,7 @@
 /* global describe, it, expect, jasmine */
-var Cluster = require( '../tools/cluster'),
-    deepstreamClient = require( '../../src/client' ),
-    config = require( '../config' );
+var Cluster = require( '../../tools/cluster'),
+    deepstreamClient = require( '../../../src/client' ),
+    config = require( '../../config' );
     
 describe( 'event cluster', function() {
     var cluster,
