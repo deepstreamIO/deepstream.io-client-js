@@ -235,12 +235,12 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 		setTimeout(function(){
 			connection._endpoint.close();
 			expect( connection._endpoint.callsToOpen ).toBe( 1 );
-		}, 5 );
+		}, 50 );
 
 		setTimeout(function(){
 			expect( connection._endpoint.callsToOpen ).toBe( 2 );
 			done();
-		}, 40 );
+		}, 100 );
 	});
 
 	it( 're-establishes the connection', function( done ){

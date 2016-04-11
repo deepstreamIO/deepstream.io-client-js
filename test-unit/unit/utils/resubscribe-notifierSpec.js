@@ -16,12 +16,12 @@ describe( 'resubscribe notifier', function(){
 
 	it( 'doesn\'t call resubscribe when it loses the connection', function() {
 		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.RECONNECTING );
-		expect( resubscribeCallback.callCount ).toEqual( 0 );
+		expect( resubscribeCallback.calls.count() ).toEqual( 0 );
 	});
 
 	it( 'calls resubscribe once connection is back open ( which is also authenticated )', function() {
 		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.OPEN );
-		expect( resubscribeCallback.callCount ).toEqual( 1 );
+		expect( resubscribeCallback.calls.count() ).toEqual( 1 );
 	});
 
 	it( 'no longer listens to connectionState after being destroyed', function() {
@@ -30,6 +30,6 @@ describe( 'resubscribe notifier', function(){
 		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.RECONNECTING );
 		mockClient.emit( 'connectionStateChanged', C.CONNECTION_STATE.OPEN );
 		
-		expect( resubscribeCallback.callCount ).toEqual( 1 );
+		expect( resubscribeCallback.calls.count() ).toEqual( 1 );
 	});
 });

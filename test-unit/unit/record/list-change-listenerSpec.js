@@ -6,7 +6,7 @@ var List = require( '../../../src/record/list' ),
 	msg = require( '../../test-helper/test-helper' ).msg,
 	options = {};
 
-describe( 'lists contain arrays of record names', function(){
+describe( 'lists change listener', function(){
 	var list,
 		recordHandler = new RecordHandler( options, new ConnectionMock(), new ClientMock() );
 
@@ -33,7 +33,7 @@ describe( 'lists contain arrays of record names', function(){
 
 		list.whenReady( function() {
 			list.subscribe( callback, true );
-			expect( callback.calls[ 0 ].args[ 0 ] ).toEqual( [] );
+			expect( callback.calls.argsFor( 0 )[ 0 ] ).toEqual( [] );
 			done();
 		});
 	});
@@ -44,14 +44,14 @@ describe( 'lists contain arrays of record names', function(){
 		list.subscribe( callback );
 		list.setEntries([ 'a', 'b', 'c', 'd', 'e', 'f' ]);
 		expect( callback ).toHaveBeenCalledWith([ 'a', 'b', 'c', 'd', 'e', 'f' ]);
-		expect( callback.calls.length ).toBe( 1 );
+		expect( callback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'notifies the listener when a new item is added to the end of the list', function(){
 		var callback = prepareTest( 'entry-added' );
 		list.addEntry( 'f' );
 		expect( callback ).toHaveBeenCalledWith( 'f', 5 );
-		expect( callback.calls.length ).toBe( 1 );
+		expect( callback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'notifies the listener when a new item is added to the end of the list by another client', function(){
@@ -62,21 +62,21 @@ describe( 'lists contain arrays of record names', function(){
 			data: [ 'someList', 1, '["a","b","c","d","e","x"]' ]
 		});
 		expect( callback ).toHaveBeenCalledWith( 'x', 5 );
-		expect( callback.calls.length ).toBe( 1 );
+		expect( callback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'notifies the listener when a new item is added to an index within the list', function(){
 		var callback = prepareTest( 'entry-added' );
 		list.addEntry( 'f', 3 );
 		expect( callback ).toHaveBeenCalledWith( 'f', 3 );
-		expect( callback.calls.length ).toBe( 1 );
+		expect( callback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'notifies the listener when an entry is removed from the list', function(){
 		var callback = prepareTest( 'entry-removed' );
 		list.removeEntry( 'c' );
 		expect( callback ).toHaveBeenCalledWith( 'c', 2 );
-		expect( callback.calls.length ).toBe( 1 );
+		expect( callback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'notifies the listener when an entry is moved within the list', function(){
@@ -86,21 +86,21 @@ describe( 'lists contain arrays of record names', function(){
 		list.setEntries([ 'a', 'b', 'e', 'd', 'c' ]);
 		expect( callback ).toHaveBeenCalledWith( 'e', 2 );
 		expect( callback ).toHaveBeenCalledWith( 'c', 4 );
-		expect( callback.calls.length ).toBe( 2 );
+		expect( callback.calls.count() ).toBe( 2 );
 	});
 
 	it( 'notifies the listener when another instance of the same item is added to an index within the list', function(){
 		var callback = prepareTest( 'entry-added' );
 		list.addEntry( 'a', 3 );
 		expect( callback ).toHaveBeenCalledWith( 'a', 3 );
-		expect( callback.calls.length ).toBe( 1 );
+		expect( callback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'notifies the listener when another instance of the same item is added to the end of the list', function(){
 		var callback = prepareTest( 'entry-added' );
 		list.addEntry( 'b' );
 		expect( callback ).toHaveBeenCalledWith( 'b', 5 );
-		expect( callback.calls.length ).toBe( 1 );
+		expect( callback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'notifies the listener when the second instance of an item is removed from the list', function(){
@@ -137,10 +137,10 @@ describe( 'lists contain arrays of record names', function(){
 		list.setEntries([ 'a', 'b', 'c', 'c', 'd', 'e' ]);
 		
 		expect( addCallback ).toHaveBeenCalledWith( 'c', 3 );
-		expect( addCallback.calls.length ).toBe( 1 );
+		expect( addCallback.calls.count() ).toBe( 1 );
 		expect( moveCallback ).toHaveBeenCalledWith( 'd', 4 );
 		expect( moveCallback ).toHaveBeenCalledWith( 'e', 5 );
-		expect( moveCallback.calls.length ).toBe( 2 );
+		expect( moveCallback.calls.count() ).toBe( 2 );
 	});
 
 	it( 'notifies the listener for an add / move / remove combination', function(){
@@ -155,12 +155,12 @@ describe( 'lists contain arrays of record names', function(){
 		list.setEntries([ 'c', 'b', 'f' ]);
 		
 		expect( addCallback ).toHaveBeenCalledWith( 'f', 2 );
-		expect( addCallback.calls.length ).toBe( 1 );
+		expect( addCallback.calls.count() ).toBe( 1 );
 		expect( moveCallback ).toHaveBeenCalledWith( 'c', 0 );
-		expect( moveCallback.calls.length ).toBe( 1 );
+		expect( moveCallback.calls.count() ).toBe( 1 );
 		expect( removeCallback ).toHaveBeenCalledWith( 'a', 0 );
 		expect( removeCallback ).toHaveBeenCalledWith( 'd', 3 );
 		expect( removeCallback ).toHaveBeenCalledWith( 'e', 4 );
-		expect( removeCallback.calls.length ).toBe( 3 );
+		expect( removeCallback.calls.count() ).toBe( 3 );
 	});
 });

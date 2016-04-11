@@ -27,32 +27,32 @@ describe( 'supscriptions to local record changes', function(){
 		record.set( 'firstname', 'Wolfram' );
 		expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Wolfram' });
 		expect( callback ).toHaveBeenCalledWith( 'Wolfram' );
-		expect( callback.calls.length ).toEqual( 1 );
+		expect( callback.calls.count() ).toEqual( 1 );
 		expect( record.get() ).toEqual({ firstname: 'Wolfram' });
 	});
 
 	it( 'sets a value for a different path', function(){
 		record.set( 'lastname', 'Hempel' );
 		expect( callback ).toHaveBeenCalledWith( 'Wolfram' );
-		expect( callback.calls.length ).toEqual( 1 );
+		expect( callback.calls.count() ).toEqual( 1 );
 		expect( record.get() ).toEqual({ firstname: 'Wolfram', lastname: 'Hempel' });
 	});
 
 	it( 'unsubscribes', function(){
 		record.set( 'firstname', 'Egon' );
 		expect( callback ).toHaveBeenCalledWith( 'Egon' );
-		expect( callback.calls.length ).toEqual( 2 );
+		expect( callback.calls.count() ).toEqual( 2 );
 		record.unsubscribe( 'firstname', callback );
 		record.set( 'firstname', 'Ray' );
 		expect( callback ).toHaveBeenCalledWith( 'Egon' );
-		expect( callback.calls.length ).toEqual( 2 );
+		expect( callback.calls.count() ).toEqual( 2 );
 	});
 
 	it( 'subscribes to a deep path', function(){
 		record.subscribe( 'addresses[ 1 ].street', callback );
 		record.set( 'addresses[ 1 ].street', 'someStreet' );
 		expect( callback ).toHaveBeenCalledWith( 'someStreet' );
-		expect( callback.calls.length ).toEqual( 3 );
+		expect( callback.calls.count() ).toEqual( 3 );
 	});
 
 	it( 'is called when the whole record is set', function(){
@@ -78,9 +78,9 @@ describe( 'supscriptions to local record changes', function(){
 		});
 
 		expect( firstnameCb ).toHaveBeenCalledWith( 'Wolfram' );
-		expect( firstnameCb.calls.length ).toBe( 1 );
+		expect( firstnameCb.calls.count() ).toBe( 1 );
 		expect( brotherAgeCb ).toHaveBeenCalledWith( 28 );
-		expect( brotherAgeCb.calls.length ).toBe( 1 );
+		expect( brotherAgeCb.calls.count() ).toBe( 1 );
 	});
 
 	it( 'gets notified when the record is ready', function(){
@@ -99,12 +99,12 @@ describe( 'supscriptions to local record changes', function(){
 		record3._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
 
 		expect( record3.isReady ).toBe( true );
-		expect( readyEventListener.calls.length ).toBe( 1 );
-		expect( readyCallback.calls.length ).toBe( 1 );
+		expect( readyEventListener.calls.count() ).toBe( 1 );
+		expect( readyCallback.calls.count() ).toBe( 1 );
 
 		record3.whenReady( readyCallback );
 
-		expect( readyCallback.calls.length ).toBe( 2 );
+		expect( readyCallback.calls.count() ).toBe( 2 );
 	});
 });
 
@@ -155,7 +155,7 @@ describe( 'it triggers the general callback for changes to nested objects', func
 				b: 'c'
 			}
 		});
-		expect( generalCallback.calls.length ).toBe( 1 );
+		expect( generalCallback.calls.count() ).toBe( 1 );
 	});
 
 	it( 'invokes the general callback for changes to nested values', function(){
@@ -165,6 +165,6 @@ describe( 'it triggers the general callback for changes to nested objects', func
 			}
 		});
 		record.set( 'a.b', 'd' );
-		expect( generalCallback.calls.length ).toBe( 2 );
+		expect( generalCallback.calls.count() ).toBe( 2 );
 	});
 });

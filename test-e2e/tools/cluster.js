@@ -5,6 +5,8 @@ var DeepstreamServer = require( 'deepstream.io' ),
     config = require( '../config' ),
     EventEmitter = require( 'events' ).EventEmitter;
     
+//TODO cluster failing somehow exists the tests. If you toggle enableLogging we'll notice
+//the plugin occasional catches and logs the error which results in the tests just exiting   
 var Cluster = function( ports, enableLogging ) {
     this._ports = ports;
     this._enableLogging = enableLogging;

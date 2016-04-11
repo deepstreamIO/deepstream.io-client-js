@@ -40,7 +40,10 @@ describe( 'it recovers a connection without losing record updates', function() {
                 i++;
                 if( i === 3 ) {
                     clearInterval( interval );
-                    done();
+                    //Ensure all writes went to the server
+                    setTimeout( function() {
+                        done();
+                    }, 200 );
                 }
             }, 30 );
     });
@@ -53,11 +56,11 @@ describe( 'it recovers a connection without losing record updates', function() {
     it( 'has received an error on the client', function(){
         expect( clientA.getConnectionState() ).toBe( 'RECONNECTING' );
         expect( clientAErrors.length ).toBe( 1 );
-        expect( clientAErrors[ 0 ] ).toEqual([
-            'Can\'t connect! Deepstream server unreachable on localhost:6021',
-            'connectionError',
-            null
-        ]);
+        //TODO: Array comparison
+        expect( clientAErrors[ 0 ].length ).toEqual( 3 );
+        expect( clientAErrors[ 0 ][ 0 ] ).toEqual( 'Can\'t connect! Deepstream server unreachable on localhost:6021' );
+        expect( clientAErrors[ 0 ][ 1 ] ).toEqual( 'connectionError' );
+        expect( clientAErrors[ 0 ][ 2 ] ).toEqual( null );
     });
 
      it( 'updates the record whilst disconnected', function( done ){
