@@ -139,8 +139,24 @@ ViewModel.prototype.deleteSomeUserRecord = function() {
 	this.isSubscribed( false );
 };
 
-ViewModel.prototype._onLoginResult = function( result, errorEvent, errorMessage ) {
+ViewModel.prototype.snapshotSomeUserRecord = function() {
+	this._client.record.snapshot( 'someUser', function( error, data ) {
+		if( error ) {
+			alert( 'snapshot error: someuser does not exist yet' );
+		} else {
+			this.firstname( data.firstname );
+			this.lastname( data.lastname );	
+		}
+	}.bind( this ) );
+};
 
+ViewModel.prototype.hasSomeUserRecord = function() {
+	this._client.record.has( 'someUser', function( error, hasRecord ) {
+		alert( 'Record someUser exists: ' + hasRecord );
+	}.bind( this ) );
+};
+
+ViewModel.prototype._onLoginResult = function( result, errorEvent, errorMessage ) {
 };
 
 ViewModel.prototype._updateRecord = function( path ) {

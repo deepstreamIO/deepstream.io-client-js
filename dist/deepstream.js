@@ -6923,7 +6923,7 @@ Client.prototype._getOptions = function( options ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":43,"./default-options":44,"./event/event-handler":45,"./message/connection":46,"./record/record-handler":52,"./rpc/rpc-handler":54,"./webrtc/webrtc-handler":64,"component-emitter":1}],43:[function(_dereq_,module,exports){
+},{"./constants/constants":43,"./default-options":44,"./event/event-handler":45,"./message/connection":46,"./record/record-handler":52,"./rpc/rpc-handler":54,"./webrtc/webrtc-handler":65,"component-emitter":1}],43:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -6969,6 +6969,7 @@ exports.EVENT.NOT_LISTENING = 'NOT_LISTENING';
 exports.EVENT.TOO_MANY_AUTH_ATTEMPTS = 'TOO_MANY_AUTH_ATTEMPTS';
 exports.EVENT.IS_CLOSED = 'IS_CLOSED';
 exports.EVENT.UNKNOWN_CALLEE = 'UNKNOWN_CALLEE';
+exports.EVENT.RECORD_NOT_FOUND = 'RECORD_NOT_FOUND';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';
@@ -6979,6 +6980,8 @@ exports.ACTIONS.PATCH = 'P';
 exports.ACTIONS.DELETE = 'D';
 exports.ACTIONS.SUBSCRIBE = 'S';
 exports.ACTIONS.UNSUBSCRIBE = 'US';
+exports.ACTIONS.HAS = 'H';
+exports.ACTIONS.SNAPSHOT = 'SN';
 exports.ACTIONS.INVOKE = 'I';
 exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND = 'SP';
 exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED = 'SR';
@@ -7811,7 +7814,7 @@ Connection.prototype._clearReconnect = function() {
 };
 
 module.exports = Connection;
-},{"../constants/constants":43,"../tcp/tcp-connection":57,"../utils/utils":61,"./message-builder":47,"./message-parser":48,"engine.io-client":2}],47:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../tcp/tcp-connection":57,"../utils/utils":62,"./message-builder":47,"./message-parser":48,"engine.io-client":2}],47:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -8323,7 +8326,7 @@ JsonPath.prototype._tokenize = function() {
 };
 
 module.exports = JsonPath;
-},{"../utils/utils":61}],51:[function(_dereq_,module,exports){
+},{"../utils/utils":62}],51:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
 	C = _dereq_( '../constants/constants' ),
@@ -8690,7 +8693,9 @@ var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
 	Listener = _dereq_( '../utils/listener' ),
+	SingleNotifier = _dereq_( '../utils/single-notifier' ),
 	C = _dereq_( '../constants/constants' ),
+	messageParser = _dereq_( '../message/message-parser' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
 /**
@@ -8708,6 +8713,9 @@ var RecordHandler = function( options, connection, client ) {
 	this._records = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
+
+	this._hasRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout );
+	this._snapshotRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout );
 };
 
 /**
@@ -8805,6 +8813,38 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 };
 
 /**
+ * Retrieve the current record data without subscribing to changes
+ *
+ * @param   {String}	name the unique name of the record
+ * @param   {Function}	callback
+ *
+ * @public
+ */
+RecordHandler.prototype.snapshot = function( name, callback ) {
+	if( this._records[ name ] ) {
+		callback( null, this._records[ name ].get() );
+	} else {
+		this._snapshotRegistry.request( name, callback );
+	}
+};
+
+/**
+ * Allows the user to query to see whether or not the record exists.
+ *
+ * @param   {String}	name the unique name of the record
+ * @param   {Function}	callback
+ *
+ * @public
+ */
+RecordHandler.prototype.has = function( name, callback ) {
+	if( this._records[ name ] ) {
+		callback( null, true );
+	} else {
+		this._hasRegistry.request( name, callback );
+	}
+};
+
+/**
  * Will be called by the client for incoming messages on the RECORD topic
  *
  * @param   {Object} message parsed and validated deepstream message
@@ -8815,12 +8855,14 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
-	if( message.action === C.ACTIONS.ERROR && message.data[ 0 ] !== C.EVENT.VERSION_EXISTS ) {
+	if( message.action === C.ACTIONS.ERROR && 
+		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS ) 
+	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
 		return;
 	}
-	
+
 	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
 
@@ -8840,17 +8882,46 @@ RecordHandler.prototype._$handle = function( message ) {
 
 			return;
 		}
+
+		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
+			message.processedError = true;
+			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
+			return;
+		}
+
+		if( message.data[ 0 ] === C.ACTIONS.HAS ) {
+			message.processedError = true;
+			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
+			return;
+		}
+
 	} else {
 		name = message.data[ 0 ];
 	}
 
+	var processed = false;
+
 	if( this._records[ name ] ) {
+		processed = true;
 		this._records[ name ]._$onMessage( message );
 	} 
-	else if( this._listener[ name ] ) {
+	
+	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
+		processed = true;
+		this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
+	}
+	
+	if( message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest( name ) ) {
+		processed = true;
+		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
+	}
+	
+	if( this._listener[ name ] ) {
+		processed = true;
 		this._listener[ name ]._$onMessage( message );
 	} 
-	else {
+	
+	if( !processed ) {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 	}
 };
@@ -8898,7 +8969,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":43,"../utils/listener":59,"./anonymous-record":49,"./list":51,"./record":53,"component-emitter":1}],53:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-parser":48,"../utils/listener":59,"../utils/single-notifier":61,"./anonymous-record":49,"./list":51,"./record":53,"component-emitter":1}],53:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -9452,7 +9523,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
  };
 
 module.exports = Record;
-},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/resubscribe-notifier":60,"../utils/utils":61,"./json-path":50,"component-emitter":1}],54:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/resubscribe-notifier":60,"../utils/utils":62,"./json-path":50,"component-emitter":1}],54:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -9777,7 +9848,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":43,"../message/message-builder":47,"../utils/utils":61}],56:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../utils/utils":62}],56:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
 
@@ -10262,6 +10333,115 @@ ResubscribeNotifier.prototype.destroy = function() {
 
 module.exports = ResubscribeNotifier;
 },{"../constants/constants":43}],61:[function(_dereq_,module,exports){
+var C = _dereq_( '../constants/constants' ),
+	ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
+
+/**
+ * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT 
+ * and HAS functionality. The SingleNotifier multiplexes all the client requests so 
+ * that they can can be notified at once, and also includes reconnection funcionality 
+ * incase the connection drops.
+ *
+ * @param {Client} client          The deepstream client
+ * @param {Connection} connection  The deepstream connection
+ * @param {String} topic           Constant. One of C.TOPIC
+ * @param {String} action          Constant. One of C.ACTIONS
+ * @param {Number} timeoutDuration The duration of the timeout in milliseconds
+ *
+ * @constructor
+ */
+var SingleNotifier = function( client, connection, topic, action, timeoutDuration ) {
+	this._client = client;
+	this._connection = connection;
+	this._topic = topic;
+	this._action = action;
+	this._timeoutDuration = timeoutDuration;
+	this._requests = {};
+	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resendRequests.bind( this ) );
+};
+
+/**
+ * Check if there is a request pending with a specified name
+ *
+ * @param {String} name An identifier for the request, e.g. a record name
+ *
+ * @public
+ * @returns {void}
+ */
+SingleNotifier.prototype.hasRequest = function( name ) {		
+	return !!this._requests[ name ]; 
+};
+
+/**
+ * Add a request. If one has already been made it will skip the server request
+ * and multiplex the response
+ *
+ * @param {String} name An identifier for the request, e.g. a record name
+
+ *
+ * @public
+ * @returns {void}
+ */
+SingleNotifier.prototype.request = function( name, callback ) {	
+	var responseTimeout;
+
+	if( !this._requests[ name ] ) {
+		this._requests[ name ] = [];
+		this._connection.sendMsg( this._topic, this._action, [ name ] );
+	}
+
+	responseTimeout = setTimeout( this._onResponseTimeout.bind( this, name ), this._timeoutDuration );
+	this._requests[ name ].push( { timeout: responseTimeout, callback: callback } );
+};
+
+/**
+ * Process a response for a request. This has quite a flexible API since callback functions
+ * differ greatly and helps maximise reuse.
+ *
+ * @param {String} name An identifier for the request, e.g. a record name
+ * @param {String} error Error message
+ * @param {Object} data If successful, the response data
+ *
+ * @public
+ * @returns {void}
+ */
+SingleNotifier.prototype.recieve = function( name, error, data ) {
+	var entries = this._requests[ name ];
+	for( i=0; i < entries.length; i++ ) {
+		entry = entries[ i ];
+		clearTimeout( entry.timeout );
+		entry.callback( error, data );
+	}
+	delete this._requests[ name ];
+};
+
+/**
+ * Will be invoked if a timeout occurs before a response arrives from the server
+ *
+ * @param {String} name An identifier for the request, e.g. a record name
+ *
+ * @private
+ * @returns {void}
+ */
+SingleNotifier.prototype._onResponseTimeout = function( name ) {
+	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + name;
+	this._client._$onError( this._topic, C.EVENT.RESPONSE_TIMEOUT, msg );
+};
+
+/**
+ * Resends all the requests once the connection is back up
+ *
+ * @private
+ * @returns {void}
+ */
+SingleNotifier.prototype._resendRequests = function() {
+	for( var request in this._requests ) {
+		this._connection.sendMsg( this._topic, this._action, [ this._requests[ request ] ] );
+	}
+};
+
+module.exports = SingleNotifier;
+},{"../constants/constants":43,"./resubscribe-notifier":60}],62:[function(_dereq_,module,exports){
 (function (process){
 /**
  * A regular expression that matches whitespace on either side, but
@@ -10376,7 +10556,7 @@ exports.deepCopy = function( obj ) {
 	}
 };
 }).call(this,_dereq_('_process'))
-},{"_process":34}],62:[function(_dereq_,module,exports){
+},{"_process":34}],63:[function(_dereq_,module,exports){
 var WebRtcConnection = _dereq_( './webrtc-connection' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
 	C = _dereq_( '../constants/constants' );
@@ -10594,7 +10774,7 @@ WebRtcCall.prototype._onEstablished = function( stream ) {
 };
 
 module.exports = WebRtcCall;
-},{"../constants/constants":43,"./webrtc-connection":63,"component-emitter":1}],63:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"./webrtc-connection":64,"component-emitter":1}],64:[function(_dereq_,module,exports){
 var Emitter = _dereq_( 'component-emitter' );
 var C = _dereq_( '../constants/constants' );
 var noop = function(){};
@@ -10813,7 +10993,7 @@ WebRtcConnection.prototype._onError = function( error ) {
 
 module.exports = WebRtcConnection;
 
-},{"../constants/constants":43,"component-emitter":1}],64:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"component-emitter":1}],65:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	WebRtcConnection = _dereq_( './webrtc-connection' ),
 	WebRtcCall = _dereq_( './webrtc-call' ),
@@ -11234,5 +11414,5 @@ WebRtcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = WebRtcHandler;
-},{"../constants/constants":43,"../utils/ack-timeout-registry":58,"./webrtc-call":62,"./webrtc-connection":63}]},{},[42])(42)
+},{"../constants/constants":43,"../utils/ack-timeout-registry":58,"./webrtc-call":63,"./webrtc-connection":64}]},{},[42])(42)
 });

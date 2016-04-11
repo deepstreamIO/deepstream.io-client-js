@@ -67,6 +67,14 @@
 							class="inline">unsubscribe</button>
 						<button 
 							type="button"
+							data-bind="click: snapshotSomeUserRecord"
+							class="inline">snapshot</button>
+						<button 
+							type="button"
+							data-bind="click: hasSomeUserRecord"
+							class="inline">has</button>
+						<button 
+							type="button"
 							data-bind="click: deleteSomeUserRecord, enable: isSubscribed"
 							class="inline">delete</button>
 					</li>

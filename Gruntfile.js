@@ -57,7 +57,8 @@ module.exports = function( grunt ) {
 			}
 		},
 		exec: {
-			runUnitTestsOnce: 'node node_modules/jasmine/bin/jasmine JASMINE_CONFIG_PATH=jasmine.json'
+			runUnitTests: 'npm run-script watch',
+			runUnitTestsOnce: 'npm test'
 		},
 		_release: {
 			options: {
