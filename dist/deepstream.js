@@ -2325,7 +2325,7 @@ WS.prototype.check = function(){
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../transport":5,"component-inherit":12,"debug":13,"engine.io-parser":16,"parseqs":28,"ws":32,"yeast":30}],11:[function(_dereq_,module,exports){
+},{"../transport":5,"component-inherit":12,"debug":13,"engine.io-parser":16,"parseqs":28,"ws":31,"yeast":30}],11:[function(_dereq_,module,exports){
 // browser shim for xmlhttprequest module
 var hasCORS = _dereq_('has-cors');
 
@@ -4241,8 +4241,6 @@ module.exports = yeast;
 },{}],31:[function(_dereq_,module,exports){
 
 },{}],32:[function(_dereq_,module,exports){
-arguments[4][31][0].apply(exports,arguments)
-},{"dup":31}],33:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4545,7 +4543,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],34:[function(_dereq_,module,exports){
+},{}],33:[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -4570,7 +4568,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],35:[function(_dereq_,module,exports){
+},{}],34:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -4663,7 +4661,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],36:[function(_dereq_,module,exports){
+},{}],35:[function(_dereq_,module,exports){
 (function (global){
 /*! https://mths.be/punycode v1.4.0 by @mathias */
 ;(function(root) {
@@ -5200,7 +5198,7 @@ process.umask = function() { return 0; };
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],37:[function(_dereq_,module,exports){
+},{}],36:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5286,7 +5284,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],38:[function(_dereq_,module,exports){
+},{}],37:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5373,13 +5371,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],39:[function(_dereq_,module,exports){
+},{}],38:[function(_dereq_,module,exports){
 'use strict';
 
 exports.decode = exports.parse = _dereq_('./decode');
 exports.encode = exports.stringify = _dereq_('./encode');
 
-},{"./decode":37,"./encode":38}],40:[function(_dereq_,module,exports){
+},{"./decode":36,"./encode":37}],39:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6088,14 +6086,14 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":36,"querystring":39}],41:[function(_dereq_,module,exports){
+},{"punycode":35,"querystring":38}],40:[function(_dereq_,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],42:[function(_dereq_,module,exports){
+},{}],41:[function(_dereq_,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -6685,7 +6683,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,_dereq_('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":41,"_process":35,"inherits":34}],43:[function(_dereq_,module,exports){
+},{"./support/isBuffer":40,"_process":34,"inherits":33}],42:[function(_dereq_,module,exports){
 var C = _dereq_( './constants/constants' ),
 	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
@@ -6925,7 +6923,7 @@ Client.prototype._getOptions = function( options ) {
 module.exports = function( url, options ) {
 	return new Client( url, options );
 };
-},{"./constants/constants":44,"./default-options":45,"./event/event-handler":46,"./message/connection":47,"./record/record-handler":53,"./rpc/rpc-handler":55,"./webrtc/webrtc-handler":65,"component-emitter":1}],44:[function(_dereq_,module,exports){
+},{"./constants/constants":43,"./default-options":44,"./event/event-handler":45,"./message/connection":46,"./record/record-handler":52,"./rpc/rpc-handler":54,"./webrtc/webrtc-handler":64,"component-emitter":1}],43:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -7018,7 +7016,7 @@ exports.CALL_STATE.ACCEPTED = 'ACCEPTED';
 exports.CALL_STATE.DECLINED = 'DECLINED';
 exports.CALL_STATE.ENDED = 'ENDED';
 exports.CALL_STATE.ERROR = 'ERROR';
-},{}],45:[function(_dereq_,module,exports){
+},{}],44:[function(_dereq_,module,exports){
 module.exports = {
 	/************************************************
 	* Deepstream									*
@@ -7198,7 +7196,7 @@ module.exports = {
 	 */
 	rememberUpgrade: false
 };
-},{}],46:[function(_dereq_,module,exports){
+},{}],45:[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
@@ -7374,7 +7372,7 @@ EventHandler.prototype._resubscribe = function() {
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":44,"../message/message-builder":48,"../message/message-parser":49,"../utils/ack-timeout-registry":59,"../utils/listener":60,"../utils/resubscribe-notifier":61,"component-emitter":1}],47:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/ack-timeout-registry":58,"../utils/listener":59,"../utils/resubscribe-notifier":60,"component-emitter":1}],46:[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -7813,7 +7811,7 @@ Connection.prototype._clearReconnect = function() {
 };
 
 module.exports = Connection;
-},{"../constants/constants":44,"../tcp/tcp-connection":58,"../utils/utils":62,"./message-builder":48,"./message-parser":49,"engine.io-client":2}],48:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../tcp/tcp-connection":57,"../utils/utils":61,"./message-builder":47,"./message-parser":48,"engine.io-client":2}],47:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -7891,7 +7889,7 @@ exports.typed = function( value ) {
 	
 	throw new Error( 'Can\'t serialize type ' + value );
 };
-},{"../constants/constants":44}],49:[function(_dereq_,module,exports){
+},{"../constants/constants":43}],48:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -8039,7 +8037,7 @@ MessageParser.prototype._parseMessage = function( message, client ) {
 };
 
 module.exports = new MessageParser();
-},{"../constants/constants":44}],50:[function(_dereq_,module,exports){
+},{"../constants/constants":43}],49:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -8218,7 +8216,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":54,"component-emitter":1}],51:[function(_dereq_,module,exports){
+},{"./record":53,"component-emitter":1}],50:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
@@ -8325,7 +8323,7 @@ JsonPath.prototype._tokenize = function() {
 };
 
 module.exports = JsonPath;
-},{"../utils/utils":62}],52:[function(_dereq_,module,exports){
+},{"../utils/utils":61}],51:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
 	C = _dereq_( '../constants/constants' ),
@@ -8687,7 +8685,7 @@ List.prototype._getStructure = function() {
 
 module.exports = List;
 
-},{"../constants/constants":44,"./record":54,"component-emitter":1}],53:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"./record":53,"component-emitter":1}],52:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
@@ -8900,7 +8898,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":44,"../utils/listener":60,"./anonymous-record":50,"./list":52,"./record":54,"component-emitter":1}],54:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../utils/listener":59,"./anonymous-record":49,"./list":51,"./record":53,"component-emitter":1}],53:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -9454,7 +9452,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
  };
 
 module.exports = Record;
-},{"../constants/constants":44,"../message/message-builder":48,"../message/message-parser":49,"../utils/resubscribe-notifier":61,"../utils/utils":62,"./json-path":51,"component-emitter":1}],55:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/resubscribe-notifier":60,"../utils/utils":61,"./json-path":50,"component-emitter":1}],54:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -9672,7 +9670,7 @@ RpcHandler.prototype._reprovide = function() {
 
 
 module.exports = RpcHandler;
-},{"../constants/constants":44,"../message/message-builder":48,"../message/message-parser":49,"../utils/ack-timeout-registry":59,"../utils/resubscribe-notifier":61,"./rpc":57,"./rpc-response":56}],56:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../message/message-parser":48,"../utils/ack-timeout-registry":58,"../utils/resubscribe-notifier":60,"./rpc":56,"./rpc-response":55}],55:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
 	messageBuilder = _dereq_( '../message/message-builder' );
@@ -9779,7 +9777,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":44,"../message/message-builder":48,"../utils/utils":62}],57:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-builder":47,"../utils/utils":61}],56:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
 
@@ -9857,7 +9855,7 @@ Rpc.prototype._complete = function() {
 };
 
 module.exports = Rpc;
-},{"../constants/constants":44,"../message/message-parser":49}],58:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"../message/message-parser":48}],57:[function(_dereq_,module,exports){
 (function (process){
 var net = _dereq_( 'net' ),
 	URL = _dereq_( 'url' ),
@@ -10082,7 +10080,7 @@ TcpConnection.prototype._destroy = function() {
 module.exports = TcpConnection;
 
 }).call(this,_dereq_('_process'))
-},{"../constants/constants":44,"_process":35,"events":33,"net":31,"url":40,"util":42}],59:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"_process":34,"events":32,"net":31,"url":39,"util":41}],58:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -10166,7 +10164,7 @@ AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
 };
 
 module.exports = AckTimeoutRegistry;
-},{"../constants/constants":44,"component-emitter":1}],60:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"component-emitter":1}],59:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
@@ -10209,7 +10207,7 @@ Listener.prototype._onAckTimeout = function() {
 };
 
 module.exports = Listener;
-},{"../constants/constants":44,"./resubscribe-notifier":61}],61:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"./resubscribe-notifier":60}],60:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -10263,7 +10261,7 @@ ResubscribeNotifier.prototype.destroy = function() {
  };
 
 module.exports = ResubscribeNotifier;
-},{"../constants/constants":44}],62:[function(_dereq_,module,exports){
+},{"../constants/constants":43}],61:[function(_dereq_,module,exports){
 (function (process){
 /**
  * A regular expression that matches whitespace on either side, but
@@ -10378,7 +10376,7 @@ exports.deepCopy = function( obj ) {
 	}
 };
 }).call(this,_dereq_('_process'))
-},{"_process":35}],63:[function(_dereq_,module,exports){
+},{"_process":34}],62:[function(_dereq_,module,exports){
 var WebRtcConnection = _dereq_( './webrtc-connection' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
 	C = _dereq_( '../constants/constants' );
@@ -10596,7 +10594,7 @@ WebRtcCall.prototype._onEstablished = function( stream ) {
 };
 
 module.exports = WebRtcCall;
-},{"../constants/constants":44,"./webrtc-connection":64,"component-emitter":1}],64:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"./webrtc-connection":63,"component-emitter":1}],63:[function(_dereq_,module,exports){
 var Emitter = _dereq_( 'component-emitter' );
 var C = _dereq_( '../constants/constants' );
 var noop = function(){};
@@ -10815,7 +10813,7 @@ WebRtcConnection.prototype._onError = function( error ) {
 
 module.exports = WebRtcConnection;
 
-},{"../constants/constants":44,"component-emitter":1}],65:[function(_dereq_,module,exports){
+},{"../constants/constants":43,"component-emitter":1}],64:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	WebRtcConnection = _dereq_( './webrtc-connection' ),
 	WebRtcCall = _dereq_( './webrtc-call' ),
@@ -11236,5 +11234,5 @@ WebRtcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = WebRtcHandler;
-},{"../constants/constants":44,"../utils/ack-timeout-registry":59,"./webrtc-call":63,"./webrtc-connection":64}]},{},[43])(43)
+},{"../constants/constants":43,"../utils/ack-timeout-registry":58,"./webrtc-call":62,"./webrtc-connection":63}]},{},[42])(42)
 });
