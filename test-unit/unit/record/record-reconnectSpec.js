@@ -20,6 +20,7 @@ describe( 'connection losses are handled gracefully', function(){
 	
 	it( 'connects', function() {
 		client._connection._endpoint.simulateOpen();
+		client._connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		recordB = client.record.getRecord( 'recordB' );
 		expect( client.getConnectionState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
@@ -63,6 +64,7 @@ describe( 'connection losses are handled gracefully', function(){
 	
 	it( 're-establishes the connection', function() {
 	    client._connection._endpoint.simulateOpen();
+	    client._connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"username":"Wolfram"}+' ) );
 	    expect( client.getConnectionState() ).toBe( 'AUTHENTICATING' );
 	});
@@ -118,6 +120,7 @@ describe( 'connection losses are handled gracefully', function(){
 	
 	it( 're-establishes the connection', function() {
 	    client._connection._endpoint.simulateOpen();
+	    client._connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 	    expect( client._connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"username":"Wolfram"}+' ) );
 	    expect( client.getConnectionState() ).toBe( 'AUTHENTICATING' );
 	});

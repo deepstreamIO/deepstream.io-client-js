@@ -234,7 +234,7 @@ Connection.prototype._sendAuthParams = function() {
  * can't send messages yet, but needs to authenticate first.
  *
  * If authentication parameters are already provided this will kick of
- * authentication immediatly. The actual 'open' event won't be emitted
+ * authentication immediately. The actual 'open' event won't be emitted
  * by the client until the authentication is succesfull
  *
  * @private
@@ -242,11 +242,7 @@ Connection.prototype._sendAuthParams = function() {
  */
 Connection.prototype._onOpen = function() {
 	this._clearReconnect();
-	this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
-	
-	if( this._authParams ) {
-		this._sendAuthParams();
-	}
+	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
 
 /**
@@ -308,6 +304,9 @@ Connection.prototype._onMessage = function( message ) {
 		if( parsedMessages[ i ] === null ) {
 			continue;
 		}
+		else if( parsedMessages[ i ].topic === C.TOPIC.CONNECTION ) {
+			this._handleConnectionResponse( parsedMessages[ i ] );
+		}
 		else if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
 			this._handleAuthResponse( parsedMessages[ i ] );
 		} else {
@@ -317,8 +316,28 @@ Connection.prototype._onMessage = function( message ) {
 };
 
 /**
+ *
+ * @param   {Object} message parsed auth message
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._handleConnectionResponse = function( message ) {
+	var data;
+
+	if( message.action === C.ACTIONS.ACK ) {	
+		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
+		if( this._authParams ) {
+			this._sendAuthParams();
+		}
+	} else if( message.action === C.ACTIONS.REDIRECT ) {
+		console.log( 'redirect' );
+	}
+};
+
+/**
  * Callback for messages received for the AUTH topic. If
- * the authentication was succesfull this method will
+ * the authentication was successful this method will
  * open the connection and send all messages that the client
  * tried to send so far.
  *
