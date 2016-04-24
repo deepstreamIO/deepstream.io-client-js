@@ -24,9 +24,9 @@ describe('connects - happy path', function(){
 	var connection,
 		authCallback = jasmine.createSpy( 'authCallback' );
 
-	clientConnectionStateChangeCount = 0;
-
 	it( 'creates the connection', function(){
+		clientConnectionStateChangeCount = 0;
+
 		connection = new Connection( clientMock, url, options );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 	});
@@ -73,6 +73,44 @@ describe('connects - happy path', function(){
 		expect( connection._endpoint.isOpen ).toBe( false );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( clientConnectionStateChangeCount ).toBe( 5 );
+	});
+});
+
+/*****************************************
+* REDIRECT
+*****************************************/
+describe('connects - redirect', function(){
+
+	var connection,
+		authCallback = jasmine.createSpy( 'authCallback' );
+
+	it( 'creates the connection', function(){
+		clientConnectionStateChangeCount = 0;
+
+		connection = new Connection( clientMock, url, options );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+		expect( clientConnectionStateChangeCount ).toBe( 1 );
+	});
+
+	it( 'recieves a connection redirect', function(){
+		connection._endpoint.emit( 'message', msg( 'C|R|someotherhost:5050+' ) );
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+		expect( clientConnectionStateChangeCount ).toBe( 1 );
+	});
+
+	it( 'creates connection to new url', function(){
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+		expect( clientConnectionStateChangeCount ).toBe( 2 );
+	});
+
+	it( 'recieves a connection ack from new url', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
+		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		expect( clientConnectionStateChangeCount ).toBe( 3 );
 	});
 });
 
