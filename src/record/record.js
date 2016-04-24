@@ -110,14 +110,14 @@ Record.prototype.set = function( pathOrData, data ) {
 	this._version++;
 
 	if( arguments.length === 1 ) {
-		this._$data = utils.deepCopy(pathOrData);
+		this._$data = (typeof pathOrData == 'object') ? utils.deepCopy(pathOrData):pathOrData;
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 			this.name,
 			this._version,
 			this._$data
 		]);
 	} else {
-		this._getPath( pathOrData ).setValue( utils.deepCopy(data) );
+		this._getPath( pathOrData ).setValue((typeof data == 'object') ? utils.deepCopy(data):data);
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
 			this.name,
 			this._version,
