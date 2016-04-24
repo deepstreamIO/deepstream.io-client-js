@@ -82,7 +82,8 @@ describe('connects - happy path', function(){
 describe('connects - redirect', function(){
 
 	var connection,
-		authCallback = jasmine.createSpy( 'authCallback' );
+		authCallback = jasmine.createSpy( 'authCallback' ),
+		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
 
 	it( 'creates the connection', function(){
 		clientConnectionStateChangeCount = 0;
@@ -111,6 +112,17 @@ describe('connects - redirect', function(){
 		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 		expect( clientConnectionStateChangeCount ).toBe( 3 );
+		expect( connection._endpoint.url ).toBe( 'someotherhost:5050' );
+	});
+
+	//TODO: This requires us to destroy and recreate the connection if the url and 
+	//original url are not the same. Is this accepted behaviour?
+	xit( 'connects to the original url after it loses the connection', function(){
+		connection._endpoint.close();
+		expect( connection.getState() ).toBe( 'RECONNECTING' );
+
+		connection._endpoint.simulateOpen();
+		expect( connection._endpoint.url ).toBe( 'somehost' );
 	});
 });
 

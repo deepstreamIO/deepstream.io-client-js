@@ -7,7 +7,8 @@ var events = require( 'events' ),
  * @emit error
  * @emit message
  */
-var TcpConnectionMock = function() {
+var TcpConnectionMock = function( url ) {
+	this.url = url;
 	this.isOpen = false;
 	this.callsToOpen = 0;
 	this.lastSendMessage = null;
