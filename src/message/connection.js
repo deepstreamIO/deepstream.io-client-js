@@ -345,7 +345,7 @@ Connection.prototype._handleConnectionResponse = function( message ) {
 	} else if( message.action === C.ACTIONS.REDIRECT ) {
 		this._url = message.data[ 0 ];
 		this._redirecting = true;
-		this.close();
+		this._endpoint.close();
 	}
 };
 
