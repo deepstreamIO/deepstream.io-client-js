@@ -17,6 +17,7 @@ var engineIoClient = require( 'engine.io-client' ),
  */
 var Connection = function( client, url, options ) {
 	this._client = client;
+	this._originalUrl = url;
 	this._url = url;
 	this._options = options;
 	this._authParams = null;
@@ -285,7 +286,13 @@ Connection.prototype._onClose = function() {
 	}
 	else if( this._deliberateClose === true ) {
 		this._setState( C.CONNECTION_STATE.CLOSED );
-	} else {
+	}  
+	else {
+		if( this._originalUrl !== this._url ) {
+			this._url = this._originalUrl;
+			this._createEndpoint();
+		}
+
 		this._tryReconnect();
 	}
 };
@@ -336,6 +343,8 @@ Connection.prototype._onMessage = function( message ) {
  */
 Connection.prototype._handleConnectionResponse = function( message ) {
 	var data;
+
+	console.log( message )
 
 	if( message.action === C.ACTIONS.ACK ) {	
 		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
