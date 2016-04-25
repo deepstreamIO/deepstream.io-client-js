@@ -78,20 +78,20 @@ describe( 'record', function() {
         var a = {
             hello:1
         };
-        clientB.record.getRecord('record2').set('myObject',a);
+        clientB.record.getRecord('record1').set('myObject',a);
         a.hello = 2;
-        expect(clientB.record.getRecord('record2').get('myObject').not.toEqual(a));
+        expect(clientB.record.getRecord('record1').get('myObject').not.toEqual(a));
         done();
     });
     it('does update after object properties are changed and set',function(done) {
         var b = {
             hello1:1
         };
-        clientB.record.getRecord('record2').set('myObject',b);
+        clientB.record.getRecord('record1').set('myObject',b);
         b.hello1 = 2;
-        clientB.record.getRecord('record2').set('myObject',b);
-        expect(clientB.record.getRecord('record2').get('myObject')).toEqual(b);
-        expect(clientA.record.getRecord('record2').get('myObject')).toEqual(b);
+        clientB.record.getRecord('record1').set('myObject',b);
+        expect(clientB.record.getRecord('record1').get('myObject')).toEqual(b);
+        expect(clientA.record.getRecord('record1').get('myObject')).toEqual(b);
         done();
     });
      it( 'subscribes and unsubscribes', function( done ) {
