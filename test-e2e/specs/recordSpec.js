@@ -74,7 +74,26 @@ describe( 'record', function() {
             done();
         }, 20 );
     });
-
+    it('does not keep objects by reference',function(done) {
+        var a = {
+            hello:1
+        };
+        clientB.record.getRecord('record2').set('myObject',a);
+        a.hello = 2;
+        expect(clientB.record.getRecord('record2').get('myObject').not.toEqual(a));
+        done();
+    });
+    it('does update after object properties are changed and set',function(done) {
+        var b = {
+            hello1:1
+        };
+        clientB.record.getRecord('record2').set('myObject',b);
+        b.hello1 = 2;
+        clientB.record.getRecord('record2').set('myObject',b);
+        expect(clientB.record.getRecord('record2').get('myObject')).toEqual(b);
+        expect(clientA.record.getRecord('record2').get('myObject')).toEqual(b);
+        done();
+    });
      it( 'subscribes and unsubscribes', function( done ) {
         var pet,
             recordA2 = clientA.record.getRecord( 'record2' ),
