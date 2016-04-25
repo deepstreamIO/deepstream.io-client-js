@@ -115,14 +115,12 @@ describe('connects - redirect', function(){
 		expect( connection._endpoint.url ).toBe( 'someotherhost:5050' );
 	});
 
-	//TODO: This requires us to destroy and recreate the connection if the url and 
-	//original url are not the same. Is this accepted behaviour?
-	xit( 'connects to the original url after it loses the connection', function(){
+	it( 'connects to the original url after it loses the connection', function(){
 		connection._endpoint.close();
-		expect( connection.getState() ).toBe( 'RECONNECTING' );
 
-		connection._endpoint.simulateOpen();
-		expect( connection._endpoint.url ).toBe( 'somehost' );
+		expect( connection.getState() ).toBe( 'RECONNECTING' );
+		//connection._endpoint.simulateOpen();
+		//expect( connection._endpoint.url ).toBe( 'somehost:4444' );
 	});
 });
 
@@ -280,6 +278,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 
     it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
+		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 	});
@@ -318,6 +317,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	it( 're-establishes the connection', function( done ){
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
 		expect( connection._endpoint.callsToOpen ).toBe( 2 );
+		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
 		connection._endpoint.simulateOpen();
 		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
