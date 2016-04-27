@@ -74,29 +74,31 @@ describe( 'record', function() {
             done();
         }, 20 );
     });
-    it('does not keep objects by reference',function(done) {
+    
+    it( 'does not keep objects by reference', function() {
         var a = {
-            hello:1
+            number: 1
         };
-        clientB.record.getRecord('record1').set('myObject',a);
-        a.hello = 2;
-        expect(clientB.record.getRecord('record1').get('myObject')).not.toEqual(a);
-        done();
-    });
-    it('does update after object properties are changed and set',function(done) {
+        clientB.record.getRecord( 'record1' ).set( 'myObject', a );
+        a.number = 2;
+        expect( clientB.record.getRecord( 'record1' ).get( 'myObject' ) ).not.toEqual( a );
+    } );
+    
+    it( 'does update after object properties are changed and set' ,function( done ) {
         var b = {
-            hello1:1
+            digit: 1
         };
-        clientB.record.getRecord('record1').set('myObject',b);
-        b.hello1 = 2;
-        clientB.record.getRecord('record1').set('myObject',b);
-        expect(clientB.record.getRecord('record1').get('myObject')).toEqual(b);
-        setTimeout(function() {
-            expect(clientA.record.getRecord('record1').get('myObject')).toEqual(b);
+        clientB.record.getRecord( 'record1' ).set( 'myObject', b );
+        b.digit = 2;
+        clientB.record.getRecord( 'record1' ).set( 'myObject', b );
+        expect( clientB.record.getRecord( 'record1' ).get( 'myObject' ) ).toEqual( b );
+        setTimeout( function() {
+            expect( clientA.record.getRecord( 'record1' ).get( 'myObject' ) ).toEqual( b );
             done();
-        },20);
+        }, 20 );
     });
-     it( 'subscribes and unsubscribes', function( done ) {
+    
+    it( 'subscribes and unsubscribes', function( done ) {
         var pet,
             recordA2 = clientA.record.getRecord( 'record2' ),
             recordB2 = clientB.record.getRecord( 'record2' ),

@@ -341,7 +341,7 @@ describe( 'splits messages into smaller packets', function(){
 	});
 
 	it( 'buffers messages greater than maxMessagesPerPacket', function(){
-		sendMessages( connection, 4, 8 );
+		sendMessages( connection, 3, 8 );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'E|EVT|w|4+' ) );
 	});
 
