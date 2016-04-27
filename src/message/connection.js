@@ -25,6 +25,7 @@ var Connection = function( client, url, options ) {
 	this._deliberateClose = false;
 	this._redirecting = false;
 	this._tooManyAuthAttempts = false;
+	this._challengeDenied = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
 	this._reconnectionAttempt = 0;
@@ -60,7 +61,7 @@ Connection.prototype.getState = function() {
  * @returns {void}
  */
 Connection.prototype.authenticate = function( authParams, callback ) {
-	if( this._tooManyAuthAttempts ) {
+	if( this._tooManyAuthAttempts || this._challengeDenied ) {
 		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
 		return;
 	}
@@ -333,6 +334,11 @@ Connection.prototype._onMessage = function( message ) {
  * authentication immediately. The actual 'open' event won't be emitted
  * by the client until the authentication is successful.
  *
+ * If a challenge is recieved, the user will send the url to the server
+ * in response to get the appropriate redirect. If the URL is invalid the 
+ * server will respond with a REJECTION resulting in the client connection
+ * being permanently closed.
+ *
  * If a redirect is recieved, this connection is closed and updated with
  * a connection to the url supplied in the message.
  *
@@ -344,14 +350,21 @@ Connection.prototype._onMessage = function( message ) {
 Connection.prototype._handleConnectionResponse = function( message ) {
 	var data;
 
-	console.log( message )
-
 	if( message.action === C.ACTIONS.ACK ) {	
 		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		if( this._authParams ) {
 			this._sendAuthParams();
 		}
-	} else if( message.action === C.ACTIONS.REDIRECT ) {
+	} 
+	else if( message.action === C.ACTIONS.CHALLENGE ) {
+		this._setState( C.CONNECTION_STATE.CHALLENGING );
+		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );		
+	}
+	else if( message.action === C.ACTIONS.REJECTION ) {
+		this._challengeDenied = true;
+		this.close();
+	}
+	else if( message.action === C.ACTIONS.REDIRECT ) {
 		this._url = message.data[ 0 ];
 		this._redirecting = true;
 		this._endpoint.close();

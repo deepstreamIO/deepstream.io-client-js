@@ -96,22 +96,31 @@ describe('connects - redirect', function(){
 		expect( clientConnectionStateChangeCount ).toBe( 1 );
 	});
 
-	it( 'recieves a connection redirect', function(){
-		connection._endpoint.emit( 'message', msg( 'C|R|someotherhost:5050+' ) );
+	it( 'recieves a connection challenge and responds with url', function() {
+		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
+		expect( connection.getState() ).toBe( 'CHALLENGING' );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( clientConnectionStateChangeCount ).toBe( 2 );
+	});
+
+	it( 'gets a redirect when it responds with a valid url', function(){
+		connection._endpoint.emit( 'message', msg( 'C|RED|someotherhost:5050+' ) );
+		connection._endpoint.simulateOpen();
+
 		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
-		expect( clientConnectionStateChangeCount ).toBe( 1 );
+		expect( clientConnectionStateChangeCount ).toBe( 3 );
 	});
 
 	it( 'creates connection to new url', function(){
 		connection._endpoint.simulateOpen();
 		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
-		expect( clientConnectionStateChangeCount ).toBe( 2 );
+		expect( clientConnectionStateChangeCount ).toBe( 4 );
 	});
 
 	it( 'recieves a connection ack from new url', function(){
 		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
-		expect( clientConnectionStateChangeCount ).toBe( 3 );
+		expect( clientConnectionStateChangeCount ).toBe( 5 );
 		expect( connection._endpoint.url ).toBe( 'someotherhost:5050' );
 	});
 
@@ -119,8 +128,48 @@ describe('connects - redirect', function(){
 		connection._endpoint.close();
 
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
-		//connection._endpoint.simulateOpen();
-		//expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		connection._endpoint.simulateOpen();
+		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+	});
+});
+
+describe('connects - redirect rejection', function(){
+
+	var connection,
+		authCallback = jasmine.createSpy( 'authCallback' ),
+		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
+
+	it( 'creates the connection', function(){
+		clientConnectionStateChangeCount = 0;
+
+		connection = new Connection( clientMock, url, options );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+		expect( clientConnectionStateChangeCount ).toBe( 1 );
+	});
+
+	it( 'recieves a connection challenge and responds with invalid url', function() {
+		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
+		expect( connection.getState() ).toBe( 'CHALLENGING' );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( clientConnectionStateChangeCount ).toBe( 2 );
+	});
+
+	it( 'gets a reject and closes connection', function() {
+		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
+		expect( connection.getState() ).toBe( 'CHALLENGING' );
+		expect( clientConnectionStateChangeCount ).toBe( 3 );
+
+		connection._endpoint.emit( 'message', msg( 'C|REJ+' ) );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+		expect( clientConnectionStateChangeCount ).toBe( 4 );
+	});
+
+	it( 'can longer attempt to authenticate user', function(){
+		connection.authenticate( {} );
+		expect( clientMock.lastError ).toEqual( [ 'X', 'IS_CLOSED', 'this client\'s connection was closed' ] );
 	});
 });
 
