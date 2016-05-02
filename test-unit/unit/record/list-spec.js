@@ -79,7 +79,7 @@ describe( 'lists contain arrays of record names', function(){
 		recordHandler._$handle({
 			topic: 'R',
 			action: 'R',
-			data: [ 'someList', 5, '["x","y"]' ]
+			data: [ 'someList', 7, '["x","y"]' ]
 		});
 		expect( list.getEntries() ).toEqual([ 'x','y' ]);
 		expect( changeCallback ).toHaveBeenCalledWith([ 'x','y' ]);

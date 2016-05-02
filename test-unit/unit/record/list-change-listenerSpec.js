@@ -59,7 +59,7 @@ describe( 'lists change listener', function(){
 		recordHandler._$handle({
 			topic: 'R',
 			action: 'U',
-			data: [ 'someList', 1, '["a","b","c","d","e","x"]' ]
+			data: [ 'someList', 7, '["a","b","c","d","e","x"]' ]
 		});
 		expect( callback ).toHaveBeenCalledWith( 'x', 5 );
 		expect( callback.calls.count() ).toBe( 1 );
