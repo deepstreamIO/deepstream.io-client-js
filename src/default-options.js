@@ -185,5 +185,5 @@ module.exports = {
 	                                    This can be overriden on a per record basis by setting the `setMergeStrategy`
 	                                    flag.
   */
-	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS
+	mergeStrategy: MERGE_STRATEGIES.MERGE_IF_NO_CONFLICT
 };
