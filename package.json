@@ -38,7 +38,7 @@
     "grunt-release": "0.13.0",
     "jasmine": "^2.4.1",
     "jasmine-spec-reporter": "^2.4.0",
-    "proxyquire": "1.7.4",
+    "proxyquire": "1.7.6",
     "watch": "^0.17.1"
   },
   "author": "deepstreamHub GmbH i. Gr.",
