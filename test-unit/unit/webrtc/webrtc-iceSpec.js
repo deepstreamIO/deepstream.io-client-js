@@ -31,7 +31,7 @@ describe( 'webrtc interactive connection establishing works for outgoing calls',
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|IC|1|calleeA|{"icecandidate":"A"}+' ) );
 		webrtcCall._$webRtcConnection._peerConnection.simulateOutgoingIceCandidate( 'B' );
 		expect( mockConnection.lastSendMessage ).toBe( msg( 'W|IC|1|calleeA|{"icecandidate":"B"}+' ) );
-		setTimeout( done, 10 );
+		setTimeout( done, 30 );
 	});
 
 	it( 'has sent the offer', function(){
@@ -134,7 +134,7 @@ describe( 'webrtc interactive connection establishing works for incoming calls',
 		expect( addIceCandidateCalls.argsFor( 0 )[ 0 ].candidate.icecandidate ).toBe( 'G' );
 		expect( addIceCandidateCalls.argsFor( 1 )[ 0 ].candidate.icecandidate ).toBe( 'H' );
 		expect( incomingCall._bufferedIceCandidates.length ).toBe( 0 );
-		setTimeout( done, 10 );
+		setTimeout( done, 30 );
 	});
 
 	it( 'has sent the answer message', function(){
