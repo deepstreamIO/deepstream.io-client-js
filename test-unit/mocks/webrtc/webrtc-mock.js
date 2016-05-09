@@ -15,7 +15,7 @@ PeerConnectionMock.prototype.createOffer = function( successCb, errorCb ) {
 			sdp: 'offer sdp',
 			type: 'offer type'
 		});
-	}.bind( this ), 1 );
+	}.bind( this ), 20 );
 };
 
 PeerConnectionMock.prototype.createAnswer = function( successCb, errorCb, description ) {
@@ -26,7 +26,7 @@ PeerConnectionMock.prototype.createAnswer = function( successCb, errorCb, descri
 				type: 'answer type'
 			});
 		}});
-	}.bind( this ), 1 );
+	}.bind( this ), 20 );
 };
 
 
