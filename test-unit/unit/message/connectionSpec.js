@@ -24,18 +24,23 @@ describe('connects - happy path', function(){
 	var connection,
 		authCallback = jasmine.createSpy( 'authCallback' );
 
-	clientConnectionStateChangeCount = 0;
-
 	it( 'creates the connection', function(){
+		clientConnectionStateChangeCount = 0;
+
 		connection = new Connection( clientMock, url, options );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 	});
 
-	it( 'switches to awaiting authentication when the connection opens', function(){
+	it( 'awaits connection ack when opened', function(){
 		expect( clientConnectionStateChangeCount ).toBe( 0 );
 		connection._endpoint.simulateOpen();
-		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 		expect( clientConnectionStateChangeCount ).toBe( 1 );
+	});
+
+	it( 'when it recieves connection ack switches to awaiting authentication', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
+		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		expect( clientConnectionStateChangeCount ).toBe( 2 );
 	});
 
 	it( 'sends auth parameters', function(){
@@ -43,7 +48,7 @@ describe('connects - happy path', function(){
 		connection.authenticate({ user: 'Wolfram' }, authCallback );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
-		expect( clientConnectionStateChangeCount ).toBe( 2 );
+		expect( clientConnectionStateChangeCount ).toBe( 3 );
 		expect( authCallback ).not.toHaveBeenCalled();
 	});
 
@@ -51,7 +56,7 @@ describe('connects - happy path', function(){
 		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
 		expect( authCallback ).toHaveBeenCalledWith( true, undefined, undefined );
-		expect( clientConnectionStateChangeCount ).toBe( 3 );
+		expect( clientConnectionStateChangeCount ).toBe( 4 );
 	});
 
 	it( 'sends individual messages', function( done ){
@@ -67,7 +72,104 @@ describe('connects - happy path', function(){
 		connection.close();
 		expect( connection._endpoint.isOpen ).toBe( false );
 		expect( connection.getState() ).toBe( 'CLOSED' );
+		expect( clientConnectionStateChangeCount ).toBe( 5 );
+	});
+});
+
+/*****************************************
+* REDIRECT
+*****************************************/
+describe('connects - redirect', function(){
+
+	var connection,
+		authCallback = jasmine.createSpy( 'authCallback' ),
+		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
+
+	it( 'creates the connection', function(){
+		clientConnectionStateChangeCount = 0;
+
+		connection = new Connection( clientMock, url, options );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+		expect( clientConnectionStateChangeCount ).toBe( 1 );
+	});
+
+	it( 'recieves a connection challenge and responds with url', function() {
+		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
+		expect( connection.getState() ).toBe( 'CHALLENGING' );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( clientConnectionStateChangeCount ).toBe( 2 );
+	});
+
+	it( 'gets a redirect when it responds with a valid url', function(){
+		connection._endpoint.emit( 'message', msg( 'C|RED|someotherhost:5050+' ) );
+		connection._endpoint.simulateOpen();
+
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+		expect( clientConnectionStateChangeCount ).toBe( 3 );
+	});
+
+	it( 'creates connection to new url', function(){
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
 		expect( clientConnectionStateChangeCount ).toBe( 4 );
+	});
+
+	it( 'recieves a connection ack from new url', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
+		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		expect( clientConnectionStateChangeCount ).toBe( 5 );
+		expect( connection._endpoint.url ).toBe( 'someotherhost:5050' );
+	});
+
+	it( 'connects to the original url after it loses the connection', function(){
+		connection._endpoint.close();
+
+		expect( connection.getState() ).toBe( 'RECONNECTING' );
+		connection._endpoint.simulateOpen();
+		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+	});
+});
+
+describe('connects - redirect rejection', function(){
+
+	var connection,
+		authCallback = jasmine.createSpy( 'authCallback' ),
+		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
+
+	it( 'creates the connection', function(){
+		clientConnectionStateChangeCount = 0;
+
+		connection = new Connection( clientMock, url, options );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+		expect( clientConnectionStateChangeCount ).toBe( 1 );
+	});
+
+	it( 'recieves a connection challenge and responds with invalid url', function() {
+		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
+		expect( connection.getState() ).toBe( 'CHALLENGING' );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( clientConnectionStateChangeCount ).toBe( 2 );
+	});
+
+	it( 'gets a reject and closes connection', function() {
+		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
+		expect( connection.getState() ).toBe( 'CHALLENGING' );
+		expect( clientConnectionStateChangeCount ).toBe( 3 );
+
+		connection._endpoint.emit( 'message', msg( 'C|REJ+' ) );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+		expect( clientConnectionStateChangeCount ).toBe( 4 );
+	});
+
+	it( 'can longer attempt to authenticate user', function(){
+		connection.authenticate( {} );
+		expect( clientMock.lastError ).toEqual( [ 'X', 'IS_CLOSED', 'this client\'s connection was closed' ] );
 	});
 });
 
@@ -92,10 +194,20 @@ describe( 'buffers messages whilst connection is closed', function(){
 		}, 10);
 	});
 
-	it( 'tries to send messages whilst awaiting authentication', function( done ) {
+	it( 'tries to send messages whilst awaiting connection ack', function( done ) {
 	    connection._endpoint.simulateOpen();
-		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
 		connection.sendMsg( 'R', 'S', ['rec2'] );
+		setTimeout(function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( null );
+			done();
+		}, 10);
+	});
+
+	it( 'tries to send messages whilst awaiting authentication', function( done ) {
+	    connection._endpoint.emit( 'message', msg( 'C|A+' ) );
+		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		connection.sendMsg( 'R', 'S', ['rec3'] );
 		setTimeout(function() {
 			expect( connection._endpoint.lastSendMessage ).toBe( null );
 			done();
@@ -106,7 +218,7 @@ describe( 'buffers messages whilst connection is closed', function(){
 	    connection.authenticate({ user: 'Wolfram' }, function(){} );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 		expect( connection.getState() ).toBe( 'AUTHENTICATING' );
-		connection.sendMsg( 'R', 'S', ['rec3'] );
+		connection.sendMsg( 'R', 'S', ['rec4'] );
 		setTimeout(function() {
 			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
 			done();
@@ -118,7 +230,7 @@ describe( 'buffers messages whilst connection is closed', function(){
 		expect( connection.getState() ).toBe( 'OPEN' );
 
 		setTimeout(function() {
-			var expected = msg( 'R|S|rec1', 'R|S|rec2', 'R|S|rec3+' );
+			var expected = msg( 'R|S|rec1', 'R|S|rec2', 'R|S|rec3', 'R|S|rec4+' );
 			expect( connection._endpoint.lastSendMessage ).toBe( expected );
 			done();
 		}, 10);
@@ -140,10 +252,11 @@ describe( 'connection handles auth rejections', function(){
 
 	it( 'opens the connection', function(){
 		connection._endpoint.simulateOpen();
-		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
 	});
 
-	it( 'sends auth parameters', function(){
+	it( 'sends auth parameters on connection ack', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 		connection.authenticate({ user: 'Wolfram' }, authCallback );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
@@ -185,10 +298,11 @@ describe( 'connection handles data associated with login', function(){
 
 	it( 'opens the connection', function(){
 		connection._endpoint.simulateOpen();
-		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
 	});
 
 	it( 'sends auth parameters', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 		connection.authenticate({ user: 'Wolfram' }, authCallback );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"Wolfram"}+' ) );
@@ -213,12 +327,18 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 
     it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
+		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 	});
 
 	it( 'opens the connection', function(){
 		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+	});
+
+	it( 'recieves connection ack', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
 
@@ -246,7 +366,9 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	it( 're-establishes the connection', function( done ){
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
 		expect( connection._endpoint.callsToOpen ).toBe( 2 );
+		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
 		connection._endpoint.simulateOpen();
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 			setTimeout(function(){
 			expect( connection._endpoint.callsToOpen ).toBe( 2 );
@@ -277,6 +399,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	it( 'reconnects', function( done ){
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
 		connection._endpoint.simulateOpen();
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		setTimeout( done, 10 );
 	});
 
@@ -314,6 +437,11 @@ describe( 'splits messages into smaller packets', function(){
 
 	it( 'opens the connection', function(){
 		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+	});
+
+	it( 'recieves connection ack', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
 
@@ -341,7 +469,7 @@ describe( 'splits messages into smaller packets', function(){
 	});
 
 	it( 'buffers messages greater than maxMessagesPerPacket', function(){
-		sendMessages( connection, 3, 8 );
+		sendMessages( connection, 4, 8 );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'E|EVT|w|4+' ) );
 	});
 

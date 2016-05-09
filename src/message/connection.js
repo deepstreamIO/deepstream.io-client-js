@@ -17,12 +17,15 @@ var engineIoClient = require( 'engine.io-client' ),
  */
 var Connection = function( client, url, options ) {
 	this._client = client;
+	this._originalUrl = url;
 	this._url = url;
 	this._options = options;
 	this._authParams = null;
 	this._authCallback = null;
 	this._deliberateClose = false;
+	this._redirecting = false;
 	this._tooManyAuthAttempts = false;
+	this._challengeDenied = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
 	this._reconnectionAttempt = 0;
@@ -58,7 +61,7 @@ Connection.prototype.getState = function() {
  * @returns {void}
  */
 Connection.prototype.authenticate = function( authParams, callback ) {
-	if( this._tooManyAuthAttempts ) {
+	if( this._tooManyAuthAttempts || this._challengeDenied ) {
 		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
 		return;
 	}
@@ -231,22 +234,15 @@ Connection.prototype._sendAuthParams = function() {
 
 /**
  * Will be invoked once the connection is established. The client
- * can't send messages yet, but needs to authenticate first.
- *
- * If authentication parameters are already provided this will kick of
- * authentication immediatly. The actual 'open' event won't be emitted
- * by the client until the authentication is succesfull
+ * can't send messages yet, and needs to get a connection ACK or REDIRECT 
+ * from the server before authenticating
  *
  * @private
  * @returns {void}
  */
 Connection.prototype._onOpen = function() {
 	this._clearReconnect();
-	this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
-	
-	if( this._authParams ) {
-		this._sendAuthParams();
-	}
+	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
 
 /**
@@ -285,9 +281,19 @@ Connection.prototype._onError = function( error ) {
  * @returns {void}
  */
 Connection.prototype._onClose = function() {
-	if( this._deliberateClose === true ) {
+	if( this._redirecting === true ) {
+		this._redirecting = false;
+		this._createEndpoint();
+	}
+	else if( this._deliberateClose === true ) {
 		this._setState( C.CONNECTION_STATE.CLOSED );
-	} else {
+	}  
+	else {
+		if( this._originalUrl !== this._url ) {
+			this._url = this._originalUrl;
+			this._createEndpoint();
+		}
+
 		this._tryReconnect();
 	}
 };
@@ -308,6 +314,9 @@ Connection.prototype._onMessage = function( message ) {
 		if( parsedMessages[ i ] === null ) {
 			continue;
 		}
+		else if( parsedMessages[ i ].topic === C.TOPIC.CONNECTION ) {
+			this._handleConnectionResponse( parsedMessages[ i ] );
+		}
 		else if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
 			this._handleAuthResponse( parsedMessages[ i ] );
 		} else {
@@ -317,8 +326,54 @@ Connection.prototype._onMessage = function( message ) {
 };
 
 /**
+ * The connection response will indicate whether the deepstream connection
+ * can be used or if it should be forwarded to another instance. This
+ * allows us to introduce load-balancing if needed.
+ *
+ * If authentication parameters are already provided this will kick of
+ * authentication immediately. The actual 'open' event won't be emitted
+ * by the client until the authentication is successful.
+ *
+ * If a challenge is recieved, the user will send the url to the server
+ * in response to get the appropriate redirect. If the URL is invalid the 
+ * server will respond with a REJECTION resulting in the client connection
+ * being permanently closed.
+ *
+ * If a redirect is recieved, this connection is closed and updated with
+ * a connection to the url supplied in the message.
+ *
+ * @param   {Object} message parsed connection message
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._handleConnectionResponse = function( message ) {
+	var data;
+
+	if( message.action === C.ACTIONS.ACK ) {	
+		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
+		if( this._authParams ) {
+			this._sendAuthParams();
+		}
+	} 
+	else if( message.action === C.ACTIONS.CHALLENGE ) {
+		this._setState( C.CONNECTION_STATE.CHALLENGING );
+		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );		
+	}
+	else if( message.action === C.ACTIONS.REJECTION ) {
+		this._challengeDenied = true;
+		this.close();
+	}
+	else if( message.action === C.ACTIONS.REDIRECT ) {
+		this._url = message.data[ 0 ];
+		this._redirecting = true;
+		this._endpoint.close();
+	}
+};
+
+/**
  * Callback for messages received for the AUTH topic. If
- * the authentication was succesfull this method will
+ * the authentication was successful this method will
  * open the connection and send all messages that the client
  * tried to send so far.
  *
