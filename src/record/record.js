@@ -64,7 +64,7 @@ EventEmitter( Record.prototype );
  * @returns {void}
  */
 Record.prototype.setMergeStrategy = function( mergeStrategy ) {
-	if( mergeStrategy instanceof Function ) {
+	if( typeof mergeStrategy === 'function' ) {
 		this._mergeStrategy = mergeStrategy;
 	} else {
 		throw new Error( 'Invalid merge strategy: Must be a Function' );
