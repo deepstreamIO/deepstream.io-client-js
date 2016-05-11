@@ -27,8 +27,8 @@
     "net": false
   },
   "devDependencies": {
-    "browserify": "13.0.0",
     "deepstream.io": "beta",
+    "browserify": "13.0.1",
     "deepstream.io-msg-redis": "latest",
     "derequire": "2.0.3",
     "grunt": "~0.4.5",
