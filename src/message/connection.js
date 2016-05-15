@@ -61,6 +61,9 @@ Connection.prototype.getState = function() {
  * @returns {void}
  */
 Connection.prototype.authenticate = function( authParams, callback ) {
+	this._authParams = authParams;
+	this._authCallback = callback;
+
 	if( this._tooManyAuthAttempts || this._challengeDenied ) {
 		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
 		return;
@@ -68,13 +71,9 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	else if( this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED ) {
 		this._createEndpoint();
 		this._deliberateClose = false;
-		this._client.once( C.EVENT.CONNECTION_STATE_CHANGED, this.authenticate.bind( authParams, callback ) );
 		return;
 	}
 	
-	this._authParams = authParams;
-	this._authCallback = callback;
-
 	if( this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
 		this._sendAuthParams();
 	}
