@@ -91,19 +91,19 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	if( this._checkDestroyed( 'set' ) ) {
-		return;
+		return this;
 	}
 
 	if( !this.isReady ) {
 		this._queuedMethodCalls.push({ method: 'set', args: arguments });
-		return;
+		return this;
 	}
 
 	if( arguments.length === 2 && utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
-		return;
+		return this;
 	}
 	else if( arguments.length === 1 && utils.deepEquals( this._$data, pathOrData ) ) {
-		return;
+		return this;
 	}
 
 	this._beginChange();
@@ -127,6 +127,7 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	this._completeChange();
+	return this;
 };
 
 /**
@@ -202,9 +203,11 @@ Record.prototype.discard = function() {
 	this.usages--;
 
 	if( this.usages <= 0 ) {
-		this.emit( 'destroyPending' );
-		this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		this.whenReady( function() {
+			this.emit( 'destroyPending' );
+			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		}.bind( this ) );
 	}
 };
 
@@ -218,9 +221,11 @@ Record.prototype.delete = function() {
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
-	this.emit( 'destroyPending' );
-	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
-	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
+	this.whenReady( function() {
+		this.emit( 'destroyPending' );
+		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
+	}.bind( this ) );
 };
 
 /**

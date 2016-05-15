@@ -92,9 +92,8 @@ describe( 'anonymous record allows switching of underlying records', function(){
 			data: [ 'D', 'recordB', 1 ]
 		});
 
-	    anonymousRecord.setName( 'recordC' );
-	    expect( readyCallback.calls.count() ).toBe( 2 );
-	    expect( errorCallback ).not.toHaveBeenCalled();
+		expect( readyCallback.calls.count() ).toBe( 2 );
+		expect( errorCallback ).not.toHaveBeenCalled();
 	});
 
 	it( 'emits an nameChanged event when setName is called', function() {
