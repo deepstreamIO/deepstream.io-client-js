@@ -4,9 +4,9 @@ var DeepstreamServer = require( 'deepstream.io' ),
     util = require( 'util' ),
     config = require( '../config' ),
     EventEmitter = require( 'events' ).EventEmitter;
-    
+
 //TODO cluster failing somehow exists the tests. If you toggle enableLogging we'll notice
-//the plugin occasional catches and logs the error which results in the tests just exiting   
+//the plugin occasional catches and logs the error which results in the tests just exiting
 var Cluster = function( ports, enableLogging ) {
     this._ports = ports;
     this._enableLogging = enableLogging;
@@ -26,18 +26,19 @@ Cluster.prototype._startServer = function( port ) {
     this.servers[ port ] = new DeepstreamServer();
     this.servers[ port ].on( 'started', this._checkReady.bind( this, port ) );
     this.servers[ port ].set( 'tcpPort', port );
-    
+    this.servers[ port ].set( 'permissionConfigPath', './test-e2e/permissions.json' );
+
     this.servers[ port ].set( 'port', port - 100 );
     // this.servers[ port ].set( 'messageConnector', new MessageConnector({
-    //     localport: port - 200, 
-    //     localhost: 'localhost', 
+    //     localport: port - 200,
+    //     localhost: 'localhost',
     //     remoteUrls: this._getRemoteUrls( port ),
     //     reconnectInterval: 100,
     //     maxReconnectAttepts: 10,
     //     securityToken: 'bla'
     // }));
     this.servers[ port ].set( 'messageConnector', new RedisConnector({
-        port: config.redisPort, 
+        port: config.redisPort,
         host: config.redisHost
     }));
     if( this._enableLogging !== true ) {
@@ -52,7 +53,7 @@ Cluster.prototype._startServer = function( port ) {
 Cluster.prototype._getRemoteUrls = function( port ) {
     var i,
         remoteUrls = [];
-        
+
     for( i = 0; i < this._ports.length; i++ ) {
         if( this._ports[ i ] !== port ) {
             remoteUrls.push( 'localhost:' + ( this._ports[ i ] - 200 ) );
@@ -67,7 +68,7 @@ Cluster.prototype._checkReady = function() {
             return;
         }
     }
-    
+
     this.emit( 'ready' );
 };
 
@@ -80,5 +81,5 @@ Cluster.prototype._checkStopped = function() {
 
     this.emit( 'stopped' );
 };
-        
+
 module.exports = Cluster;

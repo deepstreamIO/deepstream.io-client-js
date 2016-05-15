@@ -2,7 +2,7 @@
 var DeepstreamServer = require( 'deepstream.io' ),
     deepstreamClient = require( '../../src/client' ),
     TestLogger = require( '../tools/test-logger' );
-    
+
 describe( 'login', function() {
     var deepstreamServer,
         logger = new TestLogger(),
@@ -16,12 +16,12 @@ describe( 'login', function() {
                     callback( 'Invalid user' );
                 }
             },
-        
+
             canPerformAction: function( username, message, callback ) {
                 callback( null, true );
             }
         };
-    
+
     /**************** SETUP ****************/
     it( 'starts the server', function( done ){
         deepstreamServer = new DeepstreamServer();
@@ -29,10 +29,11 @@ describe( 'login', function() {
         deepstreamServer.set( 'logger', logger );
         deepstreamServer.set( 'showLogo', false );
         deepstreamServer.set( 'maxAuthAttempts', 2 );
+        deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
         deepstreamServer.set( 'permissionHandler', permissionHandler );
         deepstreamServer.start();
     });
-    
+
     /**************** TESTS ****************/
     it( 'tries to log in with an invalid user', function( done ) {
         clientA = deepstreamClient( 'localhost:6021' );
@@ -43,10 +44,10 @@ describe( 'login', function() {
             done();
         });
     });
-    
+
     it( 'tries to log in a second time and exceeds maxAuthAttempts', function(done) {
         var firstcall = true;
- 
+
         clientA.login({ username: 'Egon'}, function( success, event, data ){
             if( firstcall ) {
                 expect( success ).toBe( false );
@@ -61,19 +62,19 @@ describe( 'login', function() {
             }
         });
     });
-    
+
     it( 'tries to log in again after the client has been kicked', function(done) {
         clientA.on( 'error', function( data, event, topic ){
             expect( topic ).toBe( 'X' );
             expect( event ).toBe( 'IS_CLOSED' );
             done();
         });
-        
+
         clientA.login({ username: 'Egon'}, function( success, event, data ){
             expect( this ).toBe( 'never called' );
         });
     });
-    
+
     it( 'recreates the client and logs in successfully', function( done ){
         clientA = deepstreamClient( 'localhost:6021' );
         clientA.on( 'error', function(){
@@ -85,13 +86,13 @@ describe( 'login', function() {
             done();
         });
     });
-    
+
      /**************** TEAR DOWN ****************/
     it( 'closes the clients', function() {
         clientA.close();
         //clientB.close();
     });
-    
+
     it( 'shuts clients and server down', function( done ) {
       deepstreamServer.on( 'stopped', done );
       deepstreamServer.stop();
