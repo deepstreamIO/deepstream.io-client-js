@@ -1,3 +1,5 @@
+var MERGE_STRATEGIES = require( './constants/merge-strategies' );
+
 module.exports = {
 	/************************************************
 	* Deepstream									*
@@ -175,5 +177,13 @@ module.exports = {
 	 *                                   	SSL/TLS connections, or if you know that 
 	 *                                   	your network does not block websockets.
 	 */
-	rememberUpgrade: false
+	rememberUpgrade: false,
+
+	/**
+   *  @param {Function} mergeStrategy	This provides the default strategy used to deal with MergeStrategies
+	                                    if the merge strategy does not work succesfully it will emit an error.
+	                                    This can be overriden on a per record basis by setting the `setMergeStrategy`
+	                                    flag.
+  */
+	mergeStrategy: MERGE_STRATEGIES.MERGE_IF_NO_CONFLICT
 };

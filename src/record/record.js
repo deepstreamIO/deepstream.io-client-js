@@ -31,12 +31,17 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.isReady = false;
 	this.isDestroyed = false;
 	this._$data = {};
-	this._version = null;
+	this.version = null;
 	this._paths = {};
 	this._oldValue = null;
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
+
+	this._mergeStrategy = null;
+	if( options.mergeStrategy ) {
+		this.setMergeStrategy( options.mergeStrategy );
+	}
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
@@ -45,6 +50,23 @@ var Record = function( name, recordOptions, connection, options, client ) {
 };
 
 EventEmitter( Record.prototype );
+
+/**
+ *
+ * @param   {Function} mergeStrategy A function that can resolve a
+ *                                   merge issues
+ *
+ * @public
+ * @returns {Mixed} value
+ */
+Record.prototype.setMergeStrategy = function( mergeStrategy ) {
+	if( mergeStrategy instanceof Function ) {
+		this._mergeStrategy = mergeStrategy;
+	} else {
+		this.emit( 'error', 'MergeStrategy requires to be a Function' );
+	}
+};
+
 
 /**
  * Returns a copy of either the entire dataset of the record
@@ -107,20 +129,20 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	this._beginChange();
-	this._version++;
+	this.version++;
 
 	if( arguments.length === 1 ) {
 		this._$data = ( typeof pathOrData == 'object' ) ? utils.deepCopy( pathOrData ) : pathOrData;
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 			this.name,
-			this._version,
+			this.version,
 			this._$data
 		]);
 	} else {
 		this._getPath( pathOrData ).setValue( ( typeof data == 'object' ) ? utils.deepCopy( data ): data );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
 			this.name,
-			this._version,
+			this.version,
 			pathOrData,
 			messageBuilder.typed( data )
 		]);
@@ -250,7 +272,7 @@ Record.prototype.whenReady = function( callback ) {
  */
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
-		if( this._version === null ) {
+		if( this.version === null ) {
 			clearTimeout( this._readTimeout );
 			this._onRead( message );
 		} else {
@@ -264,7 +286,7 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message, this._client );
 	}
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
-		this._recoverRecord( message );
+		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
 	}
 };
 
@@ -277,9 +299,27 @@ Record.prototype._$onMessage = function( message ) {
  * @private
  * @returns {void}
  */
-Record.prototype._recoverRecord = function( message ) {
-	message.processedError = true;
-	this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + message.version + ' but version is ' + this._version );
+Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
+	if( this._mergeStrategy ) {
+		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
+	}
+	else {
+		message.processedError = true;
+		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
+	}
+};
+
+/**
+ * @private
+ * @returns {void}
+ */
+Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
+	if( !error ) {
+		this.version = remoteVersion;
+		this.set( data );
+	} else {
+		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
+	}
 };
 
 /**
@@ -319,21 +359,39 @@ Record.prototype._processAckMessage = function( message ) {
  */
 Record.prototype._applyUpdate = function( message ) {
 	var version = parseInt( message.data[ 1 ], 10 );
+	var data;
 
-	if( this._version === null ) {
-		this._version = version;
+	if( message.action === C.ACTIONS.PATCH ) {
+		data = messageParser.convertTyped( message.data[ 3 ], this._client );
+	} else {
+		data = JSON.parse( message.data[ 2 ] );
 	}
-	else if( this._version + 1 !== version ) {
-		this._recoverRecord( message );
+
+	if( this.version === null ) {
+		this.version = version;
+	}
+	else if( this.version + 1 !== version ) {
+		/**
+		* Cleaner way needed
+		*/
+		if( message.action === C.ACTIONS.PATCH ) {
+			var dataTemp = utils.deepCopy( this._$data );
+			this._getPath( message.data[ 2 ] ).setValue( data );
+			data = utils.deepCopy( this._$data );
+			this._$data = dataTemp;
+		}
+
+		this._recoverRecord( version, data, message );
+		return;
 	}
 
 	this._beginChange();
-	this._version = version;
+	this.version = version;
 
 	if( message.action === C.ACTIONS.PATCH ) {
-		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ], this._client ) );
+		this._getPath( message.data[ 2 ] ).setValue( data );
 	} else {
-		this._$data = JSON.parse( message.data[ 2 ] );
+		this._$data = data;
 	}
 
 	this._completeChange();
@@ -349,7 +407,7 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	this._beginChange();
-	this._version = parseInt( message.data[ 1 ], 10 );
+	this.version = parseInt( message.data[ 1 ], 10 );
 	this._$data = JSON.parse( message.data[ 2 ] );
 	this._completeChange();
 	this._setReady();
