@@ -1,0 +1,41 @@
+{
+	"record": {
+		"*": {
+			"create": true,
+			"delete": true,
+			"write": true,
+			"read": true,
+			"listen": true
+		},
+		"public-read-private-write/$userid": {
+			"read": true,
+			"create": "user.id === $userid",
+			"write": "user.id === $userid"
+		},
+		"only-increment": {
+			"write": "!oldData.value || data.value > oldData.value",
+			"create": true,
+			"read": true
+		},
+		"only-delete-egon-miller/$firstname/$lastname": {
+			"delete": "$firstname.toLowerCase() === 'egon' && $lastname.toLowerCase() === 'miller'"
+		},
+		"only-allows-purchase-of-products-in-stock/$purchaseId": {
+			"create": true,
+			"write": "_('item/' + data.itemId ).stock > 0"
+		}
+	},
+	"event": {
+		"*": {
+			"listen": true,
+			"publish": true,
+			"subscribe": true
+		}
+	},
+	"rpc": {
+		"*": {
+			"provide": true,
+			"request": true
+		}
+	}
+}
