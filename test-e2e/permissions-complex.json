@@ -58,6 +58,13 @@
 		"*": {
 			"provide": true,
 			"request": true
+		},
+		"a-provide-b-request": {
+			"provide": "user.id === 'client-a'",
+			"request": "user.id === 'client-b'"
+		},
+		"only-full-user-data": {
+			"request": "typeof data.firstname === 'string' && typeof data.lastname === 'string'"
 		}
 	}
 }

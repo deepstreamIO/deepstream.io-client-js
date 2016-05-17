@@ -8,14 +8,14 @@ var C = require( '../constants/constants' ),
 
 /**
  * The main class for remote procedure calls
- * 
+ *
  * Provides the rpc interface and handles incoming messages
  * on the rpc topic
- * 
+ *
  * @param {Object} options deepstream configuration options
  * @param {Connection} connection
  * @param {Client} client
- * 
+ *
  * @constructor
  * @public
  */
@@ -33,16 +33,16 @@ var RpcHandler = function( options, connection, client ) {
 /**
  * Registers a callback function as a RPC provider. If another connected client calls
  * client.rpc.make() the request will be routed to this method
- * 
+ *
  * The callback will be invoked with two arguments:
  * 		{Mixed} data The data passed to the client.rpc.make function
  *   	{RpcResponse} rpcResponse An object with methods to respons, acknowledge or reject the request
  *
  * Only one callback can be registered for a RPC at a time
- * 
+ *
  * Please note: Deepstream tries to deliver data in its original format. Data passed to client.rpc.make as a String will arrive as a String,
  * numbers or implicitly JSON serialized objects will arrive in their respective format as well
- * 
+ *
  * @public
  * @returns void
  */
@@ -86,7 +86,7 @@ RpcHandler.prototype.unprovide = function( name ) {
 RpcHandler.prototype.make = function( name, data, callback ) {
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
-		
+
 	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
 };
@@ -94,10 +94,10 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 /**
  * Retrieves a RPC instance for a correlationId or throws an error
  * if it can't be found (which should never happen)
- * 
+ *
  * @param {String} correlationId
  * @param {String} rpcName
- * 
+ *
  * @private
  * @returns {Rpc}
  */
@@ -160,24 +160,39 @@ RpcHandler.prototype._$handle = function( message ) {
 	}
 
 	// RPC subscription Acks
-	if( message.action === C.ACTIONS.ACK && 
+	if( message.action === C.ACTIONS.ACK &&
 		( message.data[ 0 ] === C.ACTIONS.SUBSCRIBE  || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) ) {
 		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
-	
+
+
 	/*
 	 * Error messages always have the error as first parameter. So the
 	 * order is different to ack and response messages
 	 */
 	if( message.action === C.ACTIONS.ERROR ) {
-		rpcName = message.data[ 1 ];
-		correlationId = message.data[ 2 ];
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
+			return;
+		}
+		else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
+			if( message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
+				return;
+			}
+			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {
+				rpcName = message.data[ 3 ];
+				correlationId = message.data[ 4 ];
+			}
+		} else {
+			rpcName = message.data[ 1 ];
+			correlationId = message.data[ 2 ];
+		}
+
 	} else {
 		rpcName = message.data[ 0 ];
 		correlationId = message.data[ 1 ];
 	}
-	
+
 	/*
 	* Retrieve the rpc object
 	*/
@@ -185,7 +200,7 @@ RpcHandler.prototype._$handle = function( message ) {
 	if( rpc === null ) {
 		return;
 	}
-		
+
 	// RPC Responses
 	if( message.action === C.ACTIONS.ACK ) {
 		rpc.ack();
