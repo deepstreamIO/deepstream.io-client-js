@@ -19,7 +19,8 @@ describe( 'login', function() {
 
             canPerformAction: function( username, message, callback ) {
                 callback( null, true );
-            }
+            },
+            isReady: true
         };
 
     /**************** SETUP ****************/

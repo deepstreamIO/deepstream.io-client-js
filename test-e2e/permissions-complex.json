@@ -30,6 +30,28 @@
 			"listen": true,
 			"publish": true,
 			"subscribe": true
+		},
+		"open/*": {
+			"listen": true,
+			"publish": true,
+			"subscribe": true
+		},
+		"forbidden/*": {
+			"publish": false,
+			"subscribe": false
+		},
+		"a-to-b/*": {
+			"publish": "user.id === 'client-a'",
+			"subscribe": "user.id === 'client-b'"
+		},
+		"news/$topic": {
+			"publish": "$topic === 'tea-cup-pigs'"
+		},
+		"number": {
+			"publish": "typeof data === 'number' && data > 10"
+		},
+		"place/$city": {
+			"publish": "$city.toLowerCase() === data.address.city.toLowerCase()"
 		}
 	},
 	"rpc": {
