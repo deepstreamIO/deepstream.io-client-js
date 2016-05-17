@@ -20,6 +20,7 @@ var RecordHandler = function( options, connection, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._records = {};
+	this._lists = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
 
@@ -63,7 +64,12 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
  * @returns {List}
  */
 RecordHandler.prototype.getList = function( name, options ) {
-	return new List( this, name, options );
+	if( !this._lists[ name ] ) {
+		this._lists[ name ] = new List( this, name, options );
+	} else {
+		this._records[ name ].usages++;
+	}
+	return this._lists[ name ];
 };
 
 /**
@@ -275,6 +281,7 @@ RecordHandler.prototype._onDestroyPending = function( recordName ) {
  */
 RecordHandler.prototype._removeRecord = function( recordName ) {
 	delete this._records[ recordName ];
+	delete this._lists[ recordName ];
 };
 
 module.exports = RecordHandler;
