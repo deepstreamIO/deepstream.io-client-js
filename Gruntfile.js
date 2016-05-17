@@ -21,10 +21,10 @@ module.exports = function( grunt ) {
 				},
 				options: {
 					postBundleCB: dereqCallback,
+					ignore: [ './src/tcp/tcp-connection.js' ],
 					browserifyOptions: {
 						standalone: 'deepstream',
-						// insertGlobalVars: 'global',
-						// detectGlobals: false
+						//'builtins': []
 					}
 				}
 			},
@@ -37,10 +37,9 @@ module.exports = function( grunt ) {
 					watch: true,
 					keepAlive: true,
 					postBundleCB: dereqCallback,
+					ignore: [ './src/tcp/tcp-connection.js' ],
 					browserifyOptions: {
 						standalone: 'deepstream',
-						// insertGlobalVars: 'global',
-						// detectGlobals: false
 					}
 				}
 			}
