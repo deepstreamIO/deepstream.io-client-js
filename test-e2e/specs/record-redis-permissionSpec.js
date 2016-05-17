@@ -1,7 +1,8 @@
 /* global describe, it, expect, jasmine */
 var DeepstreamServer = require( 'deepstream.io' ),
     deepstreamClient = require( '../../src/client' ),
-    TestLogger = require( '../tools/test-logger' );
+    TestLogger = require( '../tools/test-logger' ),
+    RedisCacheConnector = require( 'deepstream.io-cache-redis' );
 
 describe( 'record permissions with internal cache', function() {
     var deepstreamServer,
@@ -9,11 +10,20 @@ describe( 'record permissions with internal cache', function() {
         clientA,
         clientB,
         clientAErrors = [],
-        clientBErrors = [];
+        clientBErrors = [],
+        redisCache = new RedisCacheConnector({
+            port: 6379,
+            host: 'localhost'
+        });
 
     beforeEach(function(){
         clientAErrors = [];
         clientBErrors = [];
+    });
+
+    beforeAll(function( done ){
+        //delete everything from the cache
+        redisCache.client.flushall( done );
     });
 
     /**************** SETUP ****************/
@@ -22,6 +32,7 @@ describe( 'record permissions with internal cache', function() {
         deepstreamServer.on( 'started', done );
         deepstreamServer.set( 'logger', logger );
         deepstreamServer.set( 'showLogo', false );
+        deepstreamServer.set( 'cache', redisCache );
         deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions-complex.json' );
         deepstreamServer.start();
     });
@@ -49,6 +60,20 @@ describe( 'record permissions with internal cache', function() {
     });
 
      /**************** TEST ****************/
+    describe( 'it reads and writes from an open record', function(){
+        it( 'creates the record with clientA and sets some data', function( done ){
+            var record = clientA.record.getRecord( 'open/some-user' );
+            record.set( 'firstname', 'wolfram' );
+            setTimeout( done, 30 );
+        });
+
+        it( 'reads from the open record using clientB', function( done ){
+            clientB.record.getRecord( 'open/some-user' ).whenReady(function( record ){
+                expect( record.get( 'firstname') ).toBe( 'wolfram' );
+                done();
+            });
+        });
+    });
      describe( 'basic record permissions', function(){
         it( 'successfully creates and updates a public record', function(done) {
             var recA1 = clientA.record.getRecord( 'public/rec1' );
@@ -62,7 +87,13 @@ describe( 'record permissions with internal cache', function() {
             recA1.set( 'firstname', 'Wolfram' );
         });
 
+        it( 'creates a private write record', function( done ){
+            clientA.record.getRecord( 'public-read-private-write/client-a' ).whenReady( done );
+        });
         it( 'reads from public read and private write is private', function(done) {
+            expect( clientAErrors.length ).toBe( 0 );
+            expect( clientBErrors.length ).toBe( 0 );
+
             var recA1 = clientA.record.getRecord( 'public-read-private-write/client-a' );
             var recB1 = clientB.record.getRecord( 'public-read-private-write/client-a' );
 
@@ -94,7 +125,7 @@ describe( 'record permissions with internal cache', function() {
                 expect( clientBErrors.length ).toBe( 1 );
                 expect( clientBErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
                 done();
-            }, 200 );
+            }, 100 );
         });
     });
 
