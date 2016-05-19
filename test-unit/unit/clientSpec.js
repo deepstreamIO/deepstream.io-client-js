@@ -17,6 +17,14 @@ describe( 'connects', function(){
 		expect( client.getUid() ).not.toBe( client.getUid() );
 	});
 
+	it( 'exposes constants', function() {
+		expect( deepstream.CONSTANTS ).toEqual( require( '../../src/constants/constants' ) );
+	});
+
+	it( 'exposes merge strategies', function(){
+		expect( deepstream.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/merge-strategies' ) );
+	});
+
 	it( 'merges options correctly', function(){
 		client = deepstream( 'someUrl', {
 			recordPersistDefault: false,
