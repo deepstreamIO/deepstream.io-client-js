@@ -17,9 +17,9 @@ var ResubscribeNotifier = function( client, resubscribe ) {
 	this._client = client;
 	this._resubscribe = resubscribe;
 
-    this._isReconnecting = false;
-    this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
-    this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
+	this._isReconnecting = false;
+	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
+	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
 };
 
 /**
@@ -28,9 +28,9 @@ var ResubscribeNotifier = function( client, resubscribe ) {
  * @returns {void}
  */
 ResubscribeNotifier.prototype.destroy = function() {
-    this._client.removeListener( 'connectionStateChanged', this._connectionStateChangeHandler );
-    this._connectionStateChangeHandler = null;
-    this._client = null;
+	this._client.removeListener( 'connectionStateChanged', this._connectionStateChangeHandler );
+	this._connectionStateChangeHandler = null;
+	this._client = null;
 };
 
  /**
@@ -39,15 +39,15 @@ ResubscribeNotifier.prototype.destroy = function() {
  * @returns {void}
  */
  ResubscribeNotifier.prototype._handleConnectionStateChanges = function() {
-    var state = this._client.getConnectionState();
-        
-    if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
-        this._isReconnecting = true;
-    }
-    if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
-        this._isReconnecting = false;
-        this._resubscribe();
-    }
+	var state = this._client.getConnectionState();
+		
+	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
+		this._isReconnecting = true;
+	}
+	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
+		this._isReconnecting = false;
+		this._resubscribe();
+	}
  };
 
 module.exports = ResubscribeNotifier;

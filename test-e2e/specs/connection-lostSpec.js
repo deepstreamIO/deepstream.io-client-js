@@ -22,7 +22,11 @@ describe( 'it recovers a connection without losing record updates', function() {
 
     /**************** TESTS ****************/
     it( 'connects', function( done ) {
-        clientA = deepstreamClient( 'localhost:6021' );
+        clientA = deepstreamClient( 'localhost:6021', {
+            mergeStrategy: function( record, remoteVersion, remoteData, callback ) {
+                callback( 'Error Merging' );
+            }
+        } );
         clientA.on( 'error', function(){
             clientAErrors.push( arguments );
         });

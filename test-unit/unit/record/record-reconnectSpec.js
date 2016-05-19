@@ -88,7 +88,9 @@ describe( 'connection losses are handled gracefully', function(){
 	it( 'applies an update on resubscription read event and does not call onReady', function() {
 		var onReadySpy = jasmine.createSpy( 'onReady' );
 		var onErrorSpy = jasmine.createSpy( 'onError' );		
-		
+		recordA.setMergeStrategy( function( record, remoteVersion, remoteData, callback ) {
+			callback( 'Error merging' );
+		} );
 		recordA.on( 'ready', onReadySpy );
 		client.on( 'error', onErrorSpy);
 

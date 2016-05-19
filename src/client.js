@@ -1,4 +1,5 @@
 var C = require( './constants/constants' ),
+	MS = require( './constants/merge-strategies' ),
 	Emitter = require( 'component-emitter' ),
 	Connection = require( './message/connection' ),
 	EventHandler = require( './event/event-handler' ),
@@ -234,6 +235,21 @@ Client.prototype._getOptions = function( options ) {
  * @public
  * @returns {void}
  */
-module.exports = function( url, options ) {
+function createDeepstream( url, options ) {
 	return new Client( url, options );
-};
+}
+
+/**
+ * Expose constants to allow consumers to access them without
+ * requiring a reference to a deepstream instance.
+*/
+createDeepstream.CONSTANTS = C;
+
+/**
+ * Expose constants to allow consumers to access them without
+ * requiring a reference to a deepstream instance.
+*/
+createDeepstream.MERGE_STRATEGIES = MS;
+
+module.exports = createDeepstream;
+
