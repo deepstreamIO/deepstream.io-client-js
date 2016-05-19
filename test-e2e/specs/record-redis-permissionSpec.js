@@ -31,8 +31,8 @@ describe( 'record permissions with internal cache', function() {
 	it( 'starts the server', function( done ){
 		deepstreamServer = new DeepstreamServer();
 		deepstreamServer.on( 'started', done );
-		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'showLogo', false );
+		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'cache', redisCache );
 		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions-complex.json' );
 		deepstreamServer.start();

@@ -1,171 +1,171 @@
 /* global describe, it, expect, jasmine */
 var DeepstreamServer = require( 'deepstream.io' ),
-    deepstreamClient = require( '../../src/client' ),
-    TestLogger = require( '../tools/test-logger' );
+	deepstreamClient = require( '../../src/client' ),
+	TestLogger = require( '../tools/test-logger' );
 
 describe( 'record', function() {
-    var deepstreamServer,
-        logger = new TestLogger(),
-        clientA,
-        clientB;
+	var deepstreamServer,
+		logger = new TestLogger(),
+		clientA,
+		clientB;
 
-    /**************** SETUP ****************/
-    it( 'starts the server', function( done ){
-        deepstreamServer = new DeepstreamServer();
-        deepstreamServer.on( 'started', done );
-        deepstreamServer.set( 'logger', logger );
-        deepstreamServer.set( 'showLogo', false );
-        deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
-        deepstreamServer.start();
-    });
+	/**************** SETUP ****************/
+	it( 'starts the server', function( done ){
+		deepstreamServer = new DeepstreamServer();
+		deepstreamServer.on( 'started', done );
+		deepstreamServer.set( 'logger', logger );
+		deepstreamServer.set( 'showLogo', false );
+		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
+		deepstreamServer.start();
+	});
 
-    it( 'creates clientA', function( done ) {
-        clientA = deepstreamClient( 'localhost:6021' );
-        clientA.login( null, function( success ){
-            expect( success ).toBe( true );
-            done();
-        });
-    });
+	it( 'creates clientA', function( done ) {
+		clientA = deepstreamClient( 'localhost:6021' );
+		clientA.login( null, function( success ){
+			expect( success ).toBe( true );
+			done();
+		});
+	});
 
-    it( 'creates clientB', function( done ) {
-        clientB = deepstreamClient( 'localhost:6021' );
-        clientB.login( null, function( success ){
-            expect( success ).toBe( true );
-            done();
-        });
-    });
+	it( 'creates clientB', function( done ) {
+		clientB = deepstreamClient( 'localhost:6021' );
+		clientB.login( null, function( success ){
+			expect( success ).toBe( true );
+			done();
+		});
+	});
 
-     /**************** TEST ****************/
-    it( 'subscribes and sets a record', function(done) {
-        clientA.record.getRecord( 'record1' ).subscribe( 'user.firstname', function( firstname ){
-            expect( firstname ).toBe( 'Wolfram' );
-            done();
-        });
+	 /**************** TEST ****************/
+	it( 'subscribes and sets a record', function(done) {
+		clientA.record.getRecord( 'record1' ).subscribe( 'user.firstname', function( firstname ){
+			expect( firstname ).toBe( 'Wolfram' );
+			done();
+		});
 
-        clientB.record.getRecord( 'record1' ).set({
-            user: {
-                firstname: 'Wolfram',
-                lastname: 'Hempel'
-            }
-        });
-    });
+		clientB.record.getRecord( 'record1' ).set({
+			user: {
+				firstname: 'Wolfram',
+				lastname: 'Hempel'
+			}
+		});
+	});
 
-    it( 'maintains a local copy of the record', function() {
-        expect( clientA.record.getRecord( 'record1' ).get( 'user.lastname' ) ).toBe( 'Hempel' );
-    });
+	it( 'maintains a local copy of the record', function() {
+		expect( clientA.record.getRecord( 'record1' ).get( 'user.lastname' ) ).toBe( 'Hempel' );
+	});
 
-    it( 'sets a path', function( done ) {
-        clientB.record.getRecord( 'record1' ).set( 'city', 'London' );
-        expect( clientB.record.getRecord( 'record1' ).get( 'city' ) ).toBe( 'London' );
-        expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBe( undefined );
+	it( 'sets a path', function( done ) {
+		clientB.record.getRecord( 'record1' ).set( 'city', 'London' );
+		expect( clientB.record.getRecord( 'record1' ).get( 'city' ) ).toBe( 'London' );
+		expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBe( undefined );
 
-        setTimeout(function(){
-            expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBe( 'London' );
-            done();
-        }, 20 );
-    });
+		setTimeout(function(){
+			expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBe( 'London' );
+			done();
+		}, 20 );
+	});
 
-    it( 'sets a path with null', function( done ) {
-        clientB.record.getRecord( 'record1' ).set( 'city', null );
-        expect( clientB.record.getRecord( 'record1' ).get( 'city' ) ).toBeNull();
-        expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBe( 'London' );
+	it( 'sets a path with null', function( done ) {
+		clientB.record.getRecord( 'record1' ).set( 'city', null );
+		expect( clientB.record.getRecord( 'record1' ).get( 'city' ) ).toBeNull();
+		expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBe( 'London' );
 
-        setTimeout(function(){
-            expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBeNull();
-            done();
-        }, 20 );
-    });
-    
-    it( 'does not keep objects by reference', function() {
-        var a = {
-            number: 1
-        };
-        clientB.record.getRecord( 'record1' ).set( 'myObject', a );
-        a.number = 2;
-        expect( clientB.record.getRecord( 'record1' ).get( 'myObject' ) ).not.toEqual( a );
-    } );
-    
-    it( 'does update after object properties are changed and set' ,function( done ) {
-        var b = {
-            digit: 1
-        };
-        clientB.record.getRecord( 'record1' ).set( 'myObject', b );
-        b.digit = 2;
-        clientB.record.getRecord( 'record1' ).set( 'myObject', b );
-        expect( clientB.record.getRecord( 'record1' ).get( 'myObject' ) ).toEqual( b );
-        setTimeout( function() {
-            expect( clientA.record.getRecord( 'record1' ).get( 'myObject' ) ).toEqual( b );
-            done();
-        }, 20 );
-    });
-    
-    it( 'subscribes and unsubscribes', function( done ) {
-        var pet,
-            recordA2 = clientA.record.getRecord( 'record2' ),
-            recordB2 = clientB.record.getRecord( 'record2' ),
-            setPet = function( _pet ){ pet = _pet; };
+		setTimeout(function(){
+			expect( clientA.record.getRecord( 'record1' ).get( 'city' ) ).toBeNull();
+			done();
+		}, 20 );
+	});
 
-        // Set value before record is ready
-        recordA2.set( 'pets[2]', 'Samoyed' );
-        recordA2.subscribe( 'pets[ 2 ]', setPet , true );
+	it( 'does not keep objects by reference', function() {
+		var a = {
+			number: 1
+		};
+		clientB.record.getRecord( 'record1' ).set( 'myObject', a );
+		a.number = 2;
+		expect( clientB.record.getRecord( 'record1' ).get( 'myObject' ) ).not.toEqual( a );
+	} );
 
-        recordA2.on( 'ready', function(){
-            // Record was created correctly
-            expect( recordA2.get() ).toEqual({ pets: [ null, null, 'Samoyed' ] });
+	it( 'does update after object properties are changed and set' ,function( done ) {
+		var b = {
+			digit: 1
+		};
+		clientB.record.getRecord( 'record1' ).set( 'myObject', b );
+		b.digit = 2;
+		clientB.record.getRecord( 'record1' ).set( 'myObject', b );
+		expect( clientB.record.getRecord( 'record1' ).get( 'myObject' ) ).toEqual( b );
+		setTimeout( function() {
+			expect( clientA.record.getRecord( 'record1' ).get( 'myObject' ) ).toEqual( b );
+			done();
+		}, 20 );
+	});
 
-            // subscriber was notified
-            expect( pet ).toBe( 'Samoyed' );
+	it( 'subscribes and unsubscribes', function( done ) {
+		var pet,
+			recordA2 = clientA.record.getRecord( 'record2' ),
+			recordB2 = clientB.record.getRecord( 'record2' ),
+			setPet = function( _pet ){ pet = _pet; };
 
-            // subscriber notified of change
-            recordA2.set( 'pets[2]', 'Turtle' );
-            expect( pet ).toBe( 'Turtle' );
+		// Set value before record is ready
+		recordA2.set( 'pets[2]', 'Samoyed' );
+		recordA2.subscribe( 'pets[ 2 ]', setPet , true );
 
-            // subscriber removed
-            recordA2.unsubscribe( 'pets[ 2 ]', setPet );
+		recordA2.on( 'ready', function(){
+			// Record was created correctly
+			expect( recordA2.get() ).toEqual({ pets: [ null, null, 'Samoyed' ] });
 
-            // subscriber won't be notified
-            recordA2.set( 'pets[2]', 'Guineapig' );
-            expect( pet ).toBe( 'Turtle' );
+			// subscriber was notified
+			expect( pet ).toBe( 'Samoyed' );
 
-            // structure was changed correctly
-            expect( recordA2.get() ).toEqual({ pets: [ null, null, 'Guineapig' ] });
+			// subscriber notified of change
+			recordA2.set( 'pets[2]', 'Turtle' );
+			expect( pet ).toBe( 'Turtle' );
 
-            // all good
-            done();
-        });
-    });
+			// subscriber removed
+			recordA2.unsubscribe( 'pets[ 2 ]', setPet );
 
-    it( 'subscribes and discards', function( done ) {
-        var city,
-            recordA3 = clientA.record.getRecord( 'record3' ),
-            recordB3 = clientB.record.getRecord( 'record3' );
+			// subscriber won't be notified
+			recordA2.set( 'pets[2]', 'Guineapig' );
+			expect( pet ).toBe( 'Turtle' );
 
-        // Trigger immediatly
-        recordA3.subscribe( 'city', function( _city ){ city = _city; }, true );
-        expect( city ).toBe( undefined );
+			// structure was changed correctly
+			expect( recordA2.get() ).toEqual({ pets: [ null, null, 'Guineapig' ] });
 
-        recordB3.set( 'city', 'Berlin' );
-        expect( city ).toBe( undefined );
+			// all good
+			done();
+		});
+	});
 
-        setTimeout(function(){
-            expect( city ).toBe( 'Berlin' );
-            recordA3.discard();
-            recordB3.set( 'city', 'Dresden' );
-            setTimeout(function() {
-                expect( city ).toBe( 'Berlin' );
-                done();
-            }, 20 );
-        }, 20 );
-    });
+	it( 'subscribes and discards', function( done ) {
+		var city,
+			recordA3 = clientA.record.getRecord( 'record3' ),
+			recordB3 = clientB.record.getRecord( 'record3' );
 
-     /**************** TEAR DOWN ****************/
-    it( 'closes the clients', function() {
-        clientA.close();
-        clientB.close();
-    });
+		// Trigger immediatly
+		recordA3.subscribe( 'city', function( _city ){ city = _city; }, true );
+		expect( city ).toBe( undefined );
 
-    it( 'shuts clients and server down', function(done) {
-      deepstreamServer.on( 'stopped', done );
-      deepstreamServer.stop();
-    });
+		recordB3.set( 'city', 'Berlin' );
+		expect( city ).toBe( undefined );
+
+		setTimeout(function(){
+			expect( city ).toBe( 'Berlin' );
+			recordA3.discard();
+			recordB3.set( 'city', 'Dresden' );
+			setTimeout(function() {
+				expect( city ).toBe( 'Berlin' );
+				done();
+			}, 20 );
+		}, 20 );
+	});
+
+	 /**************** TEAR DOWN ****************/
+	it( 'closes the clients', function() {
+		clientA.close();
+		clientB.close();
+	});
+
+	it( 'shuts clients and server down', function(done) {
+		deepstreamServer.on( 'stopped', done );
+		deepstreamServer.stop();
+	});
 });

@@ -71,8 +71,8 @@ describe( 'record snapshot', function() {
 		clientA.close();
 	});
 
-	it( 'shuts clients and server down', function( done ) {
-	  deepstreamServer.on( 'stopped', done );
-	  deepstreamServer.stop();
+	it( 'shuts clients and server down', function(done) {
+		deepstreamServer.on( 'stopped', done );
+		deepstreamServer.stop();
 	});
 });

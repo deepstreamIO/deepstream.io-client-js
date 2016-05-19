@@ -62,7 +62,7 @@ describe( 'record HAS request', function() {
 	});
 
 	it( 'shuts clients and server down', function(done) {
-	  deepstreamServer.on( 'stopped', done );
-	  deepstreamServer.stop();
+		deepstreamServer.on( 'stopped', done );
+		deepstreamServer.stop();
 	});
 });
