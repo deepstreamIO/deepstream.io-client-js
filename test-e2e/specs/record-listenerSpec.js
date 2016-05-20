@@ -29,6 +29,9 @@ describe( 'record listener', function() {
 		clientB.login( null, function(){ done(); });
 	});
 
+	it( 'waits', function( done ){
+		setTimeout( done, 40 );
+	});
 	 /**************** TEST ****************/
 	it( 'listens for record subscriptions', function(done){
 		var matches = [];
