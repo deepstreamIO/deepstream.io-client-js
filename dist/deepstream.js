@@ -883,7 +883,7 @@ function Socket(uri, opts){
   this.cert = opts.cert || null;
   this.ca = opts.ca || null;
   this.ciphers = opts.ciphers || null;
-  this.rejectUnauthorized = opts.rejectUnauthorized === undefined ? null : opts.rejectUnauthorized;
+  this.rejectUnauthorized = opts.rejectUnauthorized === undefined ? true : opts.rejectUnauthorized;
 
   // other options for Node.js client
   var freeGlobal = typeof global == 'object' && global;
@@ -4340,6 +4340,7 @@ module.exports = yeast;
 
 },{}],34:[function(_dereq_,module,exports){
 var C = _dereq_( './constants/constants' ),
+	MS = _dereq_( './constants/merge-strategies' ),
 	Emitter = _dereq_( 'component-emitter' ),
 	Connection = _dereq_( './message/connection' ),
 	EventHandler = _dereq_( './event/event-handler' ),
@@ -4575,10 +4576,26 @@ Client.prototype._getOptions = function( options ) {
  * @public
  * @returns {void}
  */
-module.exports = function( url, options ) {
+function createDeepstream( url, options ) {
 	return new Client( url, options );
-};
-},{"./constants/constants":35,"./default-options":36,"./event/event-handler":37,"./message/connection":38,"./record/record-handler":44,"./rpc/rpc-handler":46,"./webrtc/webrtc-handler":56,"component-emitter":6}],35:[function(_dereq_,module,exports){
+}
+
+/**
+ * Expose constants to allow consumers to access them without
+ * requiring a reference to a deepstream instance.
+*/
+createDeepstream.CONSTANTS = C;
+
+/**
+ * Expose constants to allow consumers to access them without
+ * requiring a reference to a deepstream instance.
+*/
+createDeepstream.MERGE_STRATEGIES = MS;
+
+module.exports = createDeepstream;
+
+
+},{"./constants/constants":35,"./constants/merge-strategies":36,"./default-options":37,"./event/event-handler":38,"./message/connection":39,"./record/record-handler":45,"./rpc/rpc-handler":47,"./webrtc/webrtc-handler":57,"component-emitter":6}],35:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -4681,6 +4698,23 @@ exports.CALL_STATE.DECLINED = 'DECLINED';
 exports.CALL_STATE.ENDED = 'ENDED';
 exports.CALL_STATE.ERROR = 'ERROR';
 },{}],36:[function(_dereq_,module,exports){
+module.exports = {
+	/**
+	*	Choose the server's state over the client's
+	**/
+	REMOTE_WINS: function( record, remoteValue, remoteVersion, callback ) {
+		callback( null, remoteValue );
+	},
+	/**
+	*	Choose the local state over the server's
+	**/
+	LOCAL_WINS: function( record, remoteValue, remoteVersion, callback ) {
+		callback( null, record.get() );
+	}
+};
+},{}],37:[function(_dereq_,module,exports){
+var MERGE_STRATEGIES = _dereq_( './constants/merge-strategies' );
+
 module.exports = {
 	/************************************************
 	* Deepstream									*
@@ -4858,9 +4892,17 @@ module.exports = {
 	 *                                   	SSL/TLS connections, or if you know that 
 	 *                                   	your network does not block websockets.
 	 */
-	rememberUpgrade: false
+	rememberUpgrade: false,
+
+	/**
+   *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
+	 *                                   If the merge strategy is not succesfull it will set an error, else set the
+	 *                                   returned data as the latest revision. This can be overriden on a per record 
+	 *                                   basis by setting the `setMergeStrategy`.
+	 */
+	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS
 };
-},{}],37:[function(_dereq_,module,exports){
+},{"./constants/merge-strategies":36}],38:[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
@@ -5036,7 +5078,7 @@ EventHandler.prototype._resubscribe = function() {
 };
 
 module.exports = EventHandler;
-},{"../constants/constants":35,"../message/message-builder":39,"../message/message-parser":40,"../utils/ack-timeout-registry":49,"../utils/listener":50,"../utils/resubscribe-notifier":51,"component-emitter":6}],38:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"../message/message-builder":40,"../message/message-parser":41,"../utils/ack-timeout-registry":50,"../utils/listener":51,"../utils/resubscribe-notifier":52,"component-emitter":6}],39:[function(_dereq_,module,exports){
 var engineIoClient = _dereq_( 'engine.io-client' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
@@ -5100,6 +5142,9 @@ Connection.prototype.getState = function() {
  * @returns {void}
  */
 Connection.prototype.authenticate = function( authParams, callback ) {
+	this._authParams = authParams;
+	this._authCallback = callback;
+
 	if( this._tooManyAuthAttempts || this._challengeDenied ) {
 		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
 		return;
@@ -5107,13 +5152,9 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	else if( this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED ) {
 		this._createEndpoint();
 		this._deliberateClose = false;
-		this._client.once( C.EVENT.CONNECTION_STATE_CHANGED, this.authenticate.bind( authParams, callback ) );
 		return;
 	}
 	
-	this._authParams = authParams;
-	this._authCallback = callback;
-
 	if( this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
 		this._sendAuthParams();
 	}
@@ -5530,7 +5571,7 @@ Connection.prototype._clearReconnect = function() {
 };
 
 module.exports = Connection;
-},{"../constants/constants":35,"../tcp/tcp-connection":22,"../utils/utils":53,"./message-builder":39,"./message-parser":40,"engine.io-client":10}],39:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"../tcp/tcp-connection":22,"../utils/utils":54,"./message-builder":40,"./message-parser":41,"engine.io-client":10}],40:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -5608,7 +5649,7 @@ exports.typed = function( value ) {
 	
 	throw new Error( 'Can\'t serialize type ' + value );
 };
-},{"../constants/constants":35}],40:[function(_dereq_,module,exports){
+},{"../constants/constants":35}],41:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -5756,7 +5797,7 @@ MessageParser.prototype._parseMessage = function( message, client ) {
 };
 
 module.exports = new MessageParser();
-},{"../constants/constants":35}],41:[function(_dereq_,module,exports){
+},{"../constants/constants":35}],42:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -5935,7 +5976,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":45,"component-emitter":6}],42:[function(_dereq_,module,exports){
+},{"./record":46,"component-emitter":6}],43:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
@@ -6042,7 +6083,7 @@ JsonPath.prototype._tokenize = function() {
 };
 
 module.exports = JsonPath;
-},{"../utils/utils":53}],43:[function(_dereq_,module,exports){
+},{"../utils/utils":54}],44:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
 	C = _dereq_( '../constants/constants' ),
@@ -6404,7 +6445,7 @@ List.prototype._getStructure = function() {
 
 module.exports = List;
 
-},{"../constants/constants":35,"./record":45,"component-emitter":6}],44:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"./record":46,"component-emitter":6}],45:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
@@ -6685,7 +6726,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
-},{"../constants/constants":35,"../message/message-parser":40,"../utils/listener":50,"../utils/single-notifier":52,"./anonymous-record":41,"./list":43,"./record":45,"component-emitter":6}],45:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"../message/message-parser":41,"../utils/listener":51,"../utils/single-notifier":53,"./anonymous-record":42,"./list":44,"./record":46,"component-emitter":6}],46:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -6719,12 +6760,17 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.isReady = false;
 	this.isDestroyed = false;
 	this._$data = {};
-	this._version = null;
+	this.version = null;
 	this._paths = {};
 	this._oldValue = null;
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
+
+	this._mergeStrategy = null;
+	if( options.mergeStrategy ) {
+		this.setMergeStrategy( options.mergeStrategy );
+	}
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
@@ -6733,6 +6779,27 @@ var Record = function( name, recordOptions, connection, options, client ) {
 };
 
 EventEmitter( Record.prototype );
+
+/**
+ * Set a merge strategy to resolve any merge conflicts that may occur due
+ * to offline work or write conflicts. The function will be called with the 
+ * local record, the remote version/data and a callback to call once the merge has 
+ * completed or if an error occurs ( which leaves it in an inconsistent state until
+ * the next update merge attempt ).
+ *
+ * @param   {Function} mergeStrategy A Function that can resolve merge issues.
+ *
+ * @public
+ * @returns {void}
+ */
+Record.prototype.setMergeStrategy = function( mergeStrategy ) {
+	if( typeof mergeStrategy === 'function' ) {
+		this._mergeStrategy = mergeStrategy;
+	} else {
+		throw new Error( 'Invalid merge strategy: Must be a Function' );
+	}
+};
+
 
 /**
  * Returns a copy of either the entire dataset of the record
@@ -6779,42 +6846,43 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	if( this._checkDestroyed( 'set' ) ) {
-		return;
+		return this;
 	}
 
 	if( !this.isReady ) {
 		this._queuedMethodCalls.push({ method: 'set', args: arguments });
-		return;
+		return this;
 	}
 
 	if( arguments.length === 2 && utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
-		return;
+		return this;
 	}
 	else if( arguments.length === 1 && utils.deepEquals( this._$data, pathOrData ) ) {
-		return;
+		return this;
 	}
 
 	this._beginChange();
-	this._version++;
+	this.version++;
 
 	if( arguments.length === 1 ) {
 		this._$data = ( typeof pathOrData == 'object' ) ? utils.deepCopy( pathOrData ) : pathOrData;
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 			this.name,
-			this._version,
+			this.version,
 			this._$data
 		]);
 	} else {
 		this._getPath( pathOrData ).setValue( ( typeof data == 'object' ) ? utils.deepCopy( data ): data );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
 			this.name,
-			this._version,
+			this.version,
 			pathOrData,
 			messageBuilder.typed( data )
 		]);
 	}
 
 	this._completeChange();
+	return this;
 };
 
 /**
@@ -6890,9 +6958,11 @@ Record.prototype.discard = function() {
 	this.usages--;
 
 	if( this.usages <= 0 ) {
-		this.emit( 'destroyPending' );
-		this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		this.whenReady( function() {
+			this.emit( 'destroyPending' );
+			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		}.bind( this ) );
 	}
 };
 
@@ -6906,9 +6976,11 @@ Record.prototype.delete = function() {
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
-	this.emit( 'destroyPending' );
-	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
-	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
+	this.whenReady( function() {
+		this.emit( 'destroyPending' );
+		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
+	}.bind( this ) );
 };
 
 /**
@@ -6938,7 +7010,7 @@ Record.prototype.whenReady = function( callback ) {
  */
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
-		if( this._version === null ) {
+		if( this.version === null ) {
 			clearTimeout( this._readTimeout );
 			this._onRead( message );
 		} else {
@@ -6952,22 +7024,51 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message, this._client );
 	}
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
-		this._recoverRecord( message );
+		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
 	}
 };
 
 /**
- * @todo This resets the record to the latest version the server has whenever a version conflict
- * occurs.
+ * Called when a merge conflict is detected by a VERSION_EXISTS error or if an update recieved
+ * is directly after the clients. If no merge strategy is configure it will emit a VERSION_EXISTS
+ * error and the record will remain in an inconsistent state.
  *
- * Instead it should find a more sophisticated merge strategy
+ * @param   {Number} remoteVersion The remote version number
+ * @param   {Object} remoteData The remote object data
+ * @param   {Object} message parsed and validated deepstream message
  *
  * @private
  * @returns {void}
  */
-Record.prototype._recoverRecord = function( message ) {
-	message.processedError = true;
-	this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + message.version + ' but version is ' + this._version );
+Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
+	if( this._mergeStrategy ) {
+		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
+	}
+	else {
+		message.processedError = true;
+		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
+	}
+};
+
+/**
+ * Callback once the record merge has completed. If successful it will set the
+ * record state, else emit and error and the record will remain in an 
+ * inconsistent state until the next update.
+ *
+ * @param   {Number} remoteVersion The remote version number
+ * @param   {Object} remoteData The remote object data
+ * @param   {Object} message parsed and validated deepstream message
+ * 
+ * @private
+ * @returns {void}
+ */
+Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
+	if( !error ) {
+		this.version = remoteVersion;
+		this.set( data );
+	} else {
+		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
+	}
 };
 
 /**
@@ -7007,21 +7108,37 @@ Record.prototype._processAckMessage = function( message ) {
  */
 Record.prototype._applyUpdate = function( message ) {
 	var version = parseInt( message.data[ 1 ], 10 );
+	var data;
 
-	if( this._version === null ) {
-		this._version = version;
+	if( message.action === C.ACTIONS.PATCH ) {
+		data = messageParser.convertTyped( message.data[ 3 ], this._client );
+	} else {
+		data = JSON.parse( message.data[ 2 ] );
 	}
-	else if( this._version + 1 !== version ) {
-		this._recoverRecord( message );
+
+	if( this.version === null ) {
+		this.version = version;
+	}
+	else if( this.version + 1 !== version ) {
+		if( message.action === C.ACTIONS.PATCH ) {
+			/**
+			* Request a snapshot so that a merge can be done with the read reply which contains
+			* the full state of the record
+			**/
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [ this.name ] );
+		} else {
+			this._recoverRecord( version, data, message );
+		}
+		return;
 	}
 
 	this._beginChange();
-	this._version = version;
+	this.version = version;
 
 	if( message.action === C.ACTIONS.PATCH ) {
-		this._getPath( message.data[ 2 ] ).setValue( messageParser.convertTyped( message.data[ 3 ], this._client ) );
+		this._getPath( message.data[ 2 ] ).setValue( data );
 	} else {
-		this._$data = JSON.parse( message.data[ 2 ] );
+		this._$data = data;
 	}
 
 	this._completeChange();
@@ -7037,7 +7154,7 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	this._beginChange();
-	this._version = parseInt( message.data[ 1 ], 10 );
+	this.version = parseInt( message.data[ 1 ], 10 );
 	this._$data = JSON.parse( message.data[ 2 ] );
 	this._completeChange();
 	this._setReady();
@@ -7240,7 +7357,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
 
 module.exports = Record;
 
-},{"../constants/constants":35,"../message/message-builder":39,"../message/message-parser":40,"../utils/resubscribe-notifier":51,"../utils/utils":53,"./json-path":42,"component-emitter":6}],46:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"../message/message-builder":40,"../message/message-parser":41,"../utils/resubscribe-notifier":52,"../utils/utils":54,"./json-path":43,"component-emitter":6}],47:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -7458,7 +7575,7 @@ RpcHandler.prototype._reprovide = function() {
 
 
 module.exports = RpcHandler;
-},{"../constants/constants":35,"../message/message-builder":39,"../message/message-parser":40,"../utils/ack-timeout-registry":49,"../utils/resubscribe-notifier":51,"./rpc":48,"./rpc-response":47}],47:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"../message/message-builder":40,"../message/message-parser":41,"../utils/ack-timeout-registry":50,"../utils/resubscribe-notifier":52,"./rpc":49,"./rpc-response":48}],48:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
 	messageBuilder = _dereq_( '../message/message-builder' );
@@ -7565,7 +7682,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":35,"../message/message-builder":39,"../utils/utils":53}],48:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"../message/message-builder":40,"../utils/utils":54}],49:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
 
@@ -7643,7 +7760,7 @@ Rpc.prototype._complete = function() {
 };
 
 module.exports = Rpc;
-},{"../constants/constants":35,"../message/message-parser":40}],49:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"../message/message-parser":41}],50:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -7727,7 +7844,7 @@ AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
 };
 
 module.exports = AckTimeoutRegistry;
-},{"../constants/constants":35,"component-emitter":6}],50:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"component-emitter":6}],51:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
@@ -7770,7 +7887,7 @@ Listener.prototype._onAckTimeout = function() {
 };
 
 module.exports = Listener;
-},{"../constants/constants":35,"./resubscribe-notifier":51}],51:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"./resubscribe-notifier":52}],52:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -7824,7 +7941,7 @@ ResubscribeNotifier.prototype.destroy = function() {
  };
 
 module.exports = ResubscribeNotifier;
-},{"../constants/constants":35}],52:[function(_dereq_,module,exports){
+},{"../constants/constants":35}],53:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
@@ -7933,7 +8050,7 @@ SingleNotifier.prototype._resendRequests = function() {
 };
 
 module.exports = SingleNotifier;
-},{"../constants/constants":35,"./resubscribe-notifier":51}],53:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"./resubscribe-notifier":52}],54:[function(_dereq_,module,exports){
 (function (process){
 /**
  * A regular expression that matches whitespace on either side, but
@@ -8048,7 +8165,7 @@ exports.deepCopy = function( obj ) {
 	}
 };
 }).call(this,_dereq_('_process'))
-},{"_process":31}],54:[function(_dereq_,module,exports){
+},{"_process":31}],55:[function(_dereq_,module,exports){
 var WebRtcConnection = _dereq_( './webrtc-connection' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
 	C = _dereq_( '../constants/constants' );
@@ -8266,7 +8383,7 @@ WebRtcCall.prototype._onEstablished = function( stream ) {
 };
 
 module.exports = WebRtcCall;
-},{"../constants/constants":35,"./webrtc-connection":55,"component-emitter":6}],55:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"./webrtc-connection":56,"component-emitter":6}],56:[function(_dereq_,module,exports){
 var Emitter = _dereq_( 'component-emitter' );
 var C = _dereq_( '../constants/constants' );
 var noop = function(){};
@@ -8485,7 +8602,7 @@ WebRtcConnection.prototype._onError = function( error ) {
 
 module.exports = WebRtcConnection;
 
-},{"../constants/constants":35,"component-emitter":6}],56:[function(_dereq_,module,exports){
+},{"../constants/constants":35,"component-emitter":6}],57:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	WebRtcConnection = _dereq_( './webrtc-connection' ),
 	WebRtcCall = _dereq_( './webrtc-call' ),
@@ -8906,5 +9023,5 @@ WebRtcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = WebRtcHandler;
-},{"../constants/constants":35,"../utils/ack-timeout-registry":49,"./webrtc-call":54,"./webrtc-connection":55}]},{},[34])(34)
+},{"../constants/constants":35,"../utils/ack-timeout-registry":50,"./webrtc-call":55,"./webrtc-connection":56}]},{},[34])(34)
 });
