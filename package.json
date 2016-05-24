@@ -13,7 +13,8 @@
     "e2e::watch": "node node_modules/watch/cli.js \"npm run-script e2e\" ./src ./test-e2e",
     "unit": "node node_modules/jasmine/bin/jasmine JASMINE_CONFIG_PATH=jasmine.json test-unit/unit/**/*Spec.js",
     "unit::watch": "node node_modules/watch/cli.js \"npm run-script unit\" ./src ./test-unit",
-    "reporter": "node_modules/.bin/istanbul jasmine-runner.js"
+    "reporter": "node_modules/.bin/istanbul jasmine-runner.js",
+    "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js"
   },
   "repository": {
     "type": "git",
