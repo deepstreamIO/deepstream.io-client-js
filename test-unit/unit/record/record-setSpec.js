@@ -27,6 +27,12 @@ describe( 'setting values sends the right messages to the server', function(){
 		expect( connection.lastSendMessage ).toBe( msg( 'R|P|testRecord|2|lastname|SHempel+' ) );
 	});
 
+	it( 'deletes value when sending undefined', function(){
+		record.set( 'lastname', undefined );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|P|testRecord|3|lastname|U+' ) );
+		expect( record.get() ).toEqual( { firstname: 'Wolfram' } );
+	});
+
 	it( 'throws error for invalid record data', function(){ 
 		expect(function(){ record.set( undefined ); }).toThrow();
 	});
