@@ -394,14 +394,14 @@ Connection.prototype._handleAuthResponse = function( message ) {
 		}
 		
 		if( this._authCallback ) {
-			this._authCallback( false, message.data[ 0 ], this._getAuthData( message.data[ 1 ] ) );
+			this._authCallback( false, this._getAuthData( message.data[ 1 ] ) );
 		}
 	
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
 		
 		if( this._authCallback ) {
-			this._authCallback( true, undefined, this._getAuthData( message.data[ 0 ] ) );
+			this._authCallback( true, this._getAuthData( message.data[ 0 ] ) );
 		}
 
 		this._sendQueuedMessages();
@@ -412,15 +412,17 @@ Connection.prototype._handleAuthResponse = function( message ) {
  * Checks if data is present with login ack and converts it
  * to the correct type
  *
+ * @param {Object} message parsed and validated deepstream message
+ *
  * @private
  * @returns {object}
  */
 Connection.prototype._getAuthData = function( data ) {
-	var result;
-	if( typeof data !== 'undefined' ) {
-		result = messageParser.convertTyped( data, this._client );
+	if( data === undefined ) {
+		return null;
+	} else {
+		return messageParser.convertTyped( data, this._client );
 	}
-	return result;
 };
 
 /**
