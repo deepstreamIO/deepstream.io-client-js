@@ -21,9 +21,10 @@ var List = function( recordHandler, name, options ) {
 	this._record._applyUpdate = this._applyUpdate.bind( this );
 
 	this._record.on( 'delete', this.emit.bind( this, 'delete' ) );
-	this._record.on( 'discard', this.emit.bind( this, 'discard' ) );
+	this._record.on( 'discard', this._onDiscard.bind( this ) );
 	this._record.on( 'ready', this._onReady.bind( this ) );
 
+	this.isDestroyed = this._record.isDestroyed;
 	this.isReady = this._record.isReady;
 	this.name = name;
 	this._queuedMethods = [];
@@ -210,6 +211,18 @@ List.prototype._onReady = function() {
 	}
 
 	this.emit( 'ready' );
+};
+
+/**
+ * Listens for the record discard event and applies
+ * changes to list
+ *
+ * @private
+ * @returns {void}
+ */
+List.prototype._onDiscard = function() {
+	this.isDestroyed = true;
+	this.emit( 'discard' );
 };
 
 /**
