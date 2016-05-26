@@ -15,7 +15,6 @@ describe( 'record listener', function() {
 		deepstreamServer.on( 'started', done );
 		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'showLogo', false );
-		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
 		deepstreamServer.start();
 	});
 

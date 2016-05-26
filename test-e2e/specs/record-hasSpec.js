@@ -13,7 +13,6 @@ describe( 'record HAS request', function() {
 		deepstreamServer = new DeepstreamServer();
 		deepstreamServer.on( 'started', done );
 		deepstreamServer.set( 'logger', logger );
-		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.start();
 	});

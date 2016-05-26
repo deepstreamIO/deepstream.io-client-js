@@ -53,8 +53,8 @@ EventEmitter( Record.prototype );
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
- * to offline work or write conflicts. The function will be called with the 
- * local record, the remote version/data and a callback to call once the merge has 
+ * to offline work or write conflicts. The function will be called with the
+ * local record, the remote version/data and a callback to call once the merge has
  * completed or if an error occurs ( which leaves it in an inconsistent state until
  * the next update merge attempt ).
  *
@@ -312,24 +312,24 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
+	message.processedError = true;
 	if( this._mergeStrategy ) {
 		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
 	}
 	else {
-		message.processedError = true;
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
 };
 
 /**
  * Callback once the record merge has completed. If successful it will set the
- * record state, else emit and error and the record will remain in an 
+ * record state, else emit and error and the record will remain in an
  * inconsistent state until the next update.
  *
  * @param   {Number} remoteVersion The remote version number
  * @param   {Object} remoteData The remote object data
  * @param   {Object} message parsed and validated deepstream message
- * 
+ *
  * @private
  * @returns {void}
  */

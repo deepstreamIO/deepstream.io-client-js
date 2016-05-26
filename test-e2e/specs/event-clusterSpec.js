@@ -15,9 +15,9 @@ describe( 'event cluster', function() {
 		callbackC = jasmine.createSpy( 'callbackC' );
 
 	/**************** SETUP ****************/
-	it( 'starts two servers', function( done ) {
+	it( 'starts three servers', function( done ) {
 		cluster = new Cluster( [ 6001, 6002, 6003 ], false );
-		cluster.on( 'ready', done );
+		cluster.on( 'ready', function(){ done(); } );
 	});
 
 	it( 'creates clientA', function( done ) {

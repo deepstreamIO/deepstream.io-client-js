@@ -13,7 +13,6 @@ describe( 'it recovers a connection without losing record updates', function() {
 	/**************** SETUP ****************/
 	it( 'starts the server', function( done ){
 		deepstreamServer = new DeepstreamServer();
-		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
 		deepstreamServer.once( 'started', done );
 		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'showLogo', false );
@@ -23,7 +22,7 @@ describe( 'it recovers a connection without losing record updates', function() {
 	/**************** TESTS ****************/
 	it( 'connects', function( done ) {
 		clientA = deepstreamClient( 'localhost:6021', {
-			mergeStrategy: function( record, remoteVersion, remoteData, callback ) {
+			mergeStrategy: function( record, remoteData, remoteVersion, callback ) {
 				callback( 'Error Merging' );
 			}
 		} );

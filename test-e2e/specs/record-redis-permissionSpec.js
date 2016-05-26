@@ -29,17 +29,25 @@ describe( 'record permissions with internal cache', function() {
 
 	/**************** SETUP ****************/
 	it( 'starts the server', function( done ){
-		deepstreamServer = new DeepstreamServer();
+		deepstreamServer = new DeepstreamServer( {
+			showLogo: false,
+			permission: {
+				type: 'config',
+				options: {
+					path: './test-e2e/permissions-complex.json'
+				}
+			}
+		} );
 		deepstreamServer.on( 'started', done );
-		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'cache', redisCache );
-		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions-complex.json' );
 		deepstreamServer.start();
 	});
 
 	it( 'creates clientA', function( done ) {
-		clientA = deepstreamClient( 'localhost:6021' );
+		clientA = deepstreamClient( 'localhost:6021', {
+			mergeStrategy: deepstreamClient.MERGE_STRATEGIES.LOCAL_WINS
+		} );
 		clientA.on( 'error', function(){
 			clientAErrors.push( arguments );
 		});
@@ -61,11 +69,12 @@ describe( 'record permissions with internal cache', function() {
 	});
 
 	 /**************** TEST ****************/
+
 	describe( 'it reads and writes from an open record', function(){
 		it( 'creates the record with clientA and sets some data', function( done ){
 			var record = clientA.record.getRecord( 'open/some-user' );
 			record.set( 'firstname', 'wolfram' );
-			setTimeout( done, 30 );
+			setTimeout( done, 100 );
 		});
 
 		it( 'reads from the open record using clientB', function( done ){
@@ -137,10 +146,11 @@ describe( 'record permissions with internal cache', function() {
 			rec.set( 'value', 0 );
 			rec.set({ value: 1 });
 			rec.set({ value: 3 });
+
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 0 );
 				done();
-			}, 40);
+			}, 200);
 		});
 
 		it( 'can not decrement this record', function( done ) {
@@ -152,6 +162,57 @@ describe( 'record permissions with internal cache', function() {
 				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
 				done();
 			}, 40 );
+		});
+
+		it( 'sends a valid update, which results in a version conflict', function( done ) {
+			var rec = clientA.record.getRecord( 'only-increment' );
+			// Current local state, not valid on server since it was denied
+			expect( rec.get( 'value' ) ).toBe( 2 );
+			// Current state, future state
+			rec.set( { value: 4 } );
+			setTimeout(function(){
+				expect( clientAErrors.length ).toBe( 0 );
+				done();
+			}, 100 );
+		});
+
+		it( 'works when setting values in quick succession', function( done ) {
+			var rec = clientA.record.getRecord( 'only-increment' );
+			rec.set({ value: 5 });
+			rec.set({ value: 6 });
+			rec.set({ value: 7 });
+			rec.set({ value: 3 });
+			setTimeout(function(){
+				expect( clientAErrors.length ).toBe( 1 );
+				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				done();
+			}, 400 );
+		});
+
+		it( 'works when setting different records in quick mixed succession', function( done ) {
+			var incrementRecord = clientA.record.getRecord( 'only-increment' );
+			var decrementRecord = clientB.record.getRecord( 'only-decrement' );
+
+			decrementRecord.set( { value: 100 });
+			incrementRecord.set( { value: 8 });
+			decrementRecord.set( { value: 99 });
+			incrementRecord.set( { value: 9 });
+			decrementRecord.set( { value: 98 });
+
+			incrementRecord.set( { value: 1 });
+			decrementRecord.set( { value: 200 });
+
+
+			setTimeout(function(){
+				expect( clientAErrors.length ).toBe( 1 );
+				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+
+				console.log( clientBErrors )
+				expect( clientBErrors.length ).toBe( 1 );
+				expect( clientBErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+
+				done();
+			}, 400 );
 		});
 	});
 
@@ -231,7 +292,7 @@ describe( 'record permissions with internal cache', function() {
 			}, 100 );
 		});
 
-		it( 'sets the amout of items to 0 and immediatly retries the transaction', function( done ){
+		it( 'sets the amout of items to 0 and immediately retries the transaction', function( done ){
 			clientA.record.getRecord( 'item/a' ).set( 'stock', 0 );
 			expect( clientAErrors.length ).toBe( 0 );
 			var purchaseA = clientA.record.getRecord( 'only-allows-purchase-of-products-in-stock/pc' );
@@ -250,12 +311,14 @@ describe( 'record permissions with internal cache', function() {
 	});
 
 	/**************** TEAR DOWN ****************/
-	it( 'closes the clients', function() {
+	// closes the clients
+	afterAll( function() {
 		clientA.close();
 		clientB.close();
 	});
 
-	it( 'shuts clients and server down', function(done) {
+	// shuts clients and server down
+	afterAll( function(done) {
 		deepstreamServer.on( 'stopped', done );
 		deepstreamServer.stop();
 	});

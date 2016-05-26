@@ -13,7 +13,6 @@ describe( 'event listener', function() {
 	it( 'starts the server', function( done ){
 		deepstreamServer = new DeepstreamServer();
 		deepstreamServer.on( 'started', done );
-		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
 		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.start();

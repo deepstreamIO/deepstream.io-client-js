@@ -18,11 +18,17 @@ describe( 'event permissions', function() {
 
 	/**************** SETUP ****************/
 	it( 'starts the server', function( done ){
-		deepstreamServer = new DeepstreamServer();
+		deepstreamServer = new DeepstreamServer( {
+			showLogo: false,
+			permission: {
+				type: 'config',
+				options: {
+					path: './test-e2e/permissions-complex.json'
+				}
+			}
+		} );
 		deepstreamServer.on( 'started', done );
 		deepstreamServer.set( 'logger', logger );
-		deepstreamServer.set( 'showLogo', false );
-		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions-complex.json' );
 		deepstreamServer.start();
 	});
 

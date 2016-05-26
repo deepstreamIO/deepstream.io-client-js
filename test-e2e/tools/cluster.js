@@ -26,7 +26,6 @@ Cluster.prototype._startServer = function( port ) {
 	this.servers[ port ] = new DeepstreamServer();
 	this.servers[ port ].on( 'started', this._checkReady.bind( this, port ) );
 	this.servers[ port ].set( 'tcpPort', port );
-	this.servers[ port ].set( 'permissionConfigPath', './test-e2e/permissions.json' );
 
 	this.servers[ port ].set( 'port', port - 100 );
 	// this.servers[ port ].set( 'messageConnector', new MessageConnector({
@@ -64,7 +63,7 @@ Cluster.prototype._getRemoteUrls = function( port ) {
 
 Cluster.prototype._checkReady = function() {
 	for( var port in this.servers ) {
-		if( this.servers[ port ].isRunning !== true ) {
+		if( this.servers[ port ].isRunning() !== true ) {
 			return;
 		}
 	}
@@ -74,7 +73,7 @@ Cluster.prototype._checkReady = function() {
 
 Cluster.prototype._checkStopped = function() {
 	for( var port in this.servers ) {
-		if( this.servers[ port ].isRunning === true ) {
+		if( this.servers[ port ].isRunning() === true ) {
 			return;
 		}
 	}

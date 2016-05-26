@@ -8,7 +8,7 @@ describe( 'login', function() {
 		logger = new TestLogger(),
 		clientA,
 		clientB,
-		permissionHandler = {
+		authenticationHandler = {
 			isValidUser: function( handshakeData, authData, callback ) {
 				if( authData.username === 'validUserA' || authData.username === 'validUserB' ) {
 					callback( true, {
@@ -21,10 +21,6 @@ describe( 'login', function() {
 					});
 				}
 			},
-
-			canPerformAction: function( username, message, callback ) {
-				callback( null, true );
-			},
 			isReady: true
 		};
 
@@ -35,8 +31,7 @@ describe( 'login', function() {
 		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.set( 'maxAuthAttempts', 2 );
-		deepstreamServer.set( 'permissionConfigPath', './test-e2e/permissions.json' );
-		deepstreamServer.set( 'permissionHandler', permissionHandler );
+		deepstreamServer.set( 'authenticationHandler', authenticationHandler );
 		deepstreamServer.start();
 	});
 
