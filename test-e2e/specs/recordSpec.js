@@ -76,6 +76,90 @@ describe( 'record', function() {
 		}, 20 );
 	});
 
+	it( 'setting a leaf path to undefined deletes it', function( done ) {
+		clientB.record.getRecord( 'record1' ).set( 'city', undefined );
+		expect( clientB.record.getRecord( 'record1' ).get( 'city' ) ).toBeUndefined();
+		expect( clientB.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' } } );
+		expect( clientA.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' }, city: null } );
+
+		setTimeout(function(){
+			expect( clientA.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' } } );
+			done();
+		}, 20 );
+	});
+
+	it( 'setting a branch path to undefined deletes everything under it', function( done ) {
+		clientB.record.getRecord( 'record1' ).set( 'objectToDelete', { deleteMe: { key: 'value' } } );
+		expect( clientB.record.getRecord( 'record1' ).get( 'objectToDelete' ) ).toEqual( { deleteMe: { key: 'value' } } );
+
+		setTimeout( function(){
+			var subscribePath =  function( value ){
+				expect( value ).toBeUndefined();
+			};
+			clientA.record.getRecord( 'record1' ).subscribe( 'objectToDelete', subscribePath );
+			clientB.record.getRecord( 'record1' ).subscribe( 'objectToDelete', subscribePath );
+
+			var subscribeObject = function( value ) {
+				expect( value ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' } } );
+			};
+			clientA.record.getRecord( 'record1' ).subscribe( subscribeObject );
+			clientB.record.getRecord( 'record1' ).subscribe( subscribeObject );
+
+			expect( clientA.record.getRecord( 'record1' ).get( 'objectToDelete' ) ).toEqual( { deleteMe: { key: 'value' } } );
+
+			clientB.record.getRecord( 'record1' ).set( 'objectToDelete', undefined );
+			expect( clientB.record.getRecord( 'record1' ).get( 'objectToDelete' ) ).toBeUndefined();
+			expect( clientB.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' } } );
+			expect( clientA.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' }, objectToDelete: { deleteMe: { key: 'value' } } } );
+
+			setTimeout(function(){
+				expect( clientA.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' } } );
+
+				clientA.record.getRecord( 'record1' ).unsubscribe( 'objectToDelete', subscribePath );
+				clientA.record.getRecord( 'record1' ).unsubscribe( subscribeObject );
+				clientB.record.getRecord( 'record1' ).unsubscribe( 'objectToDelete', subscribePath );
+				clientB.record.getRecord( 'record1' ).unsubscribe( subscribeObject );
+				done();
+			}, 20 );
+		}, 20 );
+	});
+
+	it( 'setting a array index to undefined sets it as undefined', function( done ) {
+		clientB.record.getRecord( 'record1' ).set( 'arrayToDeleteFrom', [ {}, {}, {}, {} ] );
+		expect( clientB.record.getRecord( 'record1' ).get( 'arrayToDeleteFrom' ) ).toEqual( [ {}, {}, {}, {} ] );
+
+		setTimeout( function(){
+			var subscribePath =  function( value ){
+				expect( value ).toEqual( [ {}, {}, null, {} ] );
+			};
+			clientA.record.getRecord( 'record1' ).subscribe( 'arrayToDeleteFrom', subscribePath );
+			clientB.record.getRecord( 'record1' ).subscribe( 'arrayToDeleteFrom', subscribePath );
+
+			var subscribeObject = function( value ) {
+				expect( value ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' }, arrayToDeleteFrom: [ {}, {}, null, {} ] } );
+			};
+			clientA.record.getRecord( 'record1' ).subscribe( subscribeObject );
+			clientB.record.getRecord( 'record1' ).subscribe( subscribeObject );
+
+			expect( clientA.record.getRecord( 'record1' ).get( 'arrayToDeleteFrom' ) ).toEqual( [ {}, {}, {}, {} ] );
+
+			clientB.record.getRecord( 'record1' ).set( 'arrayToDeleteFrom.2', undefined );
+			expect( clientB.record.getRecord( 'record1' ).get( 'arrayToDeleteFrom' ) ).toEqual( [ {}, {}, null, {} ] );
+			expect( clientB.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' }, arrayToDeleteFrom: [ {}, {}, null, {} ] } );
+			expect( clientA.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' }, arrayToDeleteFrom: [ {}, {}, {}, {} ] } );
+
+			setTimeout(function(){
+				expect( clientA.record.getRecord( 'record1' ).get() ).toEqual( { user: { firstname: 'Wolfram', lastname: 'Hempel' }, arrayToDeleteFrom: [ {}, {}, null, {} ] } );
+				clientA.record.getRecord( 'record1' ).unsubscribe( 'objectToDelete', subscribePath );
+				clientA.record.getRecord( 'record1' ).unsubscribe( subscribeObject );
+				clientB.record.getRecord( 'record1' ).unsubscribe( 'objectToDelete', subscribePath );
+				clientB.record.getRecord( 'record1' ).unsubscribe( subscribeObject );
+				done();
+			}, 20 );
+		}, 20 );
+	});
+
+
 	it( 'does not keep objects by reference', function() {
 		var a = {
 			number: 1
@@ -159,6 +243,31 @@ describe( 'record', function() {
 	});
 
 	 /**************** TEAR DOWN ****************/
+	it( 'allows discard to be called before the record is ready', function( done ) {
+		var recordToDiscard = clientA.record.getRecord( 'recordToDiscardImmediately' );
+		recordToDiscard
+			.set( { key: 'value' } )
+			.discard();
+
+		setTimeout( function() {
+			//Not failing the test is proof this works
+			done();
+		}, 20 );
+	});
+
+	it( 'allows delete to be called before the record is ready', function( done ) {
+		var recordToDelete = clientA.record.getRecord( 'recordToDeleteImmediately' );
+		recordToDelete
+			.set( { key: 'value' } )
+			.delete();
+
+		setTimeout( function() {
+			//Not failing the test is proof this works
+			done();
+		}, 20 );
+	});
+
+	/**************** TEAR DOWN ****************/
 	it( 'closes the clients', function() {
 		clientA.close();
 		clientB.close();

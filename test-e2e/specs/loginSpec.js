@@ -11,9 +11,14 @@ describe( 'login', function() {
 		permissionHandler = {
 			isValidUser: function( handshakeData, authData, callback ) {
 				if( authData.username === 'validUserA' || authData.username === 'validUserB' ) {
-					callback( null, authData.username, 'test-data' );
+					callback( true, {
+						username: authData.username,
+						clientData: 'test-data'
+					});
 				} else {
-					callback( 'Invalid user' );
+					callback( false, {
+						clientData: 'Invalid user'
+					});
 				}
 			},
 
@@ -38,9 +43,8 @@ describe( 'login', function() {
 	/**************** TESTS ****************/
 	it( 'tries to log in with an invalid user', function( done ) {
 		clientA = deepstreamClient( 'localhost:6021' );
-		clientA.login({ username: 'Egon'}, function( success, event, data ){
+		clientA.login({ username: 'Egon'}, function( success, data ){
 			expect( success ).toBe( false );
-			expect( event ).toBe( 'INVALID_AUTH_DATA' );
 			expect( data ).toBe( 'Invalid user' );
 			done();
 		});
@@ -49,15 +53,13 @@ describe( 'login', function() {
 	it( 'tries to log in a second time and exceeds maxAuthAttempts', function(done) {
 		var firstcall = true;
 
-		clientA.login({ username: 'Egon'}, function( success, event, data ){
+		clientA.login({ username: 'Egon'}, function( success, data ){
 			if( firstcall ) {
 				expect( success ).toBe( false );
-				expect( event ).toBe( 'INVALID_AUTH_DATA' );
 				expect( data ).toBe( 'Invalid user' );
 				firstcall = false;
 			} else {
 				expect( success ).toBe( false );
-				expect( event ).toBe( 'TOO_MANY_AUTH_ATTEMPTS' );
 				expect( data ).toBe( 'too many authentication attempts' );
 				done();
 			}
@@ -71,7 +73,7 @@ describe( 'login', function() {
 			done();
 		});
 
-		clientA.login({ username: 'Egon'}, function( success, event, data ){
+		clientA.login({ username: 'Egon'}, function( success, data ){
 			expect( this ).toBe( 'never called' );
 		});
 	});
@@ -81,7 +83,7 @@ describe( 'login', function() {
 		clientA.on( 'error', function(){
 			console.log( 'clientA error', arguments );
 		})
-		clientA.login({ username: 'validUserA'}, function( success, event, data ){
+		clientA.login({ username: 'validUserA'}, function( success, data ){
 			expect( success ).toBe( true );
 			expect( data ).toBe( 'test-data' )
 			done();

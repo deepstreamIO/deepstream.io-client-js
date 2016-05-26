@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Deepstream Client Testpage</title>
+
+		<link rel="stylesheet" type="text/css" href="../test-page/css/screen.css" />
+
+		<script type="text/javascript" src="dist/build.js"></script>
+	</head>
+	<body>
+		<div id="wrapper">
+			<fieldset>
+				<legend>Connection State</legend>
+				<ul class="fields">
+					<li>
+						<div class="input-with-label">
+							<input data-bind="textInput:host" />
+							<label>host</label>
+						</div>
+						<div class="input-with-label">
+							<input data-bind="textInput:port" />
+							<label>port</label>
+						</div>
+						<div style="clear:left">
+							<label>Connection State</label> <span data-bind="text:connectionState"></span>
+						</div>
+						<div class="button-group">
+							<button
+								type="button"
+								class="half"
+								data-bind="click:connect, enable:connectionState()==='CLOSED' && !hasClient()">connect</button>
+							<button
+								type="button"
+								class="half"
+								data-bind="click:disconnect, disable:connectionState()==='CLOSED'">disconnect</button>
+						</div>
+					</li>
+				</ul>
+			</fieldset>
+
+			<fieldset data-bind="enable:hasClient">
+				<legend>Login</legend>
+				<ul class="fields">
+					<li><label>username</label><input data-bind="value:username" /></li>
+					<li><label>password</label><input data-bind="value:password" /></li>
+				</ul>
+				<button type="button" data-bind="click:login">Login</button>
+			</fieldset>
+
+			<fieldset data-bind="enable:hasClient">
+				<legend>Record</legend>
+				<ul class="fields">
+					<li>
+						<label>record someUser</label>
+						<button
+							type="button"
+							data-bind="click: getSomeUserRecord, disable: isSubscribed"
+							class="inline">subscribe</button>
+						<button
+							type="button"
+							data-bind="click: unsubscribeSomeUserRecord, enable: isSubscribed"
+							class="inline">unsubscribe</button>
+						<button
+							type="button"
+							data-bind="click: snapshotSomeUserRecord"
+							class="inline">snapshot</button>
+						<button
+							type="button"
+							data-bind="click: hasSomeUserRecord"
+							class="inline">has</button>
+						<button
+							type="button"
+							data-bind="click: deleteSomeUserRecord, enable: isSubscribed"
+							class="inline">delete</button>
+					</li>
+					<li>
+						<label>record data</label>
+						<div class="input-with-label">
+							<input data-bind="textInput:firstname" />
+							<label>firstname</label>
+						</div>
+						<div class="input-with-label">
+							<input data-bind="textInput:lastname" />
+							<label>lastname</label>
+						</div>
+					</li>
+					<li>
+						<label>performance</label>
+						<button
+							type="button"
+							data-bind="click: setTimestamp, enable: isSubscribed"
+							class=" inline block">set timestamp</button>
+						<div class="input-with-label quarter">
+							<div data-bind="text:recordTimeDelta"></div>
+							<label>time since record was updated</label>
+						</div>
+					</li>
+					<li>
+						<label>Memory</label>
+						<button
+							type="button"
+							data-bind="click: createRecords"
+							class=" inline block">create and destroy records</button>
+
+						<button
+							type="button"
+							data-bind="click: stopCreateRecords"
+							class=" inline block">stop</button>
+
+
+					</li>
+
+				</ul>
+			</fieldset>
+
+			<fieldset data-bind="enable:hasClient">
+				<legend>Event</legend>
+				<ul class="fields">
+					<li>
+						<label>emit</label>
+						<div class="input-with-label">
+							<input data-bind="textInput:emitEventName" />
+							<label>name</label>
+						</div>
+						<div class="input-with-label">
+							<input data-bind="textInput:emitEventData" />
+							<label>data</label>
+						</div>
+						<button
+							type="button"
+							data-bind="enable:emitEventName(), click: emitEvent"
+							class="inline">OK</button>
+					</li>
+					<li>
+						<label>subscribe</label>
+						<div class="input-with-label">
+							<input data-bind="textInput:eventName" />
+							<label>name</label>
+						</div>
+						<button
+							type="button"
+							data-bind="enable:eventName(), click: subscribeToEvent"
+							class="inline">OK</button>
+					</li>
+					<li>
+						<label>events</label>
+						<div class="event-list" data-bind="foreach:events">
+							<div class="event">
+								<div><b data-bind="text:eventName"></b></div>
+								<div data-bind="foreach:receivedEvents" class="received-events">
+									<span data-bind="text:$data"></span>,
+								</div>
+								<div>
+									<span class="clickable"
+										data-bind="text:isSubscribed() ? 'unsubscribe' : 'subscribe',
+										click:toggleSubscribe">
+								</div>
+							</div>
+						</div>
+					</li>
+				</ul>
+			</fieldset>
+
+			<fieldset data-bind="enable:hasClient">
+				<legend>RPC</legend>
+				<ul class="fields">
+					<li>
+						<label>provide addTwo</label>
+						<button
+							type="button"
+							data-bind="click: provideAddTwo"
+							class="inline">OK</button>
+					</li>
+					<li>
+						<label>make rpc addTwo</label>
+						<div class="input-with-label quarter">
+							<input data-bind="textInput:rpcNumA" />
+							<label>numA</label>
+						</div>
+						<div class="input-with-label quarter">
+							<input data-bind="textInput:rpcNumB" />
+							<label>numB</label>
+						</div>
+						<div class="input-with-label quarter">
+							<div data-bind="text:rpcResponse"></div>
+							<label>response</label>
+						</div>
+						<div class="input-with-label quarter">
+							<div data-bind="text:rpcResponseTime"></div>
+							<label>response time</label>
+						</div>
+						<button
+							type="button"
+							data-bind="click: makeAddTwoRpc"
+							class="inline">OK</button>
+					</li>
+				</ul>
+			</fieldset>
+
+
+		</div>
+
+	</body>
+</html>

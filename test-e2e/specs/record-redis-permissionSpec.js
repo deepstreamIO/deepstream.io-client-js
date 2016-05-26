@@ -140,7 +140,7 @@ describe( 'record permissions with internal cache', function() {
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 0 );
 				done();
-			}, 200);
+			}, 40);
 		});
 
 		it( 'can not decrement this record', function( done ) {
@@ -151,7 +151,7 @@ describe( 'record permissions with internal cache', function() {
 				expect( clientAErrors.length ).toBe( 1 );
 				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
 				done();
-			}, 200);
+			}, 40 );
 		});
 	});
 
