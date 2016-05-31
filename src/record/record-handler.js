@@ -136,7 +136,7 @@ RecordHandler.prototype.unlisten = function( pattern ) {
  * @public
  */
 RecordHandler.prototype.snapshot = function( name, callback ) {
-	if( this._records[ name ] ) {
+	if( this._records[ name ] && this._records[ name ].isReady ) {
 		callback( null, this._records[ name ].get() );
 	} else {
 		this._snapshotRegistry.request( name, callback );
