@@ -184,12 +184,10 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 
 	if( args.triggerNow ) {
 		this.whenReady(function () {
-			if( args.triggerNow) {
-				if( args.path ) {
-					args.callback( this._getPath( args.path ).getValue() );
-				} else {
-					args.callback( this._$data );
-				}
+			if( args.path ) {
+				args.callback( this._getPath( args.path ).getValue() );
+			} else {
+				args.callback( this._$data );
 			}
 			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
 		})
