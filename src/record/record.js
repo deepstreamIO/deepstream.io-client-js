@@ -190,7 +190,7 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 				args.callback( this._$data );
 			}
 			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-		})
+		}.bind(this))
 	} else {
 		this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
 	}
