@@ -21,7 +21,7 @@ var JsonPath = require( './json-path' ),
  *
  * @constructor
  */
-var Record = function( name, recordOptions, connection, options, client ) {
+var Record = function( name, recordOptions, connection, options, client, mergeStrategy ) {
 	this.name = name;
 	this.usages = 0;
 	this._recordOptions = recordOptions;
@@ -37,11 +37,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
-
-	this._mergeStrategy = null;
-	if( options.mergeStrategy ) {
-		this.setMergeStrategy( options.mergeStrategy );
-	}
+	this._mergeStrategy = mergeStrategy;
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
@@ -50,27 +46,6 @@ var Record = function( name, recordOptions, connection, options, client ) {
 };
 
 EventEmitter( Record.prototype );
-
-/**
- * Set a merge strategy to resolve any merge conflicts that may occur due
- * to offline work or write conflicts. The function will be called with the 
- * local record, the remote version/data and a callback to call once the merge has 
- * completed or if an error occurs ( which leaves it in an inconsistent state until
- * the next update merge attempt ).
- *
- * @param   {Function} mergeStrategy A Function that can resolve merge issues.
- *
- * @public
- * @returns {void}
- */
-Record.prototype.setMergeStrategy = function( mergeStrategy ) {
-	if( typeof mergeStrategy === 'function' ) {
-		this._mergeStrategy = mergeStrategy;
-	} else {
-		throw new Error( 'Invalid merge strategy: Must be a Function' );
-	}
-};
-
 
 /**
  * Returns a copy of either the entire dataset of the record
@@ -312,8 +287,9 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
-	if( this._mergeStrategy ) {
-		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
+	const mergeStrategy = findMatch(this._mergeStrategy, this.name);
+	if( mergeStrategy ) {
+		mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
 	}
 	else {
 		message.processedError = true;
