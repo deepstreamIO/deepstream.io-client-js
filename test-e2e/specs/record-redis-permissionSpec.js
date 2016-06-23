@@ -184,9 +184,11 @@ describe( 'record permissions with internal cache', function() {
 			rec.set({ value: 3 });
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				if( clientAErrors[ 0 ] ) {
+					expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				}
 				done();
-			}, 400 );
+			}, 2000 );
 		});
 
 		it( 'works when setting different records in quick mixed succession', function( done ) {
@@ -205,13 +207,17 @@ describe( 'record permissions with internal cache', function() {
 
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				if( clientAErrors[ 0 ] ) {
+					expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				}
 
 				expect( clientBErrors.length ).toBe( 1 );
-				expect( clientBErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				if( clientBErrors[ 0 ] ) {
+					expect( clientBErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				}
 
 				done();
-			}, 400 );
+			}, 2000 );
 		});
 	});
 
