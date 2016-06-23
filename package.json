@@ -29,11 +29,11 @@
     "net": false
   },
   "devDependencies": {
-    "deepstream.io": "deepstreamIO/deepstream.io",
     "browserify": "13.0.1",
     "coveralls": "^2.11.9",
-    "deepstream.io-msg-redis": "latest",
+    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "deepstream.io-cache-redis": "latest",
+    "deepstream.io-msg-redis": "latest",
     "derequire": "2.0.3",
     "grunt": "~0.4.5",
     "grunt-browserify": "4.0.1",
