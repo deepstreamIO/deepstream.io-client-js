@@ -159,9 +159,11 @@ describe( 'record permissions with internal cache', function() {
 			rec.set( 'value', 2 );
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				if( clientAErrors[ 0 ] ) {
+					expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				}
 				done();
-			}, 40 );
+			}, 100 );
 		});
 
 		it( 'sends a valid update, which results in a version conflict', function( done ) {
