@@ -5,6 +5,12 @@ var DeepstreamServer = require( 'deepstream.io' ),
 	RedisCacheConnector = require( 'deepstream.io-cache-redis' ),
 	config = require( '../config' );
 
+function assertMessageDenied( clientErrors ) {
+	if( clientErrors[ 0 ] ) {
+		expect( clientErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+	}
+}
+
 describe( 'record permissions with internal cache', function() {
 	var deepstreamServer,
 		logger = new TestLogger(),
@@ -134,7 +140,7 @@ describe( 'record permissions with internal cache', function() {
 				expect( recA1.get( 'lastname' ) ).toBe( undefined );
 				expect( clientAErrors.length ).toBe( 0 );
 				expect( clientBErrors.length ).toBe( 1 );
-				expect( clientBErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				assertMessageDenied( clientBErrors );
 				done();
 			}, 100 );
 		});
@@ -159,9 +165,7 @@ describe( 'record permissions with internal cache', function() {
 			rec.set( 'value', 2 );
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				if( clientAErrors[ 0 ] ) {
-					expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
-				}
+					assertMessageDenied( clientAErrors );
 				done();
 			}, 100 );
 		});
@@ -186,9 +190,7 @@ describe( 'record permissions with internal cache', function() {
 			rec.set({ value: 3 });
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				if( clientAErrors[ 0 ] ) {
-					expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
-				}
+				assertMessageDenied( clientAErrors );
 				done();
 			}, 2000 );
 		});
@@ -209,14 +211,10 @@ describe( 'record permissions with internal cache', function() {
 
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				if( clientAErrors[ 0 ] ) {
-					expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
-				}
+				assertMessageDenied( clientAErrors );
 
 				expect( clientBErrors.length ).toBe( 1 );
-				if( clientBErrors[ 0 ] ) {
-					expect( clientBErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
-				}
+				assertMessageDenied( clientBErrors )
 
 				done();
 			}, 2000 );
@@ -236,7 +234,7 @@ describe( 'record permissions with internal cache', function() {
 			clientA.record.getRecord( 'only-delete-egon-miller/Egon/fisher' ).delete();
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				assertMessageDenied( clientAErrors );
 				done();
 			}, 100 );
 		});
@@ -255,7 +253,7 @@ describe( 'record permissions with internal cache', function() {
 			clientA.record.getRecord( 'only-delete-egon-miller/mike/fisher' ).delete();
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				assertMessageDenied( clientAErrors );
 				done();
 			}, 100 );
 		});
@@ -294,7 +292,7 @@ describe( 'record permissions with internal cache', function() {
 
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				assertMessageDenied( clientAErrors );
 				done();
 			}, 100 );
 		});
@@ -311,7 +309,7 @@ describe( 'record permissions with internal cache', function() {
 
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
+				assertMessageDenied( clientAErrors );
 				done();
 			}, 100 );
 		});
