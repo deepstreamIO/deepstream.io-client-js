@@ -171,7 +171,11 @@ RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
 	if( message.action === C.ACTIONS.ERROR &&
-		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS )
+		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
+			message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
+			message.data[ 0 ] !== C.ACTIONS.HAS  &&
+			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
+		)
 	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
@@ -188,7 +192,10 @@ RecordHandler.prototype._$handle = function( message ) {
 		 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
 		 * between another clients creation and read message for the same record
 		 */
-		if( message.data[ 0 ] === C.ACTIONS.DELETE || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) {
+		if( message.data[ 0 ] === C.ACTIONS.DELETE ||
+			  message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ||
+			 ( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE  )
+			) {
 			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
 
 			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {

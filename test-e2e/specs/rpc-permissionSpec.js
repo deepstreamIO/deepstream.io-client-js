@@ -3,7 +3,7 @@ var DeepstreamServer = require( 'deepstream.io' ),
 	deepstreamClient = require( '../../src/client' ),
 	TestLogger = require( '../tools/test-logger' );
 
-describe( 'event permissions', function() {
+describe( 'rpc permissions', function() {
 	var deepstreamServer,
 		logger = new TestLogger(),
 		clientA,
@@ -104,7 +104,7 @@ describe( 'event permissions', function() {
 				expect( clientAErrors.length ).toBe( 0 );
 				expect( clientBErrors.length ).toBe( 1 );
 				//TODO order is muddled up, should be [ 0 ][ 1 ]
-				expect( clientBErrors[ 0 ][ 0 ] ).toBe( 'MESSAGE_DENIED' );
+				expect( clientBErrors[ 0 ][ 0 ] ).toEqual(  [ 'MESSAGE_DENIED', 'a-provide-b-request', 'S' ] );
 				done();
 			}, 40 );
 		});
@@ -140,7 +140,11 @@ describe( 'event permissions', function() {
 			setTimeout( function(){
 				expect( clientAErrors.length ).toBe( 0 );
 				expect( clientBErrors.length ).toBe( 1 );
-				expect( clientBErrors[ 0 ][ 0 ] ).toBe( 'MESSAGE_PERMISSION_ERROR' );
+				expect( clientBErrors[ 0 ][ 0 ][ 0 ] ).toBe( 'MESSAGE_PERMISSION_ERROR' );
+				expect( clientBErrors[ 0 ][ 0 ][ 1 ] ).toBe( 'only-full-user-data' );
+				expect( clientBErrors[ 0 ][ 0 ][ 2 ] ).toBe( 'REQ' );
+				// Number 3 is correlation id, which is random
+				expect( clientBErrors[ 0 ][ 0 ][ 4 ] ).toBe( 'L' );
 				done();
 			}, 100 );
 		});
