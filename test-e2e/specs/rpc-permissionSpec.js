@@ -140,7 +140,6 @@ describe( 'rpc permissions', function() {
 			setTimeout( function(){
 				expect( clientAErrors.length ).toBe( 0 );
 				expect( clientBErrors.length ).toBe( 1 );
-				console.log( clientBErrors[ 0 ][ 0 ] )
 				expect( clientBErrors[ 0 ][ 0 ][ 0 ] ).toBe( 'MESSAGE_PERMISSION_ERROR' );
 				expect( clientBErrors[ 0 ][ 0 ][ 1 ] ).toBe( 'only-full-user-data' );
 				expect( clientBErrors[ 0 ][ 0 ][ 2 ] ).toBe( 'REQ' );
