@@ -180,8 +180,8 @@ RpcHandler.prototype._$handle = function( message ) {
 				return;
 			}
 			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {
-				rpcName = message.data[ 3 ];
-				correlationId = message.data[ 4 ];
+				rpcName = message.data[ 1 ];
+				correlationId = message.data[ 3 ];
 			}
 		} else {
 			rpcName = message.data[ 1 ];

@@ -80,7 +80,7 @@ describe( 'record permissions with internal cache', function() {
 		it( 'creates the record with clientA and sets some data', function( done ){
 			var record = clientA.record.getRecord( 'open/some-user' );
 			record.set( 'firstname', 'wolfram' );
-			setTimeout( done, 100 );
+			setTimeout( done, 200 );
 		});
 
 		it( 'reads from the open record using clientB', function( done ){
@@ -125,14 +125,9 @@ describe( 'record permissions with internal cache', function() {
 		});
 
 		it( 'reads public and write is private', function( done ) {
-			console.log('==============================')
 			var recA1 = clientA.record.getRecord( 'public-read-private-write/client-a' );
 			var recB1 = clientB.record.getRecord( 'public-read-private-write/client-a' );
 			var recASubscribeCalled = false;
-
-			clientB.on( 'error', function(){
-				console.log( new Error().stack )
-			});
 
 			recA1.subscribe( 'firstname', function( firstname ){
 				var recASubscribeCalled = true;
@@ -144,12 +139,10 @@ describe( 'record permissions with internal cache', function() {
 				expect( recASubscribeCalled ).toBe( false );
 				expect( recA1.get( 'lastname' ) ).toBe( undefined );
 				expect( clientAErrors.length ).toBe( 0 );
-				console.log( clientBErrors)
 				expect( clientBErrors.length ).toBe( 1 );
 				assertMessageDenied( clientBErrors );
-				console.log('==============================')
 				done();
-			}, 100 );
+			}, 200 );
 		});
 	});
 
@@ -172,9 +165,9 @@ describe( 'record permissions with internal cache', function() {
 			rec.set( 'value', 2 );
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 1 );
-					assertMessageDenied( clientAErrors );
+				assertMessageDenied( clientAErrors );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 
 		it( 'sends a valid update, which results in a version conflict', function( done ) {
@@ -186,7 +179,7 @@ describe( 'record permissions with internal cache', function() {
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 0 );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 
 		it( 'works when setting values in quick succession', function( done ) {
@@ -206,7 +199,7 @@ describe( 'record permissions with internal cache', function() {
 			var incrementRecord = clientA.record.getRecord( 'only-increment' );
 			var decrementRecord = clientB.record.getRecord( 'only-decrement' );
 
-			decrementRecord.set( { value: 100 });
+			decrementRecord.set( { value: 200 });
 			incrementRecord.set( { value: 8 });
 			decrementRecord.set( { value: 99 });
 			incrementRecord.set( { value: 9 });
@@ -233,7 +226,7 @@ describe( 'record permissions with internal cache', function() {
 			 clientA.record.getRecord( 'only-delete-egon-miller/Egon/fisher' );
 			 clientA.record.getRecord( 'only-delete-egon-miller/mike/fisher' );
 			 clientA.record.getRecord( 'only-delete-egon-miller/Egon/miller' );
-			 setTimeout( done, 100 );
+			 setTimeout( done, 200 );
 		});
 
 		it( 'fails to delete egon fisher', function( done ){
@@ -243,7 +236,7 @@ describe( 'record permissions with internal cache', function() {
 				expect( clientAErrors.length ).toBe( 1 );
 				assertMessageDenied( clientAErrors );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 
 		it( 'successfully deletes egon miller', function( done ){
@@ -252,7 +245,7 @@ describe( 'record permissions with internal cache', function() {
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 0 );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 
 		it( 'fails to delete mike fisher', function( done ){
@@ -262,7 +255,7 @@ describe( 'record permissions with internal cache', function() {
 				expect( clientAErrors.length ).toBe( 1 );
 				assertMessageDenied( clientAErrors );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 	});
 
@@ -270,7 +263,7 @@ describe( 'record permissions with internal cache', function() {
 		it( 'creates the cross referenced records', function( done ){
 			clientA.record.getRecord( 'item/a' ).set( 'stock', 3 );
 			clientA.record.getRecord( 'item/b' ).set( 'stock', 0 );
-			setTimeout( done, 50 );
+			setTimeout( done, 200 );
 		});
 
 		it( 'successfully creates a transaction for an item that is in stock', function( done ){
@@ -285,7 +278,7 @@ describe( 'record permissions with internal cache', function() {
 			setTimeout(function(){
 				expect( clientAErrors.length ).toBe( 0 );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 
 		it( 'fails to create a transaction for an item that is out of stock', function( done ){
@@ -301,7 +294,7 @@ describe( 'record permissions with internal cache', function() {
 				expect( clientAErrors.length ).toBe( 1 );
 				assertMessageDenied( clientAErrors );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 
 		it( 'sets the amout of items to 0 and immediately retries the transaction', function( done ){
@@ -318,7 +311,7 @@ describe( 'record permissions with internal cache', function() {
 				expect( clientAErrors.length ).toBe( 1 );
 				assertMessageDenied( clientAErrors );
 				done();
-			}, 100 );
+			}, 200 );
 		});
 	});
 
