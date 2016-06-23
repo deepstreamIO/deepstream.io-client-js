@@ -294,8 +294,13 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
 		this._applyUpdate( message, this._client );
 	}
+	// Otherwise it should be an error, and dealt with accordingly
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
 		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
+	}
+	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
+		clearInterval( this._readAckTimeout );
+		clearInterval( this._readTimeout );
 	}
 };
 
