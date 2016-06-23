@@ -38,13 +38,13 @@
     "grunt": "~0.4.5",
     "grunt-browserify": "4.0.1",
     "grunt-contrib-uglify": "0.11.1",
-    "grunt-exec": "0.4.7",
+    "grunt-exec": "1.0.0",
     "grunt-release": "0.13.0",
     "istanbul": "^0.4.3",
     "jasmine": "^2.4.1",
     "jasmine-spec-reporter": "^2.4.0",
     "proxyquire": "1.7.9",
-    "watch": "^0.17.1"
+    "watch": "^0.19.1"
   },
   "author": "deepstreamHub GmbH",
   "license": "MIT",
