@@ -23,6 +23,7 @@ var RecordHandler = function( options, connection, client ) {
 	this._lists = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
+	this._mergeStrategy = {};
 
 	this._hasRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout );
 	this._snapshotRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout );
@@ -40,16 +41,24 @@ var RecordHandler = function( options, connection, client ) {
  */
 RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
-		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
+		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client, this._mergeStrategy );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
 		this._records[ name ].on( 'destroyPending', this._onDestroyPending.bind( this, name ) );
 		this._records[ name ].on( 'deleted', this._removeRecord.bind( this, name ) );
 		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
 	}
-	
+
 	this._records[ name ].usages++;
-	
+
 	return this._records[ name ];
+};
+
+RecordHandler.prototype.setMergeStrategy = function( pattern, mergeStrategy ) {
+	if( typeof mergeStrategy === 'function' ) {
+		this._mergeStrategy[ pattern ] = mergeStrategy;
+	} else {
+		throw new Error( 'Invalid merge strategy: Must be a Function' );
+	}
 };
 
 /**
