@@ -171,7 +171,11 @@ RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
 	if( message.action === C.ACTIONS.ERROR &&
-		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS )
+		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
+			message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
+			message.data[ 0 ] !== C.ACTIONS.HAS  &&
+			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
+		)
 	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
