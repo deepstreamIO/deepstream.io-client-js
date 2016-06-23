@@ -207,7 +207,6 @@ describe( 'record permissions with internal cache', function() {
 				expect( clientAErrors.length ).toBe( 1 );
 				expect( clientAErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
 
-				console.log( clientBErrors )
 				expect( clientBErrors.length ).toBe( 1 );
 				expect( clientBErrors[ 0 ][ 1 ] ).toBe( 'MESSAGE_DENIED' );
 
