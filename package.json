@@ -29,7 +29,7 @@
     "net": false
   },
   "devDependencies": {
-    "deepstream.io": "1.0.0-beta.3",
+    "deepstream.io": "deepstreamIO/deepstream.io",
     "browserify": "13.0.1",
     "coveralls": "^2.11.9",
     "deepstream.io-msg-redis": "latest",
