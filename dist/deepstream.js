@@ -4246,6 +4246,31 @@ arguments[4][31][0].apply(exports,arguments)
 // shim for using process in browser
 
 var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+  try {
+    cachedSetTimeout = setTimeout;
+  } catch (e) {
+    cachedSetTimeout = function () {
+      throw new Error('setTimeout is not defined');
+    }
+  }
+  try {
+    cachedClearTimeout = clearTimeout;
+  } catch (e) {
+    cachedClearTimeout = function () {
+      throw new Error('clearTimeout is not defined');
+    }
+  }
+} ())
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -4270,7 +4295,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
+    var timeout = cachedSetTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -4287,7 +4312,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
+    cachedClearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -4299,7 +4324,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+        cachedSetTimeout(drainQueue, 0);
     }
 };
 
@@ -4360,7 +4385,7 @@ var C = _dereq_( './constants/constants' ),
  * @copyright 2014 Hoxton One Ltd.
  *
  * @{@link http://deepstream.io}
- * 
+ *
  *
  * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
  * @param {Object} options A map of options that extend the ones specified in default-options.js
@@ -4371,9 +4396,9 @@ var C = _dereq_( './constants/constants' ),
 var Client = function( url, options ) {
 	this._url = url;
 	this._options = this._getOptions( options || {} );
-	
+
 	this._connection = new Connection( this, this._url, this._options );
-	
+
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
@@ -4409,7 +4434,7 @@ Emitter( Client.prototype );
  *
  * login can be called multiple times until either the connection is authenticated or
  * forcefully closed by the server since its maxAuthAttempts threshold has been exceeded
- * 
+ *
  * @param   {Object}   authParams JSON.serializable authentication data
  * @param   {Function} callback   Will be called with either (true) or (false, errorType, errorMessage)
  *
@@ -4453,7 +4478,7 @@ Client.prototype.getConnectionState = function() {
 Client.prototype.getUid = function() {
 	var timestamp = (new Date()).getTime().toString(36),
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
-	
+
 	return timestamp + '-' + randomString;
 };
 
@@ -4491,7 +4516,7 @@ Client.prototype._$onMessage = function( message ) {
  * IMPORTANT: Errors that are specific to a request, e.g. a RPC
  * timing out or a record not being permissioned are passed directly
  * to the method that requested them
- * 
+ *
  * @param   {String} topic One of CONSTANTS.TOPIC
  * @param   {String} event One of CONSTANTS.EVENT
  * @param   {String} msg   Error dependent message
@@ -4518,9 +4543,9 @@ Client.prototype._$onError = function( topic, event, msg ) {
 		this.emit( event, topic, msg );
 	} else {
 		console.log( '--- You can catch all deepstream errors by subscribing to the error event ---' );
-		
+
 		errorMsg = event + ': ' + msg;
-		
+
 		if( topic ) {
 			errorMsg += ' (' + topic + ')';
 		}
@@ -4532,9 +4557,9 @@ Client.prototype._$onError = function( topic, event, msg ) {
 /**
  * Passes generic messages from the error topic
  * to the _$onError handler
- * 
+ *
  * @param {Object} errorMessage parsed deepstream error message
- * 
+ *
  * @private
  * @returns {void}
  */
@@ -4639,6 +4664,8 @@ exports.EVENT.UNSOLICITED_MESSAGE = 'UNSOLICITED_MESSAGE';
 exports.EVENT.MESSAGE_PARSE_ERROR = 'MESSAGE_PARSE_ERROR';
 exports.EVENT.VERSION_EXISTS = 'VERSION_EXISTS';
 exports.EVENT.NOT_AUTHENTICATED = 'NOT_AUTHENTICATED';
+exports.EVENT.MESSAGE_DENIED = 'MESSAGE_DENIED';
+exports.EVENT.MESSAGE_PERMISSION_ERROR = 'MESSAGE_PERMISSION_ERROR';
 exports.EVENT.LISTENER_EXISTS = 'LISTENER_EXISTS';
 exports.EVENT.NOT_LISTENING = 'NOT_LISTENING';
 exports.EVENT.TOO_MANY_AUTH_ATTEMPTS = 'TOO_MANY_AUTH_ATTEMPTS';
@@ -4721,7 +4748,7 @@ module.exports = {
 	************************************************/
 
 	/**
-	 * @param {Boolean} recordPersistDefault Whether records should be 
+	 * @param {Boolean} recordPersistDefault Whether records should be
 	 *                                       persisted by default. Can be overwritten
 	 *                                       for individual records when calling getRecord( name, persist );
 	 */
@@ -4742,13 +4769,13 @@ module.exports = {
 	 *                                       	up and declares the connection closed
 	 */
 	maxReconnectAttempts: 5,
-	
+
 	/**
 	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
 	 * 											no Ack-message has been received
 	 */
 	 rpcAckTimeout: 6000,
-	 
+
 	 /**
 	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
 	 * 											no response-message has been received
@@ -4765,10 +4792,10 @@ module.exports = {
 	  * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
 	  *                                      	time, the deepstream client will try to split them into smaller packets and send
 	  *                                      	these every <timeBetweenSendingQueuedPackages> ms.
-	  *                                      	
+	  *
 	  *                                       	This parameter specifies the number of messages after which deepstream sends the
 	  *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
-	  *                                      	
+	  *
 	  */
 	 maxMessagesPerPacket: 100,
 
@@ -4791,7 +4818,7 @@ module.exports = {
 
 	 /**
 	  * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
-	  *                                       	until an error is thrown since no delete ack message had been received. Please 
+	  *                                       	until an error is thrown since no delete ack message had been received. Please
 	  *                                       	take into account that the deletion is only complete after the record has been
 	  *                                       	deleted from both cache and storage
 	  */
@@ -4809,7 +4836,7 @@ module.exports = {
 	  *                                         Set to null if you only intend to use WebRTC within your local network
 	  */
 	 rtcPeerConnectionConfig: { iceServers: [
-		{ url: 'stun:stun.services.mozilla.com' }, 
+		{ url: 'stun:stun.services.mozilla.com' },
 		{ url: 'stun:stun.l.google.com:19302' }
 	]},
 
@@ -4823,7 +4850,7 @@ module.exports = {
 	agent: false,
 
 	/**
-	 * @param {Boolean} upgrade 	whether the client should try to upgrade the 
+	 * @param {Boolean} upgrade 	whether the client should try to upgrade the
 	 *                          	transport from long-polling to something better
 	 */
 	upgrade: true,
@@ -4834,29 +4861,29 @@ module.exports = {
 	forceJSONP: false,
 
 	/**
-	 * @param {Boolean} jsonp determines whether to use JSONP when 
-	 *                        necessary for polling. If disabled (by settings to false) 
-	 *                        an error will be emitted (saying "No transports available") 
-	 *                        if no other transports are available. If another transport 
-	 *                        is available for opening a connection (e.g. WebSocket) 
+	 * @param {Boolean} jsonp determines whether to use JSONP when
+	 *                        necessary for polling. If disabled (by settings to false)
+	 *                        an error will be emitted (saying "No transports available")
+	 *                        if no other transports are available. If another transport
+	 *                        is available for opening a connection (e.g. WebSocket)
 	 *                        that transport will be used instead.
 	 */
 	jsonp: true,
 
 	/**
-	 * @param {Boolean} forceBase64 forces base 64 encoding for polling transport even when XHR2 responseType 
+	 * @param {Boolean} forceBase64 forces base 64 encoding for polling transport even when XHR2 responseType
 	 *                              is available and WebSocket even if the used standard supports binary.
 	 */
 	forceBase64: false,
 
 	/**
-	 * @param {Boolean} enablesXDR 	enables XDomainRequest for IE8 to avoid loading bar flashing with click sound. 
+	 * @param {Boolean} enablesXDR 	enables XDomainRequest for IE8 to avoid loading bar flashing with click sound.
 	 *                              default to false because XDomainRequest has a flaw of not sending cookie.
 	 */
 	enablesXDR: false,
 
 	/**
-	 * @param {Boolean} timestampRequests 	whether to add the timestamp with each transport request. Note: this is 
+	 * @param {Boolean} timestampRequests 	whether to add the timestamp with each transport request. Note: this is
 	 *                                     	ignored if the browser is IE or Android, in which case requests are always stamped
 	 */
 	timestampRequests: false,
@@ -4874,22 +4901,22 @@ module.exports = {
 	/**
 	 * @param {String} path path to connect to
 	 */
-	path: '/engine.io',
+	path: '/deepstream',
 
 	/**
-	 * @param {Array} transports 	a list of transports to try (in order). Engine always 
-	 *                             	attempts to connect directly with the first one, 
+	 * @param {Array} transports 	a list of transports to try (in order). Engine always
+	 *                             	attempts to connect directly with the first one,
 	 *                             	provided the feature detection test for it passes.
 	 */
 	transports: [ 'polling', 'websocket' ],
 
 	/**
-	 * @param {Boolean} rememberUpgrade 	If true and if the previous websocket connection to 
-	 *                                   	the server succeeded, the connection attempt will bypass the normal 
-	 *                                   	upgrade process and will initially try websocket. A connection 
-	 *                                   	attempt following a transport error will use the normal upgrade 
-	 *                                   	process. It is recommended you turn this on only when using 
-	 *                                   	SSL/TLS connections, or if you know that 
+	 * @param {Boolean} rememberUpgrade 	If true and if the previous websocket connection to
+	 *                                   	the server succeeded, the connection attempt will bypass the normal
+	 *                                   	upgrade process and will initially try websocket. A connection
+	 *                                   	attempt following a transport error will use the normal upgrade
+	 *                                   	process. It is recommended you turn this on only when using
+	 *                                   	SSL/TLS connections, or if you know that
 	 *                                   	your network does not block websockets.
 	 */
 	rememberUpgrade: false,
@@ -4897,7 +4924,7 @@ module.exports = {
 	/**
    *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
 	 *                                   If the merge strategy is not succesfull it will set an error, else set the
-	 *                                   returned data as the latest revision. This can be overriden on a per record 
+	 *                                   returned data as the latest revision. This can be overriden on a per record
 	 *                                   basis by setting the `setMergeStrategy`.
 	 */
 	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS
@@ -6509,9 +6536,9 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 		this._records[ name ].on( 'deleted', this._removeRecord.bind( this, name ) );
 		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
 	}
-	
+
 	this._records[ name ].usages++;
-	
+
 	return this._records[ name ];
 };
 
@@ -6633,8 +6660,8 @@ RecordHandler.prototype.has = function( name, callback ) {
 RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
-	if( message.action === C.ACTIONS.ERROR && 
-		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS ) 
+	if( message.action === C.ACTIONS.ERROR &&
+		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS )
 	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
@@ -6653,7 +6680,7 @@ RecordHandler.prototype._$handle = function( message ) {
 		 */
 		if( message.data[ 0 ] === C.ACTIONS.DELETE || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) {
 			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
-			
+
 			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
 				this._records[ name ]._$onMessage( message );
 			}
@@ -6682,23 +6709,23 @@ RecordHandler.prototype._$handle = function( message ) {
 	if( this._records[ name ] ) {
 		processed = true;
 		this._records[ name ]._$onMessage( message );
-	} 
-	
+	}
+
 	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
 		processed = true;
 		this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
 	}
-	
+
 	if( message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest( name ) ) {
 		processed = true;
 		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 	}
-	
+
 	if( this._listener[ name ] ) {
 		processed = true;
 		this._listener[ name ]._$onMessage( message );
-	} 
-	
+	}
+
 	if( !processed ) {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 	}
@@ -6708,7 +6735,7 @@ RecordHandler.prototype._$handle = function( message ) {
  * Callback for 'error' events from the record.
  *
  * @param   {String} recordName
- * @param   {String} error     
+ * @param   {String} error
  *
  * @private
  * @returns {void}
@@ -6804,8 +6831,8 @@ EventEmitter( Record.prototype );
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
- * to offline work or write conflicts. The function will be called with the 
- * local record, the remote version/data and a callback to call once the merge has 
+ * to offline work or write conflicts. The function will be called with the
+ * local record, the remote version/data and a callback to call once the merge has
  * completed or if an error occurs ( which leaves it in an inconsistent state until
  * the next update merge attempt ).
  *
@@ -7063,24 +7090,24 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
+	message.processedError = true;
 	if( this._mergeStrategy ) {
 		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
 	}
 	else {
-		message.processedError = true;
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
 };
 
 /**
  * Callback once the record merge has completed. If successful it will set the
- * record state, else emit and error and the record will remain in an 
+ * record state, else emit and error and the record will remain in an
  * inconsistent state until the next update.
  *
  * @param   {Number} remoteVersion The remote version number
  * @param   {Object} remoteData The remote object data
  * @param   {Object} message parsed and validated deepstream message
- * 
+ *
  * @private
  * @returns {void}
  */
@@ -7390,14 +7417,14 @@ var C = _dereq_( '../constants/constants' ),
 
 /**
  * The main class for remote procedure calls
- * 
+ *
  * Provides the rpc interface and handles incoming messages
  * on the rpc topic
- * 
+ *
  * @param {Object} options deepstream configuration options
  * @param {Connection} connection
  * @param {Client} client
- * 
+ *
  * @constructor
  * @public
  */
@@ -7415,16 +7442,16 @@ var RpcHandler = function( options, connection, client ) {
 /**
  * Registers a callback function as a RPC provider. If another connected client calls
  * client.rpc.make() the request will be routed to this method
- * 
+ *
  * The callback will be invoked with two arguments:
  * 		{Mixed} data The data passed to the client.rpc.make function
  *   	{RpcResponse} rpcResponse An object with methods to respons, acknowledge or reject the request
  *
  * Only one callback can be registered for a RPC at a time
- * 
+ *
  * Please note: Deepstream tries to deliver data in its original format. Data passed to client.rpc.make as a String will arrive as a String,
  * numbers or implicitly JSON serialized objects will arrive in their respective format as well
- * 
+ *
  * @public
  * @returns void
  */
@@ -7468,7 +7495,7 @@ RpcHandler.prototype.unprovide = function( name ) {
 RpcHandler.prototype.make = function( name, data, callback ) {
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
-		
+
 	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
 };
@@ -7476,10 +7503,10 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 /**
  * Retrieves a RPC instance for a correlationId or throws an error
  * if it can't be found (which should never happen)
- * 
+ *
  * @param {String} correlationId
  * @param {String} rpcName
- * 
+ *
  * @private
  * @returns {Rpc}
  */
@@ -7542,24 +7569,39 @@ RpcHandler.prototype._$handle = function( message ) {
 	}
 
 	// RPC subscription Acks
-	if( message.action === C.ACTIONS.ACK && 
+	if( message.action === C.ACTIONS.ACK &&
 		( message.data[ 0 ] === C.ACTIONS.SUBSCRIBE  || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) ) {
 		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
-	
+
+
 	/*
 	 * Error messages always have the error as first parameter. So the
 	 * order is different to ack and response messages
 	 */
 	if( message.action === C.ACTIONS.ERROR ) {
-		rpcName = message.data[ 1 ];
-		correlationId = message.data[ 2 ];
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
+			return;
+		}
+		else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
+			if( message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
+				return;
+			}
+			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {
+				rpcName = message.data[ 3 ];
+				correlationId = message.data[ 4 ];
+			}
+		} else {
+			rpcName = message.data[ 1 ];
+			correlationId = message.data[ 2 ];
+		}
+
 	} else {
 		rpcName = message.data[ 0 ];
 		correlationId = message.data[ 1 ];
 	}
-	
+
 	/*
 	* Retrieve the rpc object
 	*/
@@ -7567,7 +7609,7 @@ RpcHandler.prototype._$handle = function( message ) {
 	if( rpc === null ) {
 		return;
 	}
-		
+
 	// RPC Responses
 	if( message.action === C.ACTIONS.ACK ) {
 		rpc.ack();
