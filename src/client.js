@@ -134,7 +134,7 @@ Client.prototype._$onMessage = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
-		this._$onError( message.topic, message.action, message.data[ 0 ] );
+		this._$onError( message.topic, message.data[ 0 ],  message.data.slice( 0 ) );
 	}
 };
 
@@ -252,4 +252,3 @@ createDeepstream.CONSTANTS = C;
 createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
-

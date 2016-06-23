@@ -125,9 +125,14 @@ describe( 'record permissions with internal cache', function() {
 		});
 
 		it( 'reads public and write is private', function( done ) {
+			console.log('==============================')
 			var recA1 = clientA.record.getRecord( 'public-read-private-write/client-a' );
 			var recB1 = clientB.record.getRecord( 'public-read-private-write/client-a' );
 			var recASubscribeCalled = false;
+
+			clientB.on( 'error', function(){
+				console.log( new Error().stack )
+			});
 
 			recA1.subscribe( 'firstname', function( firstname ){
 				var recASubscribeCalled = true;
@@ -139,8 +144,10 @@ describe( 'record permissions with internal cache', function() {
 				expect( recASubscribeCalled ).toBe( false );
 				expect( recA1.get( 'lastname' ) ).toBe( undefined );
 				expect( clientAErrors.length ).toBe( 0 );
+				console.log( clientBErrors)
 				expect( clientBErrors.length ).toBe( 1 );
 				assertMessageDenied( clientBErrors );
+				console.log('==============================')
 				done();
 			}, 100 );
 		});

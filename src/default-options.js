@@ -159,7 +159,7 @@ module.exports = {
 	/**
 	 * @param {String} path path to connect to
 	 */
-	path: '/engine.io',
+	path: '/deepstream',
 
 	/**
 	 * @param {Array} transports 	a list of transports to try (in order). Engine always

@@ -299,8 +299,10 @@ Record.prototype._$onMessage = function( message ) {
 		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
 	}
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
+		message.processedError = true;
 		clearInterval( this._readAckTimeout );
 		clearInterval( this._readTimeout );
+		this.emit( 'error', C.EVENT.MESSAGE_DENIED  );
 	}
 };
 

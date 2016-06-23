@@ -214,6 +214,11 @@ RecordHandler.prototype._$handle = function( message ) {
 			return;
 		}
 
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE ) {
+			console.log( 'TODO' );
+			return;
+		}
+
 	} else {
 		name = message.data[ 0 ];
 	}
