@@ -29,9 +29,10 @@
     "net": false
   },
   "devDependencies": {
-    "deepstream.io": "1.0.0-beta.3",
     "browserify": "13.0.1",
     "coveralls": "^2.11.9",
+    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
+    "deepstream.io-cache-redis": "latest",
     "deepstream.io-msg-redis": "latest",
     "deepstream.io-cache-redis": "latest",
     "derequire": "2.0.3",
