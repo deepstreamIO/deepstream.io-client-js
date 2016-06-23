@@ -79,7 +79,10 @@ module.exports = function( grunt ) {
 	grunt.renameTask( 'release', '_release' );
 	grunt.registerTask( 'dev', 'Browserifies the files on every change to src', [ 'browserify:live' ] );
 	grunt.registerTask( 'test-unit', [ 'exec:runUnitTests' ] );
-
+	grunt.registerTask( 'just-build', 'Browserifies, tests and minifies the client file', [
+		'browserify:dist',
+		'uglify:dist'
+	] );
 	grunt.registerTask( 'build', 'Browserifies, tests and minifies the client file', [
 		'browserify:dist',
 		'exec:runUnitTestsOnce',

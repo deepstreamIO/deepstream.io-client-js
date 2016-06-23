@@ -19,7 +19,7 @@ var C = require( './constants/constants' ),
  * @copyright 2014 Hoxton One Ltd.
  *
  * @{@link http://deepstream.io}
- * 
+ *
  *
  * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
  * @param {Object} options A map of options that extend the ones specified in default-options.js
@@ -30,9 +30,9 @@ var C = require( './constants/constants' ),
 var Client = function( url, options ) {
 	this._url = url;
 	this._options = this._getOptions( options || {} );
-	
+
 	this._connection = new Connection( this, this._url, this._options );
-	
+
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
@@ -68,7 +68,7 @@ Emitter( Client.prototype );
  *
  * login can be called multiple times until either the connection is authenticated or
  * forcefully closed by the server since its maxAuthAttempts threshold has been exceeded
- * 
+ *
  * @param   {Object}   authParams JSON.serializable authentication data
  * @param   {Function} callback   Will be called with either (true) or (false, errorType, errorMessage)
  *
@@ -112,7 +112,7 @@ Client.prototype.getConnectionState = function() {
 Client.prototype.getUid = function() {
 	var timestamp = (new Date()).getTime().toString(36),
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
-	
+
 	return timestamp + '-' + randomString;
 };
 
@@ -150,7 +150,7 @@ Client.prototype._$onMessage = function( message ) {
  * IMPORTANT: Errors that are specific to a request, e.g. a RPC
  * timing out or a record not being permissioned are passed directly
  * to the method that requested them
- * 
+ *
  * @param   {String} topic One of CONSTANTS.TOPIC
  * @param   {String} event One of CONSTANTS.EVENT
  * @param   {String} msg   Error dependent message
@@ -177,9 +177,9 @@ Client.prototype._$onError = function( topic, event, msg ) {
 		this.emit( event, topic, msg );
 	} else {
 		console.log( '--- You can catch all deepstream errors by subscribing to the error event ---' );
-		
+
 		errorMsg = event + ': ' + msg;
-		
+
 		if( topic ) {
 			errorMsg += ' (' + topic + ')';
 		}
@@ -191,9 +191,9 @@ Client.prototype._$onError = function( topic, event, msg ) {
 /**
  * Passes generic messages from the error topic
  * to the _$onError handler
- * 
+ *
  * @param {Object} errorMessage parsed deepstream error message
- * 
+ *
  * @private
  * @returns {void}
  */

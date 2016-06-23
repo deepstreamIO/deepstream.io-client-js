@@ -46,9 +46,9 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 		this._records[ name ].on( 'deleted', this._removeRecord.bind( this, name ) );
 		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
 	}
-	
+
 	this._records[ name ].usages++;
-	
+
 	return this._records[ name ];
 };
 
@@ -170,8 +170,12 @@ RecordHandler.prototype.has = function( name, callback ) {
 RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
-	if( message.action === C.ACTIONS.ERROR && 
-		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS ) 
+	if( message.action === C.ACTIONS.ERROR &&
+		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
+			message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
+			message.data[ 0 ] !== C.ACTIONS.HAS  &&
+			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
+		)
 	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
@@ -190,7 +194,7 @@ RecordHandler.prototype._$handle = function( message ) {
 		 */
 		if( message.data[ 0 ] === C.ACTIONS.DELETE || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) {
 			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
-			
+
 			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
 				this._records[ name ]._$onMessage( message );
 			}
@@ -219,23 +223,23 @@ RecordHandler.prototype._$handle = function( message ) {
 	if( this._records[ name ] ) {
 		processed = true;
 		this._records[ name ]._$onMessage( message );
-	} 
-	
+	}
+
 	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
 		processed = true;
 		this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
 	}
-	
+
 	if( message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest( name ) ) {
 		processed = true;
 		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 	}
-	
+
 	if( this._listener[ name ] ) {
 		processed = true;
 		this._listener[ name ]._$onMessage( message );
-	} 
-	
+	}
+
 	if( !processed ) {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 	}
@@ -245,7 +249,7 @@ RecordHandler.prototype._$handle = function( message ) {
  * Callback for 'error' events from the record.
  *
  * @param   {String} recordName
- * @param   {String} error     
+ * @param   {String} error
  *
  * @private
  * @returns {void}

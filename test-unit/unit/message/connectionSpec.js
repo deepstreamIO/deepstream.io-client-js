@@ -55,7 +55,7 @@ describe('connects - happy path', function(){
 	it( 'processes the authentication response', function(){
 		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
 		expect( connection.getState() ).toBe( 'OPEN' );
-		expect( authCallback ).toHaveBeenCalledWith( true, undefined, undefined );
+		expect( authCallback ).toHaveBeenCalledWith( true, null );
 		expect( clientConnectionStateChangeCount ).toBe( 4 );
 	});
 
@@ -266,7 +266,7 @@ describe( 'connection handles auth rejections', function(){
 
 	it( 'receives auth rejection message', function(){
 		connection._endpoint.emit( 'message', msg( 'A|E|INVALID_AUTH_DATA|Sunknown user+' ) );
-		expect( authCallback ).toHaveBeenCalledWith( false, 'INVALID_AUTH_DATA', 'unknown user' );
+		expect( authCallback ).toHaveBeenCalledWith( false, 'unknown user' );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 	});
 
@@ -278,7 +278,7 @@ describe( 'connection handles auth rejections', function(){
 
 	it( 'receives auth ack message', function(){
 		connection._endpoint.emit( 'message', msg( 'A|A+' ) );
-		expect( authCallback ).toHaveBeenCalledWith( true, undefined, undefined );
+		expect( authCallback ).toHaveBeenCalledWith( true, null );
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 
@@ -328,7 +328,7 @@ describe( 'connection handles data associated with login', function(){
 
 	it( 'receives auth ack message', function(){
 		connection._endpoint.emit( 'message', msg( 'A|A|O{"id":12345}+' ) );
-		expect( authCallback ).toHaveBeenCalledWith( true, undefined, { id: 12345 } );
+		expect( authCallback ).toHaveBeenCalledWith( true, { id: 12345 } );
 		expect( connection.getState() ).toBe( 'OPEN' );
 	});
 });
