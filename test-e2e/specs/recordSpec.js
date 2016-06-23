@@ -158,6 +158,7 @@ describe( 'record', function() {
 		}, 20 );
 	});
 
+
 	it( 'does not keep objects by reference', function() {
 		var a = {
 			number: 1
@@ -240,6 +241,7 @@ describe( 'record', function() {
 		}, 20 );
 	});
 
+	 /**************** TEAR DOWN ****************/
 	it( 'allows discard to be called before the record is ready', function( done ) {
 		var recordToDiscard = clientA.record.getRecord( 'recordToDiscardImmediately' );
 		recordToDiscard

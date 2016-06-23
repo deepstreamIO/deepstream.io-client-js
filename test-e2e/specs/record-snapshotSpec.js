@@ -3,12 +3,12 @@ var DeepstreamServer = require( 'deepstream.io' ),
 	deepstreamClient = require( '../../src/client' ),
 	C = require( '../../src/constants/constants' ),
 	TestLogger = require( '../tools/test-logger' );
-	
+
 describe( 'record snapshot', function() {
 	var deepstreamServer,
 		logger = new TestLogger(),
 		clientA;
-	
+
 	/**************** SETUP ****************/
 	it( 'starts the server', function( done ){
 		deepstreamServer = new DeepstreamServer();
@@ -17,12 +17,12 @@ describe( 'record snapshot', function() {
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.start();
 	});
-	
+
 	it( 'creates clientA', function( done ) {
 		clientA = deepstreamClient( 'localhost:6021' );
 		clientA.login( null, function(){ done(); });
 	});
-	
+
 	 /**************** TEST ****************/
 	it( 'snapshot returns error if data doesn\'t exist remotely', function( done ){
 		clientA.record.snapshot( 'nonExistantRecord', function( error, data ) {
@@ -31,7 +31,7 @@ describe( 'record snapshot', function() {
 			done();
 		} );
 	});
-	
+
 	it( 'retrieves snapshot from deepstream', function( done ){
 		var record = clientA.record.getRecord( 'remoteRecord' );
 		record.set( { key: 'value' } );
@@ -61,7 +61,7 @@ describe( 'record snapshot', function() {
 					expect( data ).toEqual( { key: 'value' } );
 					done();
 				} );
-			 }, 10 );	
+			 }, 10 );
 		} );
 	});
 
@@ -69,9 +69,9 @@ describe( 'record snapshot', function() {
 	it( 'closes the clients', function() {
 		clientA.close();
 	});
-	
-	it( 'shuts clients and server down', function( done ) {
-	  deepstreamServer.on( 'stopped', done );
-	  deepstreamServer.stop();
+
+	it( 'shuts clients and server down', function(done) {
+		deepstreamServer.on( 'stopped', done );
+		deepstreamServer.stop();
 	});
 });
