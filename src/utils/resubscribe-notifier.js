@@ -19,7 +19,7 @@ var ResubscribeNotifier = function( client, resubscribe ) {
 
 	this._isReconnecting = false;
 	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
-	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
+	this._client.on( 'CONNECTION_STATE_CHANGED', this._connectionStateChangeHandler );
 };
 
 /**
@@ -28,7 +28,7 @@ var ResubscribeNotifier = function( client, resubscribe ) {
  * @returns {void}
  */
 ResubscribeNotifier.prototype.destroy = function() {
-	this._client.removeListener( 'connectionStateChanged', this._connectionStateChangeHandler );
+	this._client.removeListener( 'CONNECTION_STATE_CHANGED', this._connectionStateChangeHandler );
 	this._connectionStateChangeHandler = null;
 	this._client = null;
 };

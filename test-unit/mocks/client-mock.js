@@ -5,7 +5,7 @@ var ClientMock = function() {
 	this.lastError = null;
 	
 	this.connectionState = 'AWAITING_AUTHENTICATION';
-	this.on( 'connectionStateChanged', function( connectionState ) {
+	this.on( 'CONNECTION_STATE_CHANGED', function( connectionState ) {
 		this.connectionState = connectionState;
 	}.bind( this ) );
 };

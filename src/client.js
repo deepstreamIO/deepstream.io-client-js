@@ -93,7 +93,7 @@ Client.prototype.close = function() {
 /**
  * Returns the current state of the connection.
  *
- * connectionState is one of CONSTANTS.CONNECTION_STATE
+ * connectionState is one of constants.CONNECTION_STATE
  *
  * @returns {[type]} [description]
  */
@@ -151,8 +151,8 @@ Client.prototype._$onMessage = function( message ) {
  * timing out or a record not being permissioned are passed directly
  * to the method that requested them
  *
- * @param   {String} topic One of CONSTANTS.TOPIC
- * @param   {String} event One of CONSTANTS.EVENT
+ * @param   {String} topic One of constants.TOPIC
+ * @param   {String} event One of constants.EVENT
  * @param   {String} msg   Error dependent message
  *
  * @package private
@@ -243,7 +243,7 @@ function createDeepstream( url, options ) {
  * Expose constants to allow consumers to access them without
  * requiring a reference to a deepstream instance.
 */
-createDeepstream.CONSTANTS = C;
+createDeepstream.constants = C;
 
 /**
  * Expose constants to allow consumers to access them without

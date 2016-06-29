@@ -1,7 +1,7 @@
 var client = require( '../src/client' )( 'localhost:6021' ),
 	cli = new (require( './cli'))();
 
-client.on( 'connectionStateChanged', function(){
+client.on( 'CONNECTION_STATE_CHANGED', function(){
 	console.log( 'Connection state changed', client.getConnectionState() );
 });
 

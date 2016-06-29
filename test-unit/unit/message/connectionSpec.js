@@ -12,7 +12,7 @@ var proxyquire = require( 'proxyquire' ).noCallThru(),
 	},
 	clientConnectionStateChangeCount;
 
-clientMock.on( 'connectionStateChanged', function(){
+clientMock.on( 'CONNECTION_STATE_CHANGED', function(){
 	clientConnectionStateChangeCount++;
 });
 
@@ -283,7 +283,7 @@ describe( 'connection handles auth rejections', function(){
 	});
 
 	it( 'closes the connection, and then tries to authenticate again sends new credentials', function( done){
-		clientMock.once( 'connectionStateChanged', function( connectionState ) {
+		clientMock.once( 'CONNECTION_STATE_CHANGED', function( connectionState ) {
 			if( connectionState !== 'CLOSED' ) return;
 			connection.authenticate({ user: 'John' }, authCallback );
 
