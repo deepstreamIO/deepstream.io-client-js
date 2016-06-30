@@ -44,7 +44,7 @@ ViewModel.prototype.login = function() {
 ViewModel.prototype.connect = function() {
 	if( !this._client ) {
 		this._client = deepstream( this.host() + ':' + this.port() );
-		this._client.on( 'connectionStateChanged', this._setConnectionState.bind( this ) );	
+		this._client.on( 'CONNECTION_STATE_CHANGED', this._setConnectionState.bind( this ) );	
 	} else {
 		this._client.start();
 	}

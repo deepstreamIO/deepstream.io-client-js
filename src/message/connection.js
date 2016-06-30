@@ -427,7 +427,7 @@ Connection.prototype._getAuthData = function( data ) {
 
 /**
  * Updates the connection state and emits the 
- * connectionStateChanged event on the client
+ * CONNECTION_STATE_CHANGED event on the client
  *
  * @private
  * @returns {void}

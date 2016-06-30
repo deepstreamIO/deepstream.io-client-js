@@ -4656,7 +4656,7 @@ exports.TOPIC.PRIVATE = 'PRIVATE/';
 
 exports.EVENT = {};
 exports.EVENT.CONNECTION_ERROR = 'connectionError';
-exports.EVENT.CONNECTION_STATE_CHANGED = 'connectionStateChanged';
+exports.EVENT.CONNECTION_STATE_CHANGED = 'CONNECTION_STATE_CHANGED';
 exports.EVENT.ACK_TIMEOUT = 'ACK_TIMEOUT';
 exports.EVENT.RESPONSE_TIMEOUT = 'RESPONSE_TIMEOUT';
 exports.EVENT.DELETE_TIMEOUT = 'DELETE_TIMEOUT';
@@ -5535,7 +5535,7 @@ Connection.prototype._getAuthData = function( data ) {
 
 /**
  * Updates the connection state and emits the 
- * connectionStateChanged event on the client
+ * CONNECTION_STATE_CHANGED event on the client
  *
  * @private
  * @returns {void}
@@ -7973,7 +7973,7 @@ var ResubscribeNotifier = function( client, resubscribe ) {
 
 	this._isReconnecting = false;
 	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
-	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
+	this._client.on( 'CONNECTION_STATE_CHANGED', this._connectionStateChangeHandler );
 };
 
 /**
@@ -7982,7 +7982,7 @@ var ResubscribeNotifier = function( client, resubscribe ) {
  * @returns {void}
  */
 ResubscribeNotifier.prototype.destroy = function() {
-	this._client.removeListener( 'connectionStateChanged', this._connectionStateChangeHandler );
+	this._client.removeListener( 'CONNECTION_STATE_CHANGED', this._connectionStateChangeHandler );
 	this._connectionStateChangeHandler = null;
 	this._client = null;
 };

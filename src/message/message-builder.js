@@ -5,8 +5,8 @@ var C = require( '../constants/constants' ),
  * Creates a deepstream message string, based on the 
  * provided parameters
  *
- * @param   {String} topic  One of CONSTANTS.TOPIC
- * @param   {String} action One of CONSTANTS.ACTIONS
+ * @param   {String} topic  One of constants.TOPIC
+ * @param   {String} action One of constants.ACTIONS
  * @param   {Array} data An array of strings or JSON-serializable objects
  *
  * @returns {String} deepstream message string

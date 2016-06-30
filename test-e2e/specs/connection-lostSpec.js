@@ -63,7 +63,7 @@ describe( 'it recovers a connection without losing record updates', function() {
 		//TODO: Array comparison
 		expect( clientAErrors[ 0 ].length ).toEqual( 3 );
 		expect( clientAErrors[ 0 ][ 0 ] ).toEqual( 'Can\'t connect! Deepstream server unreachable on localhost:6021' );
-		expect( clientAErrors[ 0 ][ 1 ] ).toEqual( 'connectionError' );
+		expect( clientAErrors[ 0 ][ 1 ] ).toEqual( 'CONNECTION_ERROR' );
 		expect( clientAErrors[ 0 ][ 2 ] ).toEqual( null );
 	});
 
@@ -85,7 +85,7 @@ describe( 'it recovers a connection without losing record updates', function() {
 	});
 
 	it( 'waits for the client to reconnect', function( done ){
-		clientA.on( 'connectionStateChanged', function(){
+		clientA.on( 'CONNECTION_STATE_CHANGED', function(){
 			if( clientA.getConnectionState() === 'OPEN' ) {
 				//Time needed for reads to come back once connection is reestablished
 				setTimeout( done, 200 );
@@ -99,7 +99,7 @@ describe( 'it recovers a connection without losing record updates', function() {
 
 	it( 'disconnects from server', function(done){
 		clientA.close();
-		clientA.on( 'connectionStateChanged', function(){
+		clientA.on( 'CONNECTION_STATE_CHANGED', function(){
 			if( clientA.getConnectionState() === 'CLOSED' ) {
 				done();
 			}
@@ -108,7 +108,7 @@ describe( 'it recovers a connection without losing record updates', function() {
 
 	it( 'can reconnect to server', function(done){
 		clientA.login( null, function(){ done(); });
-		clientA.on( 'connectionStateChanged', function(){
+		clientA.on( 'CONNECTION_STATE_CHANGED', function(){
 			if( clientA.getConnectionState() === 'OPEN' ) {
 				done();
 			}
