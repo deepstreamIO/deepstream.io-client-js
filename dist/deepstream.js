@@ -4246,31 +4246,6 @@ arguments[4][31][0].apply(exports,arguments)
 // shim for using process in browser
 
 var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-(function () {
-  try {
-    cachedSetTimeout = setTimeout;
-  } catch (e) {
-    cachedSetTimeout = function () {
-      throw new Error('setTimeout is not defined');
-    }
-  }
-  try {
-    cachedClearTimeout = clearTimeout;
-  } catch (e) {
-    cachedClearTimeout = function () {
-      throw new Error('clearTimeout is not defined');
-    }
-  }
-} ())
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -4295,7 +4270,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = cachedSetTimeout(cleanUpNextTick);
+    var timeout = setTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -4312,7 +4287,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    cachedClearTimeout(timeout);
+    clearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -4324,7 +4299,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        cachedSetTimeout(drainQueue, 0);
+        setTimeout(drainQueue, 0);
     }
 };
 
@@ -4500,7 +4475,7 @@ Client.prototype._$onMessage = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
-		this._$onError( message.topic, message.action, message.data[ 0 ] );
+		this._$onError( message.topic, message.data[ 0 ],  message.data.slice( 0 ) );
 	}
 };
 
@@ -4619,7 +4594,6 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-
 },{"./constants/constants":35,"./constants/merge-strategies":36,"./default-options":37,"./event/event-handler":38,"./message/connection":39,"./record/record-handler":45,"./rpc/rpc-handler":47,"./webrtc/webrtc-handler":57,"component-emitter":1}],35:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
@@ -4661,10 +4635,10 @@ exports.EVENT.ACK_TIMEOUT = 'ACK_TIMEOUT';
 exports.EVENT.RESPONSE_TIMEOUT = 'RESPONSE_TIMEOUT';
 exports.EVENT.DELETE_TIMEOUT = 'DELETE_TIMEOUT';
 exports.EVENT.UNSOLICITED_MESSAGE = 'UNSOLICITED_MESSAGE';
+exports.EVENT.MESSAGE_DENIED = 'MESSAGE_DENIED';
 exports.EVENT.MESSAGE_PARSE_ERROR = 'MESSAGE_PARSE_ERROR';
 exports.EVENT.VERSION_EXISTS = 'VERSION_EXISTS';
 exports.EVENT.NOT_AUTHENTICATED = 'NOT_AUTHENTICATED';
-exports.EVENT.MESSAGE_DENIED = 'MESSAGE_DENIED';
 exports.EVENT.MESSAGE_PERMISSION_ERROR = 'MESSAGE_PERMISSION_ERROR';
 exports.EVENT.LISTENER_EXISTS = 'LISTENER_EXISTS';
 exports.EVENT.NOT_LISTENING = 'NOT_LISTENING';
@@ -4724,6 +4698,7 @@ exports.CALL_STATE.ACCEPTED = 'ACCEPTED';
 exports.CALL_STATE.DECLINED = 'DECLINED';
 exports.CALL_STATE.ENDED = 'ENDED';
 exports.CALL_STATE.ERROR = 'ERROR';
+
 },{}],36:[function(_dereq_,module,exports){
 module.exports = {
 	/**
@@ -4929,6 +4904,7 @@ module.exports = {
 	 */
 	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS
 };
+
 },{"./constants/merge-strategies":36}],38:[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
@@ -6661,7 +6637,11 @@ RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
 	if( message.action === C.ACTIONS.ERROR &&
-		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS && message.data[ 0 ] !== C.ACTIONS.SNAPSHOT && message.data[ 0 ] !== C.ACTIONS.HAS )
+		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
+			message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
+			message.data[ 0 ] !== C.ACTIONS.HAS  &&
+			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
+		)
 	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
@@ -6678,7 +6658,10 @@ RecordHandler.prototype._$handle = function( message ) {
 		 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
 		 * between another clients creation and read message for the same record
 		 */
-		if( message.data[ 0 ] === C.ACTIONS.DELETE || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) {
+		if( message.data[ 0 ] === C.ACTIONS.DELETE ||
+			  message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ||
+			 ( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE  )
+			) {
 			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
 
 			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
@@ -6775,6 +6758,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 };
 
 module.exports = RecordHandler;
+
 },{"../constants/constants":35,"../message/message-parser":41,"../utils/listener":51,"../utils/single-notifier":53,"./anonymous-record":42,"./list":44,"./record":46,"component-emitter":1}],46:[function(_dereq_,module,exports){
 var JsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
@@ -7072,8 +7056,13 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
 		this._applyUpdate( message, this._client );
 	}
+	// Otherwise it should be an error, and dealt with accordingly
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
 		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
+	}
+	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
+		clearInterval( this._readAckTimeout );
+		clearInterval( this._readTimeout );
 	}
 };
 
@@ -7589,8 +7578,8 @@ RpcHandler.prototype._$handle = function( message ) {
 				return;
 			}
 			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {
-				rpcName = message.data[ 3 ];
-				correlationId = message.data[ 4 ];
+				rpcName = message.data[ 1 ];
+				correlationId = message.data[ 3 ];
 			}
 		} else {
 			rpcName = message.data[ 1 ];
