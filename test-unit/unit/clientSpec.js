@@ -17,14 +17,6 @@ describe( 'connects', function(){
 		expect( client.getUid() ).not.toBe( client.getUid() );
 	});
 
-	it( 'exposes constants', function() {
-		expect( deepstream.CONSTANTS ).toEqual( require( '../../src/constants/constants' ) );
-	});
-
-	it( 'exposes merge strategies', function(){
-		expect( deepstream.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/merge-strategies' ) );
-	});
-
 	it( 'merges options correctly', function(){
 		client = deepstream( 'someUrl', {
 			recordPersistDefault: false,
@@ -33,5 +25,15 @@ describe( 'connects', function(){
 		expect( client._options.recordPersistDefault ).toBe( false );
 		expect( client._options.recordReadTimeout ).toBe( 3000 );
 		expect( client._options.recordDeleteTimeout ).toBe( 34852 );
+	});
+
+	it( 'exposes constants on deepstream', function() {
+		expect( deepstream.CONSTANTS ).toEqual( require( '../../src/constants/constants' ) );
+		expect( client.CONSTANTS ).toEqual( require( '../../src/constants/constants' ) );
+	});
+
+	it( 'exposes merge strategies on deepstream', function(){
+		expect( deepstream.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/merge-strategies' ) );
+		expect( client.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/merge-strategies' ) );
 	});
 });

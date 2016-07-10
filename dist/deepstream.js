@@ -4246,6 +4246,31 @@ arguments[4][31][0].apply(exports,arguments)
 // shim for using process in browser
 
 var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+  try {
+    cachedSetTimeout = setTimeout;
+  } catch (e) {
+    cachedSetTimeout = function () {
+      throw new Error('setTimeout is not defined');
+    }
+  }
+  try {
+    cachedClearTimeout = clearTimeout;
+  } catch (e) {
+    cachedClearTimeout = function () {
+      throw new Error('clearTimeout is not defined');
+    }
+  }
+} ())
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -4270,7 +4295,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
+    var timeout = cachedSetTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -4287,7 +4312,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
+    cachedClearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -4299,7 +4324,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+        cachedSetTimeout(drainQueue, 0);
     }
 };
 
@@ -4353,11 +4378,9 @@ var C = _dereq_( './constants/constants' ),
  * deepstream.io javascript client - works in
  * node.js and browsers (using engine.io)
  *
- * @author Wolfram Hempel
- * @version <version> (<build-date>)
+ * @copyright 2016 deepstreamHub GmbH
+ * @author deepstreamHub GmbH
  *
- * @license https://github.com/hoxton-one/deepstream.io-client-js/blob/master/LICENSE MIT
- * @copyright 2014 Hoxton One Ltd.
  *
  * @{@link http://deepstream.io}
  *
@@ -4411,7 +4434,7 @@ Emitter( Client.prototype );
  * forcefully closed by the server since its maxAuthAttempts threshold has been exceeded
  *
  * @param   {Object}   authParams JSON.serializable authentication data
- * @param   {Function} callback   Will be called with either (true) or (false, errorType, errorMessage)
+ * @param   {Function} callback   Will be called with either (true) or (false, data)
  *
  * @public
  * @returns {Client}
@@ -4581,15 +4604,15 @@ function createDeepstream( url, options ) {
 }
 
 /**
- * Expose constants to allow consumers to access them without
- * requiring a reference to a deepstream instance.
+ * Expose constants to allow consumers to access them
 */
+Client.prototype.CONSTANTS = C;
 createDeepstream.CONSTANTS = C;
 
 /**
- * Expose constants to allow consumers to access them without
- * requiring a reference to a deepstream instance.
+ * Expose merge strategies to allow consumers to access them
 */
+Client.prototype.MERGE_STRATEGIES = MS;
 createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
@@ -4632,6 +4655,7 @@ exports.EVENT = {};
 exports.EVENT.CONNECTION_ERROR = 'connectionError';
 exports.EVENT.CONNECTION_STATE_CHANGED = 'connectionStateChanged';
 exports.EVENT.ACK_TIMEOUT = 'ACK_TIMEOUT';
+exports.EVENT.NO_RPC_PROVIDER = 'NO_RPC_PROVIDER';
 exports.EVENT.RESPONSE_TIMEOUT = 'RESPONSE_TIMEOUT';
 exports.EVENT.DELETE_TIMEOUT = 'DELETE_TIMEOUT';
 exports.EVENT.UNSOLICITED_MESSAGE = 'UNSOLICITED_MESSAGE';
@@ -4967,7 +4991,7 @@ EventHandler.prototype.subscribe = function( eventName, callback ) {
  */
 EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 	this._emitter.off( eventName, callback );
-	
+
 	if( !this._emitter.hasListeners( eventName ) ) {
 		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.UNSUBSCRIBE );
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ eventName ] );
@@ -4975,10 +4999,10 @@ EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 };
 
 /**
- * Emits an event locally and sends a message to the server to 
+ * Emits an event locally and sends a message to the server to
  * broadcast the event to the other connected clients
  *
- * @param   {String} name 
+ * @param   {String} name
  * @param   {Mixed} data will be serialized and deserialized to its original type.
  *
  * @public
@@ -5056,7 +5080,7 @@ EventHandler.prototype._$handle = function( message ) {
 		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
-	
+
 	if( message.action === C.ACTIONS.ERROR ) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
@@ -5124,7 +5148,7 @@ var Connection = function( client, url, options ) {
 
 /**
  * Returns the current connection state.
- * (One of constants.CONNECTION_STATE) 
+ * (One of constants.CONNECTION_STATE)
  *
  * @public
  * @returns {String} connectionState
@@ -5157,7 +5181,7 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 		this._deliberateClose = false;
 		return;
 	}
-	
+
 	if( this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
 		this._sendAuthParams();
 	}
@@ -5197,7 +5221,7 @@ Connection.prototype.send = function( message ) {
 		this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
 	}
 
-	if( this._state === C.CONNECTION_STATE.OPEN && 
+	if( this._state === C.CONNECTION_STATE.OPEN &&
 		this._queuedMessages.length < this._options.maxMessagesPerPacket &&
 		this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
 		this._sendQueuedMessages();
@@ -5317,7 +5341,7 @@ Connection.prototype._sendAuthParams = function() {
 
 /**
  * Will be invoked once the connection is established. The client
- * can't send messages yet, and needs to get a connection ACK or REDIRECT 
+ * can't send messages yet, and needs to get a connection ACK or REDIRECT
  * from the server before authenticating
  *
  * @private
@@ -5370,7 +5394,7 @@ Connection.prototype._onClose = function() {
 	}
 	else if( this._deliberateClose === true ) {
 		this._setState( C.CONNECTION_STATE.CLOSED );
-	}  
+	}
 	else {
 		if( this._originalUrl !== this._url ) {
 			this._url = this._originalUrl;
@@ -5418,7 +5442,7 @@ Connection.prototype._onMessage = function( message ) {
  * by the client until the authentication is successful.
  *
  * If a challenge is recieved, the user will send the url to the server
- * in response to get the appropriate redirect. If the URL is invalid the 
+ * in response to get the appropriate redirect. If the URL is invalid the
  * server will respond with a REJECTION resulting in the client connection
  * being permanently closed.
  *
@@ -5433,15 +5457,15 @@ Connection.prototype._onMessage = function( message ) {
 Connection.prototype._handleConnectionResponse = function( message ) {
 	var data;
 
-	if( message.action === C.ACTIONS.ACK ) {	
+	if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		if( this._authParams ) {
 			this._sendAuthParams();
 		}
-	} 
+	}
 	else if( message.action === C.ACTIONS.CHALLENGE ) {
 		this._setState( C.CONNECTION_STATE.CHALLENGING );
-		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );		
+		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );
 	}
 	else if( message.action === C.ACTIONS.REJECTION ) {
 		this._challengeDenied = true;
@@ -5469,21 +5493,21 @@ Connection.prototype._handleAuthResponse = function( message ) {
 	var data;
 
 	if( message.action === C.ACTIONS.ERROR ) {
-		
+
 		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
 			this._deliberateClose = true;
 			this._tooManyAuthAttempts = true;
 		} else {
 			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		}
-		
+
 		if( this._authCallback ) {
 			this._authCallback( false, this._getAuthData( message.data[ 1 ] ) );
 		}
-	
+
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
-		
+
 		if( this._authCallback ) {
 			this._authCallback( true, this._getAuthData( message.data[ 0 ] ) );
 		}
@@ -5510,7 +5534,7 @@ Connection.prototype._getAuthData = function( data ) {
 };
 
 /**
- * Updates the connection state and emits the 
+ * Updates the connection state and emits the
  * connectionStateChanged event on the client
  *
  * @private
@@ -5527,7 +5551,7 @@ Connection.prototype._setState = function( state ) {
  *
  * If the number of failed reconnection attempts exceeds
  * options.maxReconnectAttempts the connection is closed
- * 
+ *
  * @private
  * @returns {void}
  */
@@ -5540,7 +5564,7 @@ Connection.prototype._tryReconnect = function() {
 		this._setState( C.CONNECTION_STATE.RECONNECTING );
 		this._reconnectTimeout = setTimeout(
 			this._tryOpen.bind( this ),
-			this._options.reconnectIntervalIncrement * this._reconnectionAttempt 
+			this._options.reconnectIntervalIncrement * this._reconnectionAttempt
 		);
 		this._reconnectionAttempt++;
 	} else {
@@ -5551,7 +5575,7 @@ Connection.prototype._tryReconnect = function() {
 
 /**
  * Attempts to open a errourosly closed connection
- * 
+ *
  * @private
  * @returns {void}
  */

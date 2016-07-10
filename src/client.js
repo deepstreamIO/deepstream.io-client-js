@@ -12,11 +12,9 @@ var C = require( './constants/constants' ),
  * deepstream.io javascript client - works in
  * node.js and browsers (using engine.io)
  *
- * @author Wolfram Hempel
- * @version <version> (<build-date>)
+ * @copyright 2016 deepstreamHub GmbH
+ * @author deepstreamHub GmbH
  *
- * @license https://github.com/hoxton-one/deepstream.io-client-js/blob/master/LICENSE MIT
- * @copyright 2014 Hoxton One Ltd.
  *
  * @{@link http://deepstream.io}
  *
@@ -70,7 +68,7 @@ Emitter( Client.prototype );
  * forcefully closed by the server since its maxAuthAttempts threshold has been exceeded
  *
  * @param   {Object}   authParams JSON.serializable authentication data
- * @param   {Function} callback   Will be called with either (true) or (false, errorType, errorMessage)
+ * @param   {Function} callback   Will be called with either (true) or (false, data)
  *
  * @public
  * @returns {Client}
@@ -240,15 +238,15 @@ function createDeepstream( url, options ) {
 }
 
 /**
- * Expose constants to allow consumers to access them without
- * requiring a reference to a deepstream instance.
+ * Expose constants to allow consumers to access them
 */
+Client.prototype.CONSTANTS = C;
 createDeepstream.CONSTANTS = C;
 
 /**
- * Expose constants to allow consumers to access them without
- * requiring a reference to a deepstream instance.
+ * Expose merge strategies to allow consumers to access them
 */
+Client.prototype.MERGE_STRATEGIES = MS;
 createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;

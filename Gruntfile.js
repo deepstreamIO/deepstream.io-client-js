@@ -47,7 +47,7 @@ module.exports = function( grunt ) {
 
 		uglify: {
 			options: {
-				banner: '/*! <%= pkg.name %> <%= pkg.version %> (c)<%= grunt.template.today("yyyy") %> hoxton-one, with parts (c)<%= grunt.template.today("yyyy") %> Joyent and contributers  @licence <%= pkg.license %>*/\n'
+				banner: '/*! <%= pkg.name %> <%= pkg.version %> (c)<%= grunt.template.today("yyyy") %> deepstreamHub GmbH, with parts (c)<%= grunt.template.today("yyyy") %> Joyent and contributers  @licence <%= pkg.license %>*/\n'
 			},
 			dist: {
 				files: {
