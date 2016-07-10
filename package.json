@@ -1,6 +1,6 @@
 {
   "name": "deepstream.io-client-js",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0",
   "description": "the javascript client for deepstream.io",
   "main": "src/client.js",
   "directories": {
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "component-emitter": "1.1.2",
-    "engine.io-client": "^1.6.8"
+    "engine.io-client": "^1.6.11"
   },
   "browser": {
     "net": false
@@ -48,7 +48,7 @@
     "watch": "^0.19.1"
   },
   "author": "deepstreamHub GmbH",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js/issues"
   },
