@@ -41,7 +41,7 @@ Record discards and deletes now get called after when ready, which makes the API
 Before:
 ```javascript
 record = client.record.getRecord( 'user1' );
-record.set( 'name', bob' );
+record.set( 'name', 'bob' );
 record.onReady( () => {
   record.discard();
 })
@@ -51,7 +51,7 @@ Now:
 ```javascript
 record = client.record.getRecord( 'user1' );
 record
-  .set( 'name', bob' )
+  .set( 'name', 'bob' )
   .discard();
 ```
 
