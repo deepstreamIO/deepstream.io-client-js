@@ -58,3 +58,54 @@ describe( 'record handler returns the right records', function(){
 		expect( recordA.isDestroyed ).toBe( true );
 	});
 });
+
+
+fdescribe( 'removes deleted records', function(){
+
+	var recordHandler,
+		recordA,
+		onDelete = jasmine.createSpy( 'onDelete' ),
+		connection = new ConnectionMock(),
+		client = new ClientMock();
+
+	it( 'creates the RecordHandler', function(){
+		recordHandler = new RecordHandler( options, connection, client );
+		expect( typeof recordHandler.getRecord ).toBe( 'function' );
+	});
+
+	it( 'retrieves recordA', function(){
+		expect( connection.lastSendMessage ).toBe( null );
+		recordA = recordHandler.getRecord( 'recordA' );
+		recordA.on( 'delete', onDelete );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|CR|recordA+' ) );
+	});
+
+	it( 'initialises recordA', function(){
+		expect( recordA.isReady ).toBe( false );
+		recordHandler._$handle({
+			topic: 'R',
+			action: 'R',
+			data: [ 'recordA', 0, '{}' ]
+		});
+		expect( recordA.isReady ).toBe( true );
+	});
+
+	it( 'receives a delete message', function(){
+		expect( onDelete ).not.toHaveBeenCalled();
+		expect( recordA.isDestroyed ).toBe( false );
+		recordHandler._$handle({
+			topic: 'R',
+			action: 'A',
+			data: [ 'D', 'recordA' ]
+		});
+		expect( onDelete ).toHaveBeenCalled();
+		expect( recordA.isDestroyed ).toBe( true );
+	});
+
+	it( 'returns a new recordA and resubscribes', function(){
+		var newRecordA = recordHandler.getRecord( 'recordA' );
+		expect( newRecordA ).not.toBe( recordA );
+		expect( newRecordA.isDestroyed ).toBe( false );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|CR|recordA+' ) );
+	});
+});
