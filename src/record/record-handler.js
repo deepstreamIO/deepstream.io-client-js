@@ -43,7 +43,7 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
 		this._records[ name ].on( 'destroyPending', this._onDestroyPending.bind( this, name ) );
-		this._records[ name ].on( 'deleted', this._removeRecord.bind( this, name ) );
+		this._records[ name ].on( 'delete', this._removeRecord.bind( this, name ) );
 		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
 	}
 
