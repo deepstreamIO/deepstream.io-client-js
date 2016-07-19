@@ -34,7 +34,7 @@ describe( 'record handler returns the right records', function(){
 		});
 		expect( recordA.isReady ).toBe( true );
 	});
-	
+
 	it( 'discards recordA', function(){
 		recordA.discard();
 		expect( onDiscard ).not.toHaveBeenCalled();
@@ -60,7 +60,7 @@ describe( 'record handler returns the right records', function(){
 });
 
 
-fdescribe( 'removes deleted records', function(){
+describe( 'removes deleted records', function(){
 
 	var recordHandler,
 		recordA,
