@@ -1,3 +1,9 @@
+## [1.0.1] - 2016-07-19
+
+### Bug Fixes
+
+- Fixed issue where deleted record was not getting removed
+
 ## [1.0.0] - 2016-07-10
 
 ### Features
