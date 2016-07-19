@@ -64,7 +64,7 @@ module.exports = function( grunt ) {
 				beforeBump: [ 'build' ],
 				additionalFiles: [ 'bower.json' ],
 				github: {
-					repo: 'hoxton-one/deepstream.io-client-js',
+					repo: 'deepstreamIO/deepstream.io-client-js',
 					usernameVar: 'GITHUB_USERNAME',
 					passwordVar: 'GITHUB_PASSWORD'
 				}
