@@ -215,7 +215,7 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 		return;
 	}
 	if (arguments.length === 2) {
-		this._eventEmitter.off( pathOrCallback, callcallbackback );
+		this._eventEmitter.off( pathOrCallback, callback );
 	} else {
 		this._eventEmitter.off( ALL_EVENT, pathOrCallback );
 	}
