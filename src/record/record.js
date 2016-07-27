@@ -214,8 +214,11 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
-	this._eventEmitter.off( event, callback );
+	if (arguments.length === 2) {
+		this._eventEmitter.off( pathOrCallback, callback );
+	} else {
+		this._eventEmitter.off( ALL_EVENT, pathOrCallback );
+	}
 };
 
 /**
