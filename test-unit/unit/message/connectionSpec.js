@@ -290,7 +290,7 @@ describe( 'connection handles auth rejections', function(){
 
 			connection._endpoint.simulateOpen();
 			connection._endpoint.emit( 'message', msg( 'C|A+' ) );
-			
+
 			expect( connection._endpoint.lastSendMessage ).toBe( msg( 'A|REQ|{"user":"John"}+' ) );
 			expect( connection.getState() ).toBe( 'AUTHENTICATING' );
 			done();
