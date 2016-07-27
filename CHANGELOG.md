@@ -1,3 +1,14 @@
+## [Unreleased]
+
+### Bug Fixes
+
+- allow do create and discard the same record in a synchronous loop [167](https://github.com/deepstreamIO/deepstream.io-client-js/issues/167)
+
+### Enhancements
+
+- provide a `MAX_RECONNECTION_ATTEMPTS_REACHED` event [#175](https://github.com/deepstreamIO/deepstream.io-client-js/issues/175)
+
+
 ## [1.0.1] - 2016-07-19
 
 ### Bug Fixes
