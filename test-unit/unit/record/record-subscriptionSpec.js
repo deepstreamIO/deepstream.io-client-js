@@ -6,12 +6,14 @@ var Record = require( '../../../src/record/record.js' ),
 describe( 'supscriptions to local record changes', function(){
 	var record,
 		callback = jasmine.createSpy( 'firstnameCallback' ),
-		generalCallback = jasmine.createSpy( 'general' ),
+		generalCallback = jasmine.createSpy( 'generalCallback' ),
+		anotherGeneralCallback = jasmine.createSpy( 'anotherGeneralCallback' ),
 		connection = new MockConnection();
 
 	it( 'creates the record', function(){
 		record = new Record( 'testRecord', {}, connection, options, new ClientMock() );
 		record.subscribe( generalCallback );
+		record.subscribe( anotherGeneralCallback );
 		expect( generalCallback ).not.toHaveBeenCalled();
 		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
 		expect( generalCallback ).not.toHaveBeenCalled();
@@ -38,15 +40,38 @@ describe( 'supscriptions to local record changes', function(){
 		expect( record.get() ).toEqual({ firstname: 'Wolfram', lastname: 'Hempel' });
 	});
 
-	it( 'unsubscribes', function(){
+	it( 'unsubscribes path', function(){
 		record.set( 'firstname', 'Egon' );
 		expect( callback ).toHaveBeenCalledWith( 'Egon' );
 		expect( callback.calls.count() ).toEqual( 2 );
+
 		record.unsubscribe( 'firstname', callback );
+
 		record.set( 'firstname', 'Ray' );
-		expect( callback ).toHaveBeenCalledWith( 'Egon' );
 		expect( callback.calls.count() ).toEqual( 2 );
 	});
+
+	it( 'unsubscribes general callback', function(){
+			record.set( 'firstname', 'Egon' );
+			expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
+			expect( generalCallback.calls.count() ).toEqual( 5 );
+			expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
+			expect( anotherGeneralCallback.calls.count() ).toEqual( 5 );
+
+			record.unsubscribe( generalCallback );
+
+			// This line ensures that unsubscribing something that wasnt registered
+			// does nothing. See #190 if your curious
+			record.unsubscribe( function() {} );
+
+			record.set( 'firstname', 'Ray' );
+			expect( generalCallback.calls.count() ).toEqual( 5 );
+			expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Ray', lastname: 'Hempel' });
+			expect( anotherGeneralCallback.calls.count() ).toEqual( 6 );
+		});
+
+
+	anotherGeneralCallback
 
 	it( 'subscribes to a deep path', function(){
 		record.subscribe( 'addresses[ 1 ].street', callback );
