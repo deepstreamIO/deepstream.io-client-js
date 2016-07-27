@@ -52,26 +52,23 @@ describe( 'supscriptions to local record changes', function(){
 	});
 
 	it( 'unsubscribes general callback', function(){
-			record.set( 'firstname', 'Egon' );
-			expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
-			expect( generalCallback.calls.count() ).toEqual( 5 );
-			expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
-			expect( anotherGeneralCallback.calls.count() ).toEqual( 5 );
+		record.set( 'firstname', 'Egon' );
+		expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
+		expect( generalCallback.calls.count() ).toEqual( 5 );
+		expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
+		expect( anotherGeneralCallback.calls.count() ).toEqual( 5 );
 
-			record.unsubscribe( generalCallback );
+		record.unsubscribe( generalCallback );
 
-			// This line ensures that unsubscribing something that wasnt registered
-			// does nothing. See #190 if your curious
-			record.unsubscribe( function() {} );
+		// This line ensures that unsubscribing something that wasnt registered
+		// does nothing. See #190 if your curious
+		record.unsubscribe( function() {} );
 
-			record.set( 'firstname', 'Ray' );
-			expect( generalCallback.calls.count() ).toEqual( 5 );
-			expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Ray', lastname: 'Hempel' });
-			expect( anotherGeneralCallback.calls.count() ).toEqual( 6 );
-		});
-
-
-	anotherGeneralCallback
+		record.set( 'firstname', 'Ray' );
+		expect( generalCallback.calls.count() ).toEqual( 5 );
+		expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Ray', lastname: 'Hempel' });
+		expect( anotherGeneralCallback.calls.count() ).toEqual( 6 );
+	});
 
 	it( 'subscribes to a deep path', function(){
 		record.subscribe( 'addresses[ 1 ].street', callback );

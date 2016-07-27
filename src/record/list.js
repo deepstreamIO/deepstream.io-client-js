@@ -172,9 +172,21 @@ List.prototype.subscribe = function() {
 	}
 
 	//Make sure the callback is invoked with an empty array for new records
-	parameters.callback = function( callback ) {
+	var listCallback = function( callback ) {
 		callback( this.getEntries() );
 	}.bind( this, parameters.callback );
+
+	/**
+	* Adding a property onto a function directly is terrible practice,
+	* and we will change this as soon as we have a more seperate approach
+	* of creating lists that doesn't have records default state.
+	*
+	* The reason we are holding a referencing to wrapped array is so that
+	* on unsubscribe it can provide a reference to the actual method the
+	* record is subscribed too.
+	**/
+	parameters.callback.wrappedCallback = listCallback;
+	parameters.callback = listCallback;
 
 	this._record.subscribe( parameters );
 };
@@ -193,6 +205,7 @@ List.prototype.unsubscribe = function() {
 		throw new Error( 'path is not supported for List.unsubscribe' );
 	}
 
+	parameters.callback = parameters.callback.wrappedCallback;
 	this._record.unsubscribe( parameters );
 };
 
