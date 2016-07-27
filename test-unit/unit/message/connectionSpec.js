@@ -1,6 +1,7 @@
 /* global describe, it, expect, jasmine */
 
 var proxyquire = require( 'proxyquire' ).noCallThru(),
+	C = require( '../../../src/constants/constants' ),
 	TcpConnectionMock = require( '../../mocks/tcp/tcp-connection-mock' ),
 	Connection = proxyquire( '../../../src/message/connection', { '../tcp/tcp-connection': TcpConnectionMock } ),
 	clientMock = new (require( '../../mocks/client-mock' ))(),
@@ -336,6 +337,48 @@ describe( 'connection handles data associated with login', function(){
 /*****************************************
 * RECONNECTING
 *****************************************/
+describe( 'reach the max reconnect attempts', function(){
+	var connection,
+		authCallback = jasmine.createSpy( 'invalid auth callback' ),
+		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 1 };
+
+		it( 'creates the connection', function(){
+		connection = new Connection( clientMock, url, options );
+		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		expect( connection.getState() ).toBe( 'CLOSED' );
+		expect( connection._endpoint.lastSendMessage ).toBe( null );
+	});
+
+	it( 'opens the connection', function(){
+		connection._endpoint.simulateOpen();
+		expect( connection.getState() ).toBe( 'AWAITING_CONNECTION' );
+	});
+
+	it( 'recieves connection ack', function(){
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
+		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+	});
+
+	it( 'loses the connection', function( done ){
+		expect( connection._endpoint.callsToOpen ).toBe( 0 );
+		connection._endpoint.close();
+		expect( connection.getState() ).toBe( 'RECONNECTING' );
+		expect( connection._endpoint.callsToOpen ).toBe( 0 );
+
+		clientMock.on( C.MAX_RECONNECTION_ATTEMPTS_REACHED, done )
+
+		setTimeout(function(){
+			expect( connection._endpoint.callsToOpen ).toBe( 1 );
+		}, 1 );
+
+		setTimeout(function(){
+			connection._endpoint.close();
+			expect( connection._endpoint.callsToOpen ).toBe( 1 );
+		}, 50 );
+
+	});
+});
+
 describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	var connection,
 		authCallback = jasmine.createSpy( 'invalid auth callback' ),
@@ -369,7 +412,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 		}, 1 );
 
 		setTimeout(function(){
-		connection._endpoint.close();
+			connection._endpoint.close();
 			expect( connection._endpoint.callsToOpen ).toBe( 1 );
 		}, 50 );
 

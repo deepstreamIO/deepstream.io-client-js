@@ -462,6 +462,7 @@ Connection.prototype._tryReconnect = function() {
 	} else {
 		this._clearReconnect();
 		this.close();
+		this._client.emit( C.MAX_RECONNECTION_ATTEMPTS_REACHED, this._reconnectionAttempt );
 	}
 };
 
