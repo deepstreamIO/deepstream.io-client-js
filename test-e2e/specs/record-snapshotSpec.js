@@ -20,7 +20,7 @@ describe( 'record snapshot', function() {
 
 	it( 'creates clientA', function( done ) {
 		clientA = deepstreamClient( 'localhost:6021' );
-		clientA.login( null, function(){ done(); });
+		clientA.login( null, done );
 	});
 
 	 /**************** TEST ****************/
@@ -59,9 +59,20 @@ describe( 'record snapshot', function() {
 				clientA.record.snapshot( 'localRecord', function( error, data ) {
 					expect( error ).toBeNull();
 					expect( data ).toEqual( { key: 'value' } );
-					done();
+					record.on( 'discard', done );
+					record.discard();
 				} );
 			 }, 10 );
+		} );
+	});
+
+	it( 'retrieves remote snapshot if client record is not ready', function( done ){
+		var record = clientA.record.getRecord( 'localRecord' );
+
+		clientA.record.snapshot( 'localRecord', function( error, data ) {
+			expect( error ).toBeNull();
+			expect( data ).toEqual( { key: 'value' } );
+			done();
 		} );
 	});
 
