@@ -267,6 +267,24 @@ describe( 'record', function() {
 		}, 20 );
 	});
 
+	it( 'create and discards two times in a row', function( done ) {
+		var counter = 0
+		function syncCb() {
+			counter++
+			if (counter == 2) {
+				done()
+			}
+		}
+		var record1 = clientA.record.getRecord( 'record-x' );
+		record1.set({ x: 1 });
+		record1.on( 'discard', syncCb)
+		record1.discard();
+		record2 = clientA.record.getRecord( 'record-x' );
+		record2.set({ x: 2 });
+		record2.on( 'discard', syncCb)
+		record2.discard();
+	});
+
 	 /**************** TEAR DOWN ****************/
 	it( 'allows discard to be called before the record is ready', function( done ) {
 		var recordToDiscard = clientA.record.getRecord( 'recordToDiscardImmediately' );

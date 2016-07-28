@@ -234,15 +234,14 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
-	this.usages--;
-
-	if( this.usages <= 0 ) {
-		this.whenReady( function() {
-			this.emit( 'destroyPending' );
-			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
-		}.bind( this ) );
-	}
+	this.whenReady( function() {
+		this.usages--;
+		if( this.usages <= 0 ) {
+				this.emit( 'destroyPending' );
+				this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+				this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		}
+	}.bind( this ) );
 };
 
 /**
