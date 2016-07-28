@@ -4654,6 +4654,8 @@ exports.TOPIC.PRIVATE = 'PRIVATE/';
 exports.EVENT = {};
 exports.EVENT.CONNECTION_ERROR = 'connectionError';
 exports.EVENT.CONNECTION_STATE_CHANGED = 'connectionStateChanged';
+exports.EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED = 'MAX_RECONNECTION_ATTEMPTS_REACHED';
+exports.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT = 'CONNECTION_AUTHENTICATION_TIMEOUT';
 exports.EVENT.ACK_TIMEOUT = 'ACK_TIMEOUT';
 exports.EVENT.NO_RPC_PROVIDER = 'NO_RPC_PROVIDER';
 exports.EVENT.RESPONSE_TIMEOUT = 'RESPONSE_TIMEOUT';
@@ -4762,6 +4764,13 @@ module.exports = {
 	 *                                            it will try again after 3 seconds and so on
 	 */
 	reconnectIntervalIncrement: 4000,
+
+	/**
+	 * @param {Number} maxReconnectInterval       Specifies the maximum number of milliseconds for the reconnectIntervalIncrement
+	 *                                            The amount of reconnections will reach this value
+	 *                                            then reconnectIntervalIncrement will be ignored.
+	 */
+	maxReconnectInterval: 180000,
 
 	/**
 	 * @param {Number} maxReconnectAttempts		The number of reconnection attempts until the client gives
@@ -5133,6 +5142,7 @@ var Connection = function( client, url, options ) {
 	this._deliberateClose = false;
 	this._redirecting = false;
 	this._tooManyAuthAttempts = false;
+	this._connectionAuthenticationTimeout = false;
 	this._challengeDenied = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
@@ -5148,7 +5158,7 @@ var Connection = function( client, url, options ) {
 
 /**
  * Returns the current connection state.
- * (One of constants.CONNECTION_STATE) 
+ * (One of constants.CONNECTION_STATE)
  *
  * @public
  * @returns {String} connectionState
@@ -5172,7 +5182,7 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	this._authParams = authParams;
 	this._authCallback = callback;
 
-	if( this._tooManyAuthAttempts || this._challengeDenied ) {
+	if( this._tooManyAuthAttempts || this._challengeDenied || this._connectionAuthenticationTimeout ) {
 		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
 		return;
 	}
@@ -5181,7 +5191,7 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 		this._deliberateClose = false;
 		return;
 	}
-	
+
 	if( this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
 		this._sendAuthParams();
 	}
@@ -5221,7 +5231,7 @@ Connection.prototype.send = function( message ) {
 		this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
 	}
 
-	if( this._state === C.CONNECTION_STATE.OPEN && 
+	if( this._state === C.CONNECTION_STATE.OPEN &&
 		this._queuedMessages.length < this._options.maxMessagesPerPacket &&
 		this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
 		this._sendQueuedMessages();
@@ -5341,7 +5351,7 @@ Connection.prototype._sendAuthParams = function() {
 
 /**
  * Will be invoked once the connection is established. The client
- * can't send messages yet, and needs to get a connection ACK or REDIRECT 
+ * can't send messages yet, and needs to get a connection ACK or REDIRECT
  * from the server before authenticating
  *
  * @private
@@ -5394,7 +5404,7 @@ Connection.prototype._onClose = function() {
 	}
 	else if( this._deliberateClose === true ) {
 		this._setState( C.CONNECTION_STATE.CLOSED );
-	}  
+	}
 	else {
 		if( this._originalUrl !== this._url ) {
 			this._url = this._originalUrl;
@@ -5442,7 +5452,7 @@ Connection.prototype._onMessage = function( message ) {
  * by the client until the authentication is successful.
  *
  * If a challenge is recieved, the user will send the url to the server
- * in response to get the appropriate redirect. If the URL is invalid the 
+ * in response to get the appropriate redirect. If the URL is invalid the
  * server will respond with a REJECTION resulting in the client connection
  * being permanently closed.
  *
@@ -5457,15 +5467,15 @@ Connection.prototype._onMessage = function( message ) {
 Connection.prototype._handleConnectionResponse = function( message ) {
 	var data;
 
-	if( message.action === C.ACTIONS.ACK ) {	
+	if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		if( this._authParams ) {
 			this._sendAuthParams();
 		}
-	} 
+	}
 	else if( message.action === C.ACTIONS.CHALLENGE ) {
 		this._setState( C.CONNECTION_STATE.CHALLENGING );
-		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );		
+		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );
 	}
 	else if( message.action === C.ACTIONS.REJECTION ) {
 		this._challengeDenied = true;
@@ -5475,6 +5485,13 @@ Connection.prototype._handleConnectionResponse = function( message ) {
 		this._url = message.data[ 0 ];
 		this._redirecting = true;
 		this._endpoint.close();
+	}
+	else if( message.action === C.ACTIONS.ERROR ) {
+		if( message.data[ 0 ] === C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT ) {
+			this._deliberateClose = true;
+			this._connectionAuthenticationTimeout = true;
+			this._client._$onError( C.TOPIC.CONNECTION, message.data[ 0 ], message.data[ 1 ] );
+		}
 	}
 };
 
@@ -5493,21 +5510,21 @@ Connection.prototype._handleAuthResponse = function( message ) {
 	var data;
 
 	if( message.action === C.ACTIONS.ERROR ) {
-		
+
 		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
 			this._deliberateClose = true;
 			this._tooManyAuthAttempts = true;
 		} else {
 			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		}
-		
+
 		if( this._authCallback ) {
 			this._authCallback( false, this._getAuthData( message.data[ 1 ] ) );
 		}
-	
+
 	} else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.OPEN );
-		
+
 		if( this._authCallback ) {
 			this._authCallback( true, this._getAuthData( message.data[ 0 ] ) );
 		}
@@ -5534,7 +5551,7 @@ Connection.prototype._getAuthData = function( data ) {
 };
 
 /**
- * Updates the connection state and emits the 
+ * Updates the connection state and emits the
  * connectionStateChanged event on the client
  *
  * @private
@@ -5551,7 +5568,7 @@ Connection.prototype._setState = function( state ) {
  *
  * If the number of failed reconnection attempts exceeds
  * options.maxReconnectAttempts the connection is closed
- * 
+ *
  * @private
  * @returns {void}
  */
@@ -5564,18 +5581,22 @@ Connection.prototype._tryReconnect = function() {
 		this._setState( C.CONNECTION_STATE.RECONNECTING );
 		this._reconnectTimeout = setTimeout(
 			this._tryOpen.bind( this ),
-			this._options.reconnectIntervalIncrement * this._reconnectionAttempt 
+			Math.min(
+				this._options.maxReconnectInterval,
+				this._options.reconnectIntervalIncrement * this._reconnectionAttempt
+			)
 		);
 		this._reconnectionAttempt++;
 	} else {
 		this._clearReconnect();
 		this.close();
+		this._client.emit( C.MAX_RECONNECTION_ATTEMPTS_REACHED, this._reconnectionAttempt );
 	}
 };
 
 /**
  * Attempts to open a errourosly closed connection
- * 
+ *
  * @private
  * @returns {void}
  */
@@ -5600,6 +5621,7 @@ Connection.prototype._clearReconnect = function() {
 };
 
 module.exports = Connection;
+
 },{"../constants/constants":35,"../tcp/tcp-connection":31,"../utils/utils":54,"./message-builder":40,"./message-parser":41,"engine.io-client":2}],40:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
@@ -6287,9 +6309,21 @@ List.prototype.subscribe = function() {
 	}
 
 	//Make sure the callback is invoked with an empty array for new records
-	parameters.callback = function( callback ) {
+	var listCallback = function( callback ) {
 		callback( this.getEntries() );
 	}.bind( this, parameters.callback );
+
+	/**
+	* Adding a property onto a function directly is terrible practice,
+	* and we will change this as soon as we have a more seperate approach
+	* of creating lists that doesn't have records default state.
+	*
+	* The reason we are holding a referencing to wrapped array is so that
+	* on unsubscribe it can provide a reference to the actual method the
+	* record is subscribed too.
+	**/
+	parameters.callback.wrappedCallback = listCallback;
+	parameters.callback = listCallback;
 
 	this._record.subscribe( parameters );
 };
@@ -6308,6 +6342,7 @@ List.prototype.unsubscribe = function() {
 		throw new Error( 'path is not supported for List.unsubscribe' );
 	}
 
+	parameters.callback = parameters.callback.wrappedCallback;
 	this._record.unsubscribe( parameters );
 };
 
@@ -6389,7 +6424,7 @@ List.prototype._hasIndex = function( index ) {
 
 /**
  * Establishes the current structure of the list, provided the client has attached any
- * add / move / remove listener 
+ * add / move / remove listener
  *
  * This will be called before any change to the list, regardsless if the change was triggered
  * by an incoming message from the server or by the client
@@ -6434,7 +6469,7 @@ List.prototype._afterChange = function() {
 			}
 		}
 	}
-	
+
 	if( this._hasAddListener || this._hasMoveListener ) {
 		for( entry in after ) {
 			if( before[ entry ] === undefined ) {
@@ -6463,7 +6498,7 @@ List.prototype._afterChange = function() {
  * {
  * 	'recordA': [ 0, 3 ],
  * 	'recordB': [ 1 ],
- * 	'recordC': [ 2 ] 
+ * 	'recordC': [ 2 ]
  * }
  *
  * @private
@@ -6626,7 +6661,7 @@ RecordHandler.prototype.unlisten = function( pattern ) {
  * @public
  */
 RecordHandler.prototype.snapshot = function( name, callback ) {
-	if( this._records[ name ] ) {
+	if( this._records[ name ] && this._records[ name ].isReady ) {
 		callback( null, this._records[ name ].get() );
 	} else {
 		this._snapshotRegistry.request( name, callback );
@@ -6962,20 +6997,23 @@ Record.prototype.set = function( pathOrData, data ) {
  * @returns {void}
  */
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
-	var i, args = this._normalizeArguments( arguments );
+	var args = this._normalizeArguments( arguments );
 
 	if( this._checkDestroyed( 'subscribe' ) ) {
 		return;
 	}
 
-	this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-
-	if( args.triggerNow && this.isReady ) {
-		if( args.path ) {
-			args.callback( this._getPath( args.path ).getValue() );
-		} else {
-			args.callback( this._$data );
-		}
+	if( args.triggerNow ) {
+		this.whenReady(function () {
+			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+			if( args.path ) {
+				args.callback( this._getPath( args.path ).getValue() );
+			} else {
+				args.callback( this._$data );
+			}
+		}.bind(this));
+	} else {
+		this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
 	}
 };
 
@@ -6997,11 +7035,16 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
  * @returns {void}
  */
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
+	var args = this._normalizeArguments( arguments );
+
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
-	this._eventEmitter.off( event, callback );
+	if ( args.path ) {
+		this._eventEmitter.off( args.path, args.callback );
+	} else {
+		this._eventEmitter.off( ALL_EVENT, args.callback );
+	}
 };
 
 /**
@@ -7012,15 +7055,14 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
-	this.usages--;
-
-	if( this.usages <= 0 ) {
-		this.whenReady( function() {
-			this.emit( 'destroyPending' );
-			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
-		}.bind( this ) );
-	}
+	this.whenReady( function() {
+		this.usages--;
+		if( this.usages <= 0 ) {
+				this.emit( 'destroyPending' );
+				this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+				this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		}
+	}.bind( this ) );
 };
 
 /**
