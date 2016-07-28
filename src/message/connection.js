@@ -25,6 +25,7 @@ var Connection = function( client, url, options ) {
 	this._deliberateClose = false;
 	this._redirecting = false;
 	this._tooManyAuthAttempts = false;
+	this._connectionAuthenticationTimeout = false;
 	this._challengeDenied = false;
 	this._queuedMessages = [];
 	this._reconnectTimeout = null;
@@ -64,7 +65,7 @@ Connection.prototype.authenticate = function( authParams, callback ) {
 	this._authParams = authParams;
 	this._authCallback = callback;
 
-	if( this._tooManyAuthAttempts || this._challengeDenied ) {
+	if( this._tooManyAuthAttempts || this._challengeDenied || this._connectionAuthenticationTimeout ) {
 		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
 		return;
 	}
@@ -367,6 +368,13 @@ Connection.prototype._handleConnectionResponse = function( message ) {
 		this._url = message.data[ 0 ];
 		this._redirecting = true;
 		this._endpoint.close();
+	}
+	else if( message.action === C.ACTIONS.ERROR ) {
+		if( message.data[ 0 ] === C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT ) {
+			this._deliberateClose = true;
+			this._connectionAuthenticationTimeout = true;
+			this._client._$onError( C.TOPIC.CONNECTION, message.data[ 0 ], message.data[ 1 ] );
+		}
 	}
 };
 

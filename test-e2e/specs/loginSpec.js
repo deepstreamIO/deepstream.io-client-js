@@ -1,5 +1,6 @@
 /* global describe, it, expect, jasmine */
 var DeepstreamServer = require( 'deepstream.io' ),
+	C = require( '../../src/constants/constants' ),
 	deepstreamClient = require( '../../src/client' ),
 	TestLogger = require( '../tools/test-logger' );
 
@@ -32,10 +33,29 @@ describe( 'login', function() {
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.set( 'maxAuthAttempts', 2 );
 		deepstreamServer.set( 'authenticationHandler', authenticationHandler );
+		deepstreamServer.set( 'unauthenticatedClientTimeout', 200 );
 		deepstreamServer.start();
 	});
 
 	/**************** TESTS ****************/
+	it( 'does not login in the expected time', function( done ) {
+		clientA = deepstreamClient( 'localhost:6021' );
+		clientA.once( 'error', function( data, event, topic ){
+			expect( topic ).toBe( C.TOPIC.CONNECTION );
+			expect( event ).toBe( C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT );
+			done();
+		});
+	});
+
+	it( 'can\'t login after connection times out', function( done ) {
+		clientA.once( 'error', function( data, event, topic ){
+			expect( topic ).toBe( C.TOPIC.ERROR );
+			expect( event ).toBe( C.EVENT.IS_CLOSED );
+			done();
+		});
+		clientA.login();
+	});
+
 	it( 'tries to log in with an invalid user', function( done ) {
 		clientA = deepstreamClient( 'localhost:6021' );
 		clientA.login({ username: 'Egon'}, function( success, data ){
