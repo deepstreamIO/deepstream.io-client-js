@@ -176,7 +176,7 @@ Record.prototype.set = function( pathOrData, data ) {
  * @returns {void}
  */
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
-	var i, args = this._normalizeArguments( arguments );
+	var args = this._normalizeArguments( arguments );
 
 	if( this._checkDestroyed( 'subscribe' ) ) {
 		return;
@@ -211,11 +211,16 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
  * @returns {void}
  */
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
+	var args = this._normalizeArguments( arguments );
+
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	var event = arguments.length === 2 ? pathOrCallback : ALL_EVENT;
-	this._eventEmitter.off( event, callback );
+	if ( args.path ) {
+		this._eventEmitter.off( args.path, args.callback );
+	} else {
+		this._eventEmitter.off( ALL_EVENT, args.callback );
+	}
 };
 
 /**
