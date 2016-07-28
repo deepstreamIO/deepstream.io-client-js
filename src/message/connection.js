@@ -456,7 +456,10 @@ Connection.prototype._tryReconnect = function() {
 		this._setState( C.CONNECTION_STATE.RECONNECTING );
 		this._reconnectTimeout = setTimeout(
 			this._tryOpen.bind( this ),
-			this._options.reconnectIntervalIncrement * this._reconnectionAttempt
+			Math.min(
+				this._options.maxReconnectInterval,
+				this._options.reconnectIntervalIncrement * this._reconnectionAttempt
+			)
 		);
 		this._reconnectionAttempt++;
 	} else {
