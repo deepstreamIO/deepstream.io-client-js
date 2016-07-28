@@ -29,7 +29,7 @@
     "net": false
   },
   "devDependencies": {
-    "browserify": "13.0.1",
+    "browserify": "13.1.0",
     "coveralls": "^2.11.9",
     "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "deepstream.io-cache-redis": "latest",
