@@ -287,7 +287,7 @@ List.prototype._hasIndex = function( index ) {
 
 /**
  * Establishes the current structure of the list, provided the client has attached any
- * add / move / remove listener 
+ * add / move / remove listener
  *
  * This will be called before any change to the list, regardsless if the change was triggered
  * by an incoming message from the server or by the client
@@ -332,7 +332,7 @@ List.prototype._afterChange = function() {
 			}
 		}
 	}
-	
+
 	if( this._hasAddListener || this._hasMoveListener ) {
 		for( entry in after ) {
 			if( before[ entry ] === undefined ) {
@@ -361,7 +361,7 @@ List.prototype._afterChange = function() {
  * {
  * 	'recordA': [ 0, 3 ],
  * 	'recordB': [ 1 ],
- * 	'recordC': [ 2 ] 
+ * 	'recordC': [ 2 ]
  * }
  *
  * @private

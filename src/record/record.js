@@ -182,14 +182,17 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 		return;
 	}
 
-	this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-
-	if( args.triggerNow && this.isReady ) {
-		if( args.path ) {
-			args.callback( this._getPath( args.path ).getValue() );
-		} else {
-			args.callback( this._$data );
-		}
+	if( args.triggerNow ) {
+		this.whenReady(function () {
+			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+			if( args.path ) {
+				args.callback( this._getPath( args.path ).getValue() );
+			} else {
+				args.callback( this._$data );
+			}
+		}.bind(this));
+	} else {
+		this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
 	}
 };
 
