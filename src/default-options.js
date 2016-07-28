@@ -23,6 +23,13 @@ module.exports = {
 	reconnectIntervalIncrement: 4000,
 
 	/**
+	 * @param {Number} maxReconnectInterval       Specifies the maximum number of milliseconds for the reconnectIntervalIncrement
+	 *                                            The amount of reconnections will reach this value
+	 *                                            then reconnectIntervalIncrement will be ignored.
+	 */
+	maxReconnectInterval: 180000,
+
+	/**
 	 * @param {Number} maxReconnectAttempts		The number of reconnection attempts until the client gives
 	 *                                       	up and declares the connection closed
 	 */

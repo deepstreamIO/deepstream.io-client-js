@@ -337,10 +337,10 @@ describe( 'connection handles data associated with login', function(){
 /*****************************************
 * RECONNECTING
 *****************************************/
-describe( 'reach the max reconnect attempts', function(){
+describe( 'reach the max reconnect attempts and consider the maxReconnectInterval', function(){
 	var connection,
 		authCallback = jasmine.createSpy( 'invalid auth callback' ),
-		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 1 };
+		options = {reconnectIntervalIncrement: 40, maxReconnectAttempts: 3, maxReconnectInterval: 40 };
 
 		it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
@@ -367,14 +367,19 @@ describe( 'reach the max reconnect attempts', function(){
 
 		clientMock.on( C.MAX_RECONNECTION_ATTEMPTS_REACHED, done )
 
-		setTimeout(function(){
-			expect( connection._endpoint.callsToOpen ).toBe( 1 );
-		}, 1 );
+		function checkForXinTime(amount, timeout) {
+			const B = 3 // inaccuracy buffer
+			setTimeout(function(){
+				connection._endpoint.close();
+				expect( connection._endpoint.callsToOpen ).toBe( amount );
+			}, timeout + B * amount);
 
-		setTimeout(function(){
-			connection._endpoint.close();
-			expect( connection._endpoint.callsToOpen ).toBe( 1 );
-		}, 50 );
+		}
+
+		checkForXinTime(1, 40)
+		checkForXinTime(1, 70)
+		checkForXinTime(2, 40 + 40)
+		checkForXinTime(3, 40 + 40 + 40)
 
 	});
 });
