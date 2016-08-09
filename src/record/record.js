@@ -272,7 +272,7 @@ Record.prototype.delete = function() {
  */
 Record.prototype.whenReady = function( callback ) {
 	if( this.isReady === true ) {
-		setTimeout( callback.bind( null, this ), 0 );
+		setTimeout( callback.bind( this, this ), 0 );
 	} else {
 		this.once( 'ready', callback.bind( this, this ) );
 	}
