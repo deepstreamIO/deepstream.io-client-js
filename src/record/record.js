@@ -188,7 +188,7 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 			if( args.path ) {
 				args.callback( this._getPath( args.path ).getValue() );
 			} else {
-				args.callback( this._$data );
+				args.callback( this.get() );
 			}
 		}.bind(this));
 	} else {
