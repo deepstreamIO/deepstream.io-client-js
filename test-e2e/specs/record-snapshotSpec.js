@@ -49,7 +49,7 @@ describe( 'record snapshot', function() {
 		} );
 	});
 
-	it( 'retrieves local snapshot if client has the record', function( done ){
+	xit( 'retrieves local snapshot if client has the record', function( done ){
 		var record = clientA.record.getRecord( 'localRecord' );
 		record.set( { key: 'value' } );
 
@@ -66,7 +66,7 @@ describe( 'record snapshot', function() {
 		} );
 	});
 
-	it( 'retrieves remote snapshot if client record is not ready', function( done ){
+	xit( 'retrieves remote snapshot if client record is not ready', function( done ){
 		var record = clientA.record.getRecord( 'localRecord' );
 
 		clientA.record.snapshot( 'localRecord', function( error, data ) {

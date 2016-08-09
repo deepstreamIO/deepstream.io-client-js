@@ -35,7 +35,8 @@ describe( 'record listener', function() {
 	it( 'listens for record subscriptions', function(done){
 		var matches = [];
 
-		clientA.record.listen( 'user\/[a-z0-9]', function( match ){
+		clientA.record.listen( 'user\/[a-z0-9]', function( match, isSubscribed, response ){
+			response.accept();
 			matches.push( match );
 
 			if( matches.length === 2 ) {
@@ -53,8 +54,9 @@ describe( 'record listener', function() {
 	it( 'listens, gets notified and unlistens', function(done) {
 		var match;
 
-		var callback = function( _match ){
+		var callback = function( _match, isSubscribed, response ){
 			match = _match;
+			response.accept();
 		};
 
 		clientB.record.listen( 'a[0-9]', callback );
