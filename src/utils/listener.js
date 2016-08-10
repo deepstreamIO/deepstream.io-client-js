@@ -4,7 +4,7 @@ var ResubscribeNotifier = require( './resubscribe-notifier' );
 /*
  * Creates a listener instance which is usedby deepstream Records and Events.
  *
- * @param {String} topic                One of CONSTANTS.TOPIC
+ * @param {String} type                 One of CONSTANTS.TOPIC
  * @param {String} pattern              A combination of alpha numeric characters and wildcards( * )
  * @param {Function} callback           The function which is called when pattern was found and removed
  * @param {Connection} Connection       The instance of the server connection
@@ -89,7 +89,7 @@ Listener.prototype._$onMessage = function( message ) {
     } else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
         this._callback( message.data[ 1 ], false, this._createCallbackResponse( message ) );
     } else {
-        this._client._$onError( _type, C.EVENT.UNSOLICITED_MESSAGE, name.data[ 1 ] );
+        this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, name.data[ 1 ] );
     }
 
     if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND && this._responded !== true ) {
