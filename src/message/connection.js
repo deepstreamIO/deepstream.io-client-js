@@ -18,6 +18,8 @@ const C = require('../constants/constants')
  */
 const Connection = function (client, url, options) {
   this._client = client
+  this._originalUrl = url
+  this._url = url
   this._options = options
   this._authParams = null
   this._authCallback = null
@@ -27,19 +29,27 @@ const Connection = function (client, url, options) {
   this._connectionAuthenticationTimeout = false
   this._challengeDenied = false
   this._queuedMessages = []
+  this._parsedMessages = []
+  this._rawMessages = []
   this._reconnectTimeout = null
   this._reconnectionAttempt = 0
   this._currentPacketMessageCount = 0
   this._sendNextPacketTimeout = null
   this._currentMessageResetTimeout = null
   this._endpoint = null
-  this._lastHeartBeat = null
-  this._heartbeatInterval = null
-
-  this._originalUrl = utils.parseUrl(url, this._options.path)
-  this._url = this._originalUrl
+  this._idleTimeout = (Math.min(
+    options.rpcAckTimeout,
+    options.rpcResponseTimeout,
+    options.subscriptionTimeout,
+    options.recordReadAckTimeout,
+    options.recordReadTimeout,
+    options.recordDeleteTimeout,
+    10000
+  ) || 1000) - 200
 
   this._state = C.CONNECTION_STATE.CLOSED
+  this._lastHeartBeat = null
+  this._heartbeatInterval = null
   this._createEndpoint()
 }
 
@@ -144,6 +154,9 @@ Connection.prototype.close = function () {
   clearInterval(this._heartbeatInterval)
   this._deliberateClose = true
   this._endpoint.close()
+  if (this._messageHandler) {
+    utils.cancelIdleCallback(this._messageHandler)
+  }
 }
 
 /**
@@ -359,18 +372,41 @@ Connection.prototype._onClose = function () {
  * @returns {void}
  */
 Connection.prototype._onMessage = function (message) {
-  const parsedMessages = messageParser.parse(message.data, this._client)
+  this._rawMessages.push(message)
+  if (!this._messageHandler) {
+    this._messageHandler = utils.requestIdleCallback(
+      this._handleMessages.bind(this),
+      { timeout: this._idleTimeout }
+    )
+  }
+}
 
-  for (let i = 0; i < parsedMessages.length; i++) {
-    if (parsedMessages[i] === null) {
-      continue
-    } else if (parsedMessages[i].topic === C.TOPIC.CONNECTION) {
-      this._handleConnectionResponse(parsedMessages[i])
-    } else if (parsedMessages[i].topic === C.TOPIC.AUTH) {
-      this._handleAuthResponse(parsedMessages[i])
+Connection.prototype._handleMessages = function (deadline) {
+  do {
+    if (this._parsedMessages.length === 0) {
+      const message = this._rawMessages.shift()
+      if (!message) {
+        break
+      }
+      this._parsedMessages = messageParser.parse(message, this._client)
     } else {
-      this._client._$onMessage(parsedMessages[i])
+      const parsedMessage = this._parsedMessages.shift()
+      if (!parsedMessage) {
+        continue
+      } else if (parsedMessage.topic === C.TOPIC.CONNECTION) {
+        this._handleConnectionResponse(parsedMessage)
+      } else if (parsedMessage.topic === C.TOPIC.AUTH) {
+        this._handleAuthResponse(parsedMessage)
+      } else {
+        this._client._$onMessage(parsedMessage)
+      }
     }
+  } while (deadline.timeRemaining() > 4)
+
+  if ((this._parsedMessages.length > 0 || this._rawMessages.length > 0) && !this._deliberateClose) {
+    this._messageHandler = utils.requestIdleCallback(this._handleMessages.bind(this))
+  } else {
+    this._messageHandler = null
   }
 }
 

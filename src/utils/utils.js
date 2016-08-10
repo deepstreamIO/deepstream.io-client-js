@@ -213,3 +213,25 @@ exports.parseUrl = function (initialURl, defaultPath) {
   serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath
   return URL.format(serverUrl)
 }
+
+exports.requestIdleCallback = (!exports.isNode &&
+  window.requestIdleCallback &&
+  window.requestIdleCallback.bind(window)) ||
+  function (cb) {
+    const start = Date.now()
+    return setTimeout(() => {
+      cb({
+        didTimeout: false,
+        timeRemaining () {
+          return Math.max(0, 50 - (Date.now() - start))
+        }
+      })
+    }, 1)
+  }
+
+exports.cancelIdleCallback = (!exports.isNode &&
+  window.cancelIdleCallback &&
+  window.cancelIdleCallback.bind(window)) ||
+  function (id) {
+    clearTimeout(id)
+  }
