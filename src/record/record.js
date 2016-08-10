@@ -42,14 +42,17 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	if( options.mergeStrategy ) {
 		this.setMergeStrategy( options.mergeStrategy );
 	}
+	this._init();
+};
 
+EventEmitter( Record.prototype );
+
+Record.prototype._init = function () {
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._sendRead();
-};
-
-EventEmitter( Record.prototype );
+}
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
@@ -234,14 +237,23 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
-	this.whenReady( function() {
-		this.usages--;
-		if( this.usages <= 0 ) {
-				this.emit( 'destroyPending' );
-				this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-				this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
-		}
-	}.bind( this ) );
+	if( this._checkDestroyed( 'discard' ) ) {
+		return;
+	}
+
+	if( !this.isReady ) {
+		this._queuedMethodCalls.push({ method: 'discard', args: arguments });
+		return;
+	}
+
+	this.usages -= 1;
+
+	if( this.usages === 0 ) {
+		this.isReady = false;
+		this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+		this._resubscribeNotifier.destroy();
+	}
 };
 
 /**
@@ -254,11 +266,16 @@ Record.prototype.delete = function() {
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
-	this.whenReady( function() {
-		this.emit( 'destroyPending' );
-		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
-	}.bind( this ) );
+
+	if( !this.isReady ) {
+		this._queuedMethodCalls.push({ method: 'delete', args: arguments });
+		return;
+	}
+
+	this.isReady = false;
+	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
+	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
+	this._resubscribeNotifier.destroy();
 };
 
 /**
@@ -371,6 +388,8 @@ Record.prototype._processAckMessage = function( message ) {
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
+		// Any reference to the record is expected to be dereferenced, otherwise the record is assumed to
+		// be revived.
 		this.emit( 'delete' );
 		this._destroy();
 	}
@@ -629,13 +648,19 @@ Record.prototype._onTimeout = function( timeoutType ) {
  */
  Record.prototype._destroy = function() {
  	this._clearTimeouts();
- 	this._eventEmitter.off();
- 	this._resubscribeNotifier.destroy();
- 	this.isDestroyed = true;
- 	this.isReady = false;
- 	this._client = null;
-	this._eventEmitter = null;
-	this._connection = null;
+	if (this.usages > 0) {
+		// Revive record if referenced during pending discard/delete operation.
+		this._init();
+	}
+	else {
+		this.isDestroyed = true;
+	 	this._eventEmitter.off();
+	 	this._client = null;
+		this._eventEmitter = null;
+		this._connection = null;
+		// No more pending asynchronous operations. Safe to remove record without worrying about UNSOLICITED_MESSAGE.
+		this.emit( 'destroy' );
+	}
  };
 
 module.exports = Record;
