@@ -249,7 +249,7 @@ Record.prototype.discard = function() {
 			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 			this._resubscribeNotifier.destroy();
 		}
-	}.bind(this) );
+	}.bind( this ) );
 };
 
 /**
@@ -268,7 +268,7 @@ Record.prototype.delete = function() {
 		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 		this._resubscribeNotifier.destroy();
-	}.bind(this) );
+	}.bind( this ) );
 
 };
 
