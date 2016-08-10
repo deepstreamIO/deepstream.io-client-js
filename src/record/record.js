@@ -241,19 +241,15 @@ Record.prototype.discard = function() {
 		return;
 	}
 
-	if( !this.isReady ) {
-		this._queuedMethodCalls.push({ method: 'discard', args: arguments });
-		return;
-	}
-
-	this.usages -= 1;
-
-	if( this.usages === 0 ) {
-		this.isReady = false;
-		this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
-		this._resubscribeNotifier.destroy();
-	}
+	this.whenReady( function() {
+		this.usages--;
+		if( this.usages <= 0 ) {
+			this.isReady = false;
+			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+			this._resubscribeNotifier.destroy();
+		}
+	}.bind(this) );
 };
 
 /**
@@ -267,15 +263,13 @@ Record.prototype.delete = function() {
 		return;
 	}
 
-	if( !this.isReady ) {
-		this._queuedMethodCalls.push({ method: 'delete', args: arguments });
-		return;
-	}
+	this.whenReady( function() {
+		this.isReady = false;
+		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
+		this._resubscribeNotifier.destroy();
+	}.bind(this) );
 
-	this.isReady = false;
-	this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
-	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
-	this._resubscribeNotifier.destroy();
 };
 
 /**
