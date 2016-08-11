@@ -1,3 +1,29 @@
+## [Unreleased]
+
+### Bug Fixes
+
+- fix leaking internal reference to the record data  [#202](https://github.com/deepstreamIO/deepstream.io-client-js/issues/202) by [@ronag](@ronag)
+
+### Enhancements
+
+###### `listen(pattern, isSubscribed, response)`
+add a third argument for the listen callback (`client.record.listen` and `client.event.listen`) which contains
+an object which two functions (`accept` and `reject`). One of these functions needs to be called otherwise you
+will get a deprecated message. [#203](https://github.com/deepstreamIO/deepstream.io-client-js/issues/203) [#212](https://github.com/deepstreamIO/deepstream.io-client-js/issues/212)
+
+This enhancements fixes some issues like [#74](https://github.com/deepstreamIO/deepstream.io-client-js/issues/74) [#155](https://github.com/deepstreamIO/deepstream.io-client-js/issues/155) [#170](https://github.com/deepstreamIO/deepstream.io-client-js/issues/170)
+
+###### provider flag and event
+Records supports now a boolean flag (`record.hasProvider`) which indicates whether a listener has accepted providing data. You can also subscribe to event which is triggered when the flag changes: 
+
+```javascript
+record.on('hasProviderChanged', hasProvider => {
+  /* do something */
+})
+```
+
+
+
 ## [1.0.2] - 2016-07-28
 
 ### Bug Fixes
