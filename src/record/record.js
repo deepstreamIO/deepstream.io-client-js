@@ -47,12 +47,18 @@ var Record = function( name, recordOptions, connection, options, client ) {
 
 EventEmitter( Record.prototype );
 
+/**
+ * Sends the initial read message and initializes resubscription.
+ *
+ * @private
+ * @returns {void}
+ */
 Record.prototype._init = function () {
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._sendRead();
-}
+};
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
@@ -237,10 +243,6 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
-	if( this._checkDestroyed( 'discard' ) ) {
-		return;
-	}
-
 	this.whenReady( function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
@@ -269,7 +271,6 @@ Record.prototype.delete = function() {
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 		this._resubscribeNotifier.destroy();
 	}.bind( this ) );
-
 };
 
 /**
@@ -382,8 +383,6 @@ Record.prototype._processAckMessage = function( message ) {
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
-		// Any reference to the record is expected to be dereferenced, otherwise the record is assumed to
-		// be revived.
 		this.emit( 'delete' );
 		this._destroy();
 	}
@@ -643,7 +642,6 @@ Record.prototype._onTimeout = function( timeoutType ) {
  Record.prototype._destroy = function() {
  	this._clearTimeouts();
 	if (this.usages > 0) {
-		// Revive record if referenced during pending discard/delete operation.
 		this._init();
 	}
 	else {
