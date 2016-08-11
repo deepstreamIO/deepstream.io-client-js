@@ -94,7 +94,7 @@ Listener.prototype._$onMessage = function( message ) {
 
     if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND && this._responded !== true ) {
         var deprecatedMessage = 'DEPRECATED: listen should explicitly accept or reject for pattern: ' + message.data[ 0 ];
-        deprecatedMessage += '\nhttp://https://github.com/deepstreamIO/deepstream.io-client-js/issues/PLACEHOLDER';
+        deprecatedMessage += '\nhttps://github.com/deepstreamIO/deepstream.io-client-js/issues/212';
         if( console && console.warn ) {
             console.warn( deprecatedMessage );
         }
