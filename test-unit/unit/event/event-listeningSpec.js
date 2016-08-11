@@ -29,23 +29,13 @@ describe( 'event listening', function(){
 		})
 	}
 
-	function _handleProvider( topic, data ) {
-		recordHandler._$handle({
-			topic: topic,
-			action: 'SH',
-			data: data
-		})
-	}
-
-
-	beforeAll(() => {
+	beforeEach(() => {
 		eventHandler = new EventHandler( options, connection, client )
 		handleResponse = _handleResponse.bind( this, 'E', eventHandler )
-		_handleResponse = _handleResponse.bind( this, eventHandler )
 		originalWarn = console.warn
 	})
 
-	afterAll(() => {
+	afterEach(() => {
 		console.warn = originalWarn
 	})
 
@@ -80,6 +70,20 @@ describe( 'event listening', function(){
 		handleResponse( [ 'b/.*', 'b/1' ])
 	})
 
+	it( 'provider accepts and then discards', function( done ){
+		eventHandler.listen('b/.*', (data, isSubscribed, response) => {
+			if( isSubscribed ) {
+				response.accept()
+				expect( connection.lastSendMessage ).toBe( msg( 'E|LA|b/.*|b/2+' ) )
+				// simulate an unlisten
+				handleResponse( [ 'b/.*', 'b/2' ], true)
+			} else {
+				done()
+			}
+		})
+		handleResponse( [ 'b/.*', 'b/2' ])
+	})
+
 	it( 'provider accepts for c/*, but rejects for d/*', function( done ){
 
 		eventHandler.listen('c/.*', (data, isSubscribed, response) => {
@@ -97,7 +101,7 @@ describe( 'event listening', function(){
 		handleResponse( [ 'c/.*', 'c/1' ])
 
 		setTimeout(function() {
-			handleResponse( [ 'd/.*', 'd/1' ], true )
+			handleResponse( [ 'd/.*', 'd/1' ] )
 		}, 1 )
 	})
 

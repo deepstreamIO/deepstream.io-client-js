@@ -37,15 +37,14 @@ describe( 'records listening', function(){
 		})
 	}
 
-	beforeAll(() => {
+	beforeEach(() => {
 		recordHandler = new RecordHandler( options, connection, client )
 		handleProvider = _handleProvider.bind( null, 'R')
-		_handleProvider = _handleProvider.bind(this, recordHandler )
 		handleResponse = _handleResponse.bind( null, 'R', recordHandler )
 		originalWarn = console.warn
 	})
 
-	afterAll(() => {
+	afterEach(() => {
 		console.warn = originalWarn
 	})
 
@@ -101,6 +100,21 @@ describe( 'records listening', function(){
 
 	})
 
+	it( 'provider accepts and then discards', function( done ){
+		const b2 = recordHandler.getRecord( 'b/2' )
+		recordHandler.listen('b/.*', (data, isSubscribed, response) => {
+			if( isSubscribed ) {
+				response.accept()
+				expect( connection.lastSendMessage ).toBe( msg( 'R|LA|b/.*|b/2+' ) )
+				// simulate an unlisten
+				handleResponse( [ 'b/.*', 'b/2' ], true)
+			} else {
+				done()
+			}
+		})
+		handleResponse( [ 'b/.*', 'b/2' ])
+	})
+
 	it( 'provider accepts for c/*, but rejects for d/*', function( done ){
 		let _response = null
 
@@ -118,6 +132,7 @@ describe( 'records listening', function(){
 			response.reject()
 			expect( connection.lastSendMessage ).toBe( msg( 'R|LR|d/.*|d/1+' ) )
 			expect( d1.hasProvider ).toBe( false )
+			expect( c1.hasProvider ).toBe( true )
 			done()
 		})
 
@@ -130,7 +145,7 @@ describe( 'records listening', function(){
 
 		setTimeout(function() {
 			expect( c1.hasProvider ).toBe( true )
-			handleResponse( [ 'd/.*', 'd/1' ], true )
+			handleResponse( [ 'd/.*', 'd/1' ] )
 		}, 1 )
 	})
 
