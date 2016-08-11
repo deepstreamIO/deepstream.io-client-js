@@ -42,23 +42,13 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	if( options.mergeStrategy ) {
 		this.setMergeStrategy( options.mergeStrategy );
 	}
-	this._init();
-};
-
-EventEmitter( Record.prototype );
-
-/**
- * Sends the initial read message and initializes resubscription.
- *
- * @private
- * @returns {void}
- */
-Record.prototype._init = function () {
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
 	this._sendRead();
 };
+
+EventEmitter( Record.prototype );
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
@@ -249,7 +239,6 @@ Record.prototype.discard = function() {
 			this.isReady = false;
 			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
 			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
-			this._resubscribeNotifier.destroy();
 		}
 	}.bind( this ) );
 };
@@ -269,7 +258,6 @@ Record.prototype.delete = function() {
 		this.isReady = false;
 		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
-		this._resubscribeNotifier.destroy();
 	}.bind( this ) );
 };
 
@@ -640,17 +628,17 @@ Record.prototype._onTimeout = function( timeoutType ) {
  * @returns {void}
  */
  Record.prototype._destroy = function() {
- 	this._clearTimeouts();
 	if (this.usages > 0) {
-		this._init();
+		this._sendRead();
 	}
 	else {
+  	this._clearTimeouts();
 		this.isDestroyed = true;
 	 	this._eventEmitter.off();
+		this._resubscribeNotifier.destroy();
 	 	this._client = null;
 		this._eventEmitter = null;
 		this._connection = null;
-		// No more pending asynchronous operations. Safe to remove record without worrying about UNSOLICITED_MESSAGE.
 		this.emit( 'destroy' );
 	}
  };
