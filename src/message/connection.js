@@ -404,7 +404,10 @@ Connection.prototype._handleMessages = function (deadline) {
   } while (deadline.timeRemaining() > 4)
 
   if ((this._parsedMessages.length > 0 || this._rawMessages.length > 0) && !this._deliberateClose) {
-    this._messageHandler = utils.requestIdleCallback(this._handleMessages.bind(this))
+    this._messageHandler = utils.requestIdleCallback(
+      this._handleMessages.bind(this),
+      { timeout: this._idleTimeout }
+    )
   } else {
     this._messageHandler = null
   }
