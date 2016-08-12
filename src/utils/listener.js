@@ -5,7 +5,7 @@ var ResubscribeNotifier = require( './resubscribe-notifier' );
  * Creates a listener instance which is usedby deepstream Records and Events.
  *
  * @param {String} type                 One of CONSTANTS.TOPIC
- * @param {String} pattern              A combination of alpha numeric characters and wildcards( * )
+ * @param {String} pattern              A pattern that can be compiled via new RegExp(pattern)
  * @param {Function} callback           The function which is called when pattern was found and removed
  * @param {Connection} Connection       The instance of the server connection
  * @param {Object} options              Deepstream options
@@ -41,8 +41,10 @@ Listener.prototype.destroy = function() {
 };
 
 /*
- * This function can be called by the provider within the callback function.
- * Either accept or reject needs to be called, otherwise it prints out a deprecated warning.
+ * Accepting a listener request informs deepstream that the current provider is willing to
+ * provide the record or event matching the subscriptionName . This will establish the current
+ * provider as the only publisher for the actual subscription with the deepstream cluster.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
  *
  * @returns {void}
  */
@@ -52,8 +54,11 @@ Listener.prototype.accept = function( name ) {
 }
 
 /*
- * This function can be called by the provider within the callback function
- * Either accept or reject needs to be called, otherwise it prints out a deprecated warning.
+ *  Rejecting a listener request informs deepstream that the current provider is not willing
+ * to provide the record or event matching the subscriptionName . This will result in deepstream
+ * requesting another provider to do so instead. If no other provider accepts or exists, the
+ * record will remain unprovided.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
  *
  * @returns {void}
  */
@@ -63,7 +68,7 @@ Listener.prototype.reject = function( name ) {
 }
 
 /*
- * Wrapps accept and reject to as an argument for the callback function.
+ * Wraps accept and reject as an argument for the callback function.
  *
  * @private
  * @returns {Object}
