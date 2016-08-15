@@ -24,6 +24,14 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
     this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
     this._sendListen();
     this._responded = null;
+    this.destroyPending = false;
+};
+
+Listener.prototype.sendDestroy = function() {
+    this.destroyPending = true;
+    this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
+    this._resubscribeNotifier.destroy();
+
 };
 
 /*
@@ -32,8 +40,6 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
  * @returns {void}
  */
 Listener.prototype.destroy = function() {
-    this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
-    this._resubscribeNotifier.destroy();
     this._callback = null;
     this._pattern = null;
     this._client = null;
