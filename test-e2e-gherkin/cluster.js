@@ -3,6 +3,7 @@ var DeepstreamServer = require( 'deepstream.io' ),
 	util = require( 'util' ),
 	config = require( './config' ),
 	EventEmitter = require( 'events' ).EventEmitter,
+	Logger = require('../test-e2e/tools/test-logger'),
 	ports;
 
 var Cluster = function( tcpPorts, enableLogging ) {
@@ -51,7 +52,7 @@ Cluster.prototype._startServer = function( port, done ) {
 		host: config.redisHost
 	}));
 	if( this._enableLogging !== true ) {
-		//this.servers[ port ].set( 'logger', new Logger() );
+		this.servers[ port ].set( 'logger', new Logger() );
 	}
 
 	this.servers[ port ].set( 'showLogo', false );
