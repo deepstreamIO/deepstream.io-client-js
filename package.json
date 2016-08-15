@@ -15,7 +15,8 @@
     "e2e::watch": "watch \"npm run e2e\" ./src ./test-e2e",
     "unit": "jasmine JASMINE_CONFIG_PATH=jasmine.json test-unit/unit/**/*Spec.js",
     "unit::watch": "watch \"npm run unit\" ./src ./test-unit",
-    "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js"
+    "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js",
+    "new-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e --require ./test-e2e-gherkin/steps --fail-fast"
   },
   "repository": {
     "type": "git",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "browserify": "13.0.1",
     "coveralls": "^2.11.9",
+    "cucumber": "^1.2.2",
     "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git#feature/#313-listening-non-cluster",
     "deepstream.io-cache-redis": "latest",
     "deepstream.io-msg-redis": "latest",
@@ -45,6 +47,7 @@
     "jasmine": "^2.4.1",
     "jasmine-spec-reporter": "^2.4.0",
     "proxyquire": "1.7.10",
+    "sinon": "^1.17.5",
     "watch": "^0.19.1"
   },
   "author": "deepstreamHub GmbH",
