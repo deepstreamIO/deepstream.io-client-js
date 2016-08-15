@@ -20,7 +20,6 @@ describe( 'record listener', function() {
 	beforeAll(function(done) {
 		var counter = 0
 		function allDone() {
-			console.log(arguments)
 			counter++
 			done()
 		}
@@ -155,6 +154,38 @@ describe( 'record listener', function() {
 
 		records.push( clientB.record.getRecord( 'user/matchespattern' ) )
 		records.push( clientB.record.getRecord( 'user/DOES_NOT_MATCH' ) )
+	});
+
+	it( 'listen again after unlisten', function(done){
+		var matches = [];
+		var records = []
+		clientA.record.listen( 'foo/[a-z0-9]', function( match, isSubscribed, response ){
+			if (isSubscribed) {
+				response.accept();
+				matches.push( match );
+				if( matches.length === 2 ) {
+					expect( matches.indexOf( 'foo/matchespattern' ) ).not.toBe( -1 ) ;
+					expect( matches.indexOf( 'foo/some33' ) ).not.toBe( -1 );
+					records.forEach(record => {
+						record.discard()
+					})
+					clientA.record.unlisten( 'foo/[a-z0-9]' )
+					setTimeout(() => {
+						clientA.record.listen( 'foo\/[a-z0-9]', function( match, isSubscribed, response ){
+							if (isSubscribed) {
+								response.accept()
+								done()
+							}
+						})
+						records.push( clientA.record.getRecord( 'foo/some44' ) )
+					}, 10)
+				}
+			}
+		});
+
+		records.push( clientB.record.getRecord( 'foo/matchespattern' ) )
+		records.push( clientB.record.getRecord( 'foo/DOES_NOT_MATCH' ) )
+		records.push( clientA.record.getRecord( 'foo/some33' ) )
 	});
 
 	it( 'listens for 2 record subscriptions', function(done){
