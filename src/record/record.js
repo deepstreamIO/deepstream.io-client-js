@@ -628,11 +628,11 @@ Record.prototype._onTimeout = function( timeoutType ) {
  * @returns {void}
  */
  Record.prototype._destroy = function() {
+	this._clearTimeouts();
 	if (this.usages > 0) {
 		this._sendRead();
 	}
 	else {
-		this._clearTimeouts();
 		this.isDestroyed = true;
 		this._eventEmitter.off();
 		this._resubscribeNotifier.destroy();
