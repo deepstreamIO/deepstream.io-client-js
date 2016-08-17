@@ -59,7 +59,7 @@ EventHandler.prototype.subscribe = function( eventName, callback ) {
  */
 EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 	this._emitter.off( eventName, callback );
-	
+
 	if( !this._emitter.hasListeners( eventName ) ) {
 		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.UNSUBSCRIBE );
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ eventName ] );
@@ -67,10 +67,10 @@ EventHandler.prototype.unsubscribe = function( eventName, callback ) {
 };
 
 /**
- * Emits an event locally and sends a message to the server to 
+ * Emits an event locally and sends a message to the server to
  * broadcast the event to the other connected clients
  *
- * @param   {String} name 
+ * @param   {String} name
  * @param   {Mixed} data will be serialized and deserialized to its original type.
  *
  * @public
@@ -139,16 +139,26 @@ EventHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
-	if( this._listener[ name ] ) {
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		this._listener[ name ] && this._listener[ name ].destroyPending
+	) {
+		this._listener[ name ].destroy();
+		delete this._listener[ name ];
+		return;
+	} else if( this._listener[ name ] ) {
 		this._listener[ name ]._$onMessage( message );
 		return;
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+		return;
 	}
+
 
 	if( message.action === C.ACTIONS.ACK ) {
 		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
-	
+
 	if( message.action === C.ACTIONS.ERROR ) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
