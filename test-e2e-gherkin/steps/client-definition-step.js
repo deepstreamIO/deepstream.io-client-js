@@ -77,7 +77,8 @@ this.When(/^(?:subscriber|publisher) (\S)* publishes an event named "([^"]*)" wi
 	});
 
 	this.Then(/^(?:publisher) (\S)* receives a match "([^"]*)" for pattern "([^"]*)"$/, function (client, match, eventPattern) {
-		// TODO
+		var listenCallbackSpy = clients[ client ].eventCallbacksListenersSpies[ eventPattern ];
+		sinon.assert.calledWith(clients[ client ].eventCallbacksListenersSpies[ eventPattern ], match, true );
 	});
 
 	this.Then(/^(?:publisher) (\S)* does not receive a match "([^"]*)" for pattern "([^"]*)"$/, function (client, match, eventPattern) {
