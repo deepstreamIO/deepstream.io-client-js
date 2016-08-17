@@ -10,10 +10,8 @@ module.exports = function() {
 	 clients[ client ] = {
 		client: DeepstreamClient( Cluster.getUrl( server ) ),
 		eventCallbacks: {},
-		eventCallbacksListeners: {},
 		eventCallbacksListenersSpies: {},
-		eventCallbacksListenersResponse: {},
-		recordCallbacks: {}
+		eventCallbacksListenersResponse: {}
 	 }
  });
 
@@ -59,10 +57,13 @@ this.When(/^(?:subscriber|publisher) (\S)* publishes an event named "([^"]*)" wi
 		clients[ client ].eventCallbacksListenersSpies[ eventPattern ] = sinon.spy();
 		clients[ client ].eventCallbacks[ eventPattern ] = function( subscribtionName, isSubscribed, response) {
 			if( isSubscribed ) {
-				if( clients[ client ].eventCallbacksListenersResponse[ eventPattern ].accepts ) {
+				if( clients[ client ].eventCallbacksListenersResponse[ eventPattern ] === true) {
 					response.accept();
-				} else {
+				} else if( clients[ client ].eventCallbacksListenersResponse[ eventPattern ] === false) {
 					response.reject();
+				} else {
+					console.error('BOOM')
+					throw new Error('eventCallbacksListenersResponse is null for ' + client + ' and pattern ' + eventPattern )
 				}
 			}
 			clients[ client ].eventCallbacksListenersSpies[ eventPattern ]( subscribtionName, isSubscribed );
@@ -72,18 +73,23 @@ this.When(/^(?:subscriber|publisher) (\S)* publishes an event named "([^"]*)" wi
 	});
 
 	this.When(/^(?:subscriber|publisher) (\S)* unlistens to the pattern "([^"]*)"$/, function (client, eventPattern, done) {
-		clients[ client ].client.event.unlisten( eventPattern );
+		clients[ client ].client.event.unlisten( eventPattern )
 		setTimeout( done, defaultDelay );
 	});
 
-	this.Then(/^(?:publisher) (\S)* receives a match "([^"]*)" for pattern "([^"]*)"$/, function (client, match, eventPattern) {
+	this.Then(/^(?:publisher) (\S)* receives (\S) matche?s? "([^"]*)" for pattern "([^"]*)"$/, function (client, amount, match, eventPattern) {
+		amount = parseInt( amount )
+		if ( isNaN( amount ) ) {
+			amount = 1
+		}
 		var listenCallbackSpy = clients[ client ].eventCallbacksListenersSpies[ eventPattern ];
-		sinon.assert.calledWith(clients[ client ].eventCallbacksListenersSpies[ eventPattern ], match, true );
+		console.log('>>>>', listenCallbackSpy.args)
+		sinon.assert.calledWith( listenCallbackSpy, match, true );
 	});
 
 	this.Then(/^(?:publisher) (\S)* does not receive a match "([^"]*)" for pattern "([^"]*)"$/, function (client, match, eventPattern) {
 		var listenCallbackSpy = clients[ client ].eventCallbacksListenersSpies[ eventPattern ];
-		sinon.assert.neverCalledWith(listenCallbackSpy, match);
+		sinon.assert.neverCalledWith( listenCallbackSpy, match );
 	});
 
 
