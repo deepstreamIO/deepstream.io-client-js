@@ -37,7 +37,7 @@ describe( 'record listener', function() {
 		deepstreamServer.start();
 	})
 
-	afterAll(function(done) {
+	afterAll( function( done ) {
 		onClose(clientA, function() {
 			deepstreamServer.on('stopped', done)
 			deepstreamServer.stop()
@@ -51,9 +51,8 @@ describe( 'record listener', function() {
 
 	})
 
-	it( 'listens for record subscription without cleanup', function(done){
+	it( 'listens for record subscription with unlisten cleanup', function(done){
 		var matches = [];
-		var records = []
 		clientA.record.listen( 'user/[a-z0-9]', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
@@ -66,13 +65,12 @@ describe( 'record listener', function() {
 			}
 		});
 
-		records.push( clientB.record.getRecord( 'user/matchespattern' ) )
-		records.push( clientB.record.getRecord( 'user/DOES_NOT_MATCH' ) )
+		clientB.record.getRecord( 'user/matchespattern' )
+		clientB.record.getRecord( 'user/DOES_NOT_MATCH' )
 	});
 
-	it( 'listens for record subscription with unlisten cleanup', function(done){
+	it( 'verify liten is working again for', function(done){
 		var matches = [];
-		var records = []
 		clientA.record.listen( 'user/[a-z0-9]', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
@@ -85,10 +83,10 @@ describe( 'record listener', function() {
 			}
 		});
 		setTimeout(function() {
-		records.push( clientB.record.getRecord( 'user/matchespattern' ) )
-		records.push( clientB.record.getRecord( 'user/DOES_NOT_MATCH2' ) )
+			clientB.record.getRecord( 'user/matchespattern' )
+			clientB.record.getRecord( 'user/DOES_NOT_MATCH2' )
 
-		}, 100)
+		}, 10)
 	});
 
 	it( 'listens for record subscription with unlisten and discard cleanup', function(done){
@@ -172,6 +170,7 @@ describe( 'record listener', function() {
 					clientA.record.unlisten( 'foo/[a-z0-9]' )
 					setTimeout(() => {
 						clientA.record.listen( 'foo\/[a-z0-9]', function( match, isSubscribed, response ){
+							expect(match).toBe( 'foo/some44' )
 							if (isSubscribed) {
 								response.accept()
 								done()

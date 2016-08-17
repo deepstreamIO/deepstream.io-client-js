@@ -3,87 +3,202 @@ var DeepstreamServer = require( 'deepstream.io' ),
 	deepstreamClient = require( '../../src/client' ),
 	TestLogger = require( '../tools/test-logger' );
 
-describe( 'event listener', function() {
+function onClose(client, callback) {
+	client.on('connectionStateChanged', function(state) {
+		if (state === 'CLOSED') {
+			callback()
+		}
+	})
+}
+
+fdescribe( 'event listener', function() {
 	var deepstreamServer,
 		logger = new TestLogger(),
 		clientA,
 		clientB;
 
-	/**************** SETUP ****************/
-	it( 'starts the server', function( done ){
-		deepstreamServer = new DeepstreamServer();
-		deepstreamServer.on( 'started', done );
+	beforeAll(function(done) {
+		var counter = 0
+		function allDone() {
+			counter++
+			done()
+		}
+		deepstreamServer = new DeepstreamServer({port: 6665, tcpPort: 6666});
+		deepstreamServer.on( 'started', function() {
+			clientA = deepstreamClient( 'localhost:6666' );
+			clientA.on( 'error', function(){console.error(arguments)} );
+			clientA.login( null, allDone);
+			clientB = deepstreamClient( 'localhost:6666' );
+			clientB.on( 'error', function(){console.error(arguments)} );
+			clientB.login( null, allDone);
+		} );
 		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.start();
-	});
+	})
 
-	it( 'creates clientA', function( done ) {
-		clientA = deepstreamClient( 'localhost:6021' );
-		clientA.login( null, function(){ done(); });
-		clientA.on( 'error', () => {})
-	});
+	afterAll(function(done) {
+		onClose(clientA, function() {
+			deepstreamServer.on('stopped', done)
+			deepstreamServer.stop()
+		})
+		onClose(clientB, function() {
+			clientA.close()
+		})
+		setTimeout(function() {
+			clientB.close()
+		}, 100) // wait for potential messages on the wire (e.g. has provider = false)
 
-	it( 'creates clientB', function( done ) {
-		clientB = deepstreamClient( 'localhost:6021' );
-		clientB.login( null, function(){ done(); });
-		clientB.on( 'error', () => {})
-	});
+	})
 
-	 /**************** TEST ****************/
-	it( 'listens for event subscriptions', function(done){
+	// TODO: these both test cases leads to ACK_TIMEOUTs
+	it( 'TODO: listens for event subscription with unlisten cleanup', function(done){
 		var matches = [];
-
-		clientA.event.listen( 'event\/[a-z0-9]', function( match, isSubscribed, response ) {
-			response.accept();
-			matches.push( match );
-			if( matches.length === 2 ) {
-				expect( matches.indexOf( 'event/matchespattern' ) ).not.toBe( -1 ) ;
-				expect( matches.indexOf( 'event/some33' ) ).not.toBe( -1 );
-
-				done();
+		clientA.event.listen( 'user/[a-z0-9]', function( match, isSubscribed, response ){
+			if (isSubscribed) {
+				response.accept();
+				matches.push( match );
+				if( matches.length === 1 ) {
+					expect( matches.indexOf( 'user/matchespattern' ) ).not.toBe( -1 ) ;
+					clientA.event.unlisten( 'user/[a-z0-9]' )
+					done()
+				}
 			}
 		});
 
-		clientB.event.subscribe( 'event/matchespattern', function() {} );
-		clientB.event.subscribe( 'event/DOES_NOT_MATCH', function() {} );
-		clientA.event.subscribe( 'event/some33', function() {} );
+		setTimeout(function() {
+			clientB.event.subscribe( 'user/matchespattern', function() {} )
+			clientB.event.subscribe( 'user/DOES_NOT_MATCH', function() {} )
+		}, 10)
 	});
 
-	it( 'listens, gets notified and unlistens', function(done) {
-		var match;
-
-		var callback = function( _match, isSubscribed, repsonse ){
-			match = _match;
-			repsonse.accept();
-		};
-
-		clientB.event.listen( 'a[0-9]', callback );
-		// Might receive an unsolicited message error due to unlisten and subscribed happening at the same time
-		clientB.on( 'error', function(){} );
-		clientA.event.subscribe( 'a1', function() {} );
-		clientA.event.subscribe( 'aa', function() {} );
-
-		setTimeout(function(){
-		   expect( match ).toBe( 'a1' );
-		   clientB.event.unlisten( 'a[0-9]' );
-		   clientA.event.subscribe( 'a2', function() {} );
-
-		   setTimeout(function(){
-			   expect( match ).toBe( 'a1' );
-			   done();
-		   }, 50 );
-		}, 20 );
+	it( 'TODO: verify liten is working again for', function(done){
+		var matches = []
+		clientA.event.listen( 'user/[a-z0-9]', function( match, isSubscribed, response ){
+			if (isSubscribed) {
+				response.accept();
+				matches.push( match );
+				if( matches.length === 1 ) {
+					expect( matches.indexOf( 'user/matchespattern' ) ).not.toBe( -1 ) ;
+					clientA.event.unlisten( 'user/[a-z0-9]' )
+					done()
+				}
+			}
+		});
+		setTimeout(function() {
+			clientB.event.subscribe( 'user/matchespattern', function() {} )
+			clientB.event.subscribe( 'user/DOES_NOT_MATCH2', function() {} )
+		}, 10)
 	});
 
-	 /**************** TEAR DOWN ****************/
-	it( 'closes the clients', function() {
-		clientA.close();
-		clientB.close();
+	it( 'listens for event subscription with unlisten and unsubscribe cleanup', function(done){
+		var matches = [];
+		var subscriptions = []
+		clientA.event.listen( 'admin\/[a-z0-9]', function( match, isSubscribed, response ){
+			if (isSubscribed) {
+				response.accept();
+				matches.push( match );
+				if( matches.length === 1 ) {
+					expect( matches.indexOf( 'admin/matchesanotherpattern' ) ).not.toBe( -1 ) ;
+					clientA.event.unlisten( 'admin\/[a-z0-9]' )
+					subscriptions.forEach(subscription => {
+						subscription.client.event.unsubscribe(subscription.event)
+					})
+					done()
+				}
+			}
+		});
+
+		clientB.event.subscribe( 'admin/matchesanotherpattern', function() {} )
+		clientB.event.subscribe( 'admin/DOES_NOT_MATCH', function() {} )
+		subscriptions.push({client: clientB, event: 'admin/matchesanotherpattern' })
+		subscriptions.push({client: clientB, event: 'admin/DOES_NOT_MATCH' })
 	});
 
-	it( 'shuts clients and server down', function(done) {
-		deepstreamServer.on( 'stopped', done );
-		deepstreamServer.stop();
+	it( 'listens for event subscription with unsubscribe and unlisten cleanup', function(done){
+		var matches = [];
+		var subscriptions = []
+		clientA.event.listen( 'user\/[a-z0-9]', function( match, isSubscribed, response ){
+			if (isSubscribed) {
+				response.accept();
+				matches.push( match );
+				if( matches.length === 1 ) {
+					expect( matches.indexOf( 'user/matchespattern' ) ).not.toBe( -1 ) ;
+					subscriptions.forEach(subscription => {
+						subscription.client.event.unsubscribe(subscription.event)
+					})
+					clientA.event.unlisten( 'user\/[a-z0-9]' )
+					done()
+				}
+			}
+		});
+
+		clientB.event.subscribe( 'user/matchespattern', function() {} )
+		clientB.event.subscribe( 'user/DOES_NOT_MATCH', function() {} )
+		subscriptions.push({client: clientB, event: 'user/matchespattern' })
+		subscriptions.push({client: clientB, event: 'user/DOES_NOT_MATCH' })
 	});
+
+	it( 'listens for event subscription with subsubscribe cleanup', function(done){
+		var matches = [];
+		var subscriptions = []
+		clientA.event.listen( 'user\/[a-z0-9]', function( match, isSubscribed, response ){
+			if (isSubscribed) {
+				response.accept();
+				matches.push( match );
+				if( matches.length === 1 ) {
+					expect( matches.indexOf( 'user/matchespattern' ) ).not.toBe( -1 ) ;
+					subscriptions.forEach(subscription => {
+						subscription.client.event.unsubscribe(subscription.event)
+					})
+					done()
+				}
+			}
+		});
+
+		clientB.event.subscribe( 'user/matchespattern', function() {} )
+		clientB.event.subscribe( 'user/DOES_NOT_MATCH', function() {} )
+		subscriptions.push({client: clientB, event: 'user/matchespattern' })
+		subscriptions.push({client: clientB, event: 'user/DOES_NOT_MATCH' })
+	});
+
+	it( 'listen again after unlisten', function(done){
+		var matches = [];
+		var subscriptions = [];
+		clientA.event.listen( 'foo/[a-z0-9]', function( match, isSubscribed, response ){
+			if (isSubscribed) {
+				response.accept();
+				matches.push( match );
+				if( matches.length === 2 ) {
+					expect( matches.indexOf( 'foo/matchespattern' ) ).not.toBe( -1 ) ;
+					expect( matches.indexOf( 'foo/some33' ) ).not.toBe( -1 );
+					clientA.event.unlisten( 'foo/[a-z0-9]' )
+					subscriptions.forEach(subscription => {
+						subscription.client.event.unsubscribe(subscription.event)
+					})
+					setTimeout(() => {
+						clientA.event.listen( 'foo\/[a-z0-9]', function( match, isSubscribed, response ){
+							expect(match).toBe( 'foo/some44' )
+							if (isSubscribed) {
+								response.accept()
+								clientA.event.emit( 'foo/some44', {} )
+							}
+						})
+						clientA.event.subscribe( 'foo/some44', function() {
+							done()
+						})
+					}, 10)
+				}
+			}
+		});
+
+		clientB.event.subscribe( 'foo/matchespattern', function() {} )
+		clientB.event.subscribe( 'foo/DOES_NOT_MATCH', function() {} )
+		clientA.event.subscribe( 'foo/some33', function() {} )
+		subscriptions.push( {client: clientB, event: 'foo/matchespattern'} );
+		subscriptions.push( {client: clientB, event: 'foo/DOES_NOT_MATCH'} );
+		subscriptions.push( {client: clientA, event: 'foo/some33'} );
+	});
+
+
 });
