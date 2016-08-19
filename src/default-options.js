@@ -192,5 +192,9 @@ module.exports = {
 	 *                                   returned data as the latest revision. This can be overriden on a per record
 	 *                                   basis by setting the `setMergeStrategy`.
 	 */
-	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS
+	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
+
+	recordDeepCopy: true,
+
+	recordDeepCompare: true
 };

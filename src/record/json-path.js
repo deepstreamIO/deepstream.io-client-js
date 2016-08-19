@@ -2,23 +2,7 @@ var utils = require( '../utils/utils' ),
 	SPLIT_REG_EXP = /[\.\[\]]/g,
 	ASTERISK = '*';
 
-/**
- * This class allows to set or get specific
- * values within a json data structure using
- * string-based paths
- *
- * @param {Record} record
- * @param {String} path A path, e.g. users[2].firstname
- *
- * @constructor
- */
-var JsonPath = function( record, path ) {
-	this._record = record;
-	this._path = String( path );
-	this._tokens = [];
-
-	this._tokenize();
-};
+var cache = Object.create( null );
 
 /**
  * Returns the value of the path or
@@ -27,19 +11,19 @@ var JsonPath = function( record, path ) {
  * @public
  * @returns {Mixed}
  */
-JsonPath.prototype.getValue = function() {
-	var node = this._record._$data,
+module.exports.get = function ( data, path, deepCopy ) {
+	var tokens = tokenize( path ),
 		i;
 
-	for( i = 0; i < this._tokens.length; i++ ) {
-		if( node[ this._tokens[ i ] ] !== undefined ) {
-			node = node[ this._tokens[ i ] ];
+	for( i = 0; i < tokens.length; i++ ) {
+		if( data[ tokens[ i ] ] !== undefined ) {
+			data = data[ tokens[ i ] ];
 		} else {
 			return undefined;
 		}
 	}
 
-	return node;
+	return deepCopy !== false ? utils.deepCopy( data ) : data;
 };
 
 /**
@@ -49,36 +33,66 @@ JsonPath.prototype.getValue = function() {
  * @param {Mixed} value
  *
  * @public
- * @returns {void}
+ * @returns old or new state
  */
-JsonPath.prototype.setValue = function( value ) {
-	var node = this._record._$data,
-		i;
+module.exports.set = function( data, path, value, deepCopy, deepCompare ) {
+	var i,
+		tokens = tokenize( path ),
+		oldValue = module.exports.get( data, path );
 
-	for( i = 0; i < this._tokens.length - 1; i++ ) {
-		if( node[ this._tokens[ i ] ] !== undefined ) {
-			node = node[ this._tokens[ i ] ];
-		}
-		else if( this._tokens[ i + 1 ] && !isNaN( this._tokens[ i + 1 ] ) ){
-			node = node[ this._tokens[ i ] ] = [];
-		}
-		else {
-			node = node[ this._tokens[ i ] ] = {};
-		}
+	if (deepCompare !== false ? utils.deepEquals( oldValue, value ) : oldValue === value) {
+		return data;
 	}
 
-	node[ this._tokens[ i ] ] = value;
+	if ( deepCopy !== false ) {
+		value = utils.deepCopy( value );
+	}
+
+	if ( tokens.length > 0 ) {
+		data = utils.shallowCopy( data );
+
+		var node = data;
+
+		for( i = 0; i < tokens.length - 1; i++ ) {
+			if( node[ tokens[ i ] ] !== undefined ) {
+				node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
+			}
+			else if( tokens[ i + 1 ] && !isNaN( tokens[ i + 1 ] ) ){
+				node = node[ tokens[ i ] ] = [];
+			}
+			else {
+				node = node[ tokens[ i ] ] = {};
+			}
+		}
+
+		node[ tokens[ i ] ] = value;
+	}
+	else {
+		data = value;
+	}
+
+	return data;
 };
 
 /**
  * Parses the path. Splits it into
  * keys for objects and indices for arrays.
  *
- * @private
- * @returns {void}
+ * @returns Array of tokens
  */
-JsonPath.prototype._tokenize = function() {
-	var parts = this._path.split( SPLIT_REG_EXP ),
+function tokenize( path ) {
+	path = path ? path.toString() : undefined
+
+	var tokens = cache[ path ];
+
+	if ( tokens ) {
+		return tokens;
+	}
+
+	tokens = [];
+
+	var parts = path ? path.split( SPLIT_REG_EXP ) : [],
+		tokens = [],
 		part,
 		i;
 
@@ -90,17 +104,19 @@ JsonPath.prototype._tokenize = function() {
 		}
 
 		if( !isNaN( part ) ) {
-			this._tokens.push( parseInt( part, 10 ) );
+			tokens.push( parseInt( part, 10 ) );
 			continue;
 		}
 
 		if( part === ASTERISK ) {
-			this._tokens.push( true );
+			tokens.push( true );
 			continue;
 		}
 
-		this._tokens.push( part );
+		tokens.push( part );
 	}
-};
 
-module.exports = JsonPath;
+	cache[ path ] = tokens;
+
+	return tokens;
+};
