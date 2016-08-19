@@ -29,7 +29,7 @@ describe( 'record handler returns the right list', function(){
 
 	it( 'retrieves listA again', function() {
 		connection.lastSendMessage = null;
-		
+
 		listA2 = recordHandler.getList( 'listA' );
 		expect( listA ).toBe( listA2 );
 
@@ -55,12 +55,6 @@ describe( 'record handler returns the right list', function(){
 		expect( connection.lastSendMessage ).toBe( msg( 'R|US|listA+' ) );
 	});
 
-	it( 'returns a new listA and resubscribes', function(){
-		expect( recordHandler.getList( 'listA' ) ).not.toBe( listA );
-		expect( listA.isDestroyed ).toBe( false );
-		expect( connection.lastSendMessage ).toBe( msg( 'R|CR|listA+' ) );
-	});
-
 	it( 'has destroyed listA when discard ack is received', function(){
 		recordHandler._$handle({
 			topic: 'R',
@@ -69,5 +63,12 @@ describe( 'record handler returns the right list', function(){
 		});
 		expect( onDiscard ).toHaveBeenCalled();
 		expect( listA.isDestroyed ).toBe( true );
+	});
+
+	it( 'returns a new listA and resubscribes', function(){
+		var listA2 = recordHandler.getList( 'listA' )
+		expect( listA2 ).not.toBe( listA );
+		expect( listA2.isDestroyed ).toBe( false );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|CR|listA+' ) );
 	});
 });

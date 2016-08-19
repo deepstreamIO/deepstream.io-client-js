@@ -371,6 +371,7 @@ Record.prototype._processAckMessage = function( message ) {
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
+		this.usages = 0;
 		this.emit( 'delete' );
 		this._destroy();
 	}
