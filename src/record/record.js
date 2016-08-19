@@ -1,11 +1,10 @@
-var JsonPath = require( './json-path' ),
+var jsonPath = require( './json-path' ),
 	utils = require( '../utils/utils' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
-	messageParser = require( '../message/message-parser' ),
-	ALL_EVENT = 'ALL_EVENT';
+	messageParser = require( '../message/message-parser' );
 
 /**
  * This class represents a single record - an observable
@@ -35,11 +34,8 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.isReady = false;
 	this.isDestroyed = false;
 	this.hasProvider = false;
-	this._$data = {};
+	this._$data = Object.create( null );
 	this.version = null;
-	this._paths = {};
-	this._oldValue = null;
-	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
 
@@ -92,15 +88,7 @@ Record.prototype.setMergeStrategy = function( mergeStrategy ) {
  * @returns {Mixed} value
  */
 Record.prototype.get = function( path ) {
-	var value;
-
-	if( path ) {
-		value = this._getPath( path ).getValue();
-	} else {
-		value = this._$data;
-	}
-
-	return utils.deepCopy( value );
+	return jsonPath.get( this._$data, path, this._options.recordDeepCopy );
 };
 
 /**
@@ -133,34 +121,34 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( arguments.length === 2 && utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
-		return this;
-	}
-	else if( arguments.length === 1 && utils.deepEquals( this._$data, pathOrData ) ) {
+	var path = arguments.length === 1 ? undefined : pathOrData;
+	data = path ? data : pathOrData;
+
+	var oldValue = this._$data;
+	var newValue = jsonPath.set( this._$data, path, data, this._options.recordDeepCopy, this._options.recordDeepCompare );
+
+	if ( newValue === oldValue ) {
 		return this;
 	}
 
-	this._beginChange();
 	this.version++;
 
-	if( arguments.length === 1 ) {
-		this._$data = ( typeof pathOrData == 'object' ) ? utils.deepCopy( pathOrData ) : pathOrData;
+	if( !path ) {
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 			this.name,
 			this.version,
-			this._$data
+			data
 		]);
 	} else {
-		this._getPath( pathOrData ).setValue( ( typeof data == 'object' ) ? utils.deepCopy( data ): data );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
 			this.name,
 			this.version,
-			pathOrData,
+			path,
 			messageBuilder.typed( data )
 		]);
 	}
 
-	this._completeChange();
+	this._applyChange( newValue );
 	return this;
 };
 
@@ -198,16 +186,12 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	}
 
 	if( args.triggerNow ) {
-		this.whenReady(function () {
-			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-			if( args.path ) {
-				args.callback( this._getPath( args.path ).getValue() );
-			} else {
-				args.callback( this.get() );
-			}
-		}.bind(this));
+		this.whenReady( function () {
+			this._eventEmitter.on( args.path, args.callback );
+			args.callback( this.get( args.path ) );
+		}.bind(this) );
 	} else {
-		this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+		this._eventEmitter.on( args.path, args.callback );
 	}
 };
 
@@ -241,11 +225,7 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	if ( args.path ) {
-		this._eventEmitter.off( args.path, args.callback );
-	} else {
-		this._eventEmitter.off( ALL_EVENT, args.callback );
-	}
+	this._eventEmitter.off( args.path, args.callback );
 };
 
 /**
@@ -444,16 +424,12 @@ Record.prototype._applyUpdate = function( message ) {
 		return;
 	}
 
-	this._beginChange();
 	this.version = version;
 
-	if( message.action === C.ACTIONS.PATCH ) {
-		this._getPath( message.data[ 2 ] ).setValue( data );
-	} else {
-		this._$data = data;
-	}
+	var path = message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined;
+	var newValue = jsonPath.set( this._$data, path, data, false, this._options.recordDeepCompare );
 
-	this._completeChange();
+	this._applyChange( newValue );
 };
 
 /**
@@ -465,10 +441,9 @@ Record.prototype._applyUpdate = function( message ) {
  * @returns {void}
  */
 Record.prototype._onRead = function( message ) {
-	this._beginChange();
 	this.version = parseInt( message.data[ 1 ], 10 );
-	this._$data = JSON.parse( message.data[ 2 ] );
-	this._completeChange();
+	var newValue = jsonPath.set( this._$data, undefined, JSON.parse( message.data[ 2 ] ), false, this._options.recordDeepCompare );
+	this._applyChange( newValue );
 	this._setReady();
 };
 
@@ -499,81 +474,28 @@ Record.prototype._setReady = function() {
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
 
-
 /**
- * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
- * exist yet
- *
- * @param   {String} path
- *
- * @returns {JsonPath}
- */
-Record.prototype._getPath = function( path ) {
-	if( !this._paths[ path ] ) {
-		this._paths[ path ] = new JsonPath( this, path );
-	}
-
-	return this._paths[ path ];
-};
-
-/**
- * First of two steps that are called for incoming and outgoing updates.
- * Saves the current value of all paths the app is subscribed to.
- *
- * @private
- * @returns {void}
- */
-Record.prototype._beginChange = function() {
-	if( !this._eventEmitter._callbacks ) {
-		return;
-	}
-
-	var paths = Object.keys( this._eventEmitter._callbacks ),
-		i;
-
-	this._oldPathValues = {};
-
-	if( this._eventEmitter.hasListeners( ALL_EVENT ) ) {
-		this._oldValue = this.get();
-	}
-
-	for( i = 0; i < paths.length; i++ ) {
-		if( paths[ i ] !== ALL_EVENT ) {
-			this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
-		}
-	}
-};
-
-/**
- * Second of two steps that are called for incoming and outgoing updates.
  * Compares the new values for every path with the previously stored ones and
  * updates the subscribers if the value has changed
  *
  * @private
  * @returns {void}
  */
-Record.prototype._completeChange = function() {
-	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
-		this._eventEmitter.emit( ALL_EVENT, this.get() );
-	}
+Record.prototype._applyChange = function( newValue ) {
+	var oldValue = this._$data;
+	this._$data = newValue;
 
-	this._oldValue = null;
-
-	if( this._oldPathValues === null ) {
+	if ( newValue === oldValue || !this._eventEmitter._callbacks ) {
 		return;
 	}
 
-	var path, currentValue;
+	var i, path, paths = Object.keys( this._eventEmitter._callbacks );
 
-	for( path in this._oldPathValues ) {
-		currentValue = this._getPath( path ).getValue();
-
-		if( currentValue !== this._oldPathValues[ path ] ) {
-			this._eventEmitter.emit( path, currentValue );
+	for( i = 0; i < paths.length; i++ ) {
+		if( jsonPath.get( newValue, paths[ i ], false ) !== jsonPath.get( oldValue, paths[ i ], false ) ) {
+			this._eventEmitter.emit( paths[ i ], jsonPath.get( newValue, paths[ i ], this._options.recordDeepCopy ) );
 		}
 	}
-
-	this._oldPathValues = null;
 };
 
 /**

@@ -110,3 +110,19 @@ exports.deepCopy = function( obj ) {
 		return obj;
 	}
 };
+
+exports.shallowCopy = function ( obj ) {
+	if ( Array.isArray(obj) ) {
+		return obj.slice( 0 );
+	}
+	else if (typeof obj === 'object') {
+	  var prop, copy = {};
+	  for ( prop in obj ) {
+			if ( obj.hasOwnProperty(prop) ) {
+				copy[prop] = obj[prop];
+			}
+	  }
+	  return copy;
+	}
+	return obj;
+}
