@@ -327,7 +327,7 @@ Record.prototype.delete = function () {
  */
 Record.prototype.whenReady = function (callback) {
   if (this.isReady === true) {
-    utils.requestIdleCallback(callback.bind(this, this))
+    callback(this)
   } else {
     this.once('ready', callback.bind(this, this))
   }
