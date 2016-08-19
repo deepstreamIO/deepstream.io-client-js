@@ -42,9 +42,7 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
 	if( !this._records[ name ] ) {
 		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
-		this._records[ name ].on( 'destroyPending', this._onDestroyPending.bind( this, name ) );
-		this._records[ name ].on( 'delete', this._removeRecord.bind( this, name ) );
-		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
+		this._records[ name ].on( 'destroy', this._removeRecord.bind( this, name ) );
 	}
 
 	this._records[ name ].usages++;
@@ -185,26 +183,6 @@ RecordHandler.prototype._$handle = function( message ) {
 	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
 
-		/*
-		 * The following prevents errors that occur when a record is discarded or deleted and
-		 * recreated before the discard / delete ack message is received.
-		 *
-		 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
-		 * between another clients creation and read message for the same record
-		 */
-		if( message.data[ 0 ] === C.ACTIONS.DELETE ||
-			  message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ||
-			 ( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE  )
-			) {
-			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
-
-			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
-				this._records[ name ]._$onMessage( message );
-			}
-
-			return;
-		}
-
 		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
 			message.processedError = true;
 			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
@@ -259,23 +237,6 @@ RecordHandler.prototype._$handle = function( message ) {
  */
 RecordHandler.prototype._onRecordError = function( recordName, error ) {
 	this._client._$onError( C.TOPIC.RECORD, error, recordName );
-};
-
-/**
- * When the client calls discard or delete on a record, there is a short delay
- * before the corresponding ACK message is received from the server. To avoid
- * race conditions if the record is re-requested straight away the old record is
- * removed from the cache straight awy and will only listen for one last ACK message
- *
- * @param   {String} recordName The name of the record that was just deleted / discarded
- *
- * @private
- * @returns {void}
- */
-RecordHandler.prototype._onDestroyPending = function( recordName ) {
-	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
-	this._destroyEventEmitter.once( 'destroy_ack_' + recordName, onMessage );
-	this._removeRecord( recordName );
 };
 
 /**

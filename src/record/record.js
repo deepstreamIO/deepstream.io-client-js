@@ -42,7 +42,6 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	if( options.mergeStrategy ) {
 		this.setMergeStrategy( options.mergeStrategy );
 	}
-
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
 	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
@@ -237,9 +236,9 @@ Record.prototype.discard = function() {
 	this.whenReady( function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
-				this.emit( 'destroyPending' );
-				this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
-				this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
+			this.isReady = false;
+			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 		}
 	}.bind( this ) );
 };
@@ -254,8 +253,9 @@ Record.prototype.delete = function() {
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
+
 	this.whenReady( function() {
-		this.emit( 'destroyPending' );
+		this.isReady = false;
 		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 	}.bind( this ) );
@@ -371,6 +371,7 @@ Record.prototype._processAckMessage = function( message ) {
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
+		this.usages = 0;
 		this.emit( 'delete' );
 		this._destroy();
 	}
@@ -628,14 +629,19 @@ Record.prototype._onTimeout = function( timeoutType ) {
  * @returns {void}
  */
  Record.prototype._destroy = function() {
- 	this._clearTimeouts();
- 	this._eventEmitter.off();
- 	this._resubscribeNotifier.destroy();
- 	this.isDestroyed = true;
- 	this.isReady = false;
- 	this._client = null;
-	this._eventEmitter = null;
-	this._connection = null;
+	this._clearTimeouts();
+	if (this.usages > 0) {
+		this._sendRead();
+	}
+	else {
+		this.isDestroyed = true;
+		this._eventEmitter.off();
+		this._resubscribeNotifier.destroy();
+	 	this._client = null;
+		this._eventEmitter = null;
+		this._connection = null;
+		this.emit( 'destroy' );
+	}
  };
 
 module.exports = Record;
