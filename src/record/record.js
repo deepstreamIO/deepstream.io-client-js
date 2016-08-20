@@ -419,9 +419,9 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
-	this._queuedMethodCalls.forEach( function(call) {
-		this[ call.method ].apply( this, call.args );
-	}.bind( this ) );
+	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
+		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
+	}
 	this._queuedMethodCalls = [];
 	this.emit( 'ready' );
 };
@@ -448,16 +448,20 @@ Record.prototype._applyChange = function( newData ) {
 	var oldData = this._$data;
 	this._$data = newData;
 
-	Object
-		.keys( this._eventEmitter._callbacks || {} )
-		.forEach( function(path) {
-			var newValue = jsonPath.get( newData, path, false );
-			var oldValue = jsonPath.get( oldData, path, false );
+	if ( !this._eventEmitter._callbacks ) {
+		return;
+	}
 
-			if( newValue !== oldValue && !utils.deepEquals( newValue, oldValue ) ) {
-				this._eventEmitter.emit( path, this.get( path ) );
-			}
-		}.bind( this ) );
+	var paths = Object.keys( this._eventEmitter._callbacks );
+
+	for ( var i = 0; i < paths.length; i++ ) {
+		var newValue = jsonPath.get( newData, paths[ i ], false );
+		var oldValue = jsonPath.get( oldData, paths[ i ], false );
+
+		if( newValue !== oldValue && !utils.deepEquals( newValue, oldValue ) ) {
+			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
+		}
+	}
 };
 
 /**
