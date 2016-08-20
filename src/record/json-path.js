@@ -32,7 +32,7 @@ module.exports.get = function ( data, path, deepCopy ) {
  * @param {Mixed} value
  *
  * @public
- * @returns old or new state
+ * @returns updated value
  */
 module.exports.set = function( data, path, value, deepCopy ) {
 	var tokens = tokenize( path );
@@ -45,7 +45,9 @@ module.exports.set = function( data, path, value, deepCopy ) {
 		return value;
 	}
 
-	var node = data = utils.shallowCopy( data );
+	data = utils.shallowCopy( data );
+
+	var node = data;
 	for( var i = 0; i < tokens.length; i++ ) {
 		if ( i === tokens.length - 1) {
 			node[ tokens[ i ] ] = value;
