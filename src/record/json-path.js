@@ -35,14 +35,9 @@ module.exports.get = function ( data, path, deepCopy ) {
  * @public
  * @returns old or new state
  */
-module.exports.set = function( data, path, value, deepCopy, deepCompare ) {
+module.exports.set = function( data, path, value, deepCopy ) {
 	var i,
-		tokens = tokenize( path ),
-		oldValue = module.exports.get( data, path );
-
-	if (deepCompare !== false ? utils.deepEquals( oldValue, value ) : oldValue === value) {
-		return data;
-	}
+		tokens = tokenize( path );
 
 	if ( deepCopy !== false ) {
 		value = utils.deepCopy( value );

@@ -194,7 +194,5 @@ module.exports = {
 	 */
 	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
 
-	recordDeepCopy: true,
-
-	recordDeepCompare: true
+	recordDeepCopy: true
 };
