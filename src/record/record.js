@@ -116,10 +116,7 @@ Record.prototype.set = function( pathOrData, data ) {
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
 
-	var oldValue = this._$data;
-	var newValue = jsonPath.set( this._$data, path, data, this._options.recordDeepCopy, this._options.recordDeepCompare );
-
-	if ( newValue === oldValue ) {
+	if ( utils.deepEquals( data, jsonPath.get( this._$data, path ) ) ) {
 		return this;
 	}
 
@@ -140,7 +137,7 @@ Record.prototype.set = function( pathOrData, data ) {
 		]);
 	}
 
-	this._applyChange( newValue );
+	this._applyChange( jsonPath.set( this._$data, path, data, this._options.recordDeepCopy ) );
 	return this;
 };
 
@@ -396,11 +393,7 @@ Record.prototype._applyUpdate = function( message ) {
 	}
 
 	this.version = version;
-
-	var path = message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined;
-	var newValue = jsonPath.set( this._$data, path, data, false, this._options.recordDeepCompare );
-
-	this._applyChange( newValue );
+	this._applyChange( jsonPath.set( this._$data, message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined, data ) );
 };
 
 /**
@@ -413,8 +406,7 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	this.version = parseInt( message.data[ 1 ], 10 );
-	var newValue = jsonPath.set( this._$data, undefined, JSON.parse( message.data[ 2 ] ), false, this._options.recordDeepCompare );
-	this._applyChange( newValue );
+	this._applyChange( jsonPath.set( this._$data, undefined, JSON.parse( message.data[ 2 ] ) ) );
 	this._setReady();
 };
 
@@ -427,9 +419,9 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
-	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
-		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
-	}
+	this._queuedMethodCalls.forEach( function(call) {
+		this[ call.method ].apply( this, call.args );
+	}.bind( this ) );
 	this._queuedMethodCalls = [];
 	this.emit( 'ready' );
 };
@@ -452,21 +444,20 @@ Record.prototype._setReady = function() {
  * @private
  * @returns {void}
  */
-Record.prototype._applyChange = function( newValue ) {
-	var oldValue = this._$data;
-	this._$data = newValue;
+Record.prototype._applyChange = function( newData ) {
+	var oldData = this._$data;
+	this._$data = newData;
 
-	if ( newValue === oldValue || !this._eventEmitter._callbacks ) {
-		return;
-	}
+	Object
+		.keys( this._eventEmitter._callbacks || {} )
+		.forEach( function(path) {
+			var newValue = jsonPath.get( newData, path, false );
+			var oldValue = jsonPath.get( oldData, path, false );
 
-	var i, path, paths = Object.keys( this._eventEmitter._callbacks );
-
-	for( i = 0; i < paths.length; i++ ) {
-		if( jsonPath.get( newValue, paths[ i ], false ) !== jsonPath.get( oldValue, paths[ i ], false ) ) {
-			this._eventEmitter.emit( paths[ i ], jsonPath.get( newValue, paths[ i ], this._options.recordDeepCopy ) );
-		}
-	}
+			if( newValue !== oldValue && !utils.deepEquals( newValue, oldValue ) ) {
+				this._eventEmitter.emit( path, this.get( path ) );
+			}
+		}.bind( this ) );
 };
 
 /**
