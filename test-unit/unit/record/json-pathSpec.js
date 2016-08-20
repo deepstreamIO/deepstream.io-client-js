@@ -1,4 +1,5 @@
 var jsonPath = require( '../../../src/record/json-path' );
+var utils = require( '../../../src/utils/utils' );
 
 describe('paths are tokenized and retrieved correctly', function(){
 	var testRecord = { _$data: {
@@ -13,6 +14,10 @@ describe('paths are tokenized and retrieved correctly', function(){
 		],
 		1234: 'integer index'
 	}};
+
+	beforeEach( function() {
+		jasmine.addCustomEqualityTester(utils.deepEquals);
+	} );
 
 	it( 'retrieves simple paths', function(){
 		expect( jsonPath.get( testRecord._$data, 'firstname') ).toBe( 'Wolfram' );
@@ -73,6 +78,10 @@ describe('paths are tokenized and retrieved correctly', function(){
 
 describe( 'objects are created from paths and their value is set correctly', function(){
 
+	beforeEach( function() {
+		jasmine.addCustomEqualityTester(utils.deepEquals);
+	} );
+
 	it( 'sets simple values', function(){
 		var record = { _$data:{}};
 		record._$data = jsonPath.set( record._$data, 'firstname', 'Wolfram' );
@@ -95,14 +104,13 @@ describe( 'objects are created from paths and their value is set correctly', fun
 		var record = { _$data:{}};
 		record._$data = jsonPath.set( record._$data, 'pastAddresses[1].street', 'someStreet' );
 		expect( jsonPath.get( record._$data, 'pastAddresses[1].street' ) ).toBe( 'someStreet');
-		//TODO: Check why equals doesn't work
-		expect( JSON.stringify( record._$data )  ).toEqual( JSON.stringify( {
+		expect( record._$data ).toEqual({
 			pastAddresses: [
 			undefined,
 			{
 				street: 'someStreet'
 			}]
-		}) );
+		});
 	});
 
 	it( 'extends existing objects', function(){
