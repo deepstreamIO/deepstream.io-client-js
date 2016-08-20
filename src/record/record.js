@@ -473,16 +473,15 @@ Record.prototype._applyChange = function( newData ) {
  * @returns {Object} arguments map
  */
 Record.prototype._normalizeArguments = function( args ) {
-	var result = {},
-		i;
-
 	// If arguments is already a map of normalized parameters
 	// (e.g. when called by AnonymousRecord), just return it.
 	if( args.length === 1 && typeof args[ 0 ] === 'object' ) {
 		return args[ 0 ];
 	}
 
-	for( i = 0; i < args.length; i++ ) {
+	var result = Object.create( null );
+
+	for( var i = 0; i < args.length; i++ ) {
 		if( typeof args[ i ] === 'string' ) {
 			result.path = args[ i ];
 		}

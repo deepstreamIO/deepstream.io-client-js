@@ -41,25 +41,24 @@ module.exports.set = function( data, path, value, deepCopy ) {
 		value = utils.deepCopy( value );
 	}
 
-	if ( tokens.length > 0 ) {
-		var node = data = utils.shallowCopy( data );
-		for( var i = 0; i < tokens.length; i++ ) {
-			if ( i === tokens.length - 1) {
-				node[ tokens[ i ] ] = value;
-			}
-			else if( node[ tokens[ i ] ] !== undefined ) {
-				node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
-			}
-			else if( tokens[ i + 1 ] && !isNaN( tokens[ i + 1 ] ) ){
-				node = node[ tokens[ i ] ] = [];
-			}
-			else {
-				node = node[ tokens[ i ] ] = {};
-			}
-		}
+	if ( tokens.length === 0 ) {
+		return value;
 	}
-	else {
-		data = value;
+
+	var node = data = utils.shallowCopy( data );
+	for( var i = 0; i < tokens.length; i++ ) {
+		if ( i === tokens.length - 1) {
+			node[ tokens[ i ] ] = value;
+		}
+		else if( node[ tokens[ i ] ] !== undefined ) {
+			node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
+		}
+		else if( tokens[ i + 1 ] && !isNaN( tokens[ i + 1 ] ) ){
+			node = node[ tokens[ i ] ] = [];
+		}
+		else {
+			node = node[ tokens[ i ] ] = Object.create( null );
+		}
 	}
 
 	return data;
@@ -76,12 +75,12 @@ function tokenize( path ) {
 		return cache[ path ];
 	}
 
-	var parts = path !== undefined ? path.toString().split( SPLIT_REG_EXP ) : [],
-		tokens = [],
-		part;
+	var parts = path !== undefined ? path.toString().split( SPLIT_REG_EXP ) : [];
+
+	var tokens = [];
 
 	for( var i = 0; i < parts.length; i++ ) {
-		part = utils.trim( parts[ i ] );
+		var part = utils.trim( parts[ i ] );
 
 		if( part.length === 0 ) {
 			continue;
