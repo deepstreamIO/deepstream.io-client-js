@@ -117,11 +117,10 @@ exports.shallowCopy = function ( obj ) {
 	}
 	else if (typeof obj === 'object') {
 		var copy = Object.create( null );
-		for ( var prop in obj ) {
-			if ( !obj.hasOwnProperty || obj.hasOwnProperty( prop ) ) {
-				copy[prop] = obj[prop];
-			}
-	  }
+		var props = Object.keys( obj );
+		for ( var i = 0; i < props.length; i++ ) {
+			copy[ props[ i ] ] = obj[ props[ i ] ];
+		}
 	  return copy;
 	}
 	return obj;
