@@ -12,10 +12,9 @@ var cache = Object.create( null );
  * @returns {Mixed}
  */
 module.exports.get = function ( data, path, deepCopy ) {
-	var tokens = tokenize( path ),
-		i;
+	var tokens = tokenize( path );
 
-	for( i = 0; i < tokens.length; i++ ) {
+	for( var i = 0; i < tokens.length; i++ ) {
 		if( data[ tokens[ i ] ] !== undefined ) {
 			data = data[ tokens[ i ] ];
 		} else {
@@ -36,20 +35,19 @@ module.exports.get = function ( data, path, deepCopy ) {
  * @returns old or new state
  */
 module.exports.set = function( data, path, value, deepCopy ) {
-	var i,
-		tokens = tokenize( path );
+	var tokens = tokenize( path );
 
 	if ( deepCopy !== false ) {
 		value = utils.deepCopy( value );
 	}
 
 	if ( tokens.length > 0 ) {
-		data = utils.shallowCopy( data );
-
-		var node = data;
-
-		for( i = 0; i < tokens.length - 1; i++ ) {
-			if( node[ tokens[ i ] ] !== undefined ) {
+		var node = data = utils.shallowCopy( data );
+		for( var i = 0; i < tokens.length; i++ ) {
+			if ( i === tokens.length - 1) {
+				node[ tokens[ i ] ] = value;
+			}
+			else if( node[ tokens[ i ] ] !== undefined ) {
 				node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
 			}
 			else if( tokens[ i + 1 ] && !isNaN( tokens[ i + 1 ] ) ){
@@ -59,8 +57,6 @@ module.exports.set = function( data, path, value, deepCopy ) {
 				node = node[ tokens[ i ] ] = {};
 			}
 		}
-
-		node[ tokens[ i ] ] = value;
 	}
 	else {
 		data = value;
@@ -76,22 +72,15 @@ module.exports.set = function( data, path, value, deepCopy ) {
  * @returns Array of tokens
  */
 function tokenize( path ) {
-	path = path ? path.toString() : undefined
-
-	var tokens = cache[ path ];
-
-	if ( tokens ) {
-		return tokens;
+	if ( cache[ path ] ) {
+		return cache[ path ];
 	}
 
-	tokens = [];
-
-	var parts = path ? path.split( SPLIT_REG_EXP ) : [],
+	var parts = path !== undefined ? path.toString().split( SPLIT_REG_EXP ) : [],
 		tokens = [],
-		part,
-		i;
+		part;
 
-	for( i = 0; i < parts.length; i++ ) {
+	for( var i = 0; i < parts.length; i++ ) {
 		part = utils.trim( parts[ i ] );
 
 		if( part.length === 0 ) {
@@ -111,7 +100,5 @@ function tokenize( path ) {
 		tokens.push( part );
 	}
 
-	cache[ path ] = tokens;
-
-	return tokens;
+	return cache[ path ] = tokens;
 };
