@@ -118,7 +118,7 @@ exports.shallowCopy = function ( obj ) {
 	else if (typeof obj === 'object') {
 		var copy = Object.create( null );
 		for ( var prop in obj ) {
-			if ( obj.hasOwnProperty( prop ) ) {
+			if ( !obj.hasOwnProperty || obj.hasOwnProperty( prop ) ) {
 				copy[prop] = obj[prop];
 			}
 	  }
