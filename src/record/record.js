@@ -120,23 +120,7 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	this.version++;
-
-	if( !path ) {
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-			this.name,
-			this.version,
-			data
-		]);
-	} else {
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
-			this.name,
-			this.version,
-			path,
-			messageBuilder.typed( data )
-		]);
-	}
-
+	this._sendUpdate( path, data );
 	this._applyChange( jsonPath.set( this._$data, path, data, this._options.recordDeepCopy ) );
 	return this;
 };
@@ -303,10 +287,28 @@ Record.prototype._$onMessage = function( message ) {
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
 	message.processedError = true;
 	if( this._mergeStrategy ) {
-		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
+		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData ) );
 	}
 	else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
+	}
+};
+
+Record.prototype._sendUpdate = function ( path, data ) {
+	this.version++;
+	if( !path ) {
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
+			this.name,
+			this.version,
+			data
+		]);
+	} else {
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
+			this.name,
+			this.version,
+			path,
+			messageBuilder.typed( data )
+		]);
 	}
 };
 
@@ -322,10 +324,13 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
  * @private
  * @returns {void}
  */
-Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
+Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
 	if( !error ) {
 		this.version = remoteVersion;
-		this.set( data );
+		if ( data !== this._$data && !utils.deepEquals( data, this._$data ) ) {
+			this._sendUpdate( undefined, data );
+		}
+		this._applyChange( data );
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
