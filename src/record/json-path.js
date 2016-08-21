@@ -77,28 +77,28 @@ function tokenize( path ) {
 		return cache[ path ];
 	}
 
-	var parts = path !== undefined ? path.toString().split( SPLIT_REG_EXP ) : [];
+	var parts = path !== undefined
+		? path.toString().replace(/\s/g, '').split( SPLIT_REG_EXP )
+		: [];
 
 	var tokens = [];
 
 	for( var i = 0; i < parts.length; i++ ) {
-		var part = utils.trim( parts[ i ] );
-
-		if( part.length === 0 ) {
+		if( parts[ i ].length === 0 ) {
 			continue;
 		}
 
-		if( !isNaN( part ) ) {
-			tokens.push( parseInt( part, 10 ) );
+		if( !isNaN( parts[ i ] ) ) {
+			tokens.push( parseInt( parts[ i ], 10 ) );
 			continue;
 		}
 
-		if( part === ASTERISK ) {
+		if( parts[ i ] === ASTERISK ) {
 			tokens.push( true );
 			continue;
 		}
 
-		tokens.push( part );
+		tokens.push( parts[ i ] );
 	}
 
 	return cache[ path ] = tokens;
