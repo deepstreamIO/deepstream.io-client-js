@@ -13,12 +13,8 @@ var cache = Object.create( null );
 module.exports.get = function ( data, path, deepCopy ) {
 	var tokens = tokenize( path );
 
-	for( var i = 0; i < tokens.length; i++ ) {
-		if( data[ tokens[ i ] ] !== undefined ) {
-			data = data[ tokens[ i ] ];
-		} else {
-			return undefined;
-		}
+	for( var i = 0; data && i < tokens.length; i++ ) {
+		data = data[ tokens[ i ] ];
 	}
 
 	return deepCopy !== false ? utils.deepCopy( data ) : data;
