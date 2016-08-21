@@ -1,6 +1,5 @@
 var utils = require( '../utils/utils' ),
-	SPLIT_REG_EXP = /[\.\[\]]/g,
-	ASTERISK = '*';
+	SPLIT_REG_EXP = /[\.\[\]]/g;
 
 var cache = Object.create( null );
 
@@ -90,15 +89,10 @@ function tokenize( path ) {
 
 		if( !isNaN( parts[ i ] ) ) {
 			tokens.push( parseInt( parts[ i ], 10 ) );
-			continue;
 		}
-
-		if( parts[ i ] === ASTERISK ) {
-			tokens.push( true );
-			continue;
+		else {
+			tokens.push( parts[ i ] );
 		}
-
-		tokens.push( parts[ i ] );
 	}
 
 	return cache[ path ] = tokens;
