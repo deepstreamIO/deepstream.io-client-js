@@ -1,5 +1,5 @@
 var utils = require( '../utils/utils' ),
-	SPLIT_REG_EXP = /[\.\[\]]/g;
+	PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
 
 var cache = Object.create( null );
 
@@ -13,12 +13,8 @@ var cache = Object.create( null );
 module.exports.get = function ( data, path, deepCopy ) {
 	var tokens = tokenize( path );
 
-	for( var i = 0; i < tokens.length; i++ ) {
-		if( data[ tokens[ i ] ] !== undefined ) {
-			data = data[ tokens[ i ] ];
-		} else {
-			return undefined;
-		}
+	for( var i = 0; data && i < tokens.length; i++ ) {
+		data = data[ tokens[ i ] ];
 	}
 
 	return deepCopy !== false ? utils.deepCopy( data ) : data;
@@ -76,24 +72,13 @@ function tokenize( path ) {
 		return cache[ path ];
 	}
 
-	var parts = path !== undefined
-		? path.toString().replace(/\s/g, '').split( SPLIT_REG_EXP )
-		: [];
+	var parts = path !== undefined ? String( path ).match(PARTS_REG_EXP) : [];
 
-	var tokens = [];
-
-	for( var i = 0; i < parts.length; i++ ) {
-		if( parts[ i ].length === 0 ) {
-			continue;
-		}
-
-		if( !isNaN( parts[ i ] ) ) {
-			tokens.push( parseInt( parts[ i ], 10 ) );
-		}
-		else {
-			tokens.push( parts[ i ] );
-		}
+	if ( !parts ) {
+		throw new Error('invalid path ' + path)
 	}
 
-	return cache[ path ] = tokens;
+	return cache[ path ] = parts.map( function( part ) {
+		return !isNaN( part ) ? parseInt( part, 10 ) : part;
+	} );
 };

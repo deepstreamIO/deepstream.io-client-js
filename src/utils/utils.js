@@ -115,7 +115,7 @@ exports.shallowCopy = function ( obj ) {
 	if ( Array.isArray( obj ) ) {
 		return obj.slice( 0 );
 	}
-	else if ( typeof obj === 'object' ) {
+	else if ( typeof obj === OBJECT ) {
 		var copy = Object.create( null );
 		var props = Object.keys( obj );
 		for ( var i = 0; i < props.length; i++ ) {
