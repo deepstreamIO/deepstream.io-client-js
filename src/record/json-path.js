@@ -21,7 +21,7 @@ module.exports.get = function ( data, path, deepCopy ) {
 			data = data[ tokens[ i ] ];
 		}
 		else {
-			throw new Error( 'invalid data' );
+			throw new Error( 'invalid data or path' );
 		}
 	}
 
