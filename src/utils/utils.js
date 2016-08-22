@@ -78,9 +78,13 @@ exports.trim = function( inputString ) {
  * @returns {Boolean} isEqual
  */
 exports.deepEquals= function( objA, objB ) {
-	if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
-		return objA === objB;
-	} else {
+	if ( objA === objB ) {
+		return true
+	}
+	else if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
+		return false;
+	}
+	else {
 		return JSON.stringify( objA ) === JSON.stringify( objB );
 	}
 };
@@ -110,3 +114,18 @@ exports.deepCopy = function( obj ) {
 		return obj;
 	}
 };
+
+exports.shallowCopy = function ( obj ) {
+	if ( Array.isArray( obj ) ) {
+		return obj.slice( 0 );
+	}
+	else if ( typeof obj === OBJECT ) {
+		var copy = Object.create( null );
+		var props = Object.keys( obj );
+		for ( var i = 0; i < props.length; i++ ) {
+			copy[ props[ i ] ] = obj[ props[ i ] ];
+		}
+	  return copy;
+	}
+	return obj;
+}
