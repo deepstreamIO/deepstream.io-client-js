@@ -17,12 +17,10 @@ module.exports.get = function ( data, path, deepCopy ) {
 		if ( data === undefined ) {
 			return undefined;
 		}
-		else if ( typeof data === 'object' ) {
-			data = data[ tokens[ i ] ];
-		}
-		else {
+		if ( typeof data !== 'object' ) {
 			throw new Error( 'invalid data or path' );
 		}
+		data = data[ tokens[ i ] ];
 	}
 
 	return deepCopy !== false ? utils.deepCopy( data ) : data;
