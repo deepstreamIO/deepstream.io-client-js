@@ -325,6 +325,10 @@ Record.prototype._sendUpdate = function ( path, data ) {
  * @returns {void}
  */
 Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
+	if ( this.isDestroyed ) {
+		return;
+	}
+
 	if( !error ) {
 		this.version = remoteVersion;
 		if ( !utils.deepEquals( data, this._$data ) ) {
