@@ -327,7 +327,7 @@ Record.prototype._sendUpdate = function ( path, data ) {
 Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
 	if( !error ) {
 		this.version = remoteVersion;
-		if ( data !== this._$data && !utils.deepEquals( data, this._$data ) ) {
+		if ( !utils.deepEquals( data, this._$data ) ) {
 			this._sendUpdate( undefined, data );
 		}
 		this._applyChange( data );
@@ -463,7 +463,7 @@ Record.prototype._applyChange = function( newData ) {
 		var newValue = jsonPath.get( newData, paths[ i ], false );
 		var oldValue = jsonPath.get( oldData, paths[ i ], false );
 
-		if( newValue !== oldValue && !utils.deepEquals( newValue, oldValue ) ) {
+		if( !utils.deepEquals( newValue, oldValue ) ) {
 			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
 		}
 	}
