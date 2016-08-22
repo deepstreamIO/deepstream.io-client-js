@@ -78,9 +78,13 @@ exports.trim = function( inputString ) {
  * @returns {Boolean} isEqual
  */
 exports.deepEquals= function( objA, objB ) {
-	if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
-		return objA === objB;
-	} else {
+	if ( objA === objB ) {
+		return true
+	}
+	else if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
+		return false;
+	}
+	else {
 		return JSON.stringify( objA ) === JSON.stringify( objB );
 	}
 };
