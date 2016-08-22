@@ -13,7 +13,13 @@ var cache = Object.create( null );
 module.exports.get = function ( data, path, deepCopy ) {
 	var tokens = tokenize( path );
 
-	for( var i = 0; data && i < tokens.length; i++ ) {
+	for( var i = 0; i < tokens.length; i++ ) {
+		if ( data === undefined ) {
+			return undefined;
+		}
+		if ( typeof data !== 'object' ) {
+			throw new Error( 'invalid data or path' );
+		}
 		data = data[ tokens[ i ] ];
 	}
 
