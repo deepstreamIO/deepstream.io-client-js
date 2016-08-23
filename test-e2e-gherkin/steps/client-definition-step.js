@@ -52,6 +52,7 @@ module.exports = function() {
 	});
 
 	this.When(/^publisher (\S)* (accepts|rejects) a match "([^"]*)" for pattern "([^"]*)"$/, function (client, action, subscriptionName, eventPattern) {
+		clients[ client ].eventCallbacksListenersSpies[ eventPattern ].withArgs( subscriptionName, true );
 		clients[ client ].eventCallbacksListenersResponse[ eventPattern ] = ( action === "accepts" ? true : false);
 	});
 
@@ -61,8 +62,9 @@ module.exports = function() {
 		}
 
 		clients[ client ].eventCallbacks[ eventPattern ] = function( subscribtionName, isSubscribed, response) {
+			console.log( 'listening')
 			if( isSubscribed ) {
-				if( clients[ client ].eventCallbacksListenersResponse[ eventPattern ].accepts ) {
+				if( clients[ client ].eventCallbacksListenersResponse[ eventPattern ] ) {
 					response.accept();
 				} else {
 					response.reject();
@@ -87,7 +89,7 @@ module.exports = function() {
 
 	this.Then(/^publisher (\S)* receives (\d+) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, function (client, count, eventName, eventPattern) {
 		var listenCallbackSpy = clients[ client ].eventCallbacksListenersSpies[ eventPattern ];
-		sinon.assert.callCount(listenCallbackSpy, count )
+		sinon.assert.callCount( listenCallbackSpy.withArgs( eventName, true ), Number( count ) )
 	});
 
 	this.Before(function (scenario) {

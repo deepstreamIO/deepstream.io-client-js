@@ -93,11 +93,14 @@ EventHandler.prototype.emit = function( name, data ) {
  * @returns {void}
  */
 EventHandler.prototype.listen = function( pattern, callback ) {
-	if( this._listener[ pattern ] ) {
-		this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
-	} else {
-		this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
+	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+		return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
 	}
+
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+	}
+	this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
 };
 
 /**
@@ -110,12 +113,11 @@ EventHandler.prototype.listen = function( pattern, callback ) {
  * @returns {void}
  */
 EventHandler.prototype.unlisten = function( pattern ) {
-	if( this._listener[ pattern ] ) {
-		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
-		this._listener[ pattern ].destroy();
-		delete this._listener[ pattern ];
+	var listener = this._listener[ pattern ];
+	if( listener && !listener.destroyPending ) {
+		listener.sendDestroy();
 	} else {
-		this._client._$onError( C.TOPIC.EVENT, C.EVENT.NOT_LISTENING, pattern );
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
 	}
 };
 
@@ -131,6 +133,7 @@ EventHandler.prototype._$handle = function( message ) {
 	var name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
 
 	if( message.action === C.ACTIONS.EVENT ) {
+		processed = true;
 		if( message.data && message.data.length === 2 ) {
 			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
 		} else {
@@ -139,8 +142,21 @@ EventHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
-	if( this._listener[ name ] ) {
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		this._listener[ name ] && this._listener[ name ].destroyPending
+	) {
+		this._listener[ name ].destroy();
+		delete this._listener[ name ];
+		return;
+	} else if( this._listener[ name ] ) {
+		processed = true;
 		this._listener[ name ]._$onMessage( message );
+		return;
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+		return;
+	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		// record can receive a HAS_PROVIDER after discarding the record
 		return;
 	}
 
@@ -148,7 +164,7 @@ EventHandler.prototype._$handle = function( message ) {
 		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
-	
+
 	if( message.action === C.ACTIONS.ERROR ) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
