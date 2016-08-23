@@ -273,6 +273,10 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
  * @returns {void}
  */
 RecordHandler.prototype._onDestroyPending = function( recordName ) {
+	if ( !this._records[ recordName ] ) {
+		this.emit( 'error', 'Record \'' + recordName + '\' does not exists' );
+		return;
+	}
 	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
 	this._destroyEventEmitter.once( 'destroy_ack_' + recordName, onMessage );
 	this._removeRecord( recordName );

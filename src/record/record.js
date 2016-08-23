@@ -234,6 +234,9 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
+	if( this._checkDestroyed( 'discard' ) ) {
+		return;
+	}
 	this.whenReady( function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
