@@ -16,6 +16,10 @@ var EventEmitter = require( 'component-emitter' ),
  * @constructor
  */
 var List = function( recordHandler, name, options ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this._recordHandler = recordHandler;
 	this._record = this._recordHandler.getRecord( name, options );
 	this._record._applyUpdate = this._applyUpdate.bind( this );
