@@ -126,9 +126,10 @@ module.exports = function() {
 					clients[ client ].client.event.unsubscribe( event, clients[ client ].eventCallbacks[ event ] );
 				}
 			}
-			setTimeout( () => {
+			setTimeout( function( client ) {
 				clients[ client ].client.close();
-			}, 100 )
+				delete clients[client];
+			}.bind( null, client ), 100 )
 		}
 		setTimeout( done, 200 );
 	});
