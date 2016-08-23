@@ -45,6 +45,8 @@ Cluster.prototype._startServer = function( port, done ) {
 	}
 
 	this.servers[ port ].set( 'tcpPort', port );
+	this.servers[ port ].set( 'serverName', 'server-' + port );
+	this.servers[ port ].set( 'clusterKeepAliveInterval', 250 );
 
 	this.servers[ port ].set( 'port', port - 100 );
 	this.servers[ port ].set( 'messageConnector', new RedisConnector({
@@ -66,7 +68,9 @@ Cluster.prototype._checkReady = function() {
 			return;
 		}
 	}
-	this.emit( 'ready' );
+	setTimeout( () => {
+		this.emit( 'ready' );
+	}, 1000);
 };
 
 Cluster.prototype._checkStopped = function() {

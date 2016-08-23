@@ -8,13 +8,30 @@ const defaultDelay = config.defaultDelay
 module.exports = function() {
 	this.Given(/^(?:subscriber|publisher) (\S)* connects to server (\d+)$/, function (client, server) {
  		clients[ client ] = {
-		client: DeepstreamClient( Cluster.getUrl( server ) ),
-		eventCallbacks: {},
-		eventCallbacksListeners: {},
-		eventCallbacksListenersSpies: {},
-		eventCallbacksListenersResponse: {},
-		recordCallbacks: {}
+			client: DeepstreamClient( Cluster.getUrl( server - 1 ) ),
+			eventCallbacks: {},
+			eventCallbacksListeners: {},
+			eventCallbacksListenersSpies: {},
+			eventCallbacksListenersResponse: {},
+			recordCallbacks: {}
  		}
+	});
+
+	this.Given(/^(?:subscriber|publisher) (\S)* connects and logs into server (\d+)$/, function (client, server, callback) {
+ 		clients[ client ] = {
+			client: DeepstreamClient( Cluster.getUrl( server - 1 ) ),
+			eventCallbacks: {},
+			eventCallbacksListeners: {},
+			eventCallbacksListenersSpies: {},
+			eventCallbacksListenersResponse: {},
+			recordCallbacks: {}
+ 		}
+ 		clients[ client ].client.on( 'error', ( a, b, c) => {
+ 			console.log( 'An Error occured on ', client, a, b, c );
+ 		});
+ 		clients[ client ].client.login( {}, function() {
+ 			callback();
+ 		} );
 	});
 
 	this.Given(/^(?:subscriber|publisher) (\S)* logs in with username "([^"]*)" and password "([^"]*)"$/, function (client, username, password, callback) {
@@ -45,6 +62,7 @@ module.exports = function() {
 
 	this.When(/^(?:subscriber|publisher) (\S)* unsubscribes from an event named "([^"]*)"$/, function (client, eventName) {
 		clients[ client ].client.event.unsubscribe( eventName, clients[ client ].eventCallbacks[ eventName ] );
+		clients[ client ].eventCallbacks[ eventName ].isSubscribed = false;
 	});
 
 	this.Then(/^(?:subscriber|publisher) (\S)* recieved no event named "([^"]*)"$/, function (client, eventName) {
@@ -61,8 +79,7 @@ module.exports = function() {
 			clients[ client ].eventCallbacksListenersSpies[ eventPattern ] = sinon.spy();
 		}
 
-		clients[ client ].eventCallbacks[ eventPattern ] = function( subscribtionName, isSubscribed, response) {
-			console.log( 'listening')
+		clients[ client ].eventCallbacksListeners[ eventPattern ] = function( subscriptionName, isSubscribed, response) {
 			if( isSubscribed ) {
 				if( clients[ client ].eventCallbacksListenersResponse[ eventPattern ] ) {
 					response.accept();
@@ -70,14 +87,15 @@ module.exports = function() {
 					response.reject();
 				}
 			}
-			clients[ client ].eventCallbacksListenersSpies[ eventPattern ]( subscribtionName, isSubscribed );
+			clients[ client ].eventCallbacksListenersSpies[ eventPattern ]( subscriptionName, isSubscribed );
 		};
-		clients[ client ].client.event.listen( eventPattern, clients[ client ].eventCallbacks[ eventPattern ] );
+		clients[ client ].client.event.listen( eventPattern, clients[ client ].eventCallbacksListeners[ eventPattern ] );
 		setTimeout( done, defaultDelay );
 	});
 
 	this.When(/^publisher (\S)* unlistens to the pattern "([^"]*)"$/, function (client, eventPattern, done) {
 		clients[ client ].client.event.unlisten( eventPattern );
+		clients[ client ].eventCallbacksListeners[ eventPattern ].isListening = false;
 		setTimeout( done, defaultDelay );
 	});
 
@@ -96,10 +114,23 @@ module.exports = function() {
 		// client are connecting via "Background" explictly
 	});
 
-	this.After(function (scenario) {
+	this.After(function (scenario, done) {
 		for( var client in clients ) {
-			clients[ client ].client.close();
+			for( var pattern in clients[ client ].eventCallbacksListeners ) {
+				if( clients[ client ].eventCallbacksListeners[ pattern ].isListening !== false ) {
+					clients[ client ].client.event.unlisten( pattern, clients[ client ].eventCallbacksListeners[ pattern ] );
+				}
+			}
+			for( var event in clients[ client ].eventCallbacks ) {
+				if( clients[ client ].eventCallbacks[ event ].isSubscribed !== false ) {
+					clients[ client ].client.event.unsubscribe( event, clients[ client ].eventCallbacks[ event ] );
+				}
+			}
+			setTimeout( () => {
+				clients[ client ].client.close();
+			}, 100 )
 		}
+		setTimeout( done, 200 );
 	});
 
 };

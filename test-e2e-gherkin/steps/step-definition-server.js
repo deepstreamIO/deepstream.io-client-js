@@ -18,9 +18,11 @@ module.exports = function() {
 	});
 
 	this.registerHandler('AfterFeature', function (features, callback) {
-		cluster.on('stopped', () => {
-			callback()
-		});
-		cluster.stop();
+		setTimeout( () => {
+			cluster.on('stopped', () => {
+				callback()
+			} );
+			cluster.stop();
+		}, 500 );
 	});
 };
