@@ -42,6 +42,7 @@ Rpc.prototype.ack = function() {
  */
 Rpc.prototype.respond = function( data ) {
 	var convertedData = messageParser.convertTyped( data, this._client );
+	// TODO: What if callback throws?
 	this._callback( null, convertedData );
 	this._complete();
 };
@@ -58,6 +59,7 @@ Rpc.prototype.respond = function( data ) {
  * @returns {void}
  */
 Rpc.prototype.error = function( errorMsg ) {
+	// TODO: What if callback throws?
 	this._callback( errorMsg );
 	this._complete();
 };

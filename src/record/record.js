@@ -272,8 +272,10 @@ Record.prototype.delete = function() {
  */
 Record.prototype.whenReady = function( callback ) {
 	if( this.isReady === true ) {
+		// TODO: What if callback throws?
 		callback( this );
 	} else {
+		// TODO: What if callback throws?
 		this.once( 'ready', callback.bind( this, this ) );
 	}
 };
@@ -329,6 +331,7 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
 	}
 	else {
+		// TODO: What if callback throws?
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
 };
@@ -350,6 +353,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
 		this.version = remoteVersion;
 		this.set( data );
 	} else {
+		// TODO: What if callback throws?
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
 };
@@ -371,11 +375,13 @@ Record.prototype._processAckMessage = function( message ) {
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
+		// TODO: What if callback throws?
 		this.emit( 'delete' );
 		this._destroy();
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.UNSUBSCRIBE ) {
+		// TODO: What if callback throws?
 		this.emit( 'discard' );
 		this._destroy();
 	}
@@ -453,9 +459,11 @@ Record.prototype._onRead = function( message ) {
 Record.prototype._setReady = function() {
 	this.isReady = true;
 	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
+		// TODO: What if callback throws?
 		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
 	}
 	this._queuedMethodCalls = [];
+	// TODO: What if callback throws?
 	this.emit( 'ready' );
 };
 
@@ -525,6 +533,7 @@ Record.prototype._beginChange = function() {
  */
 Record.prototype._completeChange = function() {
 	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
+		// TODO: What if callback throws?
 		this._eventEmitter.emit( ALL_EVENT, this.get() );
 	}
 
@@ -540,6 +549,7 @@ Record.prototype._completeChange = function() {
 		currentValue = this._getPath( path ).getValue();
 
 		if( currentValue !== this._oldPathValues[ path ] ) {
+			// TODO: What if callback throws?
 			this._eventEmitter.emit( path, currentValue );
 		}
 	}
@@ -603,6 +613,7 @@ Record.prototype._clearTimeouts = function() {
  */
 Record.prototype._checkDestroyed = function( methodName ) {
 	if( this.isDestroyed ) {
+		// TODO: What if callback throws?
 		this.emit( 'error', 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed' );
 		return true;
 	}
@@ -617,6 +628,7 @@ Record.prototype._checkDestroyed = function( methodName ) {
  */
 Record.prototype._onTimeout = function( timeoutType ) {
 	this._clearTimeouts();
+	// TODO: What if callback throws?
 	this.emit( 'error', timeoutType );
 };
 

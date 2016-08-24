@@ -137,6 +137,7 @@ RecordHandler.prototype.unlisten = function( pattern ) {
  */
 RecordHandler.prototype.snapshot = function( name, callback ) {
 	if( this._records[ name ] && this._records[ name ].isReady ) {
+		// TODO: What if callback throws?
 		callback( null, this._records[ name ].get() );
 	} else {
 		this._snapshotRegistry.request( name, callback );
@@ -153,6 +154,7 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
  */
 RecordHandler.prototype.has = function( name, callback ) {
 	if( this._records[ name ] ) {
+		// TODO: What if callback throws?
 		callback( null, true );
 	} else {
 		this._hasRegistry.request( name, callback );
