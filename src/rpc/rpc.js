@@ -14,6 +14,10 @@ var C = require( '../constants/constants' ),
  * @constructor
  */
 var Rpc = function( options, callback, client ) {
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	this._options = options;
 	this._callback = callback;
 	this._client = client;

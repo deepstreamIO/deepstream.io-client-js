@@ -150,6 +150,9 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 	if ( typeof name !== 'string' || name.length === 0 ) {
 		throw new Error( 'invalid argument name' );
 	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
 
 	if( this._records[ name ] && this._records[ name ].isReady ) {
 		callback( null, this._records[ name ].get() );
@@ -169,6 +172,9 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 RecordHandler.prototype.has = function( name, callback ) {
 	if ( typeof name !== 'string' || name.length === 0 ) {
 		throw new Error( 'invalid argument name' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
 
 	if( this._records[ name ] ) {
