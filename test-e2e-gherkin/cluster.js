@@ -70,7 +70,7 @@ Cluster.prototype._checkReady = function() {
 	}
 	setTimeout( () => {
 		this.emit( 'ready' );
-	}, 1000);
+	}, 500);
 };
 
 Cluster.prototype._checkStopped = function() {

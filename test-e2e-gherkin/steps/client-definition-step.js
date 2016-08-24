@@ -116,22 +116,28 @@ module.exports = function() {
 
 	this.After(function (scenario, done) {
 		for( var client in clients ) {
-			for( var pattern in clients[ client ].eventCallbacksListeners ) {
-				if( clients[ client ].eventCallbacksListeners[ pattern ].isListening !== false ) {
-					clients[ client ].client.event.unlisten( pattern, clients[ client ].eventCallbacksListeners[ pattern ] );
-				}
-			}
+
 			for( var event in clients[ client ].eventCallbacks ) {
 				if( clients[ client ].eventCallbacks[ event ].isSubscribed !== false ) {
 					clients[ client ].client.event.unsubscribe( event, clients[ client ].eventCallbacks[ event ] );
 				}
 			}
+
+			setTimeout( function( client ) {
+				for( var pattern in clients[ client ].eventCallbacksListeners ) {
+					if( clients[ client ].eventCallbacksListeners[ pattern ].isListening !== false ) {
+						clients[ client ].client.event.unlisten( pattern, clients[ client ].eventCallbacksListeners[ pattern ] );
+					}
+				}
+			}.bind( null, client ), 1 )
+
 			setTimeout( function( client ) {
 				clients[ client ].client.close();
 				delete clients[client];
-			}.bind( null, client ), 100 )
+			}.bind( null, client ), 10 )
 		}
-		setTimeout( done, 200 );
+
+		setTimeout( done, 20 );
 	});
 
 };
