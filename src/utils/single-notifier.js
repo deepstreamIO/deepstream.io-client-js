@@ -75,6 +75,7 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
 	for( i=0; i < entries.length; i++ ) {
 		entry = entries[ i ];
 		clearTimeout( entry.timeout );
+		// TODO: What if callback throws?
 		entry.callback( error, data );
 	}
 	delete this._requests[ name ];

@@ -27,6 +27,7 @@ Listener.prototype._$onMessage = function( message ) {
         clearTimeout( this._ackTimeout );
     } else {
         var isFound = message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND;
+        // TODO: What if callback throws?
         this._callback( message.data[ 1 ], isFound );
     }
 };

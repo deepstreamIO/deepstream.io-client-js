@@ -223,6 +223,7 @@ List.prototype._onReady = function() {
 		this._queuedMethods[ i ]();
 	}
 
+	// TODO: What if callback throws?
 	this.emit( 'ready' );
 };
 
@@ -235,6 +236,7 @@ List.prototype._onReady = function() {
  */
 List.prototype._onDiscard = function() {
 	this.isDestroyed = true;
+	// TODO: What if callback throws?
 	this.emit( 'discard' );
 };
 
@@ -327,6 +329,7 @@ List.prototype._afterChange = function() {
 		for( entry in before ) {
 			for( i = 0; i < before[ entry ].length; i++ ) {
 				if( after[ entry ] === undefined || after[ entry ][ i ] === undefined ) {
+					// TODO: What if callback throws?
 					this.emit( ENTRY_REMOVED_EVENT, entry, before[ entry ][ i ] );
 				}
 			}
@@ -337,14 +340,17 @@ List.prototype._afterChange = function() {
 		for( entry in after ) {
 			if( before[ entry ] === undefined ) {
 				for( i = 0; i < after[ entry ].length; i++ ) {
+					// TODO: What if callback throws?
 					this.emit( ENTRY_ADDED_EVENT, entry, after[ entry ][ i ] );
 				}
 			} else {
 				for( i = 0; i < after[ entry ].length; i++ ) {
 					if( before[ entry ][ i ] !== after[ entry ][ i ] ) {
 						if( before[ entry ][ i ] === undefined ) {
+							// TODO: What if callback throws?
 							this.emit( ENTRY_ADDED_EVENT, entry, after[ entry ][ i ] );
 						} else {
+							// TODO: What if callback throws?
 							this.emit( ENTRY_MOVED_EVENT, entry, after[ entry ][ i ] );
 						}
 					}

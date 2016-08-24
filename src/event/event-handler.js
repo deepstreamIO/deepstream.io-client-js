@@ -78,6 +78,7 @@ EventHandler.prototype.unsubscribe = function( eventName, callback ) {
  */
 EventHandler.prototype.emit = function( name, data ) {
 	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
+	// TODO: What if callback throws?
 	this._emitter.emit( name, data );
 };
 
@@ -132,8 +133,10 @@ EventHandler.prototype._$handle = function( message ) {
 
 	if( message.action === C.ACTIONS.EVENT ) {
 		if( message.data && message.data.length === 2 ) {
+			// TODO: What if callback throws?
 			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
 		} else {
+			// TODO: What if callback throws?
 			this._emitter.emit( name );
 		}
 		return;
