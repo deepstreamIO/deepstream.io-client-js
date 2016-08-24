@@ -293,7 +293,7 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
  */
 RecordHandler.prototype._onDestroyPending = function( recordName ) {
 	if ( !this._records[ recordName ] ) {
-		this.emit( 'error', 'Record \'' + recordName + '\' does not exists' );
+		this.emit( 'error', 'Record \'' + recordName + '\' does not exist.' );
 		return;
 	}
 	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
