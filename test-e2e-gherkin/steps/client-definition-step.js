@@ -8,7 +8,10 @@ const defaultDelay = config.defaultDelay
 module.exports = function() {
 	this.Given(/^(?:subscriber|publisher) (\S)* connects to server (\d+)$/, function (client, server) {
  		clients[ client ] = {
-			client: DeepstreamClient( Cluster.getUrl( server - 1 ) ),
+			client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
+				maxReconnectInterval: 200,
+				maxReconnectAttempts: 5
+			} ),
 			eventCallbacks: {},
 			eventCallbacksListeners: {},
 			eventCallbacksListenersSpies: {},
@@ -19,7 +22,10 @@ module.exports = function() {
 
 	this.Given(/^(?:subscriber|publisher) (\S)* connects and logs into server (\d+)$/, function (client, server, callback) {
  		clients[ client ] = {
-			client: DeepstreamClient( Cluster.getUrl( server - 1 ) ),
+			client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
+				maxReconnectInterval: 200,
+				maxReconnectAttempts: 5
+			} ),
 			eventCallbacks: {},
 			eventCallbacksListeners: {},
 			eventCallbacksListenersSpies: {},
@@ -60,9 +66,10 @@ module.exports = function() {
 		clients[ client ].eventCallbacks[ eventName ].reset();
 	});
 
-	this.When(/^(?:subscriber|publisher) (\S)* unsubscribes from an event named "([^"]*)"$/, function (client, eventName) {
+	this.When(/^(?:subscriber|publisher) (\S)* unsubscribes from an event named "([^"]*)"$/, function (client, eventName, done) {
 		clients[ client ].client.event.unsubscribe( eventName, clients[ client ].eventCallbacks[ eventName ] );
 		clients[ client ].eventCallbacks[ eventName ].isSubscribed = false;
+		setTimeout( done, defaultDelay );
 	});
 
 	this.Then(/^(?:subscriber|publisher) (\S)* recieved no event named "([^"]*)"$/, function (client, eventName) {
@@ -71,6 +78,7 @@ module.exports = function() {
 
 	this.When(/^publisher (\S)* (accepts|rejects) a match "([^"]*)" for pattern "([^"]*)"$/, function (client, action, subscriptionName, eventPattern) {
 		clients[ client ].eventCallbacksListenersSpies[ eventPattern ].withArgs( subscriptionName, true );
+		clients[ client ].eventCallbacksListenersSpies[ eventPattern ].withArgs( subscriptionName, false );
 		clients[ client ].eventCallbacksListenersResponse[ eventPattern ] = ( action === "accepts" ? true : false);
 	});
 
@@ -110,6 +118,11 @@ module.exports = function() {
 		sinon.assert.callCount( listenCallbackSpy.withArgs( eventName, true ), Number( count ) )
 	});
 
+	this.Then(/^publisher (\S)* removed (\d+) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, function (client, count, eventName, eventPattern) {
+		var listenCallbackSpy = clients[ client ].eventCallbacksListenersSpies[ eventPattern ];
+		sinon.assert.callCount( listenCallbackSpy.withArgs( eventName, false ), Number( count ) )
+	});
+
 	this.Before(function (scenario) {
 		// client are connecting via "Background" explictly
 	});
@@ -134,10 +147,10 @@ module.exports = function() {
 			setTimeout( function( client ) {
 				clients[ client ].client.close();
 				delete clients[client];
-			}.bind( null, client ), 10 )
+			}.bind( null, client ), 50 )
 		}
 
-		setTimeout( done, 20 );
+		setTimeout( done, 100 );
 	});
 
 };

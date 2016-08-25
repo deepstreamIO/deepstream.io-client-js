@@ -21,13 +21,17 @@ Cluster.getUrl = function( serverId ) {
 
 Cluster.prototype.stopServer = function( serverNumber, done ) {
 	var server = this.servers[ Object.keys( this.servers )[ serverNumber ] ];
-	server.on( 'stopped', done );
+	server.on( 'stopped',() => {
+		setTimeout( done, 1000 );
+	});
 	server.stop();
 };
 
 Cluster.prototype.startServer = function( serverNumber, done ) {
 	var serverPort =  Object.keys( this.servers )[ serverNumber ];
-	this._startServer( serverPort );
+	this._startServer( serverPort, () => {
+		setTimeout( done, 1000 );
+	});
 };
 
 Cluster.prototype.stop = function() {
@@ -46,7 +50,11 @@ Cluster.prototype._startServer = function( port, done ) {
 
 	this.servers[ port ].set( 'tcpPort', port );
 	this.servers[ port ].set( 'serverName', 'server-' + port );
-	this.servers[ port ].set( 'clusterKeepAliveInterval', 250 );
+
+	this.servers[ port ].set( 'stateReconciliationTimeout', 100 );
+	this.servers[ port ].set( 'clusterKeepAliveInterval', 100 );
+	this.servers[ port ].set( 'clusterActiveCheckInterval', 100 );
+	this.servers[ port ].set( 'clusterNodeInactiveTimeout', 200 );
 
 	this.servers[ port ].set( 'port', port - 100 );
 	this.servers[ port ].set( 'messageConnector', new RedisConnector({

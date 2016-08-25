@@ -4,12 +4,12 @@ var cluster;
 
 module.exports = function() {
 
-	this.When(/^the first server goes down$/, function (done) {
-		cluster.stopServer( 1, done );
+	this.When(/^server (\S)* goes down$/, function ( server, done) {
+		cluster.stopServer( server - 1, done );
 	});
 
-	this.When(/^the connection to the first server is reestablished$/, function ( done ) {
-		cluster.startServer( 1, done );
+	this.When(/^server (\S)* comes back up$/, function ( server, done ) {
+		cluster.startServer( server - 1, done );
 	});
 
 	this.registerHandler('BeforeFeature', function (features, callback) {
