@@ -357,10 +357,6 @@ Record.prototype._sendUpdate = function ( path, data ) {
  * @returns {void}
  */
 Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
-	if ( this.isDestroyed ) {
-		return;
-	}
-
 	if( !error ) {
 		this.version = remoteVersion;
 
@@ -492,6 +488,10 @@ Record.prototype._setReady = function() {
  * @returns {void}
  */
 Record.prototype._applyChange = function( newData ) {
+	if ( this.isDestroyed ) {
+		return;
+	}
+
 	var oldData = this._$data;
 	this._$data = newData;
 
