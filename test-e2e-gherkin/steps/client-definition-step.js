@@ -10,7 +10,9 @@ module.exports = function() {
  		clients[ client ] = {
 			client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
 				maxReconnectInterval: 200,
-				maxReconnectAttempts: 5
+				maxReconnectAttempts: 5,
+				lockTimeout: 5000,
+				lockRequestTimeout: 5000
 			} ),
 			eventCallbacks: {},
 			eventCallbacksListeners: {},
@@ -24,7 +26,9 @@ module.exports = function() {
  		clients[ client ] = {
 			client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
 				maxReconnectInterval: 200,
-				maxReconnectAttempts: 5
+				maxReconnectAttempts: 5,
+				lockTimeout: 5000,
+				lockRequestTimeout: 5000
 			} ),
 			eventCallbacks: {},
 			eventCallbacksListeners: {},

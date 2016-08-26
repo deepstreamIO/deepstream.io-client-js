@@ -55,6 +55,8 @@ Cluster.prototype._startServer = function( port, done ) {
 	this.servers[ port ].set( 'clusterKeepAliveInterval', 100 );
 	this.servers[ port ].set( 'clusterActiveCheckInterval', 100 );
 	this.servers[ port ].set( 'clusterNodeInactiveTimeout', 200 );
+	this.servers[ port ].set( 'clusterNodeInactiveTimeout', 200 );
+	this.servers[ port ].set( 'lockTimeout', 1000 );
 
 	this.servers[ port ].set( 'port', port - 100 );
 	this.servers[ port ].set( 'messageConnector', new RedisConnector({
@@ -62,7 +64,7 @@ Cluster.prototype._startServer = function( port, done ) {
 		host: config.redisHost
 	}));
 	if( this._enableLogging !== true ) {
-		this.servers[ port ].set( 'logger', new Logger() );
+		//this.servers[ port ].set( 'logger', new Logger() );
 	}
 
 	this.servers[ port ].set( 'showLogo', false );
