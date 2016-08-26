@@ -1,4 +1,5 @@
-var JsonPath = require( '../../../src/record/json-path' );
+var jsonPath = require( '../../../src/record/json-path' );
+var utils = require( '../../../src/utils/utils' );
 
 describe('paths are tokenized and retrieved correctly', function(){
 	var testRecord = { _$data: {
@@ -14,91 +15,84 @@ describe('paths are tokenized and retrieved correctly', function(){
 		1234: 'integer index'
 	}};
 
+	beforeEach( function() {
+		jasmine.addCustomEqualityTester(utils.deepEquals);
+	} );
+
 	it( 'retrieves simple paths', function(){
-		var jsonPath = new JsonPath( testRecord, 'firstname' );
-		expect( jsonPath.getValue() ).toBe( 'Wolfram' );
+		expect( jsonPath.get( testRecord._$data, 'firstname') ).toBe( 'Wolfram' );
 	});
 
 	it( 'retrieves nested paths', function(){
-		var jsonPath = new JsonPath( testRecord, 'address.street' );
-		expect( jsonPath.getValue() ).toBe( 'currentStreet' );
+		expect( jsonPath.get( testRecord._$data, 'address.street' ) ).toBe( 'currentStreet' );
 	});
 
 	it( 'retrieves array entries', function(){
-		var jsonPath = new JsonPath( testRecord, 'pastAddresses[1]' );
-		expect( jsonPath.getValue() ).toEqual( { street: 'secondstreet', postCode: 2002 } );
+		expect( jsonPath.get( testRecord._$data, 'pastAddresses[1]' ) ).toEqual( { street: 'secondstreet', postCode: 2002 } );
 	});
 
 	it( 'retrieves other array entries', function(){
-		var jsonPath = new JsonPath( testRecord, 'pastAddresses[0]' );
-		expect( jsonPath.getValue() ).toEqual( { street: 'firststreet', postCode: 1001 } );
+		expect( jsonPath.get( testRecord._$data, 'pastAddresses[0]' ) ).toEqual( { street: 'firststreet', postCode: 1001 } );
 	});
 
 	it( 'retrieves values from objects within arrays', function(){
-		var jsonPath = new JsonPath( testRecord, 'pastAddresses[0].postCode' );
-		expect( jsonPath.getValue() ).toBe( 1001 );
+		expect( jsonPath.get( testRecord._$data, 'pastAddresses[0].postCode' ) ).toBe( 1001 );
 	});
 
 	it( 'handles whitespace', function(){
-		var jsonPath = new JsonPath( testRecord, ' pastAddresses[ 1 ].postCode ' );
-		expect( jsonPath.getValue() ).toBe( 2002 );
+		expect( jsonPath.get( testRecord._$data, ' pastAddresses[ 1 ].postCode ' ) ).toBe( 2002 );
 	});
 
 	it( 'handles integers', function(){
-		var jsonPath = new JsonPath( testRecord, 1234 );
-		expect( jsonPath.getValue() ).toBe( 'integer index' );
+		expect( jsonPath.get( testRecord._$data, 1234 ) ).toBe( 'integer index' );
 	});
 
 	it( 'returns undefined for non existing keys', function(){
-		var jsonPath = new JsonPath( testRecord, 'doesNotExist' );
-		expect( jsonPath.getValue() ).toBe( undefined );
+		expect( jsonPath.get( testRecord._$data, 'doesNotExist' ) ).toBe( undefined );
 	});
 
 	it( 'returns undefined for non existing nested keys', function(){
-		var jsonPath = new JsonPath( testRecord, 'address.number' );
-		expect( jsonPath.getValue() ).toBe( undefined );
+		expect( jsonPath.get( testRecord._$data, 'address.number' ) ).toBe( undefined );
 	});
 
 	it( 'returns undefined for existing array indices', function(){
-		var jsonPath = new JsonPath( testRecord, 'pastAddresses[3]' );
-		expect( jsonPath.getValue() ).toBe( undefined );
+		expect( jsonPath.get( testRecord._$data, 'pastAddresses[3]' ) ).toBe( undefined );
 	});
 
 	it( 'returns undefined for negative array indices', function(){
-		var jsonPath = new JsonPath( testRecord, 'pastAddresses[-1]' );
-		expect( jsonPath.getValue() ).toBe( undefined );
+		expect( jsonPath.get( testRecord._$data, 'pastAddresses[-1]' ) ).toBe( undefined );
 	});
 
 	it( 'detects changes', function(){
-		var jsonPath = new JsonPath( testRecord, 'firstname' );
-		expect( jsonPath.getValue() ).toBe( 'Wolfram' );
+		expect( jsonPath.get( testRecord._$data, 'firstname' ) ).toBe( 'Wolfram' );
 		testRecord._$data.firstname = 'Egon';
-		expect( jsonPath.getValue() ).toBe( 'Egon' );
+		expect( jsonPath.get( testRecord._$data, 'firstname' ) ).toBe( 'Egon' );
 	});
 
 	it( 'detects changes to arrays', function(){
-		var jsonPath = new JsonPath( testRecord, 'pastAddresses[1].street' );
-		expect( jsonPath.getValue() ).toBe( 'secondstreet' );
+		expect( jsonPath.get( testRecord._$data, 'pastAddresses[1].street' ) ).toBe( 'secondstreet' );
 		testRecord._$data.pastAddresses.pop();
-		expect( jsonPath.getValue() ).toBe( undefined );
+		expect( jsonPath.get( testRecord._$data, 'pastAddresses[1].street' ) ).toBe( undefined );
 	});
 });
 
 describe( 'objects are created from paths and their value is set correctly', function(){
-	
+
+	beforeEach( function() {
+		jasmine.addCustomEqualityTester(utils.deepEquals);
+	} );
+
 	it( 'sets simple values', function(){
-		var record = { _$data:{}},
-			jsonPath = new JsonPath( record, 'firstname' );
-		jsonPath.setValue( 'Wolfram' );
-		expect( jsonPath.getValue() ).toBe( 'Wolfram');
+		var record = { _$data:{}};
+		record._$data = jsonPath.set( record._$data, 'firstname', 'Wolfram' );
+		expect( jsonPath.get( record._$data, 'firstname' ) ).toBe( 'Wolfram');
 		expect( record._$data ).toEqual({ firstname: 'Wolfram' });
 	});
 
 	it( 'sets values for nested objects', function(){
-		var record = { _$data:{}},
-			jsonPath = new JsonPath( record, 'adress.street' );
-		jsonPath.setValue( 'someStreet' );
-		expect( jsonPath.getValue() ).toBe( 'someStreet');
+		var record = { _$data:{}};
+		record._$data = jsonPath.set( record._$data, 'adress.street', 'someStreet' );
+		expect( jsonPath.get( record._$data, 'adress.street' ) ).toBe( 'someStreet');
 		expect( record._$data ).toEqual({
 			adress: {
 				street: 'someStreet'
@@ -107,25 +101,22 @@ describe( 'objects are created from paths and their value is set correctly', fun
 	});
 
 	it( 'sets values for arrays', function(){
-		var record = { _$data:{}},
-			jsonPath = new JsonPath( record, 'pastAddresses[1].street' );
-		jsonPath.setValue( 'someStreet' );
-		expect( jsonPath.getValue() ).toBe( 'someStreet');
-		//TODO: Check why equals doesn't work
-		expect( JSON.stringify( record._$data )  ).toEqual( JSON.stringify( {
+		var record = { _$data:{}};
+		record._$data = jsonPath.set( record._$data, 'pastAddresses[1].street', 'someStreet' );
+		expect( jsonPath.get( record._$data, 'pastAddresses[1].street' ) ).toBe( 'someStreet');
+		expect( record._$data ).toEqual({
 			pastAddresses: [
 			undefined,
 			{
 				street: 'someStreet'
 			}]
-		}) );
+		});
 	});
 
 	it( 'extends existing objects', function(){
-		var record = { _$data: { firstname: 'Wolfram' } },
-			jsonPath = new JsonPath( record, 'lastname' );
-		jsonPath.setValue( 'Hempel' );
-		expect( jsonPath.getValue() ).toBe( 'Hempel');
+		var record = { _$data: { firstname: 'Wolfram' } };
+		record._$data = jsonPath.set( record._$data, 'lastname', 'Hempel' );
+		expect( jsonPath.get( record._$data, 'lastname' ) ).toBe( 'Hempel');
 		expect( record._$data ).toEqual({
 			firstname: 'Wolfram',
 			lastname: 'Hempel'
@@ -136,10 +127,9 @@ describe( 'objects are created from paths and their value is set correctly', fun
 		var record = {_$data: {
 			firstname: 'Wolfram',
 			animals: [ 'Bear', 'Cow', 'Ostrich' ]
-		}},
-		jsonPath = new JsonPath( record, 'animals[ 1 ]' );
-		jsonPath.setValue( 'Emu' );
-		expect( jsonPath.getValue() ).toBe( 'Emu');
+		}};
+		record._$data = jsonPath.set( record._$data, 'animals[ 1 ]', 'Emu' );
+		expect( jsonPath.get( record._$data, 'animals[ 1 ]' ) ).toBe( 'Emu');
 		expect( record._$data ).toEqual({
 			firstname: 'Wolfram',
 			animals: [ 'Bear', 'Emu', 'Ostrich' ]
