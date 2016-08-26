@@ -38,20 +38,23 @@ module.exports.get = function ( data, path, deepCopy ) {
 module.exports.set = function( data, path, value, deepCopy ) {
 	var tokens = tokenize( path );
 
-	if ( deepCopy !== false ) {
-		value = utils.deepCopy( value );
-	}
-
 	if ( tokens.length === 0 ) {
-		return value;
+		return patch( data, value, deepCopy );
 	}
 
-	data = utils.shallowCopy( data );
+	var oldValue = module.exports.get( data, path, false );
+	var newValue = patch( oldValue, value, deepCopy );
 
-	var node = data;
+	if ( newValue === oldValue ) {
+		return data;
+	}
+
+	var result = utils.shallowCopy( data );
+
+	var node = result;
 	for( var i = 0; i < tokens.length; i++ ) {
 		if ( i === tokens.length - 1) {
-			node[ tokens[ i ] ] = value;
+			node[ tokens[ i ] ] = newValue;
 		}
 		else if( node[ tokens[ i ] ] !== undefined ) {
 			node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
@@ -64,8 +67,34 @@ module.exports.set = function( data, path, value, deepCopy ) {
 		}
 	}
 
-	return data;
+	return result;
 };
+
+function patch( oldValue, newValue, deepCopy ) {
+	var i;
+
+	if ( utils.deepEquals( oldValue, newValue ) ) {
+		return oldValue;
+	}
+	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
+		var arr = [];
+		for ( i = 0; i < newValue.length; i++ ) {
+			arr[ i ] = patch( oldValue[ i ], newValue[ i ], deepCopy );
+		}
+		return arr;
+	}
+	else if ( !Array.isArray( newValue ) && typeof oldValue === 'object' && typeof newValue === 'object' ) {
+		var props = Object.keys( newValue );
+		var obj = Object.create( null );
+		for ( i = 0; i < props.length; i++ ) {
+			obj[ props[ i ] ] = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], deepCopy );
+		}
+		return obj;
+	}
+	else {
+		return deepCopy !== false ? utils.deepCopy( newValue ) : newValue;
+	}
+}
 
 /**
  * Parses the path. Splits it into

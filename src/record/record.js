@@ -116,12 +116,15 @@ Record.prototype.set = function( pathOrData, data ) {
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
 
-	if ( utils.deepEquals( data, jsonPath.get( this._$data, path ) ) ) {
+	var oldValue = this._$data;
+	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
+
+	if ( oldValue === newValue ) {
 		return this;
 	}
 
 	this._sendUpdate( path, data );
-	this._applyChange( jsonPath.set( this._$data, path, data, this._options.recordDeepCopy ) );
+	this._applyChange( newValue );
 	return this;
 };
 
@@ -331,10 +334,16 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error
 
 	if( !error ) {
 		this.version = remoteVersion;
-		if ( !utils.deepEquals( data, this._$data ) ) {
-			this._sendUpdate( undefined, data );
+
+		var oldValue = this._$data;
+		var newValue = jsonPath.set( oldValue, undefined, data, false );
+
+		if ( oldValue === newValue ) {
+			return;
 		}
-		this._applyChange( data );
+
+		this._sendUpdate( undefined, data );
+		this._applyChange( newValue );
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
@@ -467,7 +476,7 @@ Record.prototype._applyChange = function( newData ) {
 		var newValue = jsonPath.get( newData, paths[ i ], false );
 		var oldValue = jsonPath.get( oldData, paths[ i ], false );
 
-		if( !utils.deepEquals( newValue, oldValue ) ) {
+		if( newValue !== oldValue ) {
 			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
 		}
 	}
