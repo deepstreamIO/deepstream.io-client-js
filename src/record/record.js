@@ -161,7 +161,6 @@ Record.prototype.set = function( pathOrData, data ) {
 		]);
 	}
 
-	// TODO: What happens if callbacks makes calls on record?
 	this._completeChange();
 	return this;
 };
@@ -202,7 +201,6 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	if( args.triggerNow ) {
 		this.whenReady(function () {
 			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-			// TODO: What happens if callbacks makes calls on record?
 			if( args.path ) {
 				args.callback( this._getPath( args.path ).getValue() );
 			} else {
@@ -308,10 +306,8 @@ Record.prototype.delete = function() {
  */
 Record.prototype.whenReady = function( callback ) {
 	if( this.isReady === true ) {
-		// TODO: What happens if callbacks makes calls on record?
 		callback( this );
 	} else {
-		// TODO: What happens if callbacks makes calls on record?
 		this.once( 'ready', callback.bind( this, this ) );
 	}
 };
@@ -323,10 +319,12 @@ Record.prototype._acquire = function () {
 Record.prototype._release = function () {
 	this._count -= 1;
 	if (this._count === 0) {
-		for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
-			this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
-		}
+		var queuedMethodCalls = this._queuedMethodCalls;
 		this._queuedMethodCalls = [];
+
+		for( var i = 0; i < queuedMethodCalls.length; i++ ) {
+			this[ queuedMethodCalls[ i ].method ].apply( this, queuedMethodCalls[ i ].args );
+		}
 	}
 }
 
@@ -380,10 +378,11 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
+	// TODO: Needs a timeout?
+	// TODO: What happens if update is received from server while record is being merged?
 	this._acquire();
 	message.processedError = true;
 	if( this._mergeStrategy ) {
-		// TODO: What happens if record is deleted/discarded before callback is invoked?
 		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
 	}
 	else {
@@ -483,7 +482,6 @@ Record.prototype._applyUpdate = function( message ) {
 		this._$data = data;
 	}
 
-	// TODO: What happens if callbacks makes calls on record?
 	this._completeChange();
 };
 
@@ -514,7 +512,6 @@ Record.prototype._setReady = function() {
 	this.isReady = true;
 	this._release();
 	this._acquire();
-	// TODO: What happens if callbacks makes calls on record?
 	this.emit( 'ready' );
 	this._release();
 };
