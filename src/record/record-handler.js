@@ -109,11 +109,14 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
 		throw new Error( 'invalid argument callback' );
 	}
 
-	if( this._listener[ pattern ] ) {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
-	} else {
-		this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
+	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+		return this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
 	}
+
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+	}
+	this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
 };
 
 /**
@@ -130,7 +133,10 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 		throw new Error( 'invalid argument pattern' );
 	}
 
-	if( this._listener[ pattern ] ) {
+	var listener = this._listener[ pattern ];
+	if( listener && !listener.destroyPending ) {
+		listener.sendDestroy();
+	} else if( this._listener[ pattern ] ) {
 		this._listener[ pattern ].destroy();
 		delete this._listener[ pattern ];
 	} else {
@@ -149,9 +155,6 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 RecordHandler.prototype.snapshot = function( name, callback ) {
 	if ( typeof name !== 'string' || name.length === 0 ) {
 		throw new Error( 'invalid argument name' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
 	}
 
 	if( this._records[ name ] && this._records[ name ].isReady ) {
@@ -172,9 +175,6 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 RecordHandler.prototype.has = function( name, callback ) {
 	if ( typeof name !== 'string' || name.length === 0 ) {
 		throw new Error( 'invalid argument name' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
 	}
 
 	if( this._records[ name ] ) {
@@ -263,9 +263,21 @@ RecordHandler.prototype._$handle = function( message ) {
 		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 	}
 
-	if( this._listener[ name ] ) {
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		this._listener[ name ] && this._listener[ name ].destroyPending
+	) {
+		processed = true;
+		this._listener[ name ].destroy();
+		delete this._listener[ name ];
+	} else if( this._listener[ name ] ) {
 		processed = true;
 		this._listener[ name ]._$onMessage( message );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+		processed = true;
+	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		// record can receive a HAS_PROVIDER after discarding the record
+		processed = true;
 	}
 
 	if( !processed ) {
@@ -299,7 +311,7 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
  */
 RecordHandler.prototype._onDestroyPending = function( recordName ) {
 	if ( !this._records[ recordName ] ) {
-		this.emit( 'error', 'Record \'' + recordName + '\' does not exist.' );
+		this.emit( 'error', 'Record \'' + recordName + '\' does not exists' );
 		return;
 	}
 	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );

@@ -34,6 +34,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._options = options;
 	this.isReady = false;
 	this.isDestroyed = false;
+	this.hasProvider = false;
 	this._$data = {};
 	this.version = null;
 	this._paths = {};
@@ -332,6 +333,10 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
 		clearInterval( this._readAckTimeout );
 		clearInterval( this._readTimeout );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
+		this.hasProvider = hasProvider;
+		this.emit( 'hasProviderChanged', hasProvider );
 	}
 };
 

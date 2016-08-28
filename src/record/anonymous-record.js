@@ -24,7 +24,6 @@ var AnonymousRecord = function( recordHandler ) {
 	this._subscriptions = [];
 	this._proxyMethod( 'delete' );
 	this._proxyMethod( 'set' );
-	this._proxyMethod( 'unsubscribe' );
 	this._proxyMethod( 'discard' );
 };
 
@@ -108,7 +107,7 @@ AnonymousRecord.prototype.unsubscribe = function() {
 };
 
 /**
- * Sets the underlying record the anonymous record is boud
+ * Sets the underlying record the anonymous record is bound
  * to. Can be called multiple times.
  *
  * @param {String} recordName

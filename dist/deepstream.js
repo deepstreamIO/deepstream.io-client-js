@@ -4690,8 +4690,11 @@ exports.ACTIONS.SNAPSHOT = 'SN';
 exports.ACTIONS.INVOKE = 'I';
 exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND = 'SP';
 exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED = 'SR';
+exports.ACTIONS.SUBSCRIPTION_HAS_PROVIDER = 'SH';
 exports.ACTIONS.LISTEN = 'L';
 exports.ACTIONS.UNLISTEN = 'UL';
+exports.ACTIONS.LISTEN_ACCEPT = 'LA';
+exports.ACTIONS.LISTEN_REJECT = 'LR';
 exports.ACTIONS.PROVIDER_UPDATE = 'PU';
 exports.ACTIONS.QUERY = 'Q';
 exports.ACTIONS.CREATEORREAD = 'CR';
@@ -5875,7 +5878,6 @@ var AnonymousRecord = function( recordHandler ) {
 	this._subscriptions = [];
 	this._proxyMethod( 'delete' );
 	this._proxyMethod( 'set' );
-	this._proxyMethod( 'unsubscribe' );
 	this._proxyMethod( 'discard' );
 };
 
@@ -5959,7 +5961,7 @@ AnonymousRecord.prototype.unsubscribe = function() {
 };
 
 /**
- * Sets the underlying record the anonymous record is boud
+ * Sets the underlying record the anonymous record is bound
  * to. Can be called multiple times.
  *
  * @param {String} recordName
@@ -6627,11 +6629,13 @@ RecordHandler.prototype.getAnonymousRecord = function() {
  * @returns {void}
  */
 RecordHandler.prototype.listen = function( pattern, callback ) {
-	if( this._listener[ pattern ] ) {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
-	} else {
-		this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
+	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+		return this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
 	}
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+	}
+	this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
 };
 
 /**
@@ -6644,9 +6648,9 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
  * @returns {void}
  */
 RecordHandler.prototype.unlisten = function( pattern ) {
-	if( this._listener[ pattern ] ) {
-		this._listener[ pattern ].destroy();
-		delete this._listener[ pattern ];
+	var listener = this._listener[ pattern ];
+	if( listener && !listener.destroyPending ) {
+		listener.sendDestroy();
 	} else {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
 	}
@@ -6763,9 +6767,21 @@ RecordHandler.prototype._$handle = function( message ) {
 		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 	}
 
-	if( this._listener[ name ] ) {
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		this._listener[ name ] && this._listener[ name ].destroyPending
+	) {
+		processed = true;
+		this._listener[ name ].destroy();
+		delete this._listener[ name ];
+	} else if( this._listener[ name ] ) {
 		processed = true;
 		this._listener[ name ]._$onMessage( message );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+		processed = true;
+	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		// record can receive a HAS_PROVIDER after discarding the record
+		processed = true;
 	}
 
 	if( !processed ) {
@@ -6851,6 +6867,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._options = options;
 	this.isReady = false;
 	this.isDestroyed = false;
+	this.hasProvider = false;
 	this._$data = {};
 	this.version = null;
 	this._paths = {};
@@ -7129,6 +7146,9 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
 		clearInterval( this._readAckTimeout );
 		clearInterval( this._readTimeout );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		this.hasProvider = message.data[ 1 ];
+		this.emit( 'hasProviderChanged', message.data[ 1 ] );
 	}
 };
 
@@ -7967,6 +7987,18 @@ module.exports = AckTimeoutRegistry;
 var C = _dereq_( '../constants/constants' );
 var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
+/*
+ * Creates a listener instance which is usedby deepstream Records and Events.
+ *
+ * @param {String} type                 One of CONSTANTS.TOPIC
+ * @param {String} pattern              A pattern that can be compiled via new RegExp(pattern)
+ * @param {Function} callback           The function which is called when pattern was found and removed
+ * @param {Connection} Connection       The instance of the server connection
+ * @param {Object} options              Deepstream options
+ * @param {Client} client               deepstream.io client
+ *
+ * @constructor
+ */
 var Listener = function( type, pattern, callback, options, client, connection ) {
     this._type = type;
     this._callback = callback;
@@ -7977,35 +8009,117 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
     this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
     this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
     this._sendListen();
+    this._responded = null;
+    this.destroyPending = false;
 };
 
-Listener.prototype.destroy = function() {
+Listener.prototype.sendDestroy = function() {
+    this.destroyPending = true;
     this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
     this._resubscribeNotifier.destroy();
+
+};
+
+/*
+ * Resets internal properties. Is called when provider cals unlisten.
+ *
+ * @returns {void}
+ */
+Listener.prototype.destroy = function() {
     this._callback = null;
     this._pattern = null;
     this._client = null;
     this._connection = null;
 };
 
+/*
+ * Accepting a listener request informs deepstream that the current provider is willing to
+ * provide the record or event matching the subscriptionName . This will establish the current
+ * provider as the only publisher for the actual subscription with the deepstream cluster.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
+ *
+ * @returns {void}
+ */
+Listener.prototype.accept = function( name ) {
+    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
+    this._responded = true;
+}
+
+/*
+ *  Rejecting a listener request informs deepstream that the current provider is not willing
+ * to provide the record or event matching the subscriptionName . This will result in deepstream
+ * requesting another provider to do so instead. If no other provider accepts or exists, the
+ * record will remain unprovided.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
+ *
+ * @returns {void}
+ */
+Listener.prototype.reject = function( name ) {
+    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
+    this._responded = true;
+}
+
+/*
+ * Wraps accept and reject as an argument for the callback function.
+ *
+ * @private
+ * @returns {Object}
+ */
+Listener.prototype._createCallbackResponse = function(message) {
+    return {
+        accept: this.accept.bind( this, message.data[ 1 ] ),
+        reject: this.reject.bind( this, message.data[ 1 ] )
+    }
+}
+
+/*
+ * Handles the incomming message.
+ *
+ * @private
+ * @returns {void}
+ */
 Listener.prototype._$onMessage = function( message ) {
     if( message.action === C.ACTIONS.ACK ) {
         clearTimeout( this._ackTimeout );
+    } else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
+        this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
+    } else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+        this._callback( message.data[ 1 ], false );
     } else {
-        var isFound = message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND;
-        this._callback( message.data[ 1 ], isFound );
+        this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
+    }
+
+    if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND && this._responded !== true ) {
+        var deprecatedMessage = 'DEPRECATED: listen should explicitly accept or reject for pattern: ' + message.data[ 0 ];
+        deprecatedMessage += '\nhttps://github.com/deepstreamIO/deepstream.io-client-js/issues/212';
+        if( console && console.warn ) {
+            console.warn( deprecatedMessage );
+        }
     }
 };
 
+/*
+ * Sends a C.ACTIONS.LISTEN to deepstream.
+ *
+ * @private
+ * @returns {void}
+ */
 Listener.prototype._sendListen = function() {
-    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );   
+    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
 };
 
+/*
+ * Sends a C.EVENT.ACK_TIMEOUT to deepstream.
+ *
+ * @private
+ * @returns {void}
+ */
 Listener.prototype._onAckTimeout = function() {
     this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
 };
 
 module.exports = Listener;
+
 },{"../constants/constants":35,"./resubscribe-notifier":52}],52:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
