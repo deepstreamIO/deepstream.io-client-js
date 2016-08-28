@@ -85,8 +85,8 @@ describe('connects - redirect', function(){
 	var connection,
 		authCallback = jasmine.createSpy( 'authCallback' ),
 		options = {
-			reconnectIntervalIncrement: 10, 
-			maxReconnectAttempts: 5 
+			reconnectIntervalIncrement: 10,
+			maxReconnectAttempts: 5
 		};
 
 	it( 'creates the connection', function(){
@@ -142,8 +142,8 @@ describe('connects - redirect rejection', function(){
 	var connection,
 		authCallback = jasmine.createSpy( 'authCallback' ),
 		options = {
-			reconnectIntervalIncrement: 10, 
-			maxReconnectAttempts: 5 
+			reconnectIntervalIncrement: 10,
+			maxReconnectAttempts: 5
 		};
 
 	it( 'creates the connection', function(){
@@ -347,9 +347,9 @@ describe( 'reach the max reconnect attempts and consider the maxReconnectInterva
 	var connection,
 		authCallback = jasmine.createSpy( 'invalid auth callback' ),
 		options = {
-			reconnectIntervalIncrement: 40, 
-			maxReconnectAttempts: 3, 
-			maxReconnectInterval: 40 
+			reconnectIntervalIncrement: 50,
+			maxReconnectAttempts: 3,
+			maxReconnectInterval: 50
 		};
 
 	it( 'creates the connection', function(){
@@ -378,17 +378,16 @@ describe( 'reach the max reconnect attempts and consider the maxReconnectInterva
 		clientMock.on( C.MAX_RECONNECTION_ATTEMPTS_REACHED, done )
 
 		function checkForXinTime(amount, timeout) {
-			const B = 3 // inaccuracy buffer
 			setTimeout(function(){
 				connection._endpoint.close();
 				expect( connection._endpoint.callsToOpen ).toBe( amount );
 			}, timeout);
 		}
 
-		checkForXinTime(1, 40 )
-		checkForXinTime(1, 70 )
-		checkForXinTime(2, 90 )
-		checkForXinTime(3, 140 )
+		checkForXinTime(1, 0 )
+		checkForXinTime(1, 25 )
+		checkForXinTime(2, 75 )
+		checkForXinTime(3, 175 )
 	});
 });
 

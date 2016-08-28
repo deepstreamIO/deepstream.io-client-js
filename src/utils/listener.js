@@ -14,23 +14,22 @@ var ResubscribeNotifier = require( './resubscribe-notifier' );
  * @constructor
  */
 var Listener = function( type, pattern, callback, options, client, connection ) {
-    this._type = type;
-    this._callback = callback;
-    this._pattern = pattern;
-    this._options = options;
-    this._client = client;
-    this._connection = connection;
-    this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
-    this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
-    this._sendListen();
-    this._responded = null;
-    this.destroyPending = false;
+	this._type = type;
+	this._callback = callback;
+	this._pattern = pattern;
+	this._options = options;
+	this._client = client;
+	this._connection = connection;
+	this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
+	this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
+	this._sendListen();
+	this.destroyPending = false;
 };
 
 Listener.prototype.sendDestroy = function() {
-    this.destroyPending = true;
-    this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
-    this._resubscribeNotifier.destroy();
+	this.destroyPending = true;
+	this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
+	this._resubscribeNotifier.destroy();
 
 };
 
@@ -40,10 +39,10 @@ Listener.prototype.sendDestroy = function() {
  * @returns {void}
  */
 Listener.prototype.destroy = function() {
-    this._callback = null;
-    this._pattern = null;
-    this._client = null;
-    this._connection = null;
+	this._callback = null;
+	this._pattern = null;
+	this._client = null;
+	this._connection = null;
 };
 
 /*
@@ -55,8 +54,7 @@ Listener.prototype.destroy = function() {
  * @returns {void}
  */
 Listener.prototype.accept = function( name ) {
-    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
-    this._responded = true;
+	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
 }
 
 /*
@@ -69,8 +67,7 @@ Listener.prototype.accept = function( name ) {
  * @returns {void}
  */
 Listener.prototype.reject = function( name ) {
-    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
-    this._responded = true;
+	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
 }
 
 /*
@@ -80,10 +77,10 @@ Listener.prototype.reject = function( name ) {
  * @returns {Object}
  */
 Listener.prototype._createCallbackResponse = function(message) {
-    return {
-        accept: this.accept.bind( this, message.data[ 1 ] ),
-        reject: this.reject.bind( this, message.data[ 1 ] )
-    }
+	return {
+		accept: this.accept.bind( this, message.data[ 1 ] ),
+		reject: this.reject.bind( this, message.data[ 1 ] )
+	}
 }
 
 /*
@@ -93,23 +90,17 @@ Listener.prototype._createCallbackResponse = function(message) {
  * @returns {void}
  */
 Listener.prototype._$onMessage = function( message ) {
-    if( message.action === C.ACTIONS.ACK ) {
-        clearTimeout( this._ackTimeout );
-    } else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
-        this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
-    } else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
-        this._callback( message.data[ 1 ], false );
-    } else {
-        this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
-    }
-
-    if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND && this._responded !== true ) {
-        var deprecatedMessage = 'DEPRECATED: listen should explicitly accept or reject for pattern: ' + message.data[ 0 ];
-        deprecatedMessage += '\nhttps://github.com/deepstreamIO/deepstream.io-client-js/issues/212';
-        if( console && console.warn ) {
-            console.warn( deprecatedMessage );
-        }
-    }
+	if( message.action === C.ACTIONS.ACK ) {
+		clearTimeout( this._ackTimeout );
+	} else if ( message.action === C
+		.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
+		this._showDeprecatedMessage( message );
+		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
+	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		this._callback( message.data[ 1 ], false );
+	} else {
+		this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
+	}
 };
 
 /*
@@ -119,7 +110,7 @@ Listener.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Listener.prototype._sendListen = function() {
-    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
+	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
 };
 
 /*
@@ -129,7 +120,23 @@ Listener.prototype._sendListen = function() {
  * @returns {void}
  */
 Listener.prototype._onAckTimeout = function() {
-    this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
+	this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
+};
+
+/*
+ * Shows a deprecation message to users before 1.1
+ *
+ * @private
+ * @returns {void}
+ */
+Listener.prototype._showDeprecatedMessage = function( message ) {
+	if( this._callback.length !== 3 ) {
+	var deprecatedMessage = 'DEPRECATED: listen should explicitly accept or reject for pattern: ' + message.data[ 0 ];
+	deprecatedMessage += '\nhttps://github.com/deepstreamIO/deepstream.io-client-js/issues/212';
+		if( console && console.warn ) {
+			console.warn( deprecatedMessage );
+		}
+	}
 };
 
 module.exports = Listener;

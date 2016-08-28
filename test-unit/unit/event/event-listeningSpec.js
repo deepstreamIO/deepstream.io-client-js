@@ -40,7 +40,7 @@ describe( 'event listening', function(){
 	})
 
 	it( 'provider neither accept nor reject', function( done ){
-		eventHandler.listen('x/.*', (data, isSubscribed, response) => {
+		eventHandler.listen('x/.*', (data, isSubscribed) => {
 			expect( connection.lastSendMessage ).not.toBe( msg( 'E|LA|x/.*|x/1+' ) )
 		})
 

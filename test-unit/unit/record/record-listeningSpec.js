@@ -51,7 +51,7 @@ describe( 'records listening', function(){
 	it( 'provider neither accept nor reject', function( done ){
 		const x1 = recordHandler.getRecord( 'x/1' )
 		expect( x1.hasProvider ).toBe( false )
-		recordHandler.listen('x/.*', (data, isSubscribed, response) => {
+		recordHandler.listen('x/.*', (data, isSubscribed) => {
 			expect( connection.lastSendMessage ).not.toBe( msg( 'R|LA|x/.*|x/1+' ) )
 		})
 
@@ -68,7 +68,7 @@ describe( 'records listening', function(){
 		recordHandler.listen('a/.*', (data, isSubscribed, response) => {
 			response.accept()
 			expect( connection.lastSendMessage ).toBe( msg( 'R|LA|a/.*|a/1+' ) )
-			handleProvider( [ 'a/1', true ] )
+			handleProvider( [ 'a/1', 'T' ] )
 			expect( a1.hasProvider ).toBe( true )
 		})
 
@@ -95,7 +95,7 @@ describe( 'records listening', function(){
 			done()
 		})
 
-		handleProvider( [ 'b/1', false ] )
+		handleProvider( [ 'b/1', 'F' ] )
 		expect( b1.hasProvider ).toBe( false )
 
 	})
@@ -124,7 +124,7 @@ describe( 'records listening', function(){
 		recordHandler.listen('c/.*', (data, isSubscribed, response) => {
 			response.accept()
 			expect( connection.lastSendMessage ).toBe( msg( 'R|LA|c/.*|c/1+' ) )
-			handleProvider( [ 'c/1', true ] )
+			handleProvider( [ 'c/1', 'T' ] )
 			expect( c1.hasProvider ).toBe( true )
 		})
 

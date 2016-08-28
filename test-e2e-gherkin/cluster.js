@@ -64,7 +64,7 @@ Cluster.prototype._startServer = function( port, done ) {
 		host: config.redisHost
 	}));
 	if( this._enableLogging !== true ) {
-		//this.servers[ port ].set( 'logger', new Logger() );
+		this.servers[ port ].set( 'logger', new Logger() );
 	}
 
 	this.servers[ port ].set( 'showLogo', false );

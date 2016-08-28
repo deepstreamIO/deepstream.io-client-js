@@ -22,7 +22,6 @@ describe( 'webrtc listen for callees', function(){
 	});
 
 	it( 'emits an error if no ack message is received for the callee listen', function( done ){
-		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
 			var errorParams = [ 'W', 'ACK_TIMEOUT', 'No ACK message received in time for callee-update' ];
 			expect( mockClient.lastError ).toEqual( errorParams );

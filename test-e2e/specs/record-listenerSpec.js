@@ -15,7 +15,8 @@ describe( 'record listener', function() {
 	var deepstreamServer,
 		logger = new TestLogger(),
 		clientA,
-		clientB;
+		clientB,
+		clientC;
 
 	beforeAll(function(done) {
 		var counter = 0
@@ -24,43 +25,59 @@ describe( 'record listener', function() {
 			done()
 		}
 		deepstreamServer = new DeepstreamServer({port: 6665, tcpPort: 6666});
-		deepstreamServer.on( 'started', function() {
-			clientA = deepstreamClient( 'localhost:6666' );
-			// clientA.on( 'error', function(){console.error(arguments)} );
-			clientA.login( null, allDone);
-			clientB = deepstreamClient( 'localhost:6666' );
-			// clientB.on( 'error', function(){console.error(arguments)} );
-			clientB.login( null, allDone);
-		} );
+		deepstreamServer.on( 'started', done );
 		deepstreamServer.set( 'logger', logger );
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.start();
-	})
+	});
+
+	beforeAll(function(done){
+		clientA = deepstreamClient( 'localhost:6666' );
+		clientA.login( null, () => {
+			done();
+		});
+	});
+
+	beforeAll(function(done){
+		clientB = deepstreamClient( 'localhost:6666' );
+		clientB.login( null, () => {
+			done();
+		});
+	});
+
+	beforeAll(function(done){
+		clientC = deepstreamClient( 'localhost:6666' );
+		clientC.login( null, () => {
+			done();
+		});
+	});
 
 	afterAll(function(done) {
 		onClose(clientA, function() {
-			deepstreamServer.on('stopped', done)
-			deepstreamServer.stop()
-		})
+			deepstreamServer.on('stopped', done);
+			deepstreamServer.stop();
+		});
+		onClose(clientC, function() {
+			clientA.close();
+		});
 		onClose(clientB, function() {
-			clientA.close()
-		})
+			clientC.close();
+		});
 		setTimeout(function() {
-			clientB.close()
-		}, 100) // wait for potential messages on the wire (e.g. has provider = false)
-
-	})
+			clientB.close();
+		}, 100); // wait for potential messages on the wire (e.g. has provider = false)
+	});
 
 	it( 'listens for record subscription without cleanup', function(done){
 		var matches = [];
 		var records = []
-		clientA.record.listen( 'user/[a-z0-9]', function( match, isSubscribed, response ){
+		clientA.record.listen( 'user/[a-z0-9]+', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
 				matches.push( match );
 				if( matches.length === 1 ) {
 					expect( matches.indexOf( 'user/matchespattern' ) ).not.toBe( -1 ) ;
-					clientA.record.unlisten( 'user/[a-z0-9]' )
+					clientA.record.unlisten( 'user/[a-z0-9]+' )
 					done()
 				}
 			}
@@ -73,13 +90,13 @@ describe( 'record listener', function() {
 	it( 'listens for record subscription with unlisten cleanup', function(done){
 		var matches = [];
 		var records = []
-		clientA.record.listen( 'user/[a-z0-9]', function( match, isSubscribed, response ){
+		clientA.record.listen( 'user/[a-z0-9]+', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
 				matches.push( match );
 				if( matches.length === 1 ) {
 					expect( matches.indexOf( 'user/matchespattern' ) ).not.toBe( -1 ) ;
-					clientA.record.unlisten( 'user/[a-z0-9]' )
+					clientA.record.unlisten( 'user/[a-z0-9]+' )
 					done()
 				}
 			}
@@ -87,20 +104,19 @@ describe( 'record listener', function() {
 		setTimeout(function() {
 		records.push( clientB.record.getRecord( 'user/matchespattern' ) )
 		records.push( clientB.record.getRecord( 'user/DOES_NOT_MATCH2' ) )
-
 		}, 100)
 	});
 
 	it( 'listens for record subscription with unlisten and discard cleanup', function(done){
 		var matches = [];
 		var records = []
-		clientA.record.listen( 'admin\/[a-z0-9]', function( match, isSubscribed, response ){
+		clientA.record.listen( 'admin\/[a-z0-9]+', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
 				matches.push( match );
 				if( matches.length === 1 ) {
 					expect( matches.indexOf( 'admin/matchesanotherpattern' ) ).not.toBe( -1 ) ;
-					clientA.record.unlisten( 'admin\/[a-z0-9]' )
+					clientA.record.unlisten( 'admin\/[a-z0-9]+' )
 					records.forEach(record => {
 						record.discard()
 					})
@@ -116,7 +132,7 @@ describe( 'record listener', function() {
 	it( 'listens for record subscription with discard and unlisten cleanup', function(done){
 		var matches = [];
 		var records = []
-		clientA.record.listen( 'user\/[a-z0-9]', function( match, isSubscribed, response ){
+		clientA.record.listen( 'user\/[a-z0-9]+', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
 				matches.push( match );
@@ -125,7 +141,7 @@ describe( 'record listener', function() {
 					records.forEach(record => {
 						record.discard()
 					})
-					clientA.record.unlisten( 'user\/[a-z0-9]' )
+					clientA.record.unlisten( 'user\/[a-z0-9]+' )
 					done()
 				}
 			}
@@ -138,7 +154,7 @@ describe( 'record listener', function() {
 	it( 'listens for record subscription with discard cleanup', function(done){
 		var matches = [];
 		var records = []
-		clientA.record.listen( 'user\/[a-z0-9]', function( match, isSubscribed, response ){
+		clientA.record.listen( 'user\/[a-z0-9]+', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
 				matches.push( match );
@@ -159,7 +175,7 @@ describe( 'record listener', function() {
 	it( 'listen again after unlisten', function(done){
 		var matches = [];
 		var records = []
-		clientA.record.listen( 'foo/[a-z0-9]', function( match, isSubscribed, response ){
+		clientA.record.listen( 'foo/[a-z0-9]+', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
 				matches.push( match );
@@ -169,15 +185,15 @@ describe( 'record listener', function() {
 					records.forEach(record => {
 						record.discard()
 					})
-					clientA.record.unlisten( 'foo/[a-z0-9]' )
+					clientA.record.unlisten( 'foo/[a-z0-9]+' )
 					setTimeout(() => {
-						clientA.record.listen( 'foo\/[a-z0-9]', function( match, isSubscribed, response ){
+						clientA.record.listen( 'foo/[a-z0-9]+', function( match, isSubscribed, response ){
 							if (isSubscribed) {
 								response.accept()
 								done()
 							}
 						})
-						records.push( clientA.record.getRecord( 'foo/some44' ) )
+						records.push( clientC.record.getRecord( 'foo/some44' ) )
 					}, 10)
 				}
 			}
@@ -185,13 +201,13 @@ describe( 'record listener', function() {
 
 		records.push( clientB.record.getRecord( 'foo/matchespattern' ) )
 		records.push( clientB.record.getRecord( 'foo/DOES_NOT_MATCH' ) )
-		records.push( clientA.record.getRecord( 'foo/some33' ) )
+		records.push( clientC.record.getRecord( 'foo/some33' ) )
 	});
 
 	it( 'listens for 2 record subscriptions', function(done){
 		var matches = [];
 		var records = []
-		clientA.record.listen( 'multiple\/[a-z0-9]', function( match, isSubscribed, response ){
+		clientA.record.listen( 'multiple\/[a-z0-9]+', function( match, isSubscribed, response ){
 			if (isSubscribed) {
 				response.accept();
 				matches.push( match );
@@ -205,7 +221,7 @@ describe( 'record listener', function() {
 
 		records.push( clientB.record.getRecord( 'multiple/matchespattern' ) )
 		records.push( clientB.record.getRecord( 'multiple/DOES_NOT_MATCH' ) )
-		records.push( clientA.record.getRecord( 'multiple/some33' ) )
+		records.push( clientC.record.getRecord( 'multiple/some33' ) )
 	});
 
 	it( 'listens, gets notified and unlistens', function(done) {

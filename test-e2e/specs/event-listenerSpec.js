@@ -7,7 +7,8 @@ describe( 'event listener', function() {
 	var deepstreamServer,
 		logger = new TestLogger(),
 		clientA,
-		clientB;
+		clientB,
+		clientC;
 
 	/**************** SETUP ****************/
 	it( 'starts the server', function( done ){
@@ -30,6 +31,12 @@ describe( 'event listener', function() {
 		clientB.on( 'error', () => {})
 	});
 
+	it( 'creates clientC', function( done ) {
+		clientC = deepstreamClient( 'localhost:6021' );
+		clientC.login( null, function(){ done(); });
+		clientC.on( 'error', () => {})
+	});
+
 	 /**************** TEST ****************/
 	it( 'listens for event subscriptions', function(done){
 		var matches = [];
@@ -47,7 +54,7 @@ describe( 'event listener', function() {
 
 		clientB.event.subscribe( 'event/matchespattern', function() {} );
 		clientB.event.subscribe( 'event/DOES_NOT_MATCH', function() {} );
-		clientA.event.subscribe( 'event/some33', function() {} );
+		clientC.event.subscribe( 'event/some33', function() {} );
 	});
 
 	it( 'listens, gets notified and unlistens', function(done) {

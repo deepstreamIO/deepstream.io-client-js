@@ -310,8 +310,9 @@ Record.prototype._$onMessage = function( message ) {
 		clearInterval( this._readAckTimeout );
 		clearInterval( this._readTimeout );
 	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
-		this.hasProvider = message.data[ 1 ];
-		this.emit( 'hasProviderChanged', message.data[ 1 ] );
+		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
+		this.hasProvider = hasProvider;
+		this.emit( 'hasProviderChanged', hasProvider );
 	}
 };
 
