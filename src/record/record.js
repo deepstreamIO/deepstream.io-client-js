@@ -37,7 +37,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.hasProvider = false;
 	this._$data = {};
 	this.version = null;
-	this._count = 1;
+	this._count = 0;
 	this._paths = {};
 	this._oldValue = null;
 	this._oldPathValues = null;
@@ -316,6 +316,20 @@ Record.prototype.whenReady = function( callback ) {
 	}
 };
 
+Record.prototype._acquire = function () {
+	this._count += 1;
+}
+
+Record.prototype._release = function () {
+	this._count -= 1;
+	if (this._count === 0) {
+		for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
+			this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
+		}
+		this._queuedMethodCalls = [];
+	}
+}
+
 /**
  * Callback for incoming messages from the message handler
  *
@@ -366,7 +380,7 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
-	this._count += 1;
+	this._acquire();
 	message.processedError = true;
 	if( this._mergeStrategy ) {
 		// TODO: What happens if record is deleted/discarded before callback is invoked?
@@ -396,7 +410,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
-	this._count -= 1;
+	this._release();
 };
 
 /**
@@ -498,13 +512,11 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
-	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
-		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
-	}
-	this._queuedMethodCalls = [];
+	this._release();
+	this._acquire();
 	// TODO: What happens if callbacks makes calls on record?
 	this.emit( 'ready' );
-	this._count -= 1;
+	this._release();
 };
 
 /**
@@ -515,6 +527,7 @@ Record.prototype._setReady = function() {
  * @returns {void}
  */
  Record.prototype._sendRead = function() {
+ 	this._acquire();
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
 
@@ -572,7 +585,7 @@ Record.prototype._beginChange = function() {
  * @returns {void}
  */
 Record.prototype._completeChange = function() {
-	this._count += 1;
+	this._acquire();
 	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
 		this._eventEmitter.emit( ALL_EVENT, this.get() );
 	}
@@ -580,7 +593,7 @@ Record.prototype._completeChange = function() {
 	this._oldValue = null;
 
 	if( this._oldPathValues === null ) {
-		this._count -= 1;
+		this._release();
 		return;
 	}
 
@@ -596,7 +609,7 @@ Record.prototype._completeChange = function() {
 
 	this._oldPathValues = null;
 
-	this._count -= 1;
+	this._release();
 };
 
 /**
