@@ -37,6 +37,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.hasProvider = false;
 	this._$data = {};
 	this.version = null;
+	this._count = 1;
 	this._paths = {};
 	this._oldValue = null;
 	this._oldPathValues = null;
@@ -128,7 +129,7 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( !this.isReady ) {
+	if( this._count !== 0 ) {
 		this._queuedMethodCalls.push({ method: 'set', args: arguments });
 		return this;
 	}
@@ -258,6 +259,10 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
+	if( this._count !== 0 ) {
+		this._queuedMethodCalls.push({ method: 'discard', args: arguments });
+		return this;
+	}
 	if( this._checkDestroyed( 'discard' ) ) {
 		return;
 	}
@@ -278,6 +283,10 @@ Record.prototype.discard = function() {
  * @returns {void}
  */
 Record.prototype.delete = function() {
+	if( this._count !== 0 ) {
+		this._queuedMethodCalls.push({ method: 'delete', args: arguments });
+		return this;
+	}
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
@@ -357,6 +366,7 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
+	this._count += 1;
 	message.processedError = true;
 	if( this._mergeStrategy ) {
 		// TODO: What happens if record is deleted/discarded before callback is invoked?
@@ -386,6 +396,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
+	this._count -= 1;
 };
 
 /**
@@ -493,6 +504,7 @@ Record.prototype._setReady = function() {
 	this._queuedMethodCalls = [];
 	// TODO: What happens if callbacks makes calls on record?
 	this.emit( 'ready' );
+	this._count -= 1;
 };
 
 /**
@@ -560,6 +572,7 @@ Record.prototype._beginChange = function() {
  * @returns {void}
  */
 Record.prototype._completeChange = function() {
+	this._count += 1;
 	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
 		this._eventEmitter.emit( ALL_EVENT, this.get() );
 	}
@@ -567,6 +580,7 @@ Record.prototype._completeChange = function() {
 	this._oldValue = null;
 
 	if( this._oldPathValues === null ) {
+		this._count -= 1;
 		return;
 	}
 
@@ -581,6 +595,8 @@ Record.prototype._completeChange = function() {
 	}
 
 	this._oldPathValues = null;
+
+	this._count -= 1;
 };
 
 /**
