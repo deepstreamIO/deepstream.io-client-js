@@ -97,6 +97,9 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 	if ( typeof name !== 'string' || name.length === 0 ) {
 		throw new Error( 'invalid argument name' );
 	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
 
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );

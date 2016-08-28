@@ -11,10 +11,6 @@ var C = require( '../constants/constants' ),
  * @param {String} correlationId the correlationId for the RPC
  */
 var RpcResponse = function( connection, name, correlationId ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-
 	this._connection = connection;
 	this._name = name;
 	this._correlationId = correlationId;
