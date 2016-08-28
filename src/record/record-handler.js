@@ -102,11 +102,13 @@ RecordHandler.prototype.getAnonymousRecord = function() {
  * @returns {void}
  */
 RecordHandler.prototype.listen = function( pattern, callback ) {
-	if( this._listener[ pattern ] ) {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
-	} else {
-		this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
+	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+		return this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
 	}
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+	}
+	this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
 };
 
 /**
@@ -119,9 +121,9 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
  * @returns {void}
  */
 RecordHandler.prototype.unlisten = function( pattern ) {
-	if( this._listener[ pattern ] ) {
-		this._listener[ pattern ].destroy();
-		delete this._listener[ pattern ];
+	var listener = this._listener[ pattern ];
+	if( listener && !listener.destroyPending ) {
+		listener.sendDestroy();
 	} else {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
 	}
@@ -238,9 +240,21 @@ RecordHandler.prototype._$handle = function( message ) {
 		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 	}
 
-	if( this._listener[ name ] ) {
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		this._listener[ name ] && this._listener[ name ].destroyPending
+	) {
+		processed = true;
+		this._listener[ name ].destroy();
+		delete this._listener[ name ];
+	} else if( this._listener[ name ] ) {
 		processed = true;
 		this._listener[ name ]._$onMessage( message );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+		processed = true;
+	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		// record can receive a HAS_PROVIDER after discarding the record
+		processed = true;
 	}
 
 	if( !processed ) {

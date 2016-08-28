@@ -6,4 +6,8 @@ services:
 node_js:
   - "stable"
 
-script: npm run coverage
+script:
+  - npm run coverage
+  - npm run new-e2e
+
+after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
