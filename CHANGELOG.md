@@ -14,7 +14,7 @@ will get a deprecated message. [#203](https://github.com/deepstreamIO/deepstream
 This enhancements fixes some issues like [#74](https://github.com/deepstreamIO/deepstream.io-client-js/issues/74) [#155](https://github.com/deepstreamIO/deepstream.io-client-js/issues/155) [#170](https://github.com/deepstreamIO/deepstream.io-client-js/issues/170)
 
 ###### provider flag and event
-Records supports now a boolean flag (`record.hasProvider`) which indicates whether a listener has accepted providing data. You can also subscribe to event which is triggered when the flag changes: 
+Records supports now a boolean flag (`record.hasProvider`) which indicates whether a listener has accepted providing data. You can also subscribe to event which is triggered when the flag changes:
 
 ```javascript
 record.on('hasProviderChanged', hasProvider => {
@@ -22,7 +22,11 @@ record.on('hasProviderChanged', hasProvider => {
 })
 ```
 
+###### API checks are now in place that throw an error if you provide the incorrect argument amount or types [#207](https://github.com/deepstreamIO/deepstream.io-client-js/pull/227) by [@ronag](@ronag)
 
+### Misc
+
+###### Gherkin tests are now used for E2E testing, allowing e2e tests to be run against any language rather than just node, and allows writing more scenarios much easier
 
 ## [1.0.2] - 2016-07-28
 
