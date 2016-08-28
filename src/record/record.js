@@ -22,6 +22,10 @@ var JsonPath = require( './json-path' ),
  * @constructor
  */
 var Record = function( name, recordOptions, connection, options, client ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this.name = name;
 	this.usages = 0;
 	this._recordOptions = recordOptions;
@@ -114,7 +118,10 @@ Record.prototype.get = function( path ) {
  */
 Record.prototype.set = function( pathOrData, data ) {
 	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
-		throw new Error( 'Invalid record data ' + pathOrData + ': Record data must be an object' );
+		throw new Error( 'invalid argument data' );
+	}
+	if( arguments.length === 2 && ( typeof pathOrData !== 'string' || pathOrData.length === 0 ) ) {
+		throw new Error( 'invalid argument path' )
 	}
 
 	if( this._checkDestroyed( 'set' ) ) {
@@ -179,6 +186,13 @@ Record.prototype.set = function( pathOrData, data ) {
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'subscribe' ) ) {
 		return;
 	}
@@ -217,6 +231,13 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( args.callback !== undefined && typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
@@ -235,6 +256,9 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
+	if( this._checkDestroyed( 'discard' ) ) {
+		return;
+	}
 	this.whenReady( function() {
 		this.usages--;
 		if( this.usages <= 0 ) {

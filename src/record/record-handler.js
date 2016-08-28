@@ -102,9 +102,17 @@ RecordHandler.prototype.getAnonymousRecord = function() {
  * @returns {void}
  */
 RecordHandler.prototype.listen = function( pattern, callback ) {
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
 		return this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
 	}
+
 	if( this._listener[ pattern ] ) {
 		this._listener[ pattern ].destroy();
 	}
@@ -121,9 +129,16 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
  * @returns {void}
  */
 RecordHandler.prototype.unlisten = function( pattern ) {
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
+	}
+
 	var listener = this._listener[ pattern ];
 	if( listener && !listener.destroyPending ) {
 		listener.sendDestroy();
+	} else if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+		delete this._listener[ pattern ];
 	} else {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
 	}
@@ -138,6 +153,10 @@ RecordHandler.prototype.unlisten = function( pattern ) {
  * @public
  */
 RecordHandler.prototype.snapshot = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	if( this._records[ name ] && this._records[ name ].isReady ) {
 		callback( null, this._records[ name ].get() );
 	} else {
@@ -154,6 +173,10 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
  * @public
  */
 RecordHandler.prototype.has = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	if( this._records[ name ] ) {
 		callback( null, true );
 	} else {
@@ -287,6 +310,10 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
  * @returns {void}
  */
 RecordHandler.prototype._onDestroyPending = function( recordName ) {
+	if ( !this._records[ recordName ] ) {
+		this.emit( 'error', 'Record \'' + recordName + '\' does not exists' );
+		return;
+	}
 	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
 	this._destroyEventEmitter.once( 'destroy_ack_' + recordName, onMessage );
 	this._removeRecord( recordName );

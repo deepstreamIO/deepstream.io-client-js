@@ -31,19 +31,26 @@ var EventHandler = function( options, connection, client ) {
  * Subscribe to an event. This will receive both locally emitted events
  * as well as events emitted by other connected clients.
  *
- * @param   {String}   eventName
+ * @param   {String}   name
  * @param   {Function} callback
  *
  * @public
  * @returns {void}
  */
-EventHandler.prototype.subscribe = function( eventName, callback ) {
-	if( !this._emitter.hasListeners( eventName ) ) {
-		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.SUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+EventHandler.prototype.subscribe = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
 
-	this._emitter.on( eventName, callback );
+	if( !this._emitter.hasListeners( name ) ) {
+		this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
+	}
+
+	this._emitter.on( name, callback );
 };
 
 /**
@@ -51,32 +58,42 @@ EventHandler.prototype.subscribe = function( eventName, callback ) {
  * for an event have been removed, the server will be notified
  * that the client is unsubscribed as a listener
  *
- * @param   {String}   eventName
+ * @param   {String}   name
  * @param   {Function} callback
  *
  * @public
  * @returns {void}
  */
-EventHandler.prototype.unsubscribe = function( eventName, callback ) {
-	this._emitter.off( eventName, callback );
-	
-	if( !this._emitter.hasListeners( eventName ) ) {
-		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.UNSUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ eventName ] );
+EventHandler.prototype.unsubscribe = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+	if ( callback !== undefined && typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+	this._emitter.off( name, callback );
+
+	if( !this._emitter.hasListeners( name ) ) {
+		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
 
 /**
- * Emits an event locally and sends a message to the server to 
+ * Emits an event locally and sends a message to the server to
  * broadcast the event to the other connected clients
  *
- * @param   {String} name 
+ * @param   {String} name
  * @param   {Mixed} data will be serialized and deserialized to its original type.
  *
  * @public
  * @returns {void}
  */
 EventHandler.prototype.emit = function( name, data ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
 	this._emitter.emit( name, data );
 };
@@ -93,13 +110,19 @@ EventHandler.prototype.emit = function( name, data ) {
  * @returns {void}
  */
 EventHandler.prototype.listen = function( pattern, callback ) {
-	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
-		return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
 
-	if( this._listener[ pattern ] ) {
+	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+		return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
+	} else if( this._listener[ pattern ] ) {
 		this._listener[ pattern ].destroy();
 	}
+
 	this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
 };
 
@@ -113,9 +136,18 @@ EventHandler.prototype.listen = function( pattern, callback ) {
  * @returns {void}
  */
 EventHandler.prototype.unlisten = function( pattern ) {
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
+	}
+
 	var listener = this._listener[ pattern ];
+
 	if( listener && !listener.destroyPending ) {
 		listener.sendDestroy();
+	} else if( this._listener[ pattern ] ) {
+		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
+		this._listener[ pattern ].destroy();
+		delete this._listener[ pattern ];
 	} else {
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
 	}
