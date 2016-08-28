@@ -160,6 +160,7 @@ Record.prototype.set = function( pathOrData, data ) {
 		]);
 	}
 
+	// TODO: What happens if callbacks makes calls on record?
 	this._completeChange();
 	return this;
 };
@@ -200,6 +201,7 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	if( args.triggerNow ) {
 		this.whenReady(function () {
 			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+			// TODO: What happens if callbacks makes calls on record?
 			if( args.path ) {
 				args.callback( this._getPath( args.path ).getValue() );
 			} else {
@@ -297,8 +299,10 @@ Record.prototype.delete = function() {
  */
 Record.prototype.whenReady = function( callback ) {
 	if( this.isReady === true ) {
+		// TODO: What happens if callbacks makes calls on record?
 		callback( this );
 	} else {
+		// TODO: What happens if callbacks makes calls on record?
 		this.once( 'ready', callback.bind( this, this ) );
 	}
 };
@@ -355,6 +359,7 @@ Record.prototype._$onMessage = function( message ) {
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
 	message.processedError = true;
 	if( this._mergeStrategy ) {
+		// TODO: What happens if record is deleted/discarded before callback is invoked?
 		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
 	}
 	else {
@@ -453,6 +458,7 @@ Record.prototype._applyUpdate = function( message ) {
 		this._$data = data;
 	}
 
+	// TODO: What happens if callbacks makes calls on record?
 	this._completeChange();
 };
 
@@ -485,6 +491,7 @@ Record.prototype._setReady = function() {
 		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
 	}
 	this._queuedMethodCalls = [];
+	// TODO: What happens if callbacks makes calls on record?
 	this.emit( 'ready' );
 };
 
