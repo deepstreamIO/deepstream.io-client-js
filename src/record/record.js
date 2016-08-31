@@ -41,7 +41,6 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._oldValue = null;
 	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
-	this._queuedMethodCalls = [];
 
 	this._mergeStrategy = null;
 	if( options.mergeStrategy ) {
@@ -128,11 +127,6 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( !this.isReady ) {
-		this._queuedMethodCalls.push({ method: 'set', args: arguments });
-		return this;
-	}
-
 	if( arguments.length === 2 && utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
 		return this;
 	}
@@ -141,26 +135,34 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	this._beginChange();
-	this.version++;
 
 	if( arguments.length === 1 ) {
 		this._$data = ( typeof pathOrData == 'object' ) ? utils.deepCopy( pathOrData ) : pathOrData;
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-			this.name,
-			this.version,
-			this._$data
-		]);
 	} else {
 		this._getPath( pathOrData ).setValue( ( typeof data == 'object' ) ? utils.deepCopy( data ): data );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
-			this.name,
-			this.version,
-			pathOrData,
-			messageBuilder.typed( data )
-		]);
 	}
 
 	this._completeChange();
+
+	if ( this.version !== null ) {
+		this.version++;
+
+		if( arguments.length === 1 ) {
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
+				this.name,
+				this.version,
+				this._$data
+			]);
+		} else {
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
+				this.name,
+				this.version,
+				pathOrData,
+				messageBuilder.typed( data )
+			]);
+		}
+	}
+
 	return this;
 };
 
@@ -197,17 +199,14 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 		return;
 	}
 
-	if( args.triggerNow ) {
-		this.whenReady(function () {
-			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-			if( args.path ) {
-				args.callback( this._getPath( args.path ).getValue() );
-			} else {
-				args.callback( this.get() );
-			}
-		}.bind(this));
-	} else {
-		this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+	this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+
+	if ( args.triggerNow ) {
+		if( args.path ) {
+			args.callback( this._getPath( args.path ).getValue() );
+		} else {
+			args.callback( this.get() );
+		}
 	}
 };
 
@@ -313,12 +312,7 @@ Record.prototype.whenReady = function( callback ) {
  */
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
-		if( this.version === null ) {
-			clearTimeout( this._readTimeout );
-			this._onRead( message );
-		} else {
-			this._applyUpdate( message, this._client );
-		}
+		this._applyUpdate( message, this._client );
 	}
 	else if( message.action === C.ACTIONS.ACK ) {
 		this._processAckMessage( message );
@@ -378,6 +372,11 @@ Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
 	if( !error ) {
 		this.version = remoteVersion;
 		this.set( data );
+
+		if ( !this.isReady ) {
+			this.isReady = true;
+			this.emit( 'ready' );
+		}
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
@@ -428,10 +427,12 @@ Record.prototype._applyUpdate = function( message ) {
 		data = JSON.parse( message.data[ 2 ] );
 	}
 
-	if( this.version === null ) {
-		this.version = version;
+	if ( this._readTimeout ) {
+		clearTimeout( this._readTimeout );
+		this._readTimeout = null;
 	}
-	else if( this.version + 1 !== version ) {
+
+	if( this.version === null || this.version + 1 !== version ) {
 		if( message.action === C.ACTIONS.PATCH ) {
 			/**
 			* Request a snapshot so that a merge can be done with the read reply which contains
@@ -454,38 +455,6 @@ Record.prototype._applyUpdate = function( message ) {
 	}
 
 	this._completeChange();
-};
-
-/**
- * Callback for incoming read messages
- *
- * @param   {Object} message parsed and validated deepstream message
- *
- * @private
- * @returns {void}
- */
-Record.prototype._onRead = function( message ) {
-	this._beginChange();
-	this.version = parseInt( message.data[ 1 ], 10 );
-	this._$data = JSON.parse( message.data[ 2 ] );
-	this._completeChange();
-	this._setReady();
-};
-
-/**
- * Invokes method calls that where queued while the record wasn't ready
- * and emits the ready event
- *
- * @private
- * @returns {void}
- */
-Record.prototype._setReady = function() {
-	this.isReady = true;
-	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
-		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
-	}
-	this._queuedMethodCalls = [];
-	this.emit( 'ready' );
 };
 
 /**
