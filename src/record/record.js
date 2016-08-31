@@ -37,6 +37,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.hasProvider = false;
 	this._$data = {};
 	this.version = null;
+	this._count = 0;
 	this._paths = {};
 	this._oldValue = null;
 	this._oldPathValues = null;
@@ -128,7 +129,7 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( !this.isReady ) {
+	if( this._count !== 0 ) {
 		this._queuedMethodCalls.push({ method: 'set', args: arguments });
 		return this;
 	}
@@ -256,6 +257,10 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
+	if( this._count !== 0 ) {
+		this._queuedMethodCalls.push({ method: 'discard', args: arguments });
+		return this;
+	}
 	if( this._checkDestroyed( 'discard' ) ) {
 		return;
 	}
@@ -276,6 +281,10 @@ Record.prototype.discard = function() {
  * @returns {void}
  */
 Record.prototype.delete = function() {
+	if( this._count !== 0 ) {
+		this._queuedMethodCalls.push({ method: 'delete', args: arguments });
+		return this;
+	}
 	if( this._checkDestroyed( 'delete' ) ) {
 		return;
 	}
@@ -302,6 +311,22 @@ Record.prototype.whenReady = function( callback ) {
 		this.once( 'ready', callback.bind( this, this ) );
 	}
 };
+
+Record.prototype._acquire = function () {
+	this._count += 1;
+}
+
+Record.prototype._release = function () {
+	this._count -= 1;
+	if (this._count === 0) {
+		var queuedMethodCalls = this._queuedMethodCalls;
+		this._queuedMethodCalls = [];
+
+		for( var i = 0; i < queuedMethodCalls.length; i++ ) {
+			this[ queuedMethodCalls[ i ].method ].apply( this, queuedMethodCalls[ i ].args );
+		}
+	}
+}
 
 /**
  * Callback for incoming messages from the message handler
@@ -353,6 +378,9 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
+	// TODO: Needs a timeout?
+	// TODO: What happens if update is received from server while record is being merged?
+	this._acquire();
 	message.processedError = true;
 	if( this._mergeStrategy ) {
 		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
@@ -381,6 +409,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
+	this._release();
 };
 
 /**
@@ -481,11 +510,10 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
-	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
-		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
-	}
-	this._queuedMethodCalls = [];
+	this._release();
+	this._acquire();
 	this.emit( 'ready' );
+	this._release();
 };
 
 /**
@@ -496,6 +524,7 @@ Record.prototype._setReady = function() {
  * @returns {void}
  */
  Record.prototype._sendRead = function() {
+ 	this._acquire();
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
 
@@ -553,6 +582,7 @@ Record.prototype._beginChange = function() {
  * @returns {void}
  */
 Record.prototype._completeChange = function() {
+	this._acquire();
 	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
 		this._eventEmitter.emit( ALL_EVENT, this.get() );
 	}
@@ -560,6 +590,7 @@ Record.prototype._completeChange = function() {
 	this._oldValue = null;
 
 	if( this._oldPathValues === null ) {
+		this._release();
 		return;
 	}
 
@@ -574,6 +605,8 @@ Record.prototype._completeChange = function() {
 	}
 
 	this._oldPathValues = null;
+
+	this._release();
 };
 
 /**
