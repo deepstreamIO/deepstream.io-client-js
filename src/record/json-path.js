@@ -107,7 +107,7 @@ function tokenize( path ) {
 		return cache[ path ];
 	}
 
-	var parts = path !== undefined ? String( path ).match(PARTS_REG_EXP) : [];
+	var parts = String(path) !== 'undefined' ? String( path ).match(PARTS_REG_EXP) : [];
 
 	if ( !parts ) {
 		throw new Error('invalid path ' + path)
