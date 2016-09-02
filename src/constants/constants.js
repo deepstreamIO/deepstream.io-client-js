@@ -30,6 +30,7 @@ exports.TOPIC.RECORD = 'R';
 exports.TOPIC.RPC = 'P';
 exports.TOPIC.WEBRTC = 'W';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
+exports.TOPIC.PRESENCE = 'PN';
 
 exports.EVENT = {};
 exports.EVENT.CONNECTION_ERROR = 'connectionError';

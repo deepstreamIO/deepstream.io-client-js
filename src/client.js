@@ -6,7 +6,9 @@ var C = require( './constants/constants' ),
 	RpcHandler = require( './rpc/rpc-handler' ),
 	RecordHandler = require( './record/record-handler' ),
 	WebRtcHandler = require( './webrtc/webrtc-handler' ),
-	defaultOptions = require( './default-options' );
+	PresenceHandler = require( './presence/presence-handler' ),
+	defaultOptions = require( './default-options' ),
+	messageBuilder = require( './message/message-builder' );
 
 /**
  * deepstream.io javascript client - works in
@@ -35,12 +37,14 @@ var Client = function( url, options ) {
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
 	this.webrtc = new WebRtcHandler( this._options, this._connection, this );
+	this.presence = new PresenceHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.WEBRTC ] = this.webrtc._$handle.bind( this.webrtc );
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
+	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this.presence._$handle.bind( this.presence );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 
@@ -112,6 +116,18 @@ Client.prototype.getUid = function() {
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 
 	return timestamp + '-' + randomString;
+};
+
+Client.prototype.getCurrentClients = function( callback ) {
+	this.presence.getCurrentClients( callback );	
+};
+
+Client.prototype.onClientLogin = function() {
+
+};
+
+Client.prototype.onClientLogout = function() {
+
 };
 
 /**
