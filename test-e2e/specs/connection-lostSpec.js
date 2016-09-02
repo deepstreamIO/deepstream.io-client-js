@@ -47,7 +47,7 @@ describe( 'it recovers a connection without losing record updates', function() {
 					//Ensure all writes went to the server
 					setTimeout( function() {
 						done();
-					}, 200 );
+					}, 50 );
 				}
 			}, 30 );
 	});
@@ -88,7 +88,7 @@ describe( 'it recovers a connection without losing record updates', function() {
 		clientA.on( 'connectionStateChanged', function(){
 			if( clientA.getConnectionState() === 'OPEN' ) {
 				//Time needed for reads to come back once connection is reestablished
-				setTimeout( done, 200 );
+				setTimeout( done, 50 );
 			}
 		});
 	});

@@ -47,8 +47,14 @@ var RpcHandler = function( options, connection, client ) {
  * @returns void
  */
 RpcHandler.prototype.provide = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
 	if( this._providers[ name ] ) {
 		throw new Error( 'RPC ' + name + ' already registered' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
 
 	this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
@@ -65,6 +71,10 @@ RpcHandler.prototype.provide = function( name, callback ) {
  * @returns {void}
  */
 RpcHandler.prototype.unprovide = function( name ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	if( this._providers[ name ] ) {
 		delete this._providers[ name ];
 		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
@@ -84,6 +94,13 @@ RpcHandler.prototype.unprovide = function( name ) {
  * @returns {void}
  */
 RpcHandler.prototype.make = function( name, data, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
 

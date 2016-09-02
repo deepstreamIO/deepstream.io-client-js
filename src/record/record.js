@@ -21,6 +21,10 @@ var jsonPath = require( './json-path' ),
  * @constructor
  */
 var Record = function( name, recordOptions, connection, options, client ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this.name = name;
 	this.usages = 0;
 	this._recordOptions = recordOptions;
@@ -30,6 +34,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.isReady = false;
 	this.isDestroyed = false;
 	this._$data = Object.create( null );
+	this.hasProvider = false;
 	this.version = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
@@ -101,7 +106,10 @@ Record.prototype.get = function( path ) {
  */
 Record.prototype.set = function( pathOrData, data ) {
 	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
-		throw new Error( 'Invalid record data ' + pathOrData + ': Record data must be an object' );
+		throw new Error( 'invalid argument data' );
+	}
+	if( arguments.length === 2 && ( typeof pathOrData !== 'string' || pathOrData.length === 0 ) ) {
+		throw new Error( 'invalid argument path' )
 	}
 
 	if( this._checkDestroyed( 'set' ) ) {
@@ -150,6 +158,13 @@ Record.prototype.set = function( pathOrData, data ) {
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'subscribe' ) ) {
 		return;
 	}
@@ -181,6 +196,13 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( args.callback !== undefined && typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
@@ -195,6 +217,9 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
+	if( this._checkDestroyed( 'discard' ) ) {
+		return;
+	}
 	this.whenReady( function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
@@ -269,6 +294,10 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
 		clearInterval( this._readAckTimeout );
 		clearInterval( this._readTimeout );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
+		this.hasProvider = hasProvider;
+		this.emit( 'hasProviderChanged', hasProvider );
 	}
 };
 
