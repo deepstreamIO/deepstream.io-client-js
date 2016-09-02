@@ -122,12 +122,13 @@ Client.prototype.getCurrentClients = function( callback ) {
 	this.presence.getCurrentClients( callback );	
 };
 
-Client.prototype.onClientLogin = function() {
+Client.prototype.onClientLogin = function( callback ) {
+	this.presence.onClientLogin( callback );
 
 };
 
-Client.prototype.onClientLogout = function() {
-
+Client.prototype.onClientLogout = function( callback ) {
+	this.presence.onClientLogout( callback );
 };
 
 /**
