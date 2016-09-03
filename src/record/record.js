@@ -42,10 +42,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	if( options.mergeStrategy ) {
 		this.setMergeStrategy( options.mergeStrategy );
 	}
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
-	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
-	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
-	this._sendRead();
+	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ), this._clearTimeouts.bind( this ), true );
 };
 
 EventEmitter( Record.prototype );
@@ -468,7 +465,9 @@ Record.prototype._setReady = function() {
  * @returns {void}
  */
  Record.prototype._sendRead = function() {
- 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
+	 this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
+	 this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
+	 this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
 
 

@@ -13,13 +13,16 @@ var C = require( '../constants/constants' );
  *
  * @constructor
  */
-var ResubscribeNotifier = function( client, resubscribe ) {
+var ResubscribeNotifier = function( client, resubscribe, unsubscribe, triggerNow ) {
 	this._client = client;
 	this._resubscribe = resubscribe;
+	this._unsubscribe = unsubscribe;
 
-	this._isReconnecting = false;
+	this._isConnecting = triggerNow;
 	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
 	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
+
+	this._handleConnectionStateChanges();
 };
 
 /**
@@ -39,15 +42,14 @@ ResubscribeNotifier.prototype.destroy = function() {
  * @returns {void}
  */
  ResubscribeNotifier.prototype._handleConnectionStateChanges = function() {
-	var state = this._client.getConnectionState();
-		
-	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
-		this._isReconnecting = true;
-	}
-	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
-		this._isReconnecting = false;
+	var isConnecting = this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN;
+	if( this._resubscribe && isConnecting === false && this._isConnecting === true ) {
 		this._resubscribe();
 	}
+	else if ( this._unsubscribe && isConnecting === true && this._isConnecting === false ) {
+		this._unsubscribe();
+	}
+	this._isConnecting = isConnecting;
  };
 
 module.exports = ResubscribeNotifier;
