@@ -30,6 +30,8 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.isReady = false;
 	this.isDestroyed = false;
 	this._$data = Object.create( null );
+	this._subscribers = Object.create( null );
+	this._paths = [];
 	this.version = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
@@ -154,7 +156,12 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 		return;
 	}
 
-	this._eventEmitter.on( args.path, args.callback );
+	if ( !this._subscribers[ args.path ] ) {
+		this._subscribers[ args.path ] = [];
+		this._paths.push( args.path );
+	}
+
+	this._subscribers[ args.path ].push( args.callback );
 
 	if( args.triggerNow && this.isReady ) {
 		args.callback( this.get( args.path ) );
@@ -184,7 +191,24 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	this._eventEmitter.off( args.path, args.callback );
+
+	if ( !this._subscribers[ args.path ] ) {
+		return;
+	}
+
+	if ( args.callback ) {
+		var index = this._subscribers[ args.path ].indexOf( args.callback );
+		if (index !== -1) {
+			this._subscribers[ args.path ].splice( index, 1 );
+		}
+	} else {
+		this._subscribers[ args.path ].length = 0;
+	}
+
+	if ( this._subscribers[ args.path ].length === 0 ) {
+		delete this._subscribers[ args.path ];
+		this._paths.splice( this._paths.indexOf( args.path ), 1 );
+	}
 };
 
 /**
@@ -419,12 +443,9 @@ Record.prototype._onRead = function( message ) {
 	this.version = parseInt( message.data[ 1 ], 10 );
 
 	this._$data = JSON.parse( message.data[ 2 ] );
-	if ( this._eventEmitter._callbacks ) {
-		var paths = Object.keys( this._eventEmitter._callbacks );
 
-		for ( var i = 0; i < paths.length; i++ ) {
-			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
-		}
+	for ( var i = 0; i < this._paths.length; i++ ) {
+		this._emitChange( this._paths[ i ] );
 	}
 
 	this._setReady();
@@ -472,19 +493,22 @@ Record.prototype._applyChange = function( newData ) {
 	var oldData = this._$data;
 	this._$data = newData;
 
-	if ( !this._eventEmitter._callbacks ) {
-		return;
-	}
-
-	var paths = Object.keys( this._eventEmitter._callbacks );
-
-	for ( var i = 0; i < paths.length; i++ ) {
-		var newValue = jsonPath.get( newData, paths[ i ], false );
-		var oldValue = jsonPath.get( oldData, paths[ i ], false );
-
-		if( newValue !== oldValue ) {
-			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
+	for ( var i = 0; i < this._paths.length; i++ ) {
+		if( jsonPath.get( newData, this._paths[ i ], false ) !== jsonPath.get( oldData, this._paths[ i ], false ) ) {
+			this._emitChange( this._paths[ i ] );
 		}
+	}
+};
+
+/**
+ * Calls subscribers with updated value.
+ *
+ * @private
+ * @returns {void}
+ */
+Record.prototype._emitChange = function ( path ) {
+	for ( var i = 0; i < this._subscribers[ path ].length; i++ ) {
+		this._subscribers[ path ][ i ]( this.get( path ) );
 	}
 };
 

@@ -13,14 +13,16 @@ var cache = Object.create( null );
 module.exports.get = function ( data, path, deepCopy ) {
 	var tokens = tokenize( path );
 
-	for( var i = 0; i < tokens.length; i++ ) {
-		if ( data === undefined ) {
-			return undefined;
+	if ( tokens !== undefined ) {
+		for( var i = 0; i < tokens.length; i++ ) {
+			if ( data === undefined ) {
+				return undefined;
+			}
+			if ( typeof data !== 'object' ) {
+				throw new Error( 'invalid data or path' );
+			}
+			data = data[ tokens[ i ] ];
 		}
-		if ( typeof data !== 'object' ) {
-			throw new Error( 'invalid data or path' );
-		}
-		data = data[ tokens[ i ] ];
 	}
 
 	return deepCopy !== false ? utils.deepCopy( data ) : data;
@@ -38,7 +40,7 @@ module.exports.get = function ( data, path, deepCopy ) {
 module.exports.set = function( data, path, value, deepCopy ) {
 	var tokens = tokenize( path );
 
-	if ( tokens.length === 0 ) {
+	if ( tokens === undefined ) {
 		return patch( data, value, deepCopy );
 	}
 
@@ -103,11 +105,15 @@ function patch( oldValue, newValue, deepCopy ) {
  * @returns Array of tokens
  */
 function tokenize( path ) {
+	if ( path === undefined ) {
+		return undefined;
+	}
+
 	if ( cache[ path ] ) {
 		return cache[ path ];
 	}
 
-	var parts = String(path) !== 'undefined' ? String( path ).match(PARTS_REG_EXP) : [];
+	var parts = String( path ).match(PARTS_REG_EXP);
 
 	if ( !parts ) {
 		throw new Error('invalid path ' + path)
