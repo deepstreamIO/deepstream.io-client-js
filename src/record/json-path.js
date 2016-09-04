@@ -1,5 +1,5 @@
-var utils = require( '../utils/utils' ),
-	PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
+var utils = require( '../utils/utils' );
+var PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
 
 var cache = Object.create( null );
 
@@ -33,7 +33,7 @@ module.exports.get = function ( data, path, deepCopy ) {
  * @param {Mixed} value
  *
  * @public
- * @returns updated value
+ * @returns {Mixed} updated value
  */
 module.exports.set = function( data, path, value, deepCopy ) {
 	var tokens = tokenize( path );
@@ -70,6 +70,13 @@ module.exports.set = function( data, path, value, deepCopy ) {
 	return result;
 };
 
+/**
+ * Merge the new value into the old value
+ * @param  {Mixed} oldValue
+ * @param  {Mixed} newValue
+ * @param  {boolean} deepCopy
+ * @return {Mixed}
+ */
 function patch( oldValue, newValue, deepCopy ) {
 	var i;
 

@@ -115,6 +115,16 @@ exports.deepCopy = function( obj ) {
 	}
 };
 
+/**
+ * Copy the top level of items, but do not copy its items recourisvely. This
+ * is much quicker than deepCopy does not guarantee the object items are new/unique.
+ * Mainly used to change the reference to the actual object itself, but not its children.
+ *
+ * @param   {Mixed} obj the object that should cloned
+ *
+ * @public
+ * @returns {Mixed} clone
+ */
 exports.shallowCopy = function ( obj ) {
 	if ( Array.isArray( obj ) ) {
 		return obj.slice( 0 );
