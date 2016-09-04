@@ -1,5 +1,3 @@
-'use strict';
-
 var EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
@@ -37,7 +35,7 @@ PresenceHandler.prototype._$handle = function( message ) {
 	if( message.action === C.ACTIONS.ACK ) {
 		this._ackTimeoutRegistry.clear( message );
 	}
-	if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
+	else if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
 		this._emitter.emit( C.ACTIONS.PRESENCE_JOIN, message.data[ 0 ] );
 	}
 	else if( message.action === C.ACTIONS.PRESENCE_LEAVE ) {
