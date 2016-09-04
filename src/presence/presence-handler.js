@@ -14,34 +14,38 @@ var PresenceHandler = function( options, connection, client ) {
 		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.PRESENCE, this._options.subscriptionTimeout );
 };
 
-PresenceHandler.prototype.getCurrentClients( callback ) {
+PresenceHandler.prototype.getCurrentClients = function( callback ) {
 	this._emitter.on( C.ACTIONS.QUERY, callback );
 	this._presentClientsCallback = callback;
 	this._ackTimeoutRegistry.add( C.ACTIONS.QUERY );
 	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY );
 };
 
-PresenceHandler.prototype.onClientLogin( callback ) {
+PresenceHandler.prototype.onClientLogin = function( callback ) {
 	this._emitter.on( C.ACTIONS.PRESENCE_JOIN, callback );
 	this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN, C.ACTIONS.SUBSCRIBE );
 	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
 };
 
-PresenceHandler.prototype.onClientLogout( callback ) {
+PresenceHandler.prototype.onClientLogout = function( callback ) {
 	this._emitter.on( C.ACTIONS.PRESENCE_LEAVE, callback );
 	this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE, C.ACTIONS.SUBSCRIBE );
 	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
 };
 
-PresenceHandler.prototype._$handle( message ) {
+PresenceHandler.prototype._$handle = function( message ) {
+	if( message.action === C.ACTIONS.ACK ) {
+		this._ackTimeoutRegistry.clear( message );
+	}
 	if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
-		this._emitter.emit( C.ACTIONS.PRESENCE_JOIN, message.data );
+		this._emitter.emit( C.ACTIONS.PRESENCE_JOIN, message.data[ 0 ] );
 	}
 	else if( message.action === C.ACTIONS.PRESENCE_LEAVE ) {
-		this._emitter.emit( C.ACTIONS.PRESENCE_LEAVE, message.data );
+		this._emitter.emit( C.ACTIONS.PRESENCE_LEAVE, message.data[ 0 ] );
 	}
 	else if( message.action === C.ACTIONS.QUERY ) {
 		this._emitter.emit( C.ACTIONS.QUERY, message.data );
 	}
 };
 
+module.exports = PresenceHandler;
