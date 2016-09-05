@@ -18,7 +18,8 @@ module.exports = function() {
 			eventCallbacksListeners: {},
 			eventCallbacksListenersSpies: {},
 			eventCallbacksListenersResponse: {},
-			recordCallbacks: {}
+			recordCallbacks: {},
+			presenceCallbacks: {}
  		}
 	});
 
@@ -34,13 +35,14 @@ module.exports = function() {
 			eventCallbacksListeners: {},
 			eventCallbacksListenersSpies: {},
 			eventCallbacksListenersResponse: {},
-			recordCallbacks: {}
+			recordCallbacks: {},
+			presenceCallbacks: {}
  		}
  		clients[ client ].client.on( 'error', ( a, b, c) => {
  			console.log( 'An Error occured on ', client, a, b, c );
  		});
  		clients[ client ].client.login( {}, function() {
- 			callback();
+ 			setTimeout( callback, defaultDelay );
  		} );
 	});
 
@@ -49,7 +51,7 @@ module.exports = function() {
 				username: username,
 				password: password
 	 	}, function() {
-				callback();
+				setTimeout( callback, defaultDelay );
 	 	} );
 	});
 
@@ -125,6 +127,19 @@ module.exports = function() {
 	this.Then(/^publisher (\S)* removed (\d+) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, function (client, count, eventName, eventPattern) {
 		var listenCallbackSpy = clients[ client ].eventCallbacksListenersSpies[ eventPattern ];
 		sinon.assert.callCount( listenCallbackSpy.withArgs( eventName, false ), Number( count ) )
+	});
+
+	/* === Presence == */
+
+	this.Given(/^(?:subscriber|publisher) (\S)* subscribes to client login events$/, function (client, done) {
+		clients[ client ].presenceCallbacks[ 'login' ] = sinon.spy();
+		clients[ client ].client.onClientLogin( clients[ client ].presenceCallbacks[ 'login' ] );
+		setTimeout( done, defaultDelay );
+	});
+
+	this.Then(/^(?:subscriber|publisher) (\S)* is notified that client (\S)* logged in$/, function (client, clientB) {
+		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ 'login' ] );
+		sinon.assert.calledWith(clients[ client ].presenceCallbacks[ 'login' ], clientB);
 	});
 
 	this.Before(function (scenario) {
