@@ -169,28 +169,36 @@ module.exports = {
 	path: '/deepstream',
 
 	/**
-	 * @param {Array} transports 	a list of transports to try (in order). Engine always
-	 *                             	attempts to connect directly with the first one,
-	 *                             	provided the feature detection test for it passes.
+	 * @param {Array} transports        a list of transports to try (in order). Engine always
+	 *                                  attempts to connect directly with the first one,
+	 *                                  provided the feature detection test for it passes.
 	 */
 	transports: [ 'polling', 'websocket' ],
 
 	/**
-	 * @param {Boolean} rememberUpgrade 	If true and if the previous websocket connection to
-	 *                                   	the server succeeded, the connection attempt will bypass the normal
-	 *                                   	upgrade process and will initially try websocket. A connection
-	 *                                   	attempt following a transport error will use the normal upgrade
-	 *                                   	process. It is recommended you turn this on only when using
-	 *                                   	SSL/TLS connections, or if you know that
-	 *                                   	your network does not block websockets.
+	 * @param {Boolean} rememberUpgrade If true and if the previous websocket connection to
+	 *                                  the server succeeded, the connection attempt will bypass the normal
+	 *                                  upgrade process and will initially try websocket. A connection
+	 *                                  attempt following a transport error will use the normal upgrade
+	 *                                  process. It is recommended you turn this on only when using
+	 *                                  SSL/TLS connections, or if you know that
+	 *                                  your network does not block websockets.
 	 */
 	rememberUpgrade: false,
 
 	/**
    *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
-	 *                                   If the merge strategy is not succesfull it will set an error, else set the
-	 *                                   returned data as the latest revision. This can be overriden on a per record
-	 *                                   basis by setting the `setMergeStrategy`.
+	 *                                  If the merge strategy is not succesfull it will set an error, else set the
+	 *                                  returned data as the latest revision. This can be overriden on a per record
+	 *                                  basis by setting the `setMergeStrategy`.
 	 */
-	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS
+	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
+
+	/**
+	 * @param {Boolean} recordDeepCopy Setting to false disabled deepcopying of record data
+	 *                                  when provided via `get()` in a `subscribe` callback. This
+	 *                                  improves speed at the expense of the user having to ensure
+	 *                                  object immutability.
+	 */
+	recordDeepCopy: true
 };

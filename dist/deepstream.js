@@ -4244,7 +4244,6 @@ module.exports = yeast;
 arguments[4][31][0].apply(exports,arguments)
 },{"dup":31}],33:[function(_dereq_,module,exports){
 // shim for using process in browser
-
 var process = module.exports = {};
 
 // cached from whatever global is present so that test runners that stub it
@@ -4256,21 +4255,63 @@ var cachedSetTimeout;
 var cachedClearTimeout;
 
 (function () {
-  try {
-    cachedSetTimeout = setTimeout;
-  } catch (e) {
-    cachedSetTimeout = function () {
-      throw new Error('setTimeout is not defined');
+    try {
+        cachedSetTimeout = setTimeout;
+    } catch (e) {
+        cachedSetTimeout = function () {
+            throw new Error('setTimeout is not defined');
+        }
     }
-  }
-  try {
-    cachedClearTimeout = clearTimeout;
-  } catch (e) {
-    cachedClearTimeout = function () {
-      throw new Error('clearTimeout is not defined');
+    try {
+        cachedClearTimeout = clearTimeout;
+    } catch (e) {
+        cachedClearTimeout = function () {
+            throw new Error('clearTimeout is not defined');
+        }
     }
-  }
 } ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -4295,7 +4336,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = cachedSetTimeout(cleanUpNextTick);
+    var timeout = runTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -4312,7 +4353,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    cachedClearTimeout(timeout);
+    runClearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -4324,7 +4365,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        cachedSetTimeout(drainQueue, 0);
+        runTimeout(drainQueue);
     }
 };
 
@@ -4690,8 +4731,11 @@ exports.ACTIONS.SNAPSHOT = 'SN';
 exports.ACTIONS.INVOKE = 'I';
 exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND = 'SP';
 exports.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED = 'SR';
+exports.ACTIONS.SUBSCRIPTION_HAS_PROVIDER = 'SH';
 exports.ACTIONS.LISTEN = 'L';
 exports.ACTIONS.UNLISTEN = 'UL';
+exports.ACTIONS.LISTEN_ACCEPT = 'LA';
+exports.ACTIONS.LISTEN_REJECT = 'LR';
 exports.ACTIONS.PROVIDER_UPDATE = 'PU';
 exports.ACTIONS.QUERY = 'Q';
 exports.ACTIONS.CREATEORREAD = 'CR';
@@ -4935,7 +4979,15 @@ module.exports = {
 	 *                                   returned data as the latest revision. This can be overriden on a per record
 	 *                                   basis by setting the `setMergeStrategy`.
 	 */
-	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS
+	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
+
+	/**
+	 * @param {Boolean} recordDeepCopy Setting to false disabled deepcopying of record data
+	 *								   when provided via `get()` in a `subscribe` callback. This
+	 *								   improves speed at the expense of the user having to ensure
+	 *                                 object immutability.
+	 */
+	recordDeepCopy: true
 };
 
 },{"./constants/merge-strategies":36}],38:[function(_dereq_,module,exports){
@@ -4972,19 +5024,26 @@ var EventHandler = function( options, connection, client ) {
  * Subscribe to an event. This will receive both locally emitted events
  * as well as events emitted by other connected clients.
  *
- * @param   {String}   eventName
+ * @param   {String}   name
  * @param   {Function} callback
  *
  * @public
  * @returns {void}
  */
-EventHandler.prototype.subscribe = function( eventName, callback ) {
-	if( !this._emitter.hasListeners( eventName ) ) {
-		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.SUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+EventHandler.prototype.subscribe = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
 
-	this._emitter.on( eventName, callback );
+	if( !this._emitter.hasListeners( name ) ) {
+		this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
+	}
+
+	this._emitter.on( name, callback );
 };
 
 /**
@@ -4992,32 +5051,42 @@ EventHandler.prototype.subscribe = function( eventName, callback ) {
  * for an event have been removed, the server will be notified
  * that the client is unsubscribed as a listener
  *
- * @param   {String}   eventName
+ * @param   {String}   name
  * @param   {Function} callback
  *
  * @public
  * @returns {void}
  */
-EventHandler.prototype.unsubscribe = function( eventName, callback ) {
-	this._emitter.off( eventName, callback );
-	
-	if( !this._emitter.hasListeners( eventName ) ) {
-		this._ackTimeoutRegistry.add( eventName, C.ACTIONS.UNSUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ eventName ] );
+EventHandler.prototype.unsubscribe = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+	if ( callback !== undefined && typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+	this._emitter.off( name, callback );
+
+	if( !this._emitter.hasListeners( name ) ) {
+		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
 
 /**
- * Emits an event locally and sends a message to the server to 
+ * Emits an event locally and sends a message to the server to
  * broadcast the event to the other connected clients
  *
- * @param   {String} name 
+ * @param   {String} name
  * @param   {Mixed} data will be serialized and deserialized to its original type.
  *
  * @public
  * @returns {void}
  */
 EventHandler.prototype.emit = function( name, data ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
 	this._emitter.emit( name, data );
 };
@@ -5034,11 +5103,20 @@ EventHandler.prototype.emit = function( name, data ) {
  * @returns {void}
  */
 EventHandler.prototype.listen = function( pattern, callback ) {
-	if( this._listener[ pattern ] ) {
-		this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
-	} else {
-		this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
 	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
+	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+		return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
+	} else if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+	}
+
+	this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
 };
 
 /**
@@ -5051,12 +5129,20 @@ EventHandler.prototype.listen = function( pattern, callback ) {
  * @returns {void}
  */
 EventHandler.prototype.unlisten = function( pattern ) {
-	if( this._listener[ pattern ] ) {
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
+	}
+
+	var listener = this._listener[ pattern ];
+
+	if( listener && !listener.destroyPending ) {
+		listener.sendDestroy();
+	} else if( this._listener[ pattern ] ) {
 		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
 		this._listener[ pattern ].destroy();
 		delete this._listener[ pattern ];
 	} else {
-		this._client._$onError( C.TOPIC.EVENT, C.EVENT.NOT_LISTENING, pattern );
+		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
 	}
 };
 
@@ -5072,6 +5158,7 @@ EventHandler.prototype._$handle = function( message ) {
 	var name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
 
 	if( message.action === C.ACTIONS.EVENT ) {
+		processed = true;
 		if( message.data && message.data.length === 2 ) {
 			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
 		} else {
@@ -5080,8 +5167,21 @@ EventHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
-	if( this._listener[ name ] ) {
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		this._listener[ name ] && this._listener[ name ].destroyPending
+	) {
+		this._listener[ name ].destroy();
+		delete this._listener[ name ];
+		return;
+	} else if( this._listener[ name ] ) {
+		processed = true;
 		this._listener[ name ]._$onMessage( message );
+		return;
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+		return;
+	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		// record can receive a HAS_PROVIDER after discarding the record
 		return;
 	}
 
@@ -5089,7 +5189,7 @@ EventHandler.prototype._$handle = function( message ) {
 		this._ackTimeoutRegistry.clear( message );
 		return;
 	}
-	
+
 	if( message.action === C.ACTIONS.ERROR ) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
@@ -5875,7 +5975,6 @@ var AnonymousRecord = function( recordHandler ) {
 	this._subscriptions = [];
 	this._proxyMethod( 'delete' );
 	this._proxyMethod( 'set' );
-	this._proxyMethod( 'unsubscribe' );
 	this._proxyMethod( 'discard' );
 };
 
@@ -5959,7 +6058,7 @@ AnonymousRecord.prototype.unsubscribe = function() {
 };
 
 /**
- * Sets the underlying record the anonymous record is boud
+ * Sets the underlying record the anonymous record is bound
  * to. Can be called multiple times.
  *
  * @param {String} recordName
@@ -6028,27 +6127,10 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 
 module.exports = AnonymousRecord;
 },{"./record":46,"component-emitter":1}],43:[function(_dereq_,module,exports){
-var utils = _dereq_( '../utils/utils' ),
-	SPLIT_REG_EXP = /[\.\[\]]/g,
-	ASTERISK = '*';
+var utils = _dereq_( '../utils/utils' );
+var	PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
 
-/**
- * This class allows to set or get specific
- * values within a json data structure using
- * string-based paths
- *
- * @param {Record} record
- * @param {String} path A path, e.g. users[2].firstname
- *
- * @constructor
- */
-var JsonPath = function( record, path ) {
-	this._record = record;
-	this._path = String( path );
-	this._tokens = [];
-
-	this._tokenize();
-};
+var cache = Object.create( null );
 
 /**
  * Returns the value of the path or
@@ -6057,19 +6139,20 @@ var JsonPath = function( record, path ) {
  * @public
  * @returns {Mixed}
  */
-JsonPath.prototype.getValue = function() {
-	var node = this._record._$data,
-		i;
+module.exports.get = function ( data, path, deepCopy ) {
+	var tokens = tokenize( path );
 
-	for( i = 0; i < this._tokens.length; i++ ) {
-		if( node[ this._tokens[ i ] ] !== undefined ) {
-			node = node[ this._tokens[ i ] ];
-		} else {
+	for( var i = 0; i < tokens.length; i++ ) {
+		if ( data === undefined ) {
 			return undefined;
 		}
+		if ( typeof data !== 'object' ) {
+			throw new Error( 'invalid data or path' );
+		}
+		data = data[ tokens[ i ] ];
 	}
 
-	return node;
+	return deepCopy !== false ? utils.deepCopy( data ) : data;
 };
 
 /**
@@ -6079,61 +6162,98 @@ JsonPath.prototype.getValue = function() {
  * @param {Mixed} value
  *
  * @public
- * @returns {void}
+ * @returns {Mixed} updated value
  */
-JsonPath.prototype.setValue = function( value ) {
-	var node = this._record._$data,
-		i;
+module.exports.set = function( data, path, value, deepCopy ) {
+	var tokens = tokenize( path );
 
-	for( i = 0; i < this._tokens.length - 1; i++ ) {
-		if( node[ this._tokens[ i ] ] !== undefined ) {
-			node = node[ this._tokens[ i ] ];
+	if ( tokens.length === 0 ) {
+		return patch( data, value, deepCopy );
+	}
+
+	var oldValue = module.exports.get( data, path, false );
+	var newValue = patch( oldValue, value, deepCopy );
+
+	if ( newValue === oldValue ) {
+		return data;
+	}
+
+	var result = utils.shallowCopy( data );
+
+	var node = result;
+	for( var i = 0; i < tokens.length; i++ ) {
+		if ( i === tokens.length - 1) {
+			node[ tokens[ i ] ] = newValue;
 		}
-		else if( this._tokens[ i + 1 ] && !isNaN( this._tokens[ i + 1 ] ) ){
-			node = node[ this._tokens[ i ] ] = [];
+		else if( node[ tokens[ i ] ] !== undefined ) {
+			node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
+		}
+		else if( tokens[ i + 1 ] && !isNaN( tokens[ i + 1 ] ) ){
+			node = node[ tokens[ i ] ] = [];
 		}
 		else {
-			node = node[ this._tokens[ i ] ] = {};
+			node = node[ tokens[ i ] ] = Object.create( null );
 		}
 	}
 
-	node[ this._tokens[ i ] ] = value;
+	return result;
 };
+
+/**
+ * Merge the new value into the old value
+ * @param  {Mixed} oldValue
+ * @param  {Mixed} newValue
+ * @param  {boolean} deepCopy
+ * @return {Mixed}
+ */
+function patch( oldValue, newValue, deepCopy ) {
+	var i;
+
+	if ( utils.deepEquals( oldValue, newValue ) ) {
+		return oldValue;
+	}
+	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
+		var arr = [];
+		for ( i = 0; i < newValue.length; i++ ) {
+			arr[ i ] = patch( oldValue[ i ], newValue[ i ], deepCopy );
+		}
+		return arr;
+	}
+	else if ( !Array.isArray( newValue ) && typeof oldValue === 'object' && typeof newValue === 'object' ) {
+		var props = Object.keys( newValue );
+		var obj = Object.create( null );
+		for ( i = 0; i < props.length; i++ ) {
+			obj[ props[ i ] ] = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], deepCopy );
+		}
+		return obj;
+	}
+	else {
+		return deepCopy !== false ? utils.deepCopy( newValue ) : newValue;
+	}
+}
 
 /**
  * Parses the path. Splits it into
  * keys for objects and indices for arrays.
  *
- * @private
- * @returns {void}
+ * @returns Array of tokens
  */
-JsonPath.prototype._tokenize = function() {
-	var parts = this._path.split( SPLIT_REG_EXP ),
-		part,
-		i;
-
-	for( i = 0; i < parts.length; i++ ) {
-		part = utils.trim( parts[ i ] );
-
-		if( part.length === 0 ) {
-			continue;
-		}
-
-		if( !isNaN( part ) ) {
-			this._tokens.push( parseInt( part, 10 ) );
-			continue;
-		}
-
-		if( part === ASTERISK ) {
-			this._tokens.push( true );
-			continue;
-		}
-
-		this._tokens.push( part );
+function tokenize( path ) {
+	if ( cache[ path ] ) {
+		return cache[ path ];
 	}
+
+	var parts = String(path) !== 'undefined' ? String( path ).match(PARTS_REG_EXP) : [];
+
+	if ( !parts ) {
+		throw new Error('invalid path ' + path)
+	}
+
+	return cache[ path ] = parts.map( function( part ) {
+		return !isNaN( part ) ? parseInt( part, 10 ) : part;
+	} );
 };
 
-module.exports = JsonPath;
 },{"../utils/utils":54}],44:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
@@ -6153,6 +6273,10 @@ var EventEmitter = _dereq_( 'component-emitter' ),
  * @constructor
  */
 var List = function( recordHandler, name, options ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this._recordHandler = recordHandler;
 	this._record = this._recordHandler.getRecord( name, options );
 	this._record._applyUpdate = this._applyUpdate.bind( this );
@@ -6627,11 +6751,21 @@ RecordHandler.prototype.getAnonymousRecord = function() {
  * @returns {void}
  */
 RecordHandler.prototype.listen = function( pattern, callback ) {
-	if( this._listener[ pattern ] ) {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
-	} else {
-		this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
 	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
+	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+		return this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
+	}
+
+	if( this._listener[ pattern ] ) {
+		this._listener[ pattern ].destroy();
+	}
+	this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
 };
 
 /**
@@ -6644,7 +6778,14 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
  * @returns {void}
  */
 RecordHandler.prototype.unlisten = function( pattern ) {
-	if( this._listener[ pattern ] ) {
+	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+		throw new Error( 'invalid argument pattern' );
+	}
+
+	var listener = this._listener[ pattern ];
+	if( listener && !listener.destroyPending ) {
+		listener.sendDestroy();
+	} else if( this._listener[ pattern ] ) {
 		this._listener[ pattern ].destroy();
 		delete this._listener[ pattern ];
 	} else {
@@ -6661,6 +6802,10 @@ RecordHandler.prototype.unlisten = function( pattern ) {
  * @public
  */
 RecordHandler.prototype.snapshot = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	if( this._records[ name ] && this._records[ name ].isReady ) {
 		callback( null, this._records[ name ].get() );
 	} else {
@@ -6677,6 +6822,10 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
  * @public
  */
 RecordHandler.prototype.has = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	if( this._records[ name ] ) {
 		callback( null, true );
 	} else {
@@ -6763,9 +6912,21 @@ RecordHandler.prototype._$handle = function( message ) {
 		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 	}
 
-	if( this._listener[ name ] ) {
+	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		this._listener[ name ] && this._listener[ name ].destroyPending
+	) {
+		processed = true;
+		this._listener[ name ].destroy();
+		delete this._listener[ name ];
+	} else if( this._listener[ name ] ) {
 		processed = true;
 		this._listener[ name ]._$onMessage( message );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+		processed = true;
+	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		// record can receive a HAS_PROVIDER after discarding the record
+		processed = true;
 	}
 
 	if( !processed ) {
@@ -6798,6 +6959,10 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
  * @returns {void}
  */
 RecordHandler.prototype._onDestroyPending = function( recordName ) {
+	if ( !this._records[ recordName ] ) {
+		this.emit( 'error', 'Record \'' + recordName + '\' does not exists' );
+		return;
+	}
 	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
 	this._destroyEventEmitter.once( 'destroy_ack_' + recordName, onMessage );
 	this._removeRecord( recordName );
@@ -6819,14 +6984,13 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 module.exports = RecordHandler;
 
 },{"../constants/constants":35,"../message/message-parser":41,"../utils/listener":51,"../utils/single-notifier":53,"./anonymous-record":42,"./list":44,"./record":46,"component-emitter":1}],46:[function(_dereq_,module,exports){
-var JsonPath = _dereq_( './json-path' ),
+var jsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
 	C = _dereq_( '../constants/constants' ),
 	messageBuilder = _dereq_( '../message/message-builder' ),
-	messageParser = _dereq_( '../message/message-parser' ),
-	ALL_EVENT = 'ALL_EVENT';
+	messageParser = _dereq_( '../message/message-parser' );
 
 /**
  * This class represents a single record - an observable
@@ -6843,6 +7007,10 @@ var JsonPath = _dereq_( './json-path' ),
  * @constructor
  */
 var Record = function( name, recordOptions, connection, options, client ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this.name = name;
 	this.usages = 0;
 	this._recordOptions = recordOptions;
@@ -6851,11 +7019,9 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._options = options;
 	this.isReady = false;
 	this.isDestroyed = false;
-	this._$data = {};
+	this.hasProvider = false;
+	this._$data = Object.create( null );
 	this.version = null;
-	this._paths = {};
-	this._oldValue = null;
-	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
 
@@ -6908,15 +7074,7 @@ Record.prototype.setMergeStrategy = function( mergeStrategy ) {
  * @returns {Mixed} value
  */
 Record.prototype.get = function( path ) {
-	var value;
-
-	if( path ) {
-		value = this._getPath( path ).getValue();
-	} else {
-		value = this._$data;
-	}
-
-	return utils.deepCopy( value );
+	return jsonPath.get( this._$data, path, this._options.recordDeepCopy );
 };
 
 /**
@@ -6934,7 +7092,10 @@ Record.prototype.get = function( path ) {
  */
 Record.prototype.set = function( pathOrData, data ) {
 	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
-		throw new Error( 'Invalid record data ' + pathOrData + ': Record data must be an object' );
+		throw new Error( 'invalid argument data' );
+	}
+	if( arguments.length === 2 && ( typeof pathOrData !== 'string' || pathOrData.length === 0 ) ) {
+		throw new Error( 'invalid argument path' )
 	}
 
 	if( this._checkDestroyed( 'set' ) ) {
@@ -6946,34 +7107,18 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( arguments.length === 2 && utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
+	var path = arguments.length === 1 ? undefined : pathOrData;
+	data = path ? data : pathOrData;
+
+	var oldValue = this._$data;
+	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
+
+	if ( oldValue === newValue ) {
 		return this;
 	}
-	else if( arguments.length === 1 && utils.deepEquals( this._$data, pathOrData ) ) {
-		return this;
-	}
 
-	this._beginChange();
-	this.version++;
-
-	if( arguments.length === 1 ) {
-		this._$data = ( typeof pathOrData == 'object' ) ? utils.deepCopy( pathOrData ) : pathOrData;
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-			this.name,
-			this.version,
-			this._$data
-		]);
-	} else {
-		this._getPath( pathOrData ).setValue( ( typeof data == 'object' ) ? utils.deepCopy( data ): data );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
-			this.name,
-			this.version,
-			pathOrData,
-			messageBuilder.typed( data )
-		]);
-	}
-
-	this._completeChange();
+	this._sendUpdate( path, data );
+	this._applyChange( newValue );
 	return this;
 };
 
@@ -6999,21 +7144,24 @@ Record.prototype.set = function( pathOrData, data ) {
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'subscribe' ) ) {
 		return;
 	}
 
 	if( args.triggerNow ) {
-		this.whenReady(function () {
-			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-			if( args.path ) {
-				args.callback( this._getPath( args.path ).getValue() );
-			} else {
-				args.callback( this._$data );
-			}
-		}.bind(this));
+		this.whenReady( function () {
+			this._eventEmitter.on( args.path, args.callback );
+			args.callback( this.get( args.path ) );
+		}.bind(this) );
 	} else {
-		this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+		this._eventEmitter.on( args.path, args.callback );
 	}
 };
 
@@ -7037,14 +7185,17 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( args.callback !== undefined && typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	if ( args.path ) {
-		this._eventEmitter.off( args.path, args.callback );
-	} else {
-		this._eventEmitter.off( ALL_EVENT, args.callback );
-	}
+	this._eventEmitter.off( args.path, args.callback );
 };
 
 /**
@@ -7055,6 +7206,9 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
+	if( this._checkDestroyed( 'discard' ) ) {
+		return;
+	}
 	this.whenReady( function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
@@ -7129,6 +7283,10 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
 		clearInterval( this._readAckTimeout );
 		clearInterval( this._readTimeout );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
+		this.hasProvider = hasProvider;
+		this.emit( 'hasProviderChanged', hasProvider );
 	}
 };
 
@@ -7147,10 +7305,28 @@ Record.prototype._$onMessage = function( message ) {
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
 	message.processedError = true;
 	if( this._mergeStrategy ) {
-		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
+		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData ) );
 	}
 	else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
+	}
+};
+
+Record.prototype._sendUpdate = function ( path, data ) {
+	this.version++;
+	if( !path ) {
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
+			this.name,
+			this.version,
+			data
+		]);
+	} else {
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
+			this.name,
+			this.version,
+			path,
+			messageBuilder.typed( data )
+		]);
 	}
 };
 
@@ -7166,10 +7342,19 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
  * @private
  * @returns {void}
  */
-Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
+Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
 	if( !error ) {
 		this.version = remoteVersion;
-		this.set( data );
+
+		var oldValue = this._$data;
+		var newValue = jsonPath.set( oldValue, undefined, data, false );
+
+		if ( oldValue === newValue ) {
+			return;
+		}
+
+		this._sendUpdate( undefined, data );
+		this._applyChange( newValue );
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
@@ -7236,16 +7421,8 @@ Record.prototype._applyUpdate = function( message ) {
 		return;
 	}
 
-	this._beginChange();
 	this.version = version;
-
-	if( message.action === C.ACTIONS.PATCH ) {
-		this._getPath( message.data[ 2 ] ).setValue( data );
-	} else {
-		this._$data = data;
-	}
-
-	this._completeChange();
+	this._applyChange( jsonPath.set( this._$data, message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined, data ) );
 };
 
 /**
@@ -7257,10 +7434,8 @@ Record.prototype._applyUpdate = function( message ) {
  * @returns {void}
  */
 Record.prototype._onRead = function( message ) {
-	this._beginChange();
 	this.version = parseInt( message.data[ 1 ], 10 );
-	this._$data = JSON.parse( message.data[ 2 ] );
-	this._completeChange();
+	this._applyChange( jsonPath.set( this._$data, undefined, JSON.parse( message.data[ 2 ] ) ) );
 	this._setReady();
 };
 
@@ -7291,81 +7466,35 @@ Record.prototype._setReady = function() {
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
 
-
 /**
- * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
- * exist yet
- *
- * @param   {String} path
- *
- * @returns {JsonPath}
- */
-Record.prototype._getPath = function( path ) {
-	if( !this._paths[ path ] ) {
-		this._paths[ path ] = new JsonPath( this, path );
-	}
-
-	return this._paths[ path ];
-};
-
-/**
- * First of two steps that are called for incoming and outgoing updates.
- * Saves the current value of all paths the app is subscribed to.
- *
- * @private
- * @returns {void}
- */
-Record.prototype._beginChange = function() {
-	if( !this._eventEmitter._callbacks ) {
-		return;
-	}
-
-	var paths = Object.keys( this._eventEmitter._callbacks ),
-		i;
-
-	this._oldPathValues = {};
-
-	if( this._eventEmitter.hasListeners( ALL_EVENT ) ) {
-		this._oldValue = this.get();
-	}
-
-	for( i = 0; i < paths.length; i++ ) {
-		if( paths[ i ] !== ALL_EVENT ) {
-			this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
-		}
-	}
-};
-
-/**
- * Second of two steps that are called for incoming and outgoing updates.
  * Compares the new values for every path with the previously stored ones and
  * updates the subscribers if the value has changed
  *
  * @private
  * @returns {void}
  */
-Record.prototype._completeChange = function() {
-	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
-		this._eventEmitter.emit( ALL_EVENT, this.get() );
-	}
-
-	this._oldValue = null;
-
-	if( this._oldPathValues === null ) {
+Record.prototype._applyChange = function( newData ) {
+	if ( this.isDestroyed ) {
 		return;
 	}
 
-	var path, currentValue;
+	var oldData = this._$data;
+	this._$data = newData;
 
-	for( path in this._oldPathValues ) {
-		currentValue = this._getPath( path ).getValue();
-
-		if( currentValue !== this._oldPathValues[ path ] ) {
-			this._eventEmitter.emit( path, currentValue );
-		}
+	if ( !this._eventEmitter._callbacks ) {
+		return;
 	}
 
-	this._oldPathValues = null;
+	var paths = Object.keys( this._eventEmitter._callbacks );
+
+	for ( var i = 0; i < paths.length; i++ ) {
+		var newValue = jsonPath.get( newData, paths[ i ], false );
+		var oldValue = jsonPath.get( oldData, paths[ i ], false );
+
+		if( newValue !== oldValue ) {
+			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
+		}
+	}
 };
 
 /**
@@ -7377,16 +7506,15 @@ Record.prototype._completeChange = function() {
  * @returns {Object} arguments map
  */
 Record.prototype._normalizeArguments = function( args ) {
-	var result = {},
-		i;
-
 	// If arguments is already a map of normalized parameters
 	// (e.g. when called by AnonymousRecord), just return it.
 	if( args.length === 1 && typeof args[ 0 ] === 'object' ) {
 		return args[ 0 ];
 	}
 
-	for( i = 0; i < args.length; i++ ) {
+	var result = Object.create( null );
+
+	for( var i = 0; i < args.length; i++ ) {
 		if( typeof args[ i ] === 'string' ) {
 			result.path = args[ i ];
 		}
@@ -7511,8 +7639,14 @@ var RpcHandler = function( options, connection, client ) {
  * @returns void
  */
 RpcHandler.prototype.provide = function( name, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
 	if( this._providers[ name ] ) {
 		throw new Error( 'RPC ' + name + ' already registered' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
 
 	this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
@@ -7529,6 +7663,10 @@ RpcHandler.prototype.provide = function( name, callback ) {
  * @returns {void}
  */
 RpcHandler.prototype.unprovide = function( name ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	if( this._providers[ name ] ) {
 		delete this._providers[ name ];
 		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
@@ -7548,6 +7686,13 @@ RpcHandler.prototype.unprovide = function( name ) {
  * @returns {void}
  */
 RpcHandler.prototype.make = function( name, data, callback ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+	if ( typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
 
@@ -7967,45 +8112,146 @@ module.exports = AckTimeoutRegistry;
 var C = _dereq_( '../constants/constants' );
 var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
+/*
+ * Creates a listener instance which is usedby deepstream Records and Events.
+ *
+ * @param {String} type                 One of CONSTANTS.TOPIC
+ * @param {String} pattern              A pattern that can be compiled via new RegExp(pattern)
+ * @param {Function} callback           The function which is called when pattern was found and removed
+ * @param {Connection} Connection       The instance of the server connection
+ * @param {Object} options              Deepstream options
+ * @param {Client} client               deepstream.io client
+ *
+ * @constructor
+ */
 var Listener = function( type, pattern, callback, options, client, connection ) {
-    this._type = type;
-    this._callback = callback;
-    this._pattern = pattern;
-    this._options = options;
-    this._client = client;
-    this._connection = connection;
-    this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
-    this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
-    this._sendListen();
+	this._type = type;
+	this._callback = callback;
+	this._pattern = pattern;
+	this._options = options;
+	this._client = client;
+	this._connection = connection;
+	this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
+	this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
+	this._sendListen();
+	this.destroyPending = false;
 };
 
+Listener.prototype.sendDestroy = function() {
+	this.destroyPending = true;
+	this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
+	this._resubscribeNotifier.destroy();
+
+};
+
+/*
+ * Resets internal properties. Is called when provider cals unlisten.
+ *
+ * @returns {void}
+ */
 Listener.prototype.destroy = function() {
-    this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
-    this._resubscribeNotifier.destroy();
-    this._callback = null;
-    this._pattern = null;
-    this._client = null;
-    this._connection = null;
+	this._callback = null;
+	this._pattern = null;
+	this._client = null;
+	this._connection = null;
 };
 
+/*
+ * Accepting a listener request informs deepstream that the current provider is willing to
+ * provide the record or event matching the subscriptionName . This will establish the current
+ * provider as the only publisher for the actual subscription with the deepstream cluster.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
+ *
+ * @returns {void}
+ */
+Listener.prototype.accept = function( name ) {
+	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
+}
+
+/*
+ *  Rejecting a listener request informs deepstream that the current provider is not willing
+ * to provide the record or event matching the subscriptionName . This will result in deepstream
+ * requesting another provider to do so instead. If no other provider accepts or exists, the
+ * record will remain unprovided.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
+ *
+ * @returns {void}
+ */
+Listener.prototype.reject = function( name ) {
+	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
+}
+
+/*
+ * Wraps accept and reject as an argument for the callback function.
+ *
+ * @private
+ * @returns {Object}
+ */
+Listener.prototype._createCallbackResponse = function(message) {
+	return {
+		accept: this.accept.bind( this, message.data[ 1 ] ),
+		reject: this.reject.bind( this, message.data[ 1 ] )
+	}
+}
+
+/*
+ * Handles the incomming message.
+ *
+ * @private
+ * @returns {void}
+ */
 Listener.prototype._$onMessage = function( message ) {
-    if( message.action === C.ACTIONS.ACK ) {
-        clearTimeout( this._ackTimeout );
-    } else {
-        var isFound = message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND;
-        this._callback( message.data[ 1 ], isFound );
-    }
+	if( message.action === C.ACTIONS.ACK ) {
+		clearTimeout( this._ackTimeout );
+	} else if ( message.action === C
+		.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
+		this._showDeprecatedMessage( message );
+		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
+	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		this._callback( message.data[ 1 ], false );
+	} else {
+		this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
+	}
 };
 
+/*
+ * Sends a C.ACTIONS.LISTEN to deepstream.
+ *
+ * @private
+ * @returns {void}
+ */
 Listener.prototype._sendListen = function() {
-    this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );   
+	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
 };
 
+/*
+ * Sends a C.EVENT.ACK_TIMEOUT to deepstream.
+ *
+ * @private
+ * @returns {void}
+ */
 Listener.prototype._onAckTimeout = function() {
-    this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
+	this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
+};
+
+/*
+ * Shows a deprecation message to users before 1.1
+ *
+ * @private
+ * @returns {void}
+ */
+Listener.prototype._showDeprecatedMessage = function( message ) {
+	if( this._callback.length !== 3 ) {
+	var deprecatedMessage = 'DEPRECATED: listen should explicitly accept or reject for pattern: ' + message.data[ 0 ];
+	deprecatedMessage += '\nhttps://github.com/deepstreamIO/deepstream.io-client-js/issues/212';
+		if( console && console.warn ) {
+			console.warn( deprecatedMessage );
+		}
+	}
 };
 
 module.exports = Listener;
+
 },{"../constants/constants":35,"./resubscribe-notifier":52}],52:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
@@ -8251,9 +8497,13 @@ exports.trim = function( inputString ) {
  * @returns {Boolean} isEqual
  */
 exports.deepEquals= function( objA, objB ) {
-	if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
-		return objA === objB;
-	} else {
+	if ( objA === objB ) {
+		return true
+	}
+	else if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
+		return false;
+	}
+	else {
 		return JSON.stringify( objA ) === JSON.stringify( objB );
 	}
 };
@@ -8283,6 +8533,32 @@ exports.deepCopy = function( obj ) {
 		return obj;
 	}
 };
+
+/**
+ * Copy the top level of items, but do not copy its items recourisvely. This
+ * is much quicker than deepCopy does not guarantee the object items are new/unique.
+ * Mainly used to change the reference to the actual object itself, but not its children.
+ *
+ * @param   {Mixed} obj the object that should cloned
+ *
+ * @public
+ * @returns {Mixed} clone
+ */
+exports.shallowCopy = function ( obj ) {
+	if ( Array.isArray( obj ) ) {
+		return obj.slice( 0 );
+	}
+	else if ( typeof obj === OBJECT ) {
+		var copy = Object.create( null );
+		var props = Object.keys( obj );
+		for ( var i = 0; i < props.length; i++ ) {
+			copy[ props[ i ] ] = obj[ props[ i ] ];
+		}
+	  return copy;
+	}
+	return obj;
+}
+
 }).call(this,_dereq_('_process'))
 },{"_process":33}],55:[function(_dereq_,module,exports){
 var WebRtcConnection = _dereq_( './webrtc-connection' ),

@@ -84,7 +84,10 @@ describe('connects - redirect', function(){
 
 	var connection,
 		authCallback = jasmine.createSpy( 'authCallback' ),
-		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
+		options = {
+			reconnectIntervalIncrement: 10,
+			maxReconnectAttempts: 5
+		};
 
 	it( 'creates the connection', function(){
 		clientConnectionStateChangeCount = 0;
@@ -138,7 +141,10 @@ describe('connects - redirect rejection', function(){
 
 	var connection,
 		authCallback = jasmine.createSpy( 'authCallback' ),
-		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
+		options = {
+			reconnectIntervalIncrement: 10,
+			maxReconnectAttempts: 5
+		};
 
 	it( 'creates the connection', function(){
 		clientConnectionStateChangeCount = 0;
@@ -340,9 +346,13 @@ describe( 'connection handles data associated with login', function(){
 describe( 'reach the max reconnect attempts and consider the maxReconnectInterval', function(){
 	var connection,
 		authCallback = jasmine.createSpy( 'invalid auth callback' ),
-		options = {reconnectIntervalIncrement: 40, maxReconnectAttempts: 3, maxReconnectInterval: 40 };
+		options = {
+			reconnectIntervalIncrement: 50,
+			maxReconnectAttempts: 3,
+			maxReconnectInterval: 50
+		};
 
-		it( 'creates the connection', function(){
+	it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
 		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
 		expect( connection.getState() ).toBe( 'CLOSED' );
@@ -368,19 +378,16 @@ describe( 'reach the max reconnect attempts and consider the maxReconnectInterva
 		clientMock.on( C.MAX_RECONNECTION_ATTEMPTS_REACHED, done )
 
 		function checkForXinTime(amount, timeout) {
-			const B = 3 // inaccuracy buffer
 			setTimeout(function(){
 				connection._endpoint.close();
 				expect( connection._endpoint.callsToOpen ).toBe( amount );
-			}, timeout + B * amount);
-
+			}, timeout);
 		}
 
-		checkForXinTime(1, 40)
-		checkForXinTime(1, 70)
-		checkForXinTime(2, 40 + 40)
-		checkForXinTime(3, 40 + 40 + 40)
-
+		checkForXinTime(1, 0 )
+		checkForXinTime(1, 25 )
+		checkForXinTime(2, 75 )
+		checkForXinTime(3, 175 )
 	});
 });
 

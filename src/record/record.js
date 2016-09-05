@@ -1,11 +1,10 @@
-var JsonPath = require( './json-path' ),
+var jsonPath = require( './json-path' ),
 	utils = require( '../utils/utils' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
-	messageParser = require( '../message/message-parser' ),
-	ALL_EVENT = 'ALL_EVENT';
+	messageParser = require( '../message/message-parser' );
 
 /**
  * This class represents a single record - an observable
@@ -22,6 +21,10 @@ var JsonPath = require( './json-path' ),
  * @constructor
  */
 var Record = function( name, recordOptions, connection, options, client ) {
+	if ( typeof name !== 'string' || name.length === 0 ) {
+		throw new Error( 'invalid argument name' );
+	}
+
 	this.name = name;
 	this.usages = 0;
 	this._recordOptions = recordOptions;
@@ -30,11 +33,9 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._options = options;
 	this.isReady = false;
 	this.isDestroyed = false;
-	this._$data = {};
+	this.hasProvider = false;
+	this._$data = Object.create( null );
 	this.version = null;
-	this._paths = {};
-	this._oldValue = null;
-	this._oldPathValues = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
 
@@ -87,15 +88,7 @@ Record.prototype.setMergeStrategy = function( mergeStrategy ) {
  * @returns {Mixed} value
  */
 Record.prototype.get = function( path ) {
-	var value;
-
-	if( path ) {
-		value = this._getPath( path ).getValue();
-	} else {
-		value = this._$data;
-	}
-
-	return utils.deepCopy( value );
+	return jsonPath.get( this._$data, path, this._options.recordDeepCopy );
 };
 
 /**
@@ -113,7 +106,10 @@ Record.prototype.get = function( path ) {
  */
 Record.prototype.set = function( pathOrData, data ) {
 	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
-		throw new Error( 'Invalid record data ' + pathOrData + ': Record data must be an object' );
+		throw new Error( 'invalid argument data' );
+	}
+	if( arguments.length === 2 && ( typeof pathOrData !== 'string' || pathOrData.length === 0 ) ) {
+		throw new Error( 'invalid argument path' )
 	}
 
 	if( this._checkDestroyed( 'set' ) ) {
@@ -125,34 +121,18 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( arguments.length === 2 && utils.deepEquals( this._getPath( pathOrData ).getValue(), data ) ) {
+	var path = arguments.length === 1 ? undefined : pathOrData;
+	data = path ? data : pathOrData;
+
+	var oldValue = this._$data;
+	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
+
+	if ( oldValue === newValue ) {
 		return this;
 	}
-	else if( arguments.length === 1 && utils.deepEquals( this._$data, pathOrData ) ) {
-		return this;
-	}
 
-	this._beginChange();
-	this.version++;
-
-	if( arguments.length === 1 ) {
-		this._$data = ( typeof pathOrData == 'object' ) ? utils.deepCopy( pathOrData ) : pathOrData;
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-			this.name,
-			this.version,
-			this._$data
-		]);
-	} else {
-		this._getPath( pathOrData ).setValue( ( typeof data == 'object' ) ? utils.deepCopy( data ): data );
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
-			this.name,
-			this.version,
-			pathOrData,
-			messageBuilder.typed( data )
-		]);
-	}
-
-	this._completeChange();
+	this._sendUpdate( path, data );
+	this._applyChange( newValue );
 	return this;
 };
 
@@ -178,21 +158,24 @@ Record.prototype.set = function( pathOrData, data ) {
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'subscribe' ) ) {
 		return;
 	}
 
 	if( args.triggerNow ) {
-		this.whenReady(function () {
-			this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
-			if( args.path ) {
-				args.callback( this._getPath( args.path ).getValue() );
-			} else {
-				args.callback( this._$data );
-			}
-		}.bind(this));
+		this.whenReady( function () {
+			this._eventEmitter.on( args.path, args.callback );
+			args.callback( this.get( args.path ) );
+		}.bind(this) );
 	} else {
-		this._eventEmitter.on( args.path || ALL_EVENT, args.callback );
+		this._eventEmitter.on( args.path, args.callback );
 	}
 };
 
@@ -216,14 +199,17 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	var args = this._normalizeArguments( arguments );
 
+	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
+		throw new Error( 'invalid argument path' );
+	}
+	if ( args.callback !== undefined && typeof args.callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	if ( args.path ) {
-		this._eventEmitter.off( args.path, args.callback );
-	} else {
-		this._eventEmitter.off( ALL_EVENT, args.callback );
-	}
+	this._eventEmitter.off( args.path, args.callback );
 };
 
 /**
@@ -234,6 +220,9 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @returns {void}
  */
 Record.prototype.discard = function() {
+	if( this._checkDestroyed( 'discard' ) ) {
+		return;
+	}
 	this.whenReady( function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
@@ -308,6 +297,10 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
 		clearInterval( this._readAckTimeout );
 		clearInterval( this._readTimeout );
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
+		this.hasProvider = hasProvider;
+		this.emit( 'hasProviderChanged', hasProvider );
 	}
 };
 
@@ -326,10 +319,28 @@ Record.prototype._$onMessage = function( message ) {
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
 	message.processedError = true;
 	if( this._mergeStrategy ) {
-		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion ) );
+		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData ) );
 	}
 	else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
+	}
+};
+
+Record.prototype._sendUpdate = function ( path, data ) {
+	this.version++;
+	if( !path ) {
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
+			this.name,
+			this.version,
+			data
+		]);
+	} else {
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
+			this.name,
+			this.version,
+			path,
+			messageBuilder.typed( data )
+		]);
 	}
 };
 
@@ -345,10 +356,19 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
  * @private
  * @returns {void}
  */
-Record.prototype._onRecordRecovered = function( remoteVersion, error, data ) {
+Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
 	if( !error ) {
 		this.version = remoteVersion;
-		this.set( data );
+
+		var oldValue = this._$data;
+		var newValue = jsonPath.set( oldValue, undefined, data, false );
+
+		if ( oldValue === newValue ) {
+			return;
+		}
+
+		this._sendUpdate( undefined, data );
+		this._applyChange( newValue );
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
@@ -415,16 +435,8 @@ Record.prototype._applyUpdate = function( message ) {
 		return;
 	}
 
-	this._beginChange();
 	this.version = version;
-
-	if( message.action === C.ACTIONS.PATCH ) {
-		this._getPath( message.data[ 2 ] ).setValue( data );
-	} else {
-		this._$data = data;
-	}
-
-	this._completeChange();
+	this._applyChange( jsonPath.set( this._$data, message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined, data ) );
 };
 
 /**
@@ -436,10 +448,8 @@ Record.prototype._applyUpdate = function( message ) {
  * @returns {void}
  */
 Record.prototype._onRead = function( message ) {
-	this._beginChange();
 	this.version = parseInt( message.data[ 1 ], 10 );
-	this._$data = JSON.parse( message.data[ 2 ] );
-	this._completeChange();
+	this._applyChange( jsonPath.set( this._$data, undefined, JSON.parse( message.data[ 2 ] ) ) );
 	this._setReady();
 };
 
@@ -470,81 +480,35 @@ Record.prototype._setReady = function() {
  	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
  };
 
-
 /**
- * Returns an instance of JsonPath for a specific path. Creates the instance if it doesn't
- * exist yet
- *
- * @param   {String} path
- *
- * @returns {JsonPath}
- */
-Record.prototype._getPath = function( path ) {
-	if( !this._paths[ path ] ) {
-		this._paths[ path ] = new JsonPath( this, path );
-	}
-
-	return this._paths[ path ];
-};
-
-/**
- * First of two steps that are called for incoming and outgoing updates.
- * Saves the current value of all paths the app is subscribed to.
- *
- * @private
- * @returns {void}
- */
-Record.prototype._beginChange = function() {
-	if( !this._eventEmitter._callbacks ) {
-		return;
-	}
-
-	var paths = Object.keys( this._eventEmitter._callbacks ),
-		i;
-
-	this._oldPathValues = {};
-
-	if( this._eventEmitter.hasListeners( ALL_EVENT ) ) {
-		this._oldValue = this.get();
-	}
-
-	for( i = 0; i < paths.length; i++ ) {
-		if( paths[ i ] !== ALL_EVENT ) {
-			this._oldPathValues[ paths[ i ] ] = this._getPath( paths[ i ] ).getValue();
-		}
-	}
-};
-
-/**
- * Second of two steps that are called for incoming and outgoing updates.
  * Compares the new values for every path with the previously stored ones and
  * updates the subscribers if the value has changed
  *
  * @private
  * @returns {void}
  */
-Record.prototype._completeChange = function() {
-	if( this._eventEmitter.hasListeners( ALL_EVENT ) && !utils.deepEquals( this._oldValue, this._$data ) ) {
-		this._eventEmitter.emit( ALL_EVENT, this.get() );
-	}
-
-	this._oldValue = null;
-
-	if( this._oldPathValues === null ) {
+Record.prototype._applyChange = function( newData ) {
+	if ( this.isDestroyed ) {
 		return;
 	}
 
-	var path, currentValue;
+	var oldData = this._$data;
+	this._$data = newData;
 
-	for( path in this._oldPathValues ) {
-		currentValue = this._getPath( path ).getValue();
-
-		if( currentValue !== this._oldPathValues[ path ] ) {
-			this._eventEmitter.emit( path, currentValue );
-		}
+	if ( !this._eventEmitter._callbacks ) {
+		return;
 	}
 
-	this._oldPathValues = null;
+	var paths = Object.keys( this._eventEmitter._callbacks );
+
+	for ( var i = 0; i < paths.length; i++ ) {
+		var newValue = jsonPath.get( newData, paths[ i ], false );
+		var oldValue = jsonPath.get( oldData, paths[ i ], false );
+
+		if( newValue !== oldValue ) {
+			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
+		}
+	}
 };
 
 /**
@@ -556,16 +520,15 @@ Record.prototype._completeChange = function() {
  * @returns {Object} arguments map
  */
 Record.prototype._normalizeArguments = function( args ) {
-	var result = {},
-		i;
-
 	// If arguments is already a map of normalized parameters
 	// (e.g. when called by AnonymousRecord), just return it.
 	if( args.length === 1 && typeof args[ 0 ] === 'object' ) {
 		return args[ 0 ];
 	}
 
-	for( i = 0; i < args.length; i++ ) {
+	var result = Object.create( null );
+
+	for( var i = 0; i < args.length; i++ ) {
 		if( typeof args[ i ] === 'string' ) {
 			result.path = args[ i ];
 		}
