@@ -120,6 +120,7 @@ Client.prototype.getUid = function() {
 
 Client.prototype.getCurrentClients = function( callback ) {
 	this.presence.getCurrentClients( callback );	
+	return this;
 };
 
 Client.prototype.onClientLogin = function( callback ) {
