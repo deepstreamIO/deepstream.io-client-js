@@ -118,16 +118,42 @@ Client.prototype.getUid = function() {
 	return timestamp + '-' + randomString;
 };
 
+/**
+ * Queries for clients logged into deepstream
+ *
+ * @param   {Function} callback Will be invoked with an array of clients
+ *
+ * @public
+ * @returns {Client}
+ */
 Client.prototype.getCurrentClients = function( callback ) {
 	this.presence.getCurrentClients( callback );	
 	return this;
 };
 
+/**
+ * Subscribes client to login events from other clients
+ *
+ * @param   {Function} callback Will be invoked with the username of a client
+ *								that logs in
+ *
+ * @public
+ * @returns {void}
+ */
 Client.prototype.onClientLogin = function( callback ) {
 	this.presence.onClientLogin( callback );
 
 };
 
+/**
+ * Subscribes client to logout events from other clients
+ *
+ * @param   {Function} callback Will be invoked with the username of a client
+ *								that logs out
+ *
+ * @public
+ * @returns {void}
+ */
 Client.prototype.onClientLogout = function( callback ) {
 	this.presence.onClientLogout( callback );
 };
