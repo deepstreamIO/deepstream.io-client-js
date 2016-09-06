@@ -35,7 +35,7 @@ var PresenceHandler = function( options, connection, client ) {
  */
 PresenceHandler.prototype.getCurrentClients = function( callback ) {
 	this._emitter.on( C.ACTIONS.QUERY, callback );
-	this._ackTimeoutRegistry.add( C.ACTIONS.QUERY );
+	this._ackTimeoutRegistry.add( C.ACTIONS.QUERY, C.TOPIC.PRESENCE);
 	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY );
 };
 
