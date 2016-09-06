@@ -161,6 +161,7 @@ module.exports = function() {
 	this.Then(/^(?:subscriber|publisher) (\S)* is notified that client (\S)* logged ([^"]*)$/, function (client, clientB, event) {
 		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ event ] );
 		sinon.assert.calledWith(clients[ client ].presenceCallbacks[ event ], clientB);
+		clients[ client ].presenceCallbacks[ event ].reset();
 	});
 
 	this.When(/^(?:subscriber|publisher) (\S)* queries for connected clients$/, function (client, done) {
@@ -171,7 +172,8 @@ module.exports = function() {
 
 	this.Then(/^(?:subscriber|publisher) (\S)* knows that clients "([^"]*)" are connected$/, function (client, connectedClients) {
 		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ queryEvent ] );
-		sinon.assert.calledWith(clients[ client ].presenceCallbacks[ queryEvent ], connectedClients.split(','));
+		sinon.assert.calledWith( clients[ client ].presenceCallbacks[ queryEvent ], connectedClients.split(',') );
+		clients[ client ].presenceCallbacks[ queryEvent ].reset();
 	});
 
 	/*=== Set up and clean up ===*/
