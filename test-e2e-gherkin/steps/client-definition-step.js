@@ -6,6 +6,9 @@ const clients = {};
 const defaultDelay = config.defaultDelay
 
 module.exports = function() {
+
+	/*=== Connectivity ===*/
+
 	this.Given(/^(?:subscriber|publisher) (\S)* connects to server (\d+)$/, function (client, server) {
  		clients[ client ] = {
 			client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
@@ -54,6 +57,14 @@ module.exports = function() {
 				setTimeout( callback, defaultDelay );
 	 	} );
 	});
+
+	this.When(/^(?:subscriber|publisher) (\S)* logs out$/, function (client, done) {
+		clients[ client ].client.close();
+		delete clients[client];
+		setTimeout( done, defaultDelay );
+	});
+
+	/*=== Event ===*/
 
 	this.Given(/^(?:subscriber|publisher) (\S)* subscribes to an event named "([^"]*)"$/, function ( client, eventName, done ) {
 		clients[ client ].eventCallbacks[ eventName ] = sinon.spy();
@@ -129,18 +140,41 @@ module.exports = function() {
 		sinon.assert.callCount( listenCallbackSpy.withArgs( eventName, false ), Number( count ) )
 	});
 
-	/* === Presence == */
+	/*=== Presence ===*/
+
+	const loginEvent = 'in';
+	const logoutEvent = 'out';
+	const queryEvent = 'query';
 
 	this.Given(/^(?:subscriber|publisher) (\S)* subscribes to client login events$/, function (client, done) {
-		clients[ client ].presenceCallbacks[ 'login' ] = sinon.spy();
-		clients[ client ].client.onClientLogin( clients[ client ].presenceCallbacks[ 'login' ] );
+		clients[ client ].presenceCallbacks[ loginEvent ] = sinon.spy();
+		clients[ client ].client.onClientLogin( clients[ client ].presenceCallbacks[ loginEvent ] );
 		setTimeout( done, defaultDelay );
 	});
 
-	this.Then(/^(?:subscriber|publisher) (\S)* is notified that client (\S)* logged in$/, function (client, clientB) {
-		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ 'login' ] );
-		sinon.assert.calledWith(clients[ client ].presenceCallbacks[ 'login' ], clientB);
+	this.Given(/^(?:subscriber|publisher) (\S)* subscribes to client logout events$/, function (client, done) {
+		clients[ client ].presenceCallbacks[ logoutEvent ] = sinon.spy();
+		clients[ client ].client.onClientLogout( clients[ client ].presenceCallbacks[ logoutEvent ] );
+		setTimeout( done, defaultDelay );
 	});
+
+	this.Then(/^(?:subscriber|publisher) (\S)* is notified that client (\S)* logged ([^"]*)$/, function (client, clientB, event) {
+		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ event ] );
+		sinon.assert.calledWith(clients[ client ].presenceCallbacks[ event ], clientB);
+	});
+
+	this.When(/^(?:subscriber|publisher) (\S)* queries for connected clients$/, function (client, done) {
+		clients[ client ].presenceCallbacks[ queryEvent ] = sinon.spy();
+		clients[ client ].client.getCurrentClients( clients[ client ].presenceCallbacks[ queryEvent ] );
+		setTimeout( done, defaultDelay );
+	});
+
+	this.Then(/^(?:subscriber|publisher) (\S)* knows that clients "([^"]*)" are connected$/, function (client, connectedClients) {
+		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ queryEvent ] );
+		sinon.assert.calledWith(clients[ client ].presenceCallbacks[ queryEvent ], connectedClients.split(','));
+	});
+
+	/*=== Set up and clean up ===*/
 
 	this.Before(function (scenario) {
 		// client are connecting via "Background" explictly
