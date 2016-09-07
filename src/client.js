@@ -126,7 +126,7 @@ Client.prototype.getUid = function() {
  * @public
  * @returns {Client}
  */
-Client.prototype.getCurrentClients = function( callback ) {
+Client.prototype.getPresentClients = function( callback ) {
 	this.presence.getCurrentClients( callback );	
 	return this;
 };
@@ -140,8 +140,8 @@ Client.prototype.getCurrentClients = function( callback ) {
  * @public
  * @returns {void}
  */
-Client.prototype.onClientLogin = function( callback ) {
-	this.presence.onClientLogin( callback );
+Client.prototype.onClientAdded = function( callback ) {
+	this.presence.subscribeToLogins( callback );
 
 };
 
@@ -154,8 +154,8 @@ Client.prototype.onClientLogin = function( callback ) {
  * @public
  * @returns {void}
  */
-Client.prototype.onClientLogout = function( callback ) {
-	this.presence.onClientLogout( callback );
+Client.prototype.onClientRemoved = function( callback ) {
+	this.presence.subscribeToLogouts( callback );
 };
 
 /**
