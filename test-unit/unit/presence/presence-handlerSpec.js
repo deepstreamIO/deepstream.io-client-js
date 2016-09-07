@@ -14,12 +14,12 @@ describe( 'presence handler', function(){
 	});
 
 	it( 'subscibes to client logins', function() {
-		presenceHandler.onClientLogin( callback );
+		presenceHandler.subscribeToLogins( callback );
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'PN|S|PNJ+' ) );
 	});
 
 	it( 'subscibes to client logouts', function() {
-		presenceHandler.onClientLogout( callback );
+		presenceHandler.subscribeToLogouts( callback );
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'PN|S|PNL+' ) );
 	});
 
@@ -42,7 +42,7 @@ describe( 'presence handler', function(){
 		}, 20 );
 	});
 	
-	it( 'callback called when client logs in', function() {
+	it( 'notified when client logs in', function() {
 		expect( callback ).not.toHaveBeenCalled();
 		presenceHandler._$handle({
 			topic: 'PN',
@@ -52,7 +52,7 @@ describe( 'presence handler', function(){
 	    expect( callback ).toHaveBeenCalledWith( 'Homer' );
 	});
 
-	it( 'callback called when client logs out', function() {
+	it( 'notified when client logs out', function() {
 		presenceHandler._$handle({
 			topic: 'PN',
 			action: 'PNL',

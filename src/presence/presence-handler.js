@@ -2,7 +2,8 @@ var EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
 	messageParser = require( '../message/message-parser' ),
-	messageBuilder = require( '../message/message-builder' );
+	messageBuilder = require( '../message/message-builder' ),
+	ResubscribeNotifier = require( '../utils/resubscribe-notifier' );
 
 /**
  * The main class for presence in deepstream
@@ -23,6 +24,7 @@ var PresenceHandler = function( options, connection, client ) {
 		this._client = client;
 		this._emitter = new EventEmitter();
 		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.PRESENCE, this._options.subscriptionTimeout );
+		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
 /**
@@ -48,7 +50,7 @@ PresenceHandler.prototype.getCurrentClients = function( callback ) {
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.onClientLogin = function( callback ) {
+PresenceHandler.prototype.subscribeToLogins = function( callback ) {
 	this._emitter.on( C.ACTIONS.PRESENCE_JOIN, callback );
 	this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN, C.ACTIONS.SUBSCRIBE );
 	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
@@ -63,7 +65,7 @@ PresenceHandler.prototype.onClientLogin = function( callback ) {
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.onClientLogout = function( callback ) {
+PresenceHandler.prototype.subscribeToLogouts = function( callback ) {
 	this._emitter.on( C.ACTIONS.PRESENCE_LEAVE, callback );
 	this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE, C.ACTIONS.SUBSCRIBE );
 	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
@@ -89,6 +91,19 @@ PresenceHandler.prototype._$handle = function( message ) {
 	}
 	else if( message.action === C.ACTIONS.QUERY ) {
 		this._emitter.emit( C.ACTIONS.QUERY, message.data );
+	}
+};
+
+/**
+ * Resubscribes to events when connection is lost
+ *
+ * @package private
+ * @returns {void}
+ */
+PresenceHandler.prototype._resubscribe = function() {
+	var callbacks = this._emitter._callbacks;
+	for( var event in callbacks ) {
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ event ] );
 	}
 };
 
