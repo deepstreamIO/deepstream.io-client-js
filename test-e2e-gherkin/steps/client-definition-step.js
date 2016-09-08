@@ -30,7 +30,7 @@ function createClient( clientName, server ) {
 		}
 	}
 	clients[ clientName ].client.on( 'error', ( a, b, c) => {
- 			console.log( 'An Error occured on ', clientName, a, b, c );
+ 			console.log( 'An Error occured on', clientName, a, b, c );
  	});
 }
 
@@ -154,22 +154,26 @@ module.exports = function() {
 	const logoutEvent = 'out';
 	const queryEvent = 'query';
 
-	this.Given(/^(?:subscriber|publisher|client) (\S)* subscribes to client login events$/, function (client, done) {
-		clients[ client ].presenceCallbacks[ loginEvent ] = sinon.spy();
-		clients[ client ].client.onClientLogin( clients[ client ].presenceCallbacks[ loginEvent ] );
+	this.Given(/^(?:subscriber|publisher|client) (\S)* subscribes to presence login events$/, function (client, done) {
+		clients[ client ].presence.callbacks[ loginEvent ] = sinon.spy();
+		clients[ client ].client.onClientAdded( clients[ client ].presence.callbacks[ loginEvent ] );
 		setTimeout( done, defaultDelay );
 	});
 
-	this.Given(/^(?:subscriber|publisher|client) (\S)* subscribes to client logout events$/, function (client, done) {
-		clients[ client ].presenceCallbacks[ logoutEvent ] = sinon.spy();
-		clients[ client ].client.onClientLogout( clients[ client ].presenceCallbacks[ logoutEvent ] );
+	this.Given(/^(?:subscriber|publisher|client) (\S)* subscribes to presence logout events$/, function (client, done) {
+		clients[ client ].presence.callbacks[ logoutEvent ] = sinon.spy();
+		clients[ client ].client.onClientRemoved( clients[ client ].presence.callbacks[ logoutEvent ] );
 		setTimeout( done, defaultDelay );
 	});
 
-	this.Then(/^(?:client|clients) (\S)* (?:is|are) notified that (?:clients|client) (\S)* logged ([^"]*)$/, function (client, clientB, event) {
-		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ event ] );
-		sinon.assert.calledWith(clients[ client ].presenceCallbacks[ event ], clientB);
-		clients[ client ].presenceCallbacks[ event ].reset();
+	this.Then(/^(?:client|clients) "([^"]*)" (?:is|are) notified that (?:clients|client) "([^"]*)" logged ([^"]*)$/, function (clientA, clientB, event) {
+		var notifiees = clientA.split(','); var notifiers = clientB.split(',');
+		for( var i = 0; i < notifiees.length; i++ ) {
+			for( var j = 0; j < notifiers.length; j++ ) {
+				sinon.assert.calledWith( clients[ notifiees[ i ] ].presence.callbacks[ event ], notifiers[ j ] );
+			}
+			clients[ notifiees[ i ] ].presence.callbacks[ event ].reset();
+		}
 	});
 
 	this.When(/^(?:subscriber|publisher|client) (\S)* queries for connected clients$/, function (client, done) {
@@ -194,7 +198,6 @@ module.exports = function() {
 
 	this.After(function (scenario, done) {
 		for( var client in clients ) {
-
 			for( var event in clients[ client ].event.callbacks ) {
 				if( clients[ client ].event.callbacks[ event ].isSubscribed !== false ) {
 					clients[ client ].client.event.unsubscribe( event, clients[ client ].event.callbacks[ event ] );
@@ -212,7 +215,7 @@ module.exports = function() {
 			setTimeout( function( client ) {
 				clients[ client ].client.close();
 				delete clients[client];
-			}.bind( null, client ), 50 )
+			}.bind( null, client ), defaultDelay )
 		}
 
 		setTimeout( done, 100 );
