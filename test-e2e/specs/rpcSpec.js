@@ -3,7 +3,7 @@ var DeepstreamServer = require( 'deepstream.io' ),
 		deepstreamClient = require( '../../src/client' ),
 		TestLogger = require( '../tools/test-logger' );
 
-describe( 'rpc', function() {
+fdescribe( 'rpc', function() {
 		var deepstreamServer,
 				logger = new TestLogger(),
 				clientA,

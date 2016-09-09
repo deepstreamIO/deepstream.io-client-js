@@ -194,7 +194,7 @@ module.exports = function() {
     clients[ client ].rpc.callbacks[ rpc ].reset();
   });
 
-  this.Then(/^client (\S)* receives a response for RPC "([^"]*)" with error "([^"]*)"$/, function (client, rpc, error, done) {
+  this.Then(/^client (\S)* receives a response for RPC "([^"]*)" with error "([^"]*)"$/, function (client, rpc, error) {
     sinon.assert.calledOnce(clients[ client ].rpc.callbacks[ rpc ]);
     sinon.assert.calledWith(clients[ client ].rpc.callbacks[ rpc ], error);
     clients[ client ].rpc.callbacks[ rpc ].reset();
