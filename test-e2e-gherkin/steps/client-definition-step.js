@@ -27,6 +27,7 @@ function createClient( clientName, server ) {
     },
     rpc: {
       callbacks: {},
+      provides: {},
       callbacksListeners: {},
       callbacksListenersSpies: {},
       callbacksListenersResponse: {},
@@ -36,20 +37,6 @@ function createClient( clientName, server ) {
   clients[ clientName ].client.on( 'error', ( a, b, c) => {
       console.log( 'An Error occured on ', clientName, a, b, c );
   });
-}
-
-var rpcs = {
-  addTwo: function( client, data, response ){
-    console.log("addTwo called with data", data, "client", client);
-    response.send( data.numA + data.numB );
-  },
-  wontWork: function( client, data, response ){
-    console.log("wontWork called with data", data, "client", client);
-    response.reject();
-  }/*,
-  willBeRerouted: function( data, response ){
-    if( this.wasRejected )
-  }*/
 }
 
 module.exports = function() {
@@ -177,8 +164,31 @@ module.exports = function() {
    ******************************************************** RPCs ******************************************************************
    ********************************************************************************************************************************/
 
-  this.Given(/^(?:subscriber|publisher|client) (\S)* provides the RPC "([^"]*)"$/, function (client, rpc, done) {
-    clients[ client ].client.rpc.provide( rpc, rpcs[ rpc ].bind(null, client) );
+
+  this.Given(/^(?:subscriber|publisher|client) (\S)* provides the RPC "([^"]*)"$/, function (provider, rpc, done) {
+    const rpcs = {
+      addTwo: function( provider, data, response ){
+        clients[ provider ].rpc.provides[ 'addTwo' ]();
+        //console.log("addTwo called with data", data, "provider", provider);
+        response.send( data.numA + data.numB );
+      },
+      alwaysReject: function( provider, data, response ){
+        clients[ provider ].rpc.provides[ 'alwaysReject' ]();
+        response.reject();
+      },
+      clientBRejects: function( provider, data, response ){
+        clients[ provider ].rpc.provides[ 'clientBRejects' ]();
+        console.log(provider, "clientBRejects")
+        if( provider === 'B' ){
+          response.reject();
+        } else {
+          response.send( data.root * data.root );
+        }
+      }
+    }
+
+    clients[ provider ].rpc.provides[ rpc ] = sinon.spy();
+    clients[ provider ].client.rpc.provide( rpc, rpcs[ rpc ].bind(null, provider) );
     setTimeout( done, defaultDelay );
   });
 
@@ -198,6 +208,18 @@ module.exports = function() {
     sinon.assert.calledOnce(clients[ client ].rpc.callbacks[ rpc ]);
     sinon.assert.calledWith(clients[ client ].rpc.callbacks[ rpc ], error);
     clients[ client ].rpc.callbacks[ rpc ].reset();
+  });
+
+  this.Then(/^client (\S)*'s RPC "([^"]*)" is (never called|called (once|(\d+) times?))$/, function (provider, rpc, never, once, timesCalled){
+    if ( never[0] === 'n'){
+      timesCalled = 0;
+    } else if ( once[0] === 'o' ){
+      timesCalled = 1;
+    } else {
+      timesCalled = parseInt( timesCalled );
+    }
+    sinon.assert.callCount( clients[ provider ].rpc.provides[ rpc ], timesCalled );
+    clients[ provider ].rpc.provides[ rpc ].reset();
   });
 
   /********************************************************************************************************************************
