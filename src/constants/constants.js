@@ -30,6 +30,7 @@ exports.TOPIC.RECORD = 'R';
 exports.TOPIC.RPC = 'P';
 exports.TOPIC.WEBRTC = 'W';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
+exports.TOPIC.PRESENCE = 'PN';
 
 exports.EVENT = {};
 exports.EVENT.CONNECTION_ERROR = 'connectionError';
@@ -83,6 +84,8 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
+exports.ACTIONS.PRESENCE_JOIN = 'PNJ';
+exports.ACTIONS.PRESENCE_LEAVE = 'PNL';
 
 //WebRtc
 exports.ACTIONS.WEBRTC_REGISTER_CALLEE = 'RC';
