@@ -41,27 +41,42 @@ Cluster.prototype.stop = function() {
 };
 
 Cluster.prototype._startServer = function( port, done ) {
-	this.servers[ port ] = new DeepstreamServer();
+  this.servers[ port ] = new DeepstreamServer({
+    port       : port - 100,
+    tcpPort    : port,
+    serverName : 'server-' + port,
+
+    stateReconciliationTimeout : 100,
+    clusterKeepAliveInterval   : 100,
+    clusterActiveCheckInterval : 100,
+    clusterNodeInactiveTimeout : 200,
+    lockTimeout                : 1000,
+
+    showLogo : false,
+    stopped  : this._checkStopped.bind( this ),
+
+    plugins : {
+      message : {
+        name    : 'redis',
+        options : { host   : 'localhost', port : 6379 }
+      }
+    },
+
+    maxAuthAttempts              : 2,
+    unauthenticatedClientTimeout : 200,
+    auth : {
+      type    : 'file',
+      options : {
+        path : './test-e2e-gherkin/users.yml'
+      }
+    }
+  });
 	if( done instanceof Function ) {
 		this.servers[ port ].on( 'started', done );
 	} else {
 		this.servers[ port ].on( 'started', this._checkReady.bind( this, port ) );
 	}
 
-	this.servers[ port ].set( 'tcpPort', port );
-	this.servers[ port ].set( 'serverName', 'server-' + port );
-
-	this.servers[ port ].set( 'stateReconciliationTimeout', 100 );
-	this.servers[ port ].set( 'clusterKeepAliveInterval', 100 );
-	this.servers[ port ].set( 'clusterActiveCheckInterval', 100 );
-	this.servers[ port ].set( 'clusterNodeInactiveTimeout', 200 );
-	this.servers[ port ].set( 'lockTimeout', 1000 );
-
-	this.servers[ port ].set( 'port', port - 100 );
-	this.servers[ port ].set( 'messageConnector', new RedisConnector({
-		port: config.redisPort,
-		host: config.redisHost
-	}));
 	if( this._enableLogging !== true ) {
 		this.servers[ port ].set( 'logger', new Logger() );
 	}

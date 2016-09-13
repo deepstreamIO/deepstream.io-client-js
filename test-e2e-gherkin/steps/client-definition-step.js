@@ -1,3 +1,5 @@
+'use strict'
+
 const sinon = require( 'sinon' );
 const DeepstreamClient = require( '../../src/client' );
 const Cluster = require( '../cluster' );
@@ -13,6 +15,8 @@ function createClient( clientName, server ) {
       lockTimeout: 5000,
       lockRequestTimeout: 5000
     } ),
+    login: sinon.spy(),
+    error: sinon.spy(),
     event: {
       callbacks: {},
       callbacksListeners: {},
@@ -34,98 +38,154 @@ function createClient( clientName, server ) {
     }
 
   }
-  clients[ clientName ].client.on( 'error', ( a, b, c) => {
-      console.log( 'An Error occured on ', clientName, a, b, c );
+  clients[ clientName ].client.on( 'error', ( a, b, c ) => {
+    console.log( 'An Error occured on', clientName , a, b, c );
   });
+
+  clients[ clientName ].client.on( 'error', clients[ clientName ].error );
 }
 
-module.exports = function() {
+module.exports = function () {
   /********************************************************************************************************************************
    ************************************************ CONNECTIVITY ******************************************************************
    ********************************************************************************************************************************/
-  this.Given(/^(?:subscriber|publisher|client) (\S)* connects to server (\d+)$/, function (client, server) {
+  this.Given(/^(?:subscriber|publisher|client) (\S*) connects to server (\d+)$/, (client, server, done) => {
     createClient( client, server );
+    done();
   });
 
-  this.Given(/^(?:subscriber|publisher|client) (\S)* connects and logs into server (\d+)$/, function (client, server, callback) {
+  this.Given(/^(?:subscriber|publisher|client) (\S*) connects and logs into server (\d+)$/, (client, server, done) => {
     createClient( client, server );
-    clients[ client ].client.login( {}, function() {
-      callback();
+    clients[ client ].client.login( { username: 'userA', password: 'abcdefgh' }, () => {
+      done();
     } );
   });
 
-  this.Given(/^(?:subscriber|publisher|client) (\S)* logs in with username "([^"]*)" and password "([^"]*)"$/, function (client, username, password, callback) {
+  this.Given(/^(?:subscriber|publisher|client) (\S*) logs in with username "([^"]*)" and password "([^"]*)"$/, ( client, username, password, done ) => {
     clients[ client ].client.login( {
         username: username,
         password: password
-    }, function() {
-        callback();
+    }, () => {
+      clients[ client  ].login.apply(arguments);
+      console.log('login response', arguments);
+      done();
     } );
+  });
+
+  this.When(/^(?:subscriber|publisher|client) (\S*) attempts to login with username "([^"]*)" and password "([^"]*)"$/, ( client, username, password ) => {
+    clients[ client ].client.login( {
+        username: username,
+        password: password
+    } );
+  } );
+
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (no|an (un)?authenticated) login response$/, ( client, no, unauth ) => {
+    const loginSpy = clients[ client ].login;
+    if ( no.match(/^no$/) ) {
+      sinon.assert.notCalled( loginSpy )
+    } else if ( !unauth ) {
+      sinon.assert.calledOnce( loginSpy );
+      sinon.assert.calledWith( loginSpy, true, null );
+    }
+    else {
+      sinon.assert.calledOnce( loginSpy );
+      sinon.assert.calledWith( loginSpy, false );
+    }
+    loginSpy.reset();
+  });
+
+  this.Then(/^(?:subscriber|publisher|client) (\S*)'s connection times out$/, ( client, done ) => {
+    setTimeout( () => {
+      const errorSpy = clients[ client ].error;
+      sinon.assert.calledOnce( errorSpy );
+      //sinon.assert.calledWith( errorSpy, 'A', 1 );
+      sinon.assert.calledWithMatch( errorSpy, sinon.match.any, 'CONNECTION_AUTHENTICATION_TIMEOUT', 'C' );
+      errorSpy.reset();
+      done();
+    }, 1000 );
+  });
+
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (\S*) error (\S*)$/, ( client, topic, event ) => {
+    const callback = clients[ client ].error;
+    sinon.assert.calledOnce( callback );
+    sinon.assert.calledWith( callback, sinon.match.any, event, topic);
+    callback.reset();
   });
 
   /********************************************************************************************************************************
    ************************************************ EVENTS ******************************************************************
    ********************************************************************************************************************************/
 
-  this.When(/^(?:subscriber|publisher|client) (\S)* publishes an event named "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, function (client, subscriptionName, data, done) {
+  this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event named "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, subscriptionName, data, done) => {
     clients[ client ].client.event.emit( subscriptionName, JSON.parse(data) );
     setTimeout( done, defaultDelay );
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S)* receives the event "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, function (client, subscriptionName, data) {
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives the event "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, subscriptionName, data) => {
     sinon.assert.calledOnce(clients[ client ].event.callbacks[ subscriptionName ]);
     sinon.assert.calledWith(clients[ client ].event.callbacks[ subscriptionName ], JSON.parse(data));
     clients[ client ].event.callbacks[ subscriptionName ].reset();
   });
 
-  this.Then(/^all (?:subscriber|publisher|client)s receive the event "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, function (subscriptionName, data) {
-    for ( var client in clients ){
-      sinon.assert.calledOnce(clients[client].event.callbacks[ subscriptionName ]);
-      sinon.assert.calledWith(clients[client].event.callbacks[ subscriptionName ], JSON.parse(data));
+  this.Then(/^all (?:subscriber|publisher|client)s receive the event "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (subscriptionName, data) => {
+    for ( const client in clients ){
+      sinon.assert.calledOnce(clients[ client ].event.callbacks[ subscriptionName ]);
+      sinon.assert.calledWith(clients[ client ].event.callbacks[ subscriptionName ], JSON.parse(data));
       clients[client].event.callbacks[ subscriptionName ].reset();
     }
   });
 
-  this.Given(/^(?:subscriber|publisher|client) (\S)* subscribes to (?:a|an) (event|record) named "([^"]*)"$/, function ( client, type, subscriptionName, done ) {
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives no event named "([^"]*)"$/, (client, subscriptionName) => {
+    sinon.assert.notCalled(clients[ client ].event.callbacks[ subscriptionName ]);
+  });
+
+
+  /********************************************************************************************************************************
+   *********************************************************** RECORDS ************************************************************
+   ********************************************************************************************************************************/
+
+
+  /********************************************************************************************************************************
+   ************************************************** RECORD/EVENT SUBSCRIPTIONS **************************************************
+   ********************************************************************************************************************************/
+
+
+  this.Given(/^(?:subscriber|publisher|client) (\S*) subscribes to (?:a|an) (event|record) named "([^"]*)"$/, ( client, type, subscriptionName, done ) => {
     clients[ client ][ type ].callbacks[ subscriptionName ] = sinon.spy();
     clients[ client ].client[ type ].subscribe( subscriptionName, clients[ client ][ type ].callbacks[ subscriptionName ] );
     setTimeout( done, defaultDelay );
   });
 
-  this.Given(/^all (?:subscriber|publisher|client)s subscribe to (?:a|an) (event|record) named "([^"]*)"$/, function ( type, subscriptionName, done ) {
-    for (var client in clients) {
+  this.Given(/^all (?:subscriber|publisher|client)s subscribe to (?:a|an) (event|record) named "([^"]*)"$/, ( type, subscriptionName, done ) => {
+    for (const client in clients) {
       clients[ client ][ type ].callbacks[ subscriptionName ] = sinon.spy();
       clients[ client ].client[ type ].subscribe( subscriptionName, clients[ client ][ type ].callbacks[ subscriptionName ] );
       setTimeout( done, defaultDelay );
     }
   });
 
-  this.When(/^(?:subscriber|publisher|client) (\S)* unsubscribes from (?:a|an) (event|record) named "([^"]*)"$/, function (client, type, subscriptionName, done) {
+  this.When(/^(?:subscriber|publisher|client) (\S*) unsubscribes from (?:a|an) (event|record) named "([^"]*)"$/, (client, type, subscriptionName, done) => {
     clients[ client ].client.event.unsubscribe( subscriptionName, clients[ client ].event.callbacks[ subscriptionName ] );
     clients[ client ].event.callbacks[ subscriptionName ].isSubscribed = false;
     setTimeout( done, defaultDelay );
-  });
-
-  this.Then(/^(?:subscriber|publisher|client) (\S)* receives no event named "([^"]*)"$/, function (client, subscriptionName) {
-    sinon.assert.notCalled(clients[ client ].event.callbacks[ subscriptionName ]);
   });
 
   /********************************************************************************************************************************
    *************************************************** LISTENING ******************************************************************
    ********************************************************************************************************************************/
 
-  this.When(/^publisher (\S)* (accepts|rejects) (?:a|an) (event|record) match "([^"]*)" for pattern "([^"]*)"$/, function (client, action, type, subscriptionName, pattern) {
+  this.When(/^publisher (\S*) (accepts|rejects) (?:a|an) (event|record) match "([^"]*)" for pattern "([^"]*)"$/, (client, action, type, subscriptionName, pattern) => {
     clients[ client ][ type ].callbacksListenersSpies[ pattern ].withArgs( subscriptionName, true );
     clients[ client ][ type ].callbacksListenersSpies[ pattern ].withArgs( subscriptionName, false );
-    clients[ client ][ type ].callbacksListenersResponse[ pattern ] = ( action === "accepts" ? true : false);
+    clients[ client ][ type ].callbacksListenersResponse[ pattern ] = ( action === 'accepts' );
   });
 
-  this.When(/^publisher (\S)* listens to (?:a|an) (event|record) with pattern "([^"]*)"$/, function (client, type, pattern, done) {
+  this.When(/^publisher (\S*) listens to (?:a|an) (event|record) with pattern "([^"]*)"$/, (client, type, pattern, done) => {
     if( !clients[ client ][ type ].callbacksListenersSpies[ pattern ] ) {
       clients[ client ][ type ].callbacksListenersSpies[ pattern ] = sinon.spy();
     }
 
-    clients[ client ][ type ].callbacksListeners[ pattern ] = function( subscriptionName, isSubscribed, response) {
+    clients[ client ][ type ].callbacksListeners[ pattern ] = ( subscriptionName, isSubscribed, response) => {
       if( isSubscribed ) {
         if( clients[ client ][ type ].callbacksListenersResponse[ pattern ] ) {
           response.accept();
@@ -139,24 +199,24 @@ module.exports = function() {
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/^publisher (\S)* unlistens to the (event|record) pattern "([^"]*)"$/, function (client, type, pattern, done) {
+  this.When(/^publisher (\S*) unlistens to the (event|record) pattern "([^"]*)"$/, (client, type, pattern, done) => {
     clients[ client ].client[ type ].unlisten( pattern );
     clients[ client ][ type ].callbacksListeners[ pattern ].isListening = false;
     setTimeout( done, defaultDelay );
   });
 
-  this.Then(/^publisher (\S)* does not receive (?:a|an) (event|record) match "([^"]*)" for pattern "([^"]*)"$/, function (client, type, match, pattern) {
-    var listenCallbackSpy = clients[ client ][ type ].callbacksListenersSpies[ pattern ];
+  this.Then(/^publisher (\S*) does not receive (?:a|an) (event|record) match "([^"]*)" for pattern "([^"]*)"$/, (client, type, match, pattern) => {
+    const listenCallbackSpy = clients[ client ][ type ].callbacksListenersSpies[ pattern ];
     sinon.assert.neverCalledWith(listenCallbackSpy, match);
   });
 
-  this.Then(/^publisher (\S)* receives (\d+) (event|record) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, function (client, count, type, subscriptionName, pattern) {
-    var listenCallbackSpy = clients[ client ][ type ].callbacksListenersSpies[ pattern ];
+  this.Then(/^publisher (\S*) receives (\d+) (event|record) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, (client, count, type, subscriptionName, pattern) => {
+    const listenCallbackSpy = clients[ client ][ type ].callbacksListenersSpies[ pattern ];
     sinon.assert.callCount( listenCallbackSpy.withArgs( subscriptionName, true ), Number( count ) )
   });
 
-  this.Then(/^publisher (\S)* removes (\d+) (event|record) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, function (client, count, type, subscriptionName, pattern) {
-    var listenCallbackSpy = clients[ client ][ type ].callbacksListenersSpies[ pattern ];
+  this.Then(/^publisher (\S*) removes (\d+) (event|record) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, (client, count, type, subscriptionName, pattern) => {
+    const listenCallbackSpy = clients[ client ][ type ].callbacksListenersSpies[ pattern ];
     sinon.assert.callCount( listenCallbackSpy.withArgs( subscriptionName, false ), Number( count ) )
   });
 
@@ -165,21 +225,22 @@ module.exports = function() {
    ********************************************************************************************************************************/
 
 
-  this.Given(/^(?:subscriber|publisher|client) (\S)* provides the RPC "([^"]*)"$/, function (provider, rpc, done) {
+  this.Given(/^(all clients (?:un)?provide|(?:subscriber|publisher|client) (\S*) (?:un)?provides) the RPC "([^"]*)"$/, (begin, provider, rpc, done) => {
     const rpcs = {
-      addTwo: function( provider, data, response ){
-        clients[ provider ].rpc.provides[ 'addTwo' ]();
-        //console.log("addTwo called with data", data, "provider", provider);
+      addTwo: ( client, data, response ) => {
+        clients[ client ].rpc.provides.addTwo();
+        //console.log("addTwo called with data", data, "client", client);
         response.send( data.numA + data.numB );
       },
-      alwaysReject: function( provider, data, response ){
-        clients[ provider ].rpc.provides[ 'alwaysReject' ]();
+      alwaysReject: ( client, data, response ) => {
+        console.log('client', client, 'rejects')
+        clients[ client ].rpc.provides.alwaysReject();
         response.reject();
       },
-      clientBRejects: function( provider, data, response ){
-        clients[ provider ].rpc.provides[ 'clientBRejects' ]();
-        console.log(provider, "clientBRejects")
-        if( provider === 'B' ){
+      clientBRejects: ( client, data, response ) => {
+        clients[ client ].rpc.provides.clientBRejects();
+        console.log(client, 'clientBRejects')
+        if( client === 'B' ){
           response.reject();
         } else {
           response.send( data.root * data.root );
@@ -187,36 +248,51 @@ module.exports = function() {
       }
     }
 
-    clients[ provider ].rpc.provides[ rpc ] = sinon.spy();
-    clients[ provider ].client.rpc.provide( rpc, rpcs[ rpc ].bind(null, provider) );
+    let providers;
+    if( provider ){
+      providers = [ provider ];
+    } else {
+      providers = Object.keys( clients );
+    }
+
+    if( !begin.match( /unprovide/ ) ) {
+      for( const provider of providers ){
+        clients[ provider ].rpc.provides[ rpc ] = sinon.spy();
+        clients[ provider ].client.rpc.provide( rpc, rpcs[ rpc ].bind(null, provider) );
+      }
+    } else {
+      for( const provider of providers ) {
+        clients[ provider ].client.rpc.unprovide( rpc );
+      }
+    }
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/^(?:subscriber|publisher|client) (\S)* calls the RPC "([^"]*)" with arguments? (\{.*\})$/, function (client, rpc, args, done) {
-    var callback = clients[ client ].rpc.callbacks[ rpc ] = sinon.spy();
+  this.When(/^(?:subscriber|publisher|client) (\S*) calls the RPC "([^"]*)" with arguments? (\{.*\})$/, (client, rpc, args, done) => {
+    const callback = clients[ client ].rpc.callbacks[ rpc ] = sinon.spy();
     clients[ client ].client.rpc.make( rpc, JSON.parse(args), callback );
     setTimeout( done, defaultDelay );
   });
 
-  this.Then(/^client (\S)* receives a response for RPC "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, function (client, rpc, data) {
+  this.Then(/^client (\S*) receives a response for RPC "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, rpc, data) => {
     sinon.assert.calledOnce(clients[ client ].rpc.callbacks[ rpc ]);
     sinon.assert.calledWith(clients[ client ].rpc.callbacks[ rpc ], null, JSON.parse(data));
     clients[ client ].rpc.callbacks[ rpc ].reset();
   });
 
-  this.Then(/^client (\S)* receives a response for RPC "([^"]*)" with error "([^"]*)"$/, function (client, rpc, error) {
+  this.Then(/^client (\S*) receives a response for RPC "([^"]*)" with error "([^"]*)"$/, (client, rpc, error) => {
     sinon.assert.calledOnce(clients[ client ].rpc.callbacks[ rpc ]);
     sinon.assert.calledWith(clients[ client ].rpc.callbacks[ rpc ], error);
     clients[ client ].rpc.callbacks[ rpc ].reset();
   });
 
-  this.Then(/^client (\S)*'s RPC "([^"]*)" is (never called|called (once|(\d+) times?))$/, function (provider, rpc, never, once, timesCalled){
+  this.Then(/^client (\S*)'s RPC "([^"]*)" is (never called|called (once|(\d+) times?))$/, (provider, rpc, never, once, timesCalled) => {
     if ( never[0] === 'n'){
       timesCalled = 0;
     } else if ( once[0] === 'o' ){
       timesCalled = 1;
     } else {
-      timesCalled = parseInt( timesCalled );
+      timesCalled = parseInt( timesCalled, 10 );
     }
     sinon.assert.callCount( clients[ provider ].rpc.provides[ rpc ], timesCalled );
     clients[ provider ].rpc.provides[ rpc ].reset();
@@ -226,28 +302,30 @@ module.exports = function() {
    *************************************************** Boiler Plate ***************************************************************
    ********************************************************************************************************************************/
 
-  this.Before(function (scenario) {
+  this.Before(( /*scenario*/ ) => {
     // client are connecting via "Background" explictly
   });
 
-  this.After(function (scenario, done) {
-    for( var client in clients ) {
+  this.After((scenario, done) => {
+    for( const client in clients ) {
 
-      for( var event in clients[ client ].event.callbacks ) {
+        sinon.assert.notCalled( clients[ client ].error );
+
+      for( const event in clients[ client ].event.callbacks ) {
         if( clients[ client ].event.callbacks[ event ].isSubscribed !== false ) {
           clients[ client ].client.event.unsubscribe( event, clients[ client ].event.callbacks[ event ] );
         }
       }
 
-      setTimeout( function( client ) {
-        for( var pattern in clients[ client ].event.callbacksListeners ) {
+      setTimeout( function ( client ) {
+        for( const pattern in clients[ client ].event.callbacksListeners ) {
           if( clients[ client ].event.callbacksListeners[ pattern ].isListening !== false ) {
             clients[ client ].client.event.unlisten( pattern, clients[ client ].event.callbacksListeners[ pattern ] );
           }
         }
       }.bind( null, client ), 1 )
 
-      setTimeout( function( client ) {
+      setTimeout( function ( client ) {
         clients[ client ].client.close();
         delete clients[client];
       }.bind( null, client ), 50 )
