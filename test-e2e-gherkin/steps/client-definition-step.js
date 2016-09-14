@@ -65,9 +65,9 @@ module.exports = function () {
     clients[ client ].client.login( {
         username: username,
         password: password
-    }, () => {
-      clients[ client  ].login.apply(arguments);
-      console.log('login response', arguments);
+    }, ( success, data ) => {
+      clients[ client  ].login( success, data );
+      console.log( 'login response', success, data );
       done();
     } );
   });
@@ -78,6 +78,14 @@ module.exports = function () {
         password: password
     } );
   } );
+
+  this.Then(/^(?:subscriber|publisher|client) (\S*) is notified of too many login attempts$/, ( client ) => {
+    const loginSpy = clients[ client ].login;
+    sinon.assert.callCount( loginSpy, 2 );
+    sinon.assert.calledWith( loginSpy, false, undefined );
+    sinon.assert.calledWith( loginSpy, false, 'too many authentication attempts' );
+    loginSpy.reset();
+  });
 
   this.Then(/^(?:subscriber|publisher|client) (\S*) receives (no|an (un)?authenticated) login response$/, ( client, no, unauth ) => {
     const loginSpy = clients[ client ].login;
