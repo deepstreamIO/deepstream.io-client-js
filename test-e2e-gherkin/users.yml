@@ -3,6 +3,10 @@ userA:
   password: "abcdefgh"
 userB:
   password: "123456789"
+  clientData:
+    favorite color: orange
+  serverData:
+    invalid: invalid
 
 A:
   password: "abcdefgh"
