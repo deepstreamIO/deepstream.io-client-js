@@ -46,14 +46,14 @@
 			"subscribe": false
 		},
 		"a-to-b/*": {
-			"publish": "user.id === 'client-a'",
-			"subscribe": "user.id === 'client-b'"
+			"publish": "user.id === 'A'",
+			"subscribe": "user.id === 'B'"
 		},
 		"news/$topic": {
 			"publish": "$topic === 'tea-cup-pigs'"
 		},
 		"number": {
-			"publish": "typeof data === 'number' && data > 10"
+			"publish": "data > 10"
 		},
 		"place/$city": {
 			"publish": "$city.toLowerCase() === data.address.city.toLowerCase()"

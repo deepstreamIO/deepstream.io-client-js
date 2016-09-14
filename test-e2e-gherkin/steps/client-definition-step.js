@@ -56,7 +56,7 @@ module.exports = function () {
 
   this.Given(/^(?:subscriber|publisher|client) (\S*) connects and logs into server (\d+)$/, (client, server, done) => {
     createClient( client, server );
-    clients[ client ].client.login( { username: 'userA', password: 'abcdefgh' }, () => {
+    clients[ client ].client.login( { username: client, password: 'abcdefgh' }, () => {
       done();
     } );
   });
@@ -113,11 +113,16 @@ module.exports = function () {
     }, 1000 );
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (\S*) error (\S*)$/, ( client, topic, event ) => {
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (\S*) error "([^"]*)"$/, ( client, topic, event ) => {
     const callback = clients[ client ].error;
     sinon.assert.calledOnce( callback );
     sinon.assert.calledWith( callback, sinon.match.any, event, topic);
     callback.reset();
+  });
+
+  this.Then(/^(?:subscriber|publisher|client) (\S*) received no errors$/, ( client ) => {
+    const callback = clients[ client ].error;
+    sinon.assert.notCalled( callback );
   });
 
   /********************************************************************************************************************************
@@ -126,6 +131,11 @@ module.exports = function () {
 
   this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event named "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, subscriptionName, data, done) => {
     clients[ client ].client.event.emit( subscriptionName, JSON.parse(data) );
+    setTimeout( done, defaultDelay );
+  });
+
+  this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event named "([^"]*)"$/, (client, subscriptionName, done) => {
+    clients[ client ].client.event.emit( subscriptionName );
     setTimeout( done, defaultDelay );
   });
 

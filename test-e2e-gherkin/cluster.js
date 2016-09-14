@@ -19,6 +19,12 @@ Cluster.getUrl = function( serverId ) {
 	return 'localhost:' + ports[ serverId ];
 };
 
+Cluster.prototype.updatePermissions = function( type ) {
+	for( var serverName in this.servers ) {
+		this.servers[ serverName ]._options.permissionHandler.loadConfig( `./test-e2e-gherkin/permissions-${type}.json` );
+	}
+};
+
 Cluster.prototype.stopServer = function( serverNumber, done ) {
 	var server = this.servers[ Object.keys( this.servers )[ serverNumber ] ];
 	server.on( 'stopped',() => {
@@ -68,6 +74,12 @@ Cluster.prototype._startServer = function( port, done ) {
       type    : 'file',
       options : {
         path : './test-e2e-gherkin/users.yml'
+      }
+    },
+    permission: {
+      type	  : 'config',
+      options : {
+      	path: './test-e2e-gherkin/permissions.json'
       }
     }
   });

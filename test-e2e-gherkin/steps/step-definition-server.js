@@ -4,6 +4,10 @@ var cluster;
 
 module.exports = function() {
 
+	this.Given(/"([^"]*)" permissions are used$/, function ( permissionType ) {
+		cluster.updatePermissions( permissionType );
+	});
+
 	this.When(/^server (\S)* goes down$/, function ( server, done) {
 		cluster.stopServer( server - 1, done );
 	});
