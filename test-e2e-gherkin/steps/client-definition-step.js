@@ -67,7 +67,6 @@ module.exports = function () {
         password: password
     }, ( success, data ) => {
       clients[ client  ].login( success, data );
-      console.log( 'login response', success, data );
       done();
     } );
   });
@@ -255,14 +254,24 @@ module.exports = function () {
         //console.log("addTwo called with data", data, "client", client);
         response.send( data.numA + data.numB );
       },
+      double: ( client, data, response ) => {
+        clients[ client ].rpc.provides.double();
+        response.send( data * 2 );
+      },
+      "a-provide-b-request": ( client, data, response ) => {
+        clients[ client ].rpc.provides[ 'a-provide-b-request' ]();
+        response.send( data * 3 );
+      },
+      "only-full-user-data": ( client, data, response ) => {
+        clients[ client ].rpc.provides[ 'only-full-user-data' ]();
+        response.send( 'ok' );
+      },
       alwaysReject: ( client, data, response ) => {
-        console.log('client', client, 'rejects')
         clients[ client ].rpc.provides.alwaysReject();
         response.reject();
       },
       clientBRejects: ( client, data, response ) => {
         clients[ client ].rpc.provides.clientBRejects();
-        console.log(client, 'clientBRejects')
         if( client === 'B' ){
           response.reject();
         } else {
@@ -291,15 +300,19 @@ module.exports = function () {
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/^(?:subscriber|publisher|client) (\S*) calls the RPC "([^"]*)" with arguments? (\{.*\})$/, (client, rpc, args, done) => {
+  this.When(/^(?:subscriber|publisher|client) (\S*) calls the RPC "([^"]*)" with arguments? ("[^"]*"|\d+|\{.*\})$/, (client, rpc, args, done) => {
     const callback = clients[ client ].rpc.callbacks[ rpc ] = sinon.spy();
-    clients[ client ].client.rpc.make( rpc, JSON.parse(args), callback );
+    clients[ client ].client.rpc.make( rpc, JSON.parse(args), ( a, b ) => {
+      callback( a, b && b.toString() );
+    } );
     setTimeout( done, defaultDelay );
   });
 
+
   this.Then(/^client (\S*) receives a response for RPC "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, rpc, data) => {
     sinon.assert.calledOnce(clients[ client ].rpc.callbacks[ rpc ]);
-    sinon.assert.calledWith(clients[ client ].rpc.callbacks[ rpc ], null, JSON.parse(data));
+    console.log( typeof JSON.parse(data) )
+    sinon.assert.calledWith(clients[ client ].rpc.callbacks[ rpc ], null, JSON.parse(data).toString() );
     clients[ client ].rpc.callbacks[ rpc ].reset();
   });
 
