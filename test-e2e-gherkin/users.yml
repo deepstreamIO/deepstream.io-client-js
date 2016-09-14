@@ -3,10 +3,15 @@ userA:
   # Password hash ( hash options passed within config.yml )
   # This hash represents clear text "password" with default options
   password: "abcdefgh"
-  # Server data is used within your permission handler
 
 userB:
   # Password hash ( hash options passed within config.yml )
   # This hash represents clear text "password" with default options
   password: "123456789"
-  # Server data is used within your permission handler
+
+  clientData:
+    favorite color: orange
+
+  data: 
+    invalid: invalid
+

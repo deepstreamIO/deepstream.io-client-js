@@ -87,13 +87,18 @@ module.exports = function () {
     loginSpy.reset();
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (no|an (un)?authenticated) login response$/, ( client, no, unauth ) => {
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (no|an (un)?authenticated) login response(?: with data (\{.*\}))?$/, ( client, no, unauth, data ) => {
     const loginSpy = clients[ client ].login;
     if ( no.match(/^no$/) ) {
       sinon.assert.notCalled( loginSpy )
     } else if ( !unauth ) {
       sinon.assert.calledOnce( loginSpy );
-      sinon.assert.calledWith( loginSpy, true, null );
+      if ( data ) {
+        sinon.assert.calledWith( loginSpy, true, JSON.parse( data ) );
+      }
+      else {
+        sinon.assert.calledWith( loginSpy, true, null );
+      }
     }
     else {
       sinon.assert.calledOnce( loginSpy );
@@ -121,7 +126,7 @@ module.exports = function () {
   });
 
   /********************************************************************************************************************************
-   ************************************************ EVENTS ******************************************************************
+   ************************************************************ EVENTS ************************************************************
    ********************************************************************************************************************************/
 
   this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event named "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, subscriptionName, data, done) => {
