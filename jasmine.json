@@ -1,7 +1,6 @@
 {
   "spec_dir": ".",
   "spec_files": [
-    "test-e2e/specs/*[sS]pec.js",
     "test-unit/unit/**/*[sS]pec.js"
   ],
   "helpers": [

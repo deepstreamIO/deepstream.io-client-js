@@ -5,7 +5,7 @@ var C = require( '../constants/constants' ),
 /**
  * This object provides a number of methods that allow a rpc provider
  * to respond to a request
- * 
+ *
  * @param {Connection} connection - the clients connection object
  * @param {String} name the name of the rpc
  * @param {String} correlationId the correlationId for the RPC
@@ -24,7 +24,7 @@ var RpcResponse = function( connection, name, correlationId ) {
  * Acknowledges the receipt of the request. This
  * will happen implicitly unless the request callback
  * explicitly sets autoAck to false
- * 
+ *
  * @public
  * @returns 	{void}
  */
@@ -41,7 +41,7 @@ RpcResponse.prototype.ack = function() {
  * receives a rejection message it will try to route the request to
  * another provider - or return a NO_RPC_PROVIDER error if there are no
  * providers left
- * 
+ *
  * @public
  * @returns	{void}
  */
@@ -53,7 +53,7 @@ RpcResponse.prototype.reject = function() {
 };
 
 /**
- * Notifies the server that an error has occured while trying to process the request. 
+ * Notifies the server that an error has occured while trying to process the request.
  * This will complete the rpc.
  *
  * @param {String} errorMsg the message used to describe the error that occured
@@ -74,9 +74,9 @@ RpcResponse.prototype.error = function( errorMsg ) {
  * If autoAck is disabled and the response is sent before
  * the ack message the request will still be completed and the
  * ack message ignored
- * 
+ *
  * @param {String} data the data send by the provider. Might be JSON serialized
- * 
+ *
  * @public
  * @returns {void}
  */
@@ -84,7 +84,8 @@ RpcResponse.prototype.send = function( data ) {
 	if( this._isComplete === true ) {
 		throw new Error( 'Rpc ' + this._name + ' already completed' );
 	}
-	
+	this.ack();
+
 	var typedData = messageBuilder.typed( data );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.RESPONSE, [ this._name, this._correlationId, typedData ] );
 	this._isComplete = true;
@@ -93,7 +94,7 @@ RpcResponse.prototype.send = function( data ) {
 /**
  * Callback for the autoAck timeout. Executes ack
  * if autoAck is not disabled
- * 
+ *
  * @private
  * @returns {void}
  */

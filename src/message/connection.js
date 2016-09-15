@@ -265,7 +265,7 @@ Connection.prototype._onError = function( error ) {
 	 * an error. So let's defer it to allow the reconnection to kick in.
 	 */
 	setTimeout(function(){
-		this._client._$onError( null, C.EVENT.CONNECTION_ERROR, error.toString() );
+		this._client._$onError( C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, error.toString() );
 	}.bind( this ), 1);
 };
 

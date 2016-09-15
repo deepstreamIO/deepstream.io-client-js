@@ -1,0 +1,18 @@
+# Username
+userA:
+  password: "abcdefgh"
+userB:
+  password: "123456789"
+  clientData:
+    favorite color: orange
+  serverData:
+    invalid: invalid
+
+A:
+  password: "abcdefgh"
+B:
+  password: "abcdefgh"
+C:
+  password: "abcdefgh"
+D:
+  password: "abcdefgh"
