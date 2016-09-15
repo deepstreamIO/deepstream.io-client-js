@@ -24,7 +24,11 @@ function createClient( clientName, server ) {
       callbacksListenersResponse: {},
     },
     record: {
-      callbacks: {},
+      records: {},
+      fullCallbacks: {},
+      pathCallbacks: {},
+      snapshotCallback: sinon.spy(),
+      hasCallback: sinon.spy(),
       callbacksListeners: {},
       callbacksListenersSpies: {},
       callbacksListenersResponse: {},
@@ -165,7 +169,46 @@ module.exports = function () {
   /********************************************************************************************************************************
    *********************************************************** RECORDS ************************************************************
    ********************************************************************************************************************************/
+  this.When(/^(?:subscriber|publisher|client) (\S*) gets the record "([^"]*)"$/, function ( client, recordName, done) {
+    clients[ client ].record.records[ recordName ] =  clients[ client ].client.record.getRecord( recordName );
+    setTimeout( done, defaultDelay );
+  });
 
+  this.When(/^(?:subscriber|publisher|client) (\S*) sets the record "([^"]*)" with data (\{.*\})$/, function ( client, recordName, data, done) {
+    clients[ client ].record.records[ recordName ].set( JSON.parse( data ) );
+    setTimeout( done, defaultDelay );
+  });
+
+ this.Given(/^(?:subscriber|client) (\S*) requests a snapshot of record "([^"]*)"$/, function ( client, recordName, done) {
+    clients[ client ].client.record.snapshot( recordName,  clients[ client ].record.snapshotCallback );
+    setTimeout( done, defaultDelay );
+  });
+
+  this.Then(/^(?:subscriber|client) (\S*) gets a snapshot response for "([^"]*)" with (data|error) ("[^"]*"|\{.*\})$/, function ( client, recordName, type, data ) {
+    sinon.assert.calledOnce(clients[ client ].record.snapshotCallback);
+    if( type === 'data' ) {
+      sinon.assert.calledWith(clients[ client ].record.snapshotCallback, null, JSON.parse(data));
+    } else {
+      console.log( data )
+      sinon.assert.calledWith(clients[ client ].record.snapshotCallback, data.replace( /"/g, '' ) );
+    }
+
+    clients[ client ].record.snapshotCallback.reset();
+  });
+
+  this.Given(/^(?:subscriber|client) (\S*) asks if record "([^"]*)" exists$/, function (client, recordName, done) {
+    clients[ client ].client.record.has( recordName, ( a, b ) => {
+      console.log( a, b)
+      clients[ client ].record.hasCallback( a, b );
+    } );
+    setTimeout( done, defaultDelay );
+  });
+
+  this.Then(/^(?:subscriber|client) (\S*) gets told record "([^"]*)" (.*)exists?$/, function ( client, recordName, adjective ) {
+    sinon.assert.calledOnce(clients[ client ].record.hasCallback);
+    sinon.assert.calledWith(clients[ client ].record.hasCallback, null, adjective.indexOf('not') === -1 );
+    clients[ client ].record.hasCallback.reset();
+  });
 
   /********************************************************************************************************************************
    ************************************************** RECORD/EVENT SUBSCRIPTIONS **************************************************
