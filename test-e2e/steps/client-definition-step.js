@@ -5,11 +5,10 @@ const sinon = require( 'sinon' );
 
 const DeepstreamClient = require( '../../src/client' );
 const C = require( '../../src/constants/constants' );
-const Cluster = require( '../cluster' );
-const config = require( '../config' );
+const Cluster = require( '../tools/cluster' );
 
 const clients = {};
-const defaultDelay = config.defaultDelay
+const defaultDelay = process.env.defaultDelay || 10;
 const clientExpression = /all clients|(?:subscriber|publisher|clients?) (\S*)/;
 
 function parseData( data ) {

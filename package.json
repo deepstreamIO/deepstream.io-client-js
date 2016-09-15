@@ -10,16 +10,14 @@
     "test": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
     "reporter": "istanbul cover jasmine-runner.js",
     "coverage": "istanbul cover node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=jasmine.json",
-    "watch": "watch \"npm test\" ./src ./test-unit ./test-e2e",
-    "e2e": "jasmine JASMINE_CONFIG_PATH=jasmine.json test-e2e/specs/*Spec.js",
-    "e2e::watch": "watch \"npm run e2e\" ./src ./test-e2e",
+    "watch": "watch \"npm test\" ./src ./test-unit",
     "unit": "jasmine JASMINE_CONFIG_PATH=jasmine.json test-unit/unit/**/*Spec.js",
     "unit::watch": "watch \"npm run unit\" ./src ./test-unit",
     "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js",
-    "new-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e --require ./test-e2e-gherkin/steps --fail-fast",
-    "rpc-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/rpcs/ --require ./test-e2e-gherkin/steps --fail-fast",
-    "event-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/events/ --require ./test-e2e-gherkin/steps --fail-fast",
-    "record-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/records/ --require ./test-e2e-gherkin/steps --fail-fast"
+    "new-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e --require ./test-e2e/steps --fail-fast",
+    "rpc-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/rpcs/ --require ./test-e2e/steps --fail-fast",
+    "event-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/events/ --require ./test-e2e/steps --fail-fast",
+    "record-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/records/ --require ./test-e2e/steps --fail-fast"
   },
   "repository": {
     "type": "git",

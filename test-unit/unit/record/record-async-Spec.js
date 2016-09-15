@@ -1,11 +1,9 @@
 /* global describe, it, expect, jasmine */
 var DeepstreamServer = require( 'deepstream.io' ),
-	deepstreamClient = require( '../../src/client' ),
-	TestLogger = require( '../tools/test-logger' );
+	deepstreamClient = require( '../../../src/client' );
 
 describe( 'record', function() {
 	var deepstreamServer,
-		logger = new TestLogger(),
 		clientA,
 		clientB;
 
@@ -13,14 +11,24 @@ describe( 'record', function() {
 	it( 'starts the server', function( done ){
 		deepstreamServer = new DeepstreamServer();
 		deepstreamServer.on( 'started', done );
-		deepstreamServer.set( 'logger', logger );
+		deepstreamServer.set( 'logger', {
+			isReady: true,
+			log: function( logLevel, event, logMessage ) {
+				if( logLevel === 3 ) {
+					throw new Error( 'Critical error occured on deepstream ' +  event + ' ' + logMessage );
+				}
+			},
+			setLogLevel: function() {}
+		} );
 		deepstreamServer.set( 'showLogo', false );
 		deepstreamServer.start();
 	});
 
 	it( 'creates clientA', function( done ) {
 		clientA = deepstreamClient( 'localhost:6021' );
+		console.log( 'loggin in')
 		clientA.login( null, function( success ){
+			console.log( 'logged in')
 			expect( success ).toBe( true );
 			done();
 		});
