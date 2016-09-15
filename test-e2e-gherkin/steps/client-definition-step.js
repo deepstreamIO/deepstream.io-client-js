@@ -1,11 +1,14 @@
 'use strict'
 
 const sinon = require( 'sinon' );
+
 const DeepstreamClient = require( '../../src/client' );
+const C = require( '../../src/constants/constants' );
 const Cluster = require( '../cluster' );
 const config = require( '../config' );
+
 const clients = {};
-const defaultDelay = config.defaultDelay
+const defaultDelay = config.defaultDelay;
 
 function createClient( clientName, server ) {
   clients[ clientName ] = {
@@ -121,10 +124,10 @@ module.exports = function () {
     }, 1000 );
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (\S*) error "([^"]*)"$/, ( client, topic, event ) => {
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives "([^"]*)" error "([^"]*)"$/, ( client, topic, event ) => {
     const callback = clients[ client ].error;
     sinon.assert.calledOnce( callback );
-    sinon.assert.calledWith( callback, sinon.match.any, event, topic);
+    sinon.assert.calledWith( callback, sinon.match.any, C.EVENT[event.toUpperCase()], C.TOPIC[topic.toUpperCase()]);
     callback.reset();
   });
 
