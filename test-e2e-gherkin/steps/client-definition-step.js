@@ -1,12 +1,49 @@
 'use strict'
 
+const assert = require('assert');
 const sinon = require( 'sinon' );
 const DeepstreamClient = require( '../../src/client' );
 const Cluster = require( '../cluster' );
 const config = require( '../config' );
 const clients = {};
 const defaultDelay = config.defaultDelay
+const clientExpression = /all clients|(?:subscriber|publisher|clients?) (\S*)/;
 
+function parseData( data ) {
+  if( data === 'undefined' ) {
+    return undefined;
+  } else if( data === 'null' ) {
+    return null;
+  } else {
+    try {
+      return JSON.parse( data );
+    } catch(e) {
+      console.log( 'Illegal data:', data )
+      return data;
+    }
+  }
+}
+
+
+function getClients( expression ) {
+  const result = clientExpression.exec( expression );
+  if( result[ 0 ] === 'all clients' ) {
+    return Object.keys( clients ).map( ( client ) => {
+      return clients[ client ];
+    });
+  }
+  else if( result.length === 2 ) {
+    return [ clients[ result[ 1 ] ] ];
+  } else {
+    throw `Invalid expression: ${expression}`;
+  }
+}
+
+function getRecordData( expression, recordName ) {
+  return getClients( expression ).map( ( client ) => {
+    return client.record.records[ recordName ];
+  } );
+}
 function createClient( clientName, server ) {
   clients[ clientName ] = {
     client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
@@ -24,9 +61,17 @@ function createClient( clientName, server ) {
       callbacksListenersResponse: {},
     },
     record: {
-      records: {},
-      fullCallbacks: {},
-      pathCallbacks: {},
+      records: {
+        // Creates a similar structure when record is requests
+        xxx: {
+          record: null,
+          discardCallback: null,
+          deleteCallback: null,
+          callbackError: null,
+          subscribeCallback: null,
+          subscribePathCallbacks: {}
+        }
+      },
       snapshotCallback: sinon.spy(),
       hasCallback: sinon.spy(),
       callbacksListeners: {},
@@ -169,13 +214,114 @@ module.exports = function () {
   /********************************************************************************************************************************
    *********************************************************** RECORDS ************************************************************
    ********************************************************************************************************************************/
-  this.When(/^(?:subscriber|publisher|client) (\S*) gets the record "([^"]*)"$/, function ( client, recordName, done) {
-    clients[ client ].record.records[ recordName ] =  clients[ client ].client.record.getRecord( recordName );
+  this.When(/(.+) gets? the record "([^"]*)"$/, function ( clientExpression, recordName, done) {
+    getClients( clientExpression ).forEach( ( client ) => {
+      let recordData = {
+          record: client.client.record.getRecord( recordName ),
+          discardCallback: sinon.spy(),
+          deleteCallback: sinon.spy(),
+          callbackError: sinon.spy(),
+          subscribeCallback: sinon.spy(),
+          subscribePathCallbacks: {}
+        }
+        recordData.record.on( 'discard', recordData.discardCallback );
+        recordData.record.on( 'delete', recordData.deleteCallback );
+        client.record.records[ recordName ] = recordData;
+    } );
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/^(?:subscriber|publisher|client) (\S*) sets the record "([^"]*)" with data (\{.*\})$/, function ( client, recordName, data, done) {
-    clients[ client ].record.records[ recordName ].set( JSON.parse( data ) );
+  this.Then(/^(.+) gets notified of record "([^"]*)" getting (discarded|deleted)$/, function (clientExpression, recordName, action) {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      if( action === 'discarded' ) {
+        sinon.assert.calledOnce( recordData.discardCallback );
+        recordData.discardCallback.reset();
+      } else {
+        sinon.assert.calledOnce( recordData.deleteCallback );
+        recordData.deleteCallback.reset();
+      }
+    });
+  });
+
+  this.Then(/^(.+) recieve an update for record "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, data) {
+    data = parseData( data );
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      sinon.assert.calledOnce( recordData.subscribeCallback );
+      sinon.assert.calledWith( recordData.subscribeCallback, data );
+      recordData.subscribeCallback.reset();
+    });
+  });
+
+  this.Then(/^(.+) recieve an update for record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, path, data) {
+    data = parseData( data );
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      sinon.assert.calledOnce( recordData.subscribePathCallbacks[ path ] );
+      sinon.assert.calledWith( recordData.subscribePathCallbacks[ path ], data );
+      recordData.subscribePathCallbacks[ path ].reset();
+    });
+  });
+
+  this.Then(/^(.+) don't recieve an update for record "([^"]*)"$/, function (clientExpression, recordName) {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      sinon.assert.notCalled( recordData.subscribeCallback );
+    });
+  });
+
+  this.Then(/^(.+) don't recieve an update for record "([^"]*)" and path "([^"]*)"$/, function (clientExpression, recordName, path) {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      sinon.assert.notCalled( recordData.subscribePathCallbacks[ path ] );
+    });
+  });
+
+  this.Given(/^(.+) (un)?subscribes? to record "([^"]*)"( with immediate flag)?$/, ( clientExpression, not, recordName, immedate ) => {
+     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      if( !!not ) {
+        recordData.record.unsubscribe( recordData.subscribeCallback );
+      } else {
+        recordData.record.subscribe( recordData.subscribeCallback, !!immedate );
+      }
+    });
+  });
+
+  this.Given(/^(.+) (un)?subscribes? to record "([^"]*)" with path "([^"]*)"( with immediate flag)?$/, ( clientExpression, not, recordName, path, immedate ) => {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      if( !!not ) {
+        recordData.record.unsubscribe( path, recordData.subscribePathCallbacks[ path ] );
+      } else {
+        recordData.subscribePathCallbacks[ path ] = sinon.spy();
+        recordData.record.subscribe( path, recordData.subscribePathCallbacks[ path ], !!immedate );
+      }
+    });
+  });
+
+  this.Then(/^(.+) record "([^"]*)" value is '([^']+)'$/, function ( clientExpression, recordName, data ) {
+    data = parseData( data );
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      assert.deepEqual( data, recordData.record.get() );
+    } );
+  });
+
+  this.Then(/^(.+) record "([^"]*)" path "([^"]*)" value is '([^']+)'$/, function ( clientExpression, recordName, path, data ) {
+    data = parseData( data );
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      assert.deepEqual( data, recordData.record.get( path ) );
+    } );
+  });
+
+  this.Given(/^(.+) discards? record "([^"]*)"$/, function (clientExpression, recordName, done) {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      recordData.record.discard();
+    } );
+    setTimeout( done, defaultDelay );
+  });
+
+  this.When(/^(?:subscriber|publisher|client) (\S*) sets the record "([^"]*)" with data '([^']+)'$/, function ( client, recordName, data, done) {
+    clients[ client ].record.records[ recordName ].record.set( parseData( data ) );
+    setTimeout( done, defaultDelay );
+  });
+
+  this.When(/^(?:subscriber|publisher|client) (\S*) sets the record "([^"]*)" path "([^"]*)" with data '([^']+)'$/, function ( client, recordName, path, data, done) {
+    clients[ client ].record.records[ recordName ].record.set( path, parseData( data ) );
     setTimeout( done, defaultDelay );
   });
 
@@ -184,12 +330,11 @@ module.exports = function () {
     setTimeout( done, defaultDelay );
   });
 
-  this.Then(/^(?:subscriber|client) (\S*) gets a snapshot response for "([^"]*)" with (data|error) ("[^"]*"|\{.*\})$/, function ( client, recordName, type, data ) {
+  this.Then(/^(?:subscriber|client) (\S*) gets a snapshot response for "([^"]*)" with (data|error) '([^']+)'$/, function ( client, recordName, type, data ) {
     sinon.assert.calledOnce(clients[ client ].record.snapshotCallback);
     if( type === 'data' ) {
-      sinon.assert.calledWith(clients[ client ].record.snapshotCallback, null, JSON.parse(data));
+      sinon.assert.calledWith(clients[ client ].record.snapshotCallback, null, parseData( data ));
     } else {
-      console.log( data )
       sinon.assert.calledWith(clients[ client ].record.snapshotCallback, data.replace( /"/g, '' ) );
     }
 
@@ -197,10 +342,7 @@ module.exports = function () {
   });
 
   this.Given(/^(?:subscriber|client) (\S*) asks if record "([^"]*)" exists$/, function (client, recordName, done) {
-    clients[ client ].client.record.has( recordName, ( a, b ) => {
-      console.log( a, b)
-      clients[ client ].record.hasCallback( a, b );
-    } );
+    clients[ client ].client.record.has( recordName, clients[ client ].record.hasCallback );
     setTimeout( done, defaultDelay );
   });
 
@@ -354,7 +496,6 @@ module.exports = function () {
 
   this.Then(/^client (\S*) receives a response for RPC "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, rpc, data) => {
     sinon.assert.calledOnce(clients[ client ].rpc.callbacks[ rpc ]);
-    console.log( typeof JSON.parse(data) )
     sinon.assert.calledWith(clients[ client ].rpc.callbacks[ rpc ], null, JSON.parse(data).toString() );
     clients[ client ].rpc.callbacks[ rpc ].reset();
   });
