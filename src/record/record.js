@@ -384,7 +384,6 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error
  * @returns {void}
  */
 Record.prototype._processAckMessage = function( message ) {
-	console.log( message )
 	var acknowledgedAction = message.data[ 0 ];
 
 	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {

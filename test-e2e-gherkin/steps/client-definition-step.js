@@ -44,6 +44,13 @@ function getRecordData( expression, recordName ) {
     return client.record.records[ recordName ];
   } );
 }
+
+function getListData( expression, listName ) {
+  return getClients( expression ).map( ( client ) => {
+    return client.record.lists[ listName ];
+  } );
+}
+
 function createClient( clientName, server ) {
   clients[ clientName ] = {
     client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
@@ -72,6 +79,19 @@ function createClient( clientName, server ) {
           subscribePathCallbacks: {}
         }
       },
+      lists: {
+        xxx: {
+          list: null,
+          discardCallback: null,
+          deleteCallback: null,
+          callbackError: null,
+          subscribeCallback: null,
+          addedCallback: null,
+          removedCallback: null,
+          movedCallback: null
+        }
+      },
+      anonymousRecord: null,
       snapshotCallback: sinon.spy(),
       hasCallback: sinon.spy(),
       callbacksListeners: {},
@@ -210,6 +230,102 @@ module.exports = function () {
     sinon.assert.notCalled(clients[ client ].event.callbacks[ subscriptionName ]);
   });
 
+  /********************************************************************************************************************************
+   *********************************************************** Lists ************************************************************
+   ********************************************************************************************************************************/
+  this.When(/(.+) gets? the list "([^"]*)"$/, function ( clientExpression, listName, done ) {
+    getClients( clientExpression ).forEach( ( client ) => {
+        let listData = {
+          list: client.client.record.getList( listName ),
+          discardCallback: sinon.spy(),
+          deleteCallback: sinon.spy(),
+          callbackError: sinon.spy(),
+          subscribeCallback: sinon.spy(),
+          addedCallback: sinon.spy(),
+          removedCallback: sinon.spy(),
+          movedCallback: sinon.spy()
+        }
+        listData.list.on( 'discard', listData.discardCallback );
+        listData.list.on( 'delete', listData.deleteCallback );
+        listData.list.on( 'entry-added', listData.addedCallback );
+        listData.list.on( 'entry-removed', listData.removedCallback );
+        listData.list.on( 'entry-moved', listData.movedCallback );
+        listData.list.subscribe( listData.subscribeCallback );
+        client.record.lists[ listName ] = listData;
+    } );
+    setTimeout( done, defaultDelay );
+  } );
+
+  this.Given(/^(.+) sets the entries on the list "([^"]*)" to '([^']*)'$/, function (clientExpression, listName, data, done) {
+    data = parseData( data );
+    getListData( clientExpression, listName ).forEach( ( listData ) => {
+      listData.list.setEntries( data );
+    });
+    setTimeout( done, defaultDelay );
+  });
+
+  this.Given(/^(.+) (adds|removes) an entry "([^"]*)" (?:to|from) "([^""]*)"$/, function (clientExpression, action, entryName, listName, done) {
+    getListData( clientExpression, listName ).forEach( ( listData ) => {
+      if( action === 'adds' ) {
+        listData.list.addEntry( entryName );
+      } else {
+        listData.list.removeEntry( entryName );
+      }
+    });
+    setTimeout( done, defaultDelay );
+  });
+
+
+  this.Then(/^(.+) have a list "([^"]*)" with entries '([^']*)'$/, function (clientExpression, listName, data) {
+    data = parseData( data );
+    getListData( clientExpression, listName ).forEach( ( listData ) => {
+      assert.deepEqual( listData.list.getEntries(), data );
+    });
+  });
+
+  this.Then(/^(.+) gets notified of "([^"]*)" being (added|removed|moved) (?:to|in|from) "([^""]*)"$/, function (clientExpression, entryName, action, listName) {
+    getListData( clientExpression, listName ).forEach( ( listData ) => {
+      if( action === 'added' ) {
+        sinon.assert.calledWith( listData.addedCallback, entryName );
+      } else if( action === 'removed' ) {
+        sinon.assert.calledWith( listData.removedCallback, entryName );
+      } else {
+        sinon.assert.calledWith( listData.movedCallback, entryName );
+      }
+    });
+  });
+
+  this.Then(/^(.+) gets? notified of list "([^"]*)" entries changing to '([^']*)'$/, function (clientExpression, listName, data) {
+    data = parseData( data );
+    getListData( clientExpression, listName ).forEach( ( listData ) => {
+      //sinon.assert.calledOnce( listData.subscribeCallback );
+      sinon.assert.calledWith( listData.subscribeCallback, data );
+    });
+  });
+
+  /********************************************************************************************************************************
+   *********************************************************** ANONYMOUS RECORDS ************************************************************
+   ********************************************************************************************************************************/
+  this.When(/(.+) gets? a anonymous record$/, function ( clientExpression ) {
+    getClients( clientExpression ).forEach( ( client ) => {
+        client.record.anonymousRecord = client.client.record.getAnonymousRecord();
+    } );
+  });
+
+  this.When(/(.+) sets? the underlying record to "([^"]*)" on the anonymous record$/, function ( clientExpression, recordName, done ) {
+    getClients( clientExpression ).forEach( ( client ) => {
+      console.log( recordName )
+        client.record.anonymousRecord.setName( recordName );
+    } );
+    setTimeout( done, defaultDelay );
+  });
+
+  this.When(/(.+) anoynmous record value is '([^']*)'$/, function ( clientExpression, data ) {
+    data = parseData( data );
+    getClients( clientExpression ).forEach( ( client ) => {
+        assert.deepEqual( client.record.anonymousRecord.get(), data);
+    } );
+  });
 
   /********************************************************************************************************************************
    *********************************************************** RECORDS ************************************************************
