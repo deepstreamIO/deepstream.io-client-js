@@ -243,7 +243,7 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) recieve an update for record "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, data) {
+  this.Then(/^(.+) recieves? an update for record "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, data) {
     data = parseData( data );
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       sinon.assert.calledOnce( recordData.subscribeCallback );
@@ -252,7 +252,7 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) recieve an update for record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, path, data) {
+  this.Then(/^(.+) recieves? an update for record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, path, data) {
     data = parseData( data );
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       sinon.assert.calledOnce( recordData.subscribePathCallbacks[ path ] );
@@ -261,7 +261,7 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) don't recieve an update for record "([^"]*)"$/, function (clientExpression, recordName) {
+  this.Then(/^(.+) (?:don't|doesn't|does not) recieve an update for record "([^"]*)"$/, function (clientExpression, recordName) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       sinon.assert.notCalled( recordData.subscribeCallback );
     });
@@ -308,9 +308,13 @@ module.exports = function () {
     } );
   });
 
-  this.Given(/^(.+) discards? record "([^"]*)"$/, function (clientExpression, recordName, done) {
+  this.Given(/^(.+) (discards?|deletes?) record "([^"]*)"$/, function (clientExpression, action, recordName, done) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
-      recordData.record.discard();
+      if( action.indexOf( 'di') > -1 ) {
+        recordData.record.discard();
+      } else {
+        recordData.record.delete();
+      }
     } );
     setTimeout( done, defaultDelay );
   });
