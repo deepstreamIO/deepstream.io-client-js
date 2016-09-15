@@ -13,10 +13,8 @@ const defaultDelay = config.defaultDelay;
 function createClient( clientName, server ) {
   clients[ clientName ] = {
     client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
-      maxReconnectInterval: 200,
-      maxReconnectAttempts: 5,
-      lockTimeout: 5000,
-      lockRequestTimeout: 5000
+      maxReconnectInterval: 300,
+      maxReconnectAttempts: 20,
     } ),
     login: sinon.spy(),
     error: sinon.spy(),
@@ -124,51 +122,94 @@ module.exports = function () {
     }, 1000 );
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) receives "([^"]*)" error "([^"]*)"$/, ( client, topic, event ) => {
-    const callback = clients[ client ].error;
-    sinon.assert.calledOnce( callback );
-    sinon.assert.calledWith( callback, sinon.match.any, C.EVENT[event.toUpperCase()], C.TOPIC[topic.toUpperCase()]);
-    callback.reset();
+  this.Then(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) receives? at least one "([^"]*)" error "([^"]*)"$/, ( client, topicName, eventName ) => {
+    const topic = C.TOPIC[ topicName.toUpperCase() ];
+    const event = C.EVENT[ eventName.toUpperCase() ];
+
+    const iterClients = client ? [ client ] : Object.keys( clients );
+    for ( const client of iterClients ){
+      const callback = clients[ client ].error;
+      sinon.assert.called( callback );
+      sinon.assert.calledWith( callback, sinon.match.any, event, topic );
+      callback.reset();
+    }
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) received no errors$/, ( client ) => {
-    const callback = clients[ client ].error;
-    sinon.assert.notCalled( callback );
+  this.Then(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) receives? "([^"]*)" error "([^"]*)"$/, ( client, topicName, eventName ) => {
+    const topic = C.TOPIC[ topicName.toUpperCase() ];
+    const event = C.EVENT[ eventName.toUpperCase() ];
+
+    const iterClients = client ? [ client ] : Object.keys( clients );
+    for ( const client of iterClients ){
+      const callback = clients[ client ].error;
+      sinon.assert.calledOnce( callback );
+      sinon.assert.calledWith( callback, sinon.match.any, event, topic);
+      callback.reset();
+    }
+  });
+
+  this.Then(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) received? no errors$/, ( client ) => {
+    const iterClients = client ? [ client ] : Object.keys( clients );
+    for ( const client of iterClients ){
+      const callback = clients[ client ].error;
+      sinon.assert.notCalled( callback );
+    }
   });
 
   /********************************************************************************************************************************
    ************************************************************ EVENTS ************************************************************
    ********************************************************************************************************************************/
 
-  this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event named "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, subscriptionName, data, done) => {
-    clients[ client ].client.event.emit( subscriptionName, JSON.parse(data) );
+  this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event named "([^"]*)"(?: with data ("[^"]*"|\d+|\{.*\}))?$/, (client, subscriptionName, data, done) => {
+    data = data && JSON.parse( data );
+
+    clients[ client ].client.event.emit( subscriptionName, data );
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event named "([^"]*)"$/, (client, subscriptionName, done) => {
-    clients[ client ].client.event.emit( subscriptionName );
-    setTimeout( done, defaultDelay );
-  });
+  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (the|no) event "([^"]*)"(?: with data ("[^"]*"|\d+|\{.*\}))?$/, (client, theNo, subscriptionName, data) => {
+    data = data && JSON.parse( data );
+    const doesReceive = !theNo.match(/^no$/);
+    const eventSpy = clients[ client ].event.callbacks[ subscriptionName ];
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) receives the event "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (client, subscriptionName, data) => {
-    sinon.assert.calledOnce(clients[ client ].event.callbacks[ subscriptionName ]);
-    sinon.assert.calledWith(clients[ client ].event.callbacks[ subscriptionName ], JSON.parse(data));
-    clients[ client ].event.callbacks[ subscriptionName ].reset();
-  });
-
-  this.Then(/^all (?:subscriber|publisher|client)s receive the event "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (subscriptionName, data) => {
-    for ( const client in clients ){
-      sinon.assert.calledOnce(clients[ client ].event.callbacks[ subscriptionName ]);
-      sinon.assert.calledWith(clients[ client ].event.callbacks[ subscriptionName ], JSON.parse(data));
-      clients[client].event.callbacks[ subscriptionName ].reset();
+    if ( doesReceive ){
+      sinon.assert.calledOnce( eventSpy );
+      sinon.assert.calledWith( eventSpy, data );
+      eventSpy.reset();
+    } else {
+      sinon.assert.notCalled( eventSpy );
     }
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) receives no event named "([^"]*)"$/, (client, subscriptionName) => {
-    sinon.assert.notCalled(clients[ client ].event.callbacks[ subscriptionName ]);
+  this.Then(/^(all|no) (?:subscriber|publisher|client)s receive the event "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (allNo, subscriptionName, data) => {
+    const doRecv = allNo.match(/^all$/);
+    data = data && JSON.parse( data );
+
+    for ( const client in clients ){
+      const eventSpy = clients[ client ].event.callbacks[ subscriptionName ];
+      if ( doRecv ) {
+        sinon.assert.calledOnce( eventSpy );
+        sinon.assert.calledWith( eventSpy, data );
+        eventSpy.reset();
+      } else {
+        sinon.assert.notCalled( eventSpy );
+      }
+    }
   });
 
+  this.Then(/^(all|no) (?:subscriber|publisher|client)s receive the event "([^"]*)"$/, (allNo, subscriptionName) => {
+    const doRecv = allNo.match(/^all$/);
 
+    for ( const client in clients ){
+      const eventSpy = clients[ client ].event.callbacks[ subscriptionName ];
+      if ( doRecv ) {
+        sinon.assert.calledOnce( eventSpy );
+        eventSpy.reset();
+      } else {
+        sinon.assert.notCalled( eventSpy );
+      }
+    }
+  });
   /********************************************************************************************************************************
    *********************************************************** RECORDS ************************************************************
    ********************************************************************************************************************************/
@@ -293,7 +334,7 @@ module.exports = function () {
    ********************************************************************************************************************************/
 
 
-  this.Given(/^(all clients (?:un)?provide|(?:subscriber|publisher|client) (\S*) (?:un)?provides) the RPC "([^"]*)"$/, (begin, provider, rpc, done) => {
+  this.Given(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) ((?:un)?provides?) the RPC "([^"]*)"$/, (provider, unprovides, rpc, done) => {
     const rpcs = {
       addTwo: ( client, data, response ) => {
         clients[ client ].rpc.provides.addTwo();
@@ -326,21 +367,16 @@ module.exports = function () {
       }
     }
 
-    let providers;
-    if( provider ){
-      providers = [ provider ];
-    } else {
-      providers = Object.keys( clients );
-    }
+    const providers = provider ? [ provider ] : Object.keys( clients );
 
-    if( !begin.match( /unprovide/ ) ) {
+    if( unprovides.match( /unprovide/ ) ) {
+      for( const provider of providers ) {
+        clients[ provider ].client.rpc.unprovide( rpc );
+      }
+    } else {
       for( const provider of providers ){
         clients[ provider ].rpc.provides[ rpc ] = sinon.spy();
         clients[ provider ].client.rpc.provide( rpc, rpcs[ rpc ].bind(null, provider) );
-      }
-    } else {
-      for( const provider of providers ) {
-        clients[ provider ].client.rpc.unprovide( rpc );
       }
     }
     setTimeout( done, defaultDelay );

@@ -42,7 +42,11 @@ Cluster.prototype.startServer = function( serverNumber, done ) {
 
 Cluster.prototype.stop = function() {
 	for( var port in this.servers ) {
-		this.servers[ port ].stop();
+    try{
+      this.servers[ port ].stop();
+    } catch( e ){
+      console.log( 'couldn\'t stop server', port, 'in teardown', e );
+    }
 	}
 };
 
@@ -94,7 +98,7 @@ Cluster.prototype._startServer = function( port, done ) {
 	}
 
 	this.servers[ port ].set( 'showLogo', false );
-	!done && this.servers[ port ].on( 'stopped', this._checkStopped.bind( this ) );
+	this.servers[ port ].on( 'stopped', this._checkStopped.bind( this ) );
 	this.servers[ port ].start();
 };
 
