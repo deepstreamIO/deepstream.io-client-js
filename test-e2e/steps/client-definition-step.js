@@ -8,11 +8,11 @@ const C = require( '../../src/constants/constants' );
 const Cluster = require( '../tools/cluster' );
 
 const clients = {};
-const defaultDelay = process.env.defaultDelay || 10;
-const clientExpression = /all clients|(?:subscriber|publisher|clients?) (\S*)/;
+const defaultDelay = process.env.defaultDelay || 50;
+const clientExpression = /all clients|(?:subscriber|publisher|clients?) ([^\s']*)(?:'s)?/;
 
 function parseData( data ) {
-  if( data === 'undefined' ) {
+  if( data === undefined || data === 'undefined' ) {
     return undefined;
   } else if( data === 'null' ) {
     return null;
@@ -20,7 +20,7 @@ function parseData( data ) {
     try {
       return JSON.parse( data );
     } catch(e) {
-      console.log( 'Illegal data:', data )
+      console.log( `'${ data }' parsed as a string` )
       return data;
     }
   }
@@ -60,7 +60,7 @@ function createClient( clientName, server ) {
       maxReconnectAttempts: 20,
     } ),
     login: sinon.spy(),
-    error: sinon.spy(),
+    error: {},
     event: {
       callbacks: {},
       callbacksListeners: {},
@@ -107,11 +107,26 @@ function createClient( clientName, server ) {
     }
 
   }
-  clients[ clientName ].client.on( 'error', ( a, b, c ) => {
-    console.log( 'An Error occured on', clientName , a, b, c );
-  });
 
-  clients[ clientName ].client.on( 'error', clients[ clientName ].error );
+  clients[ clientName ].client.on( 'error', ( message, event, topic ) => {
+    console.log( 'An Error occured on', clientName , message, event, topic );
+
+    if ( clients[ clientName ] === undefined)
+      console.log( ">>>><<<<<<" )
+    const clientErrors = clients[ clientName ].error;
+    clientErrors[ topic ]          = clientErrors[ topic ]          || {};
+    clientErrors[ topic ][ event ] = clientErrors[ topic ][ event ] || sinon.spy();
+    clients[ clientName ].error[ topic ][ event ]( message );
+  });
+}
+
+function assertNoErrors( client ){
+  const clientErrors = clients[ client ].error;
+  for ( const topic in clientErrors ){
+    for ( const event in clientErrors[ topic ] ){
+      sinon.assert.notCalled( clientErrors[ topic ][ event ] );
+    }
+  }
 }
 
 module.exports = function () {
@@ -177,10 +192,8 @@ module.exports = function () {
 
   this.Then(/^(?:subscriber|publisher|client) (\S*)'s connection times out$/, ( client, done ) => {
     setTimeout( () => {
-      const errorSpy = clients[ client ].error;
+      const errorSpy = clients[ client ].error[ C.TOPIC.CONNECTION ][ C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT ];
       sinon.assert.calledOnce( errorSpy );
-      //sinon.assert.calledWith( errorSpy, 'A', 1 );
-      sinon.assert.calledWithMatch( errorSpy, sinon.match.any, 'CONNECTION_AUTHENTICATION_TIMEOUT', 'C' );
       errorSpy.reset();
       done();
     }, 1000 );
@@ -192,10 +205,9 @@ module.exports = function () {
 
     const iterClients = client ? [ client ] : Object.keys( clients );
     for ( const client of iterClients ){
-      const callback = clients[ client ].error;
-      sinon.assert.called( callback );
-      sinon.assert.calledWith( callback, sinon.match.any, event, topic );
-      callback.reset();
+      const errorSpy = clients[ client ].error[ topic ][ event ];
+      sinon.assert.called( errorSpy );
+      errorSpy.reset();
     }
   });
 
@@ -205,18 +217,16 @@ module.exports = function () {
 
     const iterClients = client ? [ client ] : Object.keys( clients );
     for ( const client of iterClients ){
-      const callback = clients[ client ].error;
-      sinon.assert.calledOnce( callback );
-      sinon.assert.calledWith( callback, sinon.match.any, event, topic);
-      callback.reset();
+      const errorSpy = clients[ client ].error[ topic ][ event ];
+      sinon.assert.calledOnce( errorSpy );
+      errorSpy.reset();
     }
   });
 
   this.Then(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) received? no errors$/, ( client ) => {
     const iterClients = client ? [ client ] : Object.keys( clients );
     for ( const client of iterClients ){
-      const callback = clients[ client ].error;
-      sinon.assert.notCalled( callback );
+      assertNoErrors( client );
     }
   });
 
@@ -224,7 +234,7 @@ module.exports = function () {
    ************************************************************ EVENTS ************************************************************
    ********************************************************************************************************************************/
 
-  this.When(/^(?:subscriber|publisher|client) (\S*) publishes an event "([^"]*)"(?: with data ("[^"]*"|\d+|\{.*\}))?$/, (client, subscriptionName, data, done) => {
+  this.When(/^(?:subscriber|publisher|client) (\S*) publishes (?:an|the) event "([^"]*)"(?: with data ("[^"]*"|\d+|\{.*\}))?$/, (client, subscriptionName, data, done) => {
     clients[ client ].client.event.emit( subscriptionName, parseData( data ) );
     setTimeout( done, defaultDelay );
   });
@@ -244,7 +254,7 @@ module.exports = function () {
     } );
   });
 
-  this.Given(/^(.+) subscribes? to an event "([^"]*)"$/, ( clientExpression, subscriptionName, done ) => {
+  this.Given(/^(.+) subscribes? to (?:an|the) event "([^"]*)"$/, ( clientExpression, subscriptionName, done ) => {
     getClients( clientExpression ).forEach( ( client ) => {
       client.event.callbacks[ subscriptionName ] = sinon.spy();
       client.client.event.subscribe( subscriptionName, client.event.callbacks[ subscriptionName ] );
@@ -252,7 +262,7 @@ module.exports = function () {
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/^(.+) unsubscribes from an event "([^"]*)"$/, (clientExpression, subscriptionName, done) => {
+  this.When(/^(.+) unsubscribes from (?:an|the) event "([^"]*)"$/, (clientExpression, subscriptionName, done) => {
     getClients( clientExpression ).forEach( ( client ) => {
       client.client.event.unsubscribe( subscriptionName, client.event.callbacks[ subscriptionName ] );
       client.event.callbacks[ subscriptionName ].isSubscribed = false;
@@ -313,7 +323,7 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) gets notified of "([^"]*)" being (added|removed|moved) (?:to|in|from) "([^""]*)"$/, function (clientExpression, entryName, action, listName) {
+  this.Then(/^(.+) gets? notified of "([^"]*)" being (added|removed|moved) (?:to|in|from) "([^""]*)"$/, function (clientExpression, entryName, action, listName) {
     getListData( clientExpression, listName ).forEach( ( listData ) => {
       if( action === 'added' ) {
         sinon.assert.calledWith( listData.addedCallback, entryName );
@@ -350,7 +360,7 @@ module.exports = function () {
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/(.+) anoynmous record value is '([^']*)'$/, function ( clientExpression, data ) {
+  this.When(/(.+) anonymous record data is '([^']*)'$/, function ( clientExpression, data ) {
     data = parseData( data );
     getClients( clientExpression ).forEach( ( client ) => {
         assert.deepEqual( client.record.anonymousRecord.get(), data);
@@ -377,7 +387,24 @@ module.exports = function () {
     setTimeout( done, defaultDelay );
   });
 
-  this.Then(/^(.+) gets notified of record "([^"]*)" getting (discarded|deleted)$/, function (clientExpression, recordName, action) {
+  this.When(/(.+) sets the merge strategy to (remote|local)$/, function ( clientExpression, recordName, done) {
+    getClients( clientExpression ).forEach( ( client ) => {
+      let recordData = {
+          record: client.client.record.getRecord( recordName ),
+          discardCallback: sinon.spy(),
+          deleteCallback: sinon.spy(),
+          callbackError: sinon.spy(),
+          subscribeCallback: sinon.spy(),
+          subscribePathCallbacks: {}
+        }
+        recordData.record.on( 'discard', recordData.discardCallback );
+        recordData.record.on( 'delete', recordData.deleteCallback );
+        client.record.records[ recordName ] = recordData;
+    } );
+    setTimeout( done, defaultDelay );
+  });
+
+  this.Then(/^(.+) gets? notified of record "([^"]*)" getting (discarded|deleted)$/, function (clientExpression, recordName, action) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       if( action === 'discarded' ) {
         sinon.assert.calledOnce( recordData.discardCallback );
@@ -389,7 +416,7 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) recieves? an update for record "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, data) {
+  this.Then(/^(.+) receives? an update for record "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, data) {
     data = parseData( data );
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       sinon.assert.calledOnce( recordData.subscribeCallback );
@@ -398,7 +425,7 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) recieves? an update for record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, path, data) {
+  this.Then(/^(.+) receives? an update for record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function (clientExpression, recordName, path, data) {
     data = parseData( data );
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       sinon.assert.calledOnce( recordData.subscribePathCallbacks[ path ] );
@@ -407,13 +434,13 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) (?:don't|doesn't|does not) recieve an update for record "([^"]*)"$/, function (clientExpression, recordName) {
+  this.Then(/^(.+) (?:don't|doesn't|does not) receive an update for record "([^"]*)"$/, function (clientExpression, recordName) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       sinon.assert.notCalled( recordData.subscribeCallback );
     });
   });
 
-  this.Then(/^(.+) don't recieve an update for record "([^"]*)" and path "([^"]*)"$/, function (clientExpression, recordName, path) {
+  this.Then(/^(.+) don't receive an update for record "([^"]*)" and path "([^"]*)"$/, function (clientExpression, recordName, path) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       sinon.assert.notCalled( recordData.subscribePathCallbacks[ path ] );
     });
@@ -440,14 +467,14 @@ module.exports = function () {
     });
   });
 
-  this.Then(/^(.+) record "([^"]*)" value is '([^']+)'$/, function ( clientExpression, recordName, data ) {
+  this.Then(/^(.+) (?:have|has) record "([^"]*)" with data '([^']+)'$/, function ( clientExpression, recordName, data ) {
     data = parseData( data );
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       assert.deepEqual( data, recordData.record.get() );
     } );
   });
 
-  this.Then(/^(.+) record "([^"]*)" path "([^"]*)" value is '([^']+)'$/, function ( clientExpression, recordName, path, data ) {
+  this.Then(/^(.+) (?:have|has) record "([^"]*)" with path "([^"]*)" and data '([^']+)'$/, function ( clientExpression, recordName, path, data ) {
     data = parseData( data );
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       assert.deepEqual( data, recordData.record.get( path ) );
@@ -470,7 +497,7 @@ module.exports = function () {
     setTimeout( done, defaultDelay );
   });
 
-  this.When(/^(?:subscriber|publisher|client) (\S*) sets the record "([^"]*)" path "([^"]*)" with data '([^']+)'$/, function ( client, recordName, path, data, done) {
+  this.When(/^(?:subscriber|publisher|client) (\S*) sets the record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function ( client, recordName, path, data, done) {
     clients[ client ].record.records[ recordName ].record.set( path, parseData( data ) );
     setTimeout( done, defaultDelay );
   });
@@ -649,11 +676,23 @@ module.exports = function () {
   this.After((scenario, done) => {
     for( const client in clients ) {
 
-        sinon.assert.notCalled( clients[ client ].error );
+      assertNoErrors( client );
 
       for( const event in clients[ client ].event.callbacks ) {
         if( clients[ client ].event.callbacks[ event ].isSubscribed !== false ) {
           clients[ client ].client.event.unsubscribe( event, clients[ client ].event.callbacks[ event ] );
+        }
+      }
+
+      for( const rpc in clients[ client ].rpc.callbacks ) {
+        if( clients[ client ].rpc.callbacks[ rpc ].isSubscribed !== false ) {
+          clients[ client ].client.rpc.unsubscribe( rpc, clients[ client ].rpc.callbacks[ rpc ] );
+        }
+      }
+
+      for( const record in clients[ client ].record.records ) {
+        if( clients[ client ].record.callbacks[ record ].isSubscribed !== false ) {
+          clients[ client ].client.rpc.unsubscribe( rpc, clients[ client ].rpc.callbacks[ rpc ] );
         }
       }
 
