@@ -34,14 +34,28 @@ EventEmitter( AckTimeoutRegistry.prototype );
  */
 AckTimeoutRegistry.prototype.add = function( name, action ) {
 	var uniqueName = action ? action + name : name;
-	
+
+	this.remove( name, action );
+	this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
+};
+
+/**
+ * Remove an entry
+ *
+ * @param {String} name An identifier for the subscription, e.g. a record name, an event name,
+ *                      the name of a webrtc callee etc.
+ *
+ * @public
+ * @returns {void}
+ */
+AckTimeoutRegistry.prototype.remove = function( name, action ) {
+	var uniqueName = action ? action + name : name;
+
 	if( this._register[ uniqueName ] ) {
 		this.clear( {
 			data: [ action, name ]
 		} );
 	}
-
-	this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
 };
 
 /**
