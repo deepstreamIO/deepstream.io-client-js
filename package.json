@@ -34,7 +34,7 @@
     "browserify": "13.0.1",
     "coveralls": "^2.11.9",
     "cucumber": "^1.2.2",
-    "deepstream.io-e2e": "git+https://github.com/deepstreamIO/deepstream.io-e2e.git",
+    "deepstream.io-e2e": "git+https://github.com/deepstreamIO/deepstream.io-e2e.git#enhancement/porting-over",
     "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "deepstream.io-cache-redis": "latest",
     "deepstream.io-msg-redis": "latest",
