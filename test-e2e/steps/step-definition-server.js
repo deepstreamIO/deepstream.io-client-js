@@ -1,8 +1,12 @@
-const Cluster = require( '../cluster' );
+const Cluster = require( '../tools/cluster' );
 const Deepstream = require( 'deepstream.io' );
 var cluster;
 
 module.exports = function() {
+
+	this.Given(/"([^"]*)" permissions are used$/, function ( permissionType ) {
+		cluster.updatePermissions( permissionType );
+	});
 
 	this.When(/^server (\S)* goes down$/, function ( server, done) {
 		cluster.stopServer( server - 1, done );
@@ -23,6 +27,6 @@ module.exports = function() {
 				callback()
 			} );
 			cluster.stop();
-		}, 500 );
+		}, 100 );
 	});
 };
