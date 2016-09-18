@@ -2,7 +2,7 @@
 var DeepstreamServer = require( 'deepstream.io' ),
 	deepstreamClient = require( '../../../src/client' );
 
-describe( 'record', function() {
+xdescribe( 'record', function() {
 	var deepstreamServer,
 		clientA,
 		clientB;

@@ -362,8 +362,10 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error
 		var oldValue = this._$data;
 		var newValue = jsonPath.set( oldValue, undefined, data, false );
 
-	    /* condition should be e.g. ( utils.deepEquals( newValue, remoteData ) ) */
-		if ( newValue === remoteData ) {
+/*		if( utils.deepEquals( newValue, remoteData ) ) {
+			return;
+		}*/
+		if ( oldValue === newValue ) {
 			return;
 		}
 
