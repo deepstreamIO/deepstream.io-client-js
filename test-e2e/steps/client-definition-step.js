@@ -8,7 +8,7 @@ const C = require( '../../src/constants/constants' );
 const Cluster = require( '../tools/cluster' );
 
 const clients = {};
-const defaultDelay = process.env.defaultDelay || 50;
+const defaultDelay = process.env.defaultDelay || 10;
 const clientExpression = /all clients|(?:subscriber|publisher|clients?) ([^\s']*)(?:'s)?/;
 
 function parseData( data ) {
@@ -111,8 +111,6 @@ function createClient( clientName, server ) {
   clients[ clientName ].client.on( 'error', ( message, event, topic ) => {
     console.log( 'An Error occured on', clientName , message, event, topic );
 
-    if ( clients[ clientName ] === undefined)
-      console.log( ">>>><<<<<<" )
     const clientErrors = clients[ clientName ].error;
     clientErrors[ topic ]          = clientErrors[ topic ]          || {};
     clientErrors[ topic ][ event ] = clientErrors[ topic ][ event ] || sinon.spy();
@@ -574,7 +572,7 @@ module.exports = function () {
     sinon.assert.callCount( listenCallbackSpy.withArgs( subscriptionName, true ), Number( count ) )
   });
 
-  this.Then(/^publisher (\S*) removes (\d+) (event|record) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, (client, count, type, subscriptionName, pattern) => {
+  this.Then(/^publisher (\S*) removed (\d+) (event|record) (?:match|matches) "([^"]*)" for pattern "([^"]*)"$/, (client, count, type, subscriptionName, pattern) => {
     const listenCallbackSpy = clients[ client ][ type ].callbacksListenersSpies[ pattern ];
     sinon.assert.callCount( listenCallbackSpy.withArgs( subscriptionName, false ), Number( count ) )
   });
@@ -681,18 +679,6 @@ module.exports = function () {
       for( const event in clients[ client ].event.callbacks ) {
         if( clients[ client ].event.callbacks[ event ].isSubscribed !== false ) {
           clients[ client ].client.event.unsubscribe( event, clients[ client ].event.callbacks[ event ] );
-        }
-      }
-
-      for( const rpc in clients[ client ].rpc.callbacks ) {
-        if( clients[ client ].rpc.callbacks[ rpc ].isSubscribed !== false ) {
-          clients[ client ].client.rpc.unsubscribe( rpc, clients[ client ].rpc.callbacks[ rpc ] );
-        }
-      }
-
-      for( const record in clients[ client ].record.records ) {
-        if( clients[ client ].record.callbacks[ record ].isSubscribed !== false ) {
-          clients[ client ].client.rpc.unsubscribe( rpc, clients[ client ].rpc.callbacks[ rpc ] );
         }
       }
 

@@ -27,6 +27,6 @@ module.exports = function() {
 				callback()
 			} );
 			cluster.stop();
-		}, 500 );
+		}, 100 );
 	});
 };

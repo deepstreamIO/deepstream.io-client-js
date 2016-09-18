@@ -295,8 +295,7 @@ Record.prototype._$onMessage = function( message ) {
 		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
 	}
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
-		clearInterval( this._readAckTimeout );
-		clearInterval( this._readTimeout );
+		this._clearTimeouts();
 	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
 		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
 		this.hasProvider = hasProvider;
@@ -363,8 +362,8 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error
 		var oldValue = this._$data;
 		var newValue = jsonPath.set( oldValue, undefined, data, false );
 
-    /* condition should be e.g. ( utils.deepEquals( newValue, remoteData ) ) */
-		if ( newValue !== remoteData ) {
+	    /* condition should be e.g. ( utils.deepEquals( newValue, remoteData ) ) */
+		if ( newValue === remoteData ) {
 			return;
 		}
 
@@ -554,6 +553,7 @@ Record.prototype._clearTimeouts = function() {
 	clearTimeout( this._readAckTimeout );
 	clearTimeout( this._deleteAckTimeout );
 	clearTimeout( this._discardTimeout );
+	clearTimeout( this._deleteAckTimeout );
 };
 
 /**
