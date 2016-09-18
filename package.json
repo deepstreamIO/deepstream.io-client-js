@@ -43,7 +43,7 @@
     "grunt-browserify": "4.0.1",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-uglify": "0.11.1",
-    "grunt-exec": "1.0.0",
+    "grunt-exec": "1.0.1",
     "grunt-release": "0.13.0",
     "istanbul": "^0.4.3",
     "jasmine": "^2.4.1",
