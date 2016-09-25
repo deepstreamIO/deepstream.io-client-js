@@ -37,14 +37,14 @@ var Client = function( url, options ) {
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
 	this.webrtc = new WebRtcHandler( this._options, this._connection, this );
-	this.presence = new PresenceHandler( this._options, this._connection, this );
+	this._presence = new PresenceHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.WEBRTC ] = this.webrtc._$handle.bind( this.webrtc );
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
-	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this.presence._$handle.bind( this.presence );
+	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this._presence._$handle.bind( this._presence );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 
@@ -127,7 +127,7 @@ Client.prototype.getUid = function() {
  * @returns {Client}
  */
 Client.prototype.getPresentClients = function( callback ) {
-	this.presence.getCurrentClients( callback );	
+	this._presence.getCurrentClients( callback );	
 	return this;
 };
 
@@ -141,8 +141,7 @@ Client.prototype.getPresentClients = function( callback ) {
  * @returns {void}
  */
 Client.prototype.onClientAdded = function( callback ) {
-	this.presence.subscribeToLogins( callback );
-
+	this._presence.subscribeToLogins( callback );
 };
 
 /**
@@ -155,7 +154,7 @@ Client.prototype.onClientAdded = function( callback ) {
  * @returns {void}
  */
 Client.prototype.onClientRemoved = function( callback ) {
-	this.presence.subscribeToLogouts( callback );
+	this._presence.subscribeToLogouts( callback );
 };
 
 /**
