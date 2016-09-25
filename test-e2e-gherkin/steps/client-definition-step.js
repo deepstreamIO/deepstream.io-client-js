@@ -177,16 +177,22 @@ module.exports = function() {
 	});
 
 	this.When(/^(?:subscriber|publisher|client) (\S)* queries for connected clients$/, function (client, done) {
-		clients[ client ].presenceCallbacks[ queryEvent ] = sinon.spy();
-		clients[ client ].client.getCurrentClients( clients[ client ].presenceCallbacks[ queryEvent ] );
+		clients[ client ].presence.callbacks[ queryEvent ] = sinon.spy();
+		clients[ client ].client.getPresentClients( clients[ client ].presence.callbacks[ queryEvent ] );
 		setTimeout( done, defaultDelay );
 	});
 
-	this.Then(/^(?:subscriber|publisher|client) (\S)* knows that clients "([^"]*)" are connected$/, function (client, connectedClients) {
-		sinon.assert.calledOnce( clients[ client ].presenceCallbacks[ queryEvent ] );
-		sinon.assert.calledWith( clients[ client ].presenceCallbacks[ queryEvent ], connectedClients.split(',') );
-		clients[ client ].presenceCallbacks[ queryEvent ].reset();
+	this.Then(/^(?:subscriber|publisher|client) (\S)* is notified that (?:clients|client) "([^"]*)" (?:are|is) connected$/, function (client, connectedClients) {
+		sinon.assert.calledOnce( clients[ client ].presence.callbacks[ queryEvent ] );
+		sinon.assert.calledWith( clients[ client ].presence.callbacks[ queryEvent ], connectedClients.split(',') );
+		clients[ client ].presence.callbacks[ queryEvent ].reset();
 	});
+
+	this.Then(/^client (\S)* is notified that no clients are connected$/, function (client) {
+         sinon.assert.calledOnce( clients[ client ].presence.callbacks[ queryEvent ] );
+		 sinon.assert.calledWith( clients[ client ].presence.callbacks[ queryEvent ], [] );
+		 clients[ client ].presence.callbacks[ queryEvent ].reset();
+       });
 
 	/********************************************************************************************************************************
 	 *************************************************** Boiler Plate ******************************************************************
