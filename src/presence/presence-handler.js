@@ -92,6 +92,9 @@ PresenceHandler.prototype._$handle = function( message ) {
 	else if( message.action === C.ACTIONS.QUERY ) {
 		this._emitter.emit( C.ACTIONS.QUERY, message.data );
 	}
+	else {
+		this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action );
+	}
 };
 
 /**
