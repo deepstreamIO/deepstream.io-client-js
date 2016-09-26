@@ -36,7 +36,7 @@ var PresenceHandler = function( options, connection, client ) {
  * @returns {void}
  */
 PresenceHandler.prototype.getCurrentClients = function( callback ) {
-	this._emitter.on( C.ACTIONS.QUERY, callback );
+	this._emitter.once( C.ACTIONS.QUERY, callback );
 	this._ackTimeoutRegistry.add( C.ACTIONS.QUERY, C.TOPIC.PRESENCE);
 	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY );
 };
@@ -51,9 +51,11 @@ PresenceHandler.prototype.getCurrentClients = function( callback ) {
  * @returns {void}
  */
 PresenceHandler.prototype.subscribeToLogins = function( callback ) {
+	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_JOIN ) ) {
+		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN, C.ACTIONS.SUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
+	}
 	this._emitter.on( C.ACTIONS.PRESENCE_JOIN, callback );
-	this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN, C.ACTIONS.SUBSCRIBE );
-	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
 };
 
 /**
@@ -66,9 +68,11 @@ PresenceHandler.prototype.subscribeToLogins = function( callback ) {
  * @returns {void}
  */
 PresenceHandler.prototype.subscribeToLogouts = function( callback ) {
+	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_LEAVE ) ) {
+		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE, C.ACTIONS.SUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
+	}
 	this._emitter.on( C.ACTIONS.PRESENCE_LEAVE, callback );
-	this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE, C.ACTIONS.SUBSCRIBE );
-	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
 };
 
 /**
