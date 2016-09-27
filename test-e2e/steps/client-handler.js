@@ -7,12 +7,11 @@ const clients = {};
 const utils = require('./utils');
 
 const DeepstreamClient = require( '../../src/client' );
-const Cluster = require( '../tools/cluster' );
 
 function createClient( clientName, server ) {
   clients[ clientName ] = {
     name: clientName,
-    client: DeepstreamClient( Cluster.getUrl( server - 1 ), {
+    client: DeepstreamClient( global.cluster.getUrl( server - 1 ), {
       maxReconnectInterval: 300,
       maxReconnectAttempts: 20,
     } ),

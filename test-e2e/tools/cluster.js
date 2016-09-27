@@ -18,7 +18,7 @@ var Cluster = function( tcpPorts, enableLogging ) {
 };
 util.inherits( Cluster, EventEmitter );
 
-Cluster.getUrl = function( serverId ) {
+Cluster.prototype.getUrl = function( serverId ) {
   return 'localhost:' + ports[ serverId ];
 };
 
