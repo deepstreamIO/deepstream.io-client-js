@@ -4,29 +4,30 @@ var cluster;
 
 module.exports = function() {
 
-	this.Given(/"([^"]*)" permissions are used$/, function ( permissionType ) {
-		cluster.updatePermissions( permissionType );
-	});
+  this.Given(/"([^"]*)" permissions are used$/, function ( permissionType ) {
+    cluster.updatePermissions( permissionType );
+  });
 
-	this.When(/^server (\S)* goes down$/, function ( server, done) {
-		cluster.stopServer( server - 1, done );
-	});
+  this.When(/^server (\S)* goes down$/, function ( server, done) {
+    cluster.stopServer( server - 1, done );
+  });
 
-	this.When(/^server (\S)* comes back up$/, function ( server, done ) {
-		cluster.startServer( server - 1, done );
-	});
+  this.When(/^server (\S)* comes back up$/, function ( server, done ) {
+    cluster.startServer( server - 1, done );
+  });
 
-	this.registerHandler('BeforeFeature', function (features, callback) {
-		cluster = new Cluster( [ 6001, 6002, 6003 ], false );
-		cluster.on( 'ready', callback );
-	});
+  this.registerHandler('BeforeFeature', function (features, callback) {
+    cluster = new Cluster( [ 6001, 6002, 6003 ], false );
+    cluster.on( 'ready', callback );
+  });
 
-	this.registerHandler('AfterFeature', function (features, callback) {
-		setTimeout( () => {
-			cluster.on('stopped', () => {
-				callback()
-			} );
-			cluster.stop();
-		}, 100 );
-	});
+  this.registerHandler('AfterFeature', function (features, callback) {
+    setTimeout( () => {
+      cluster.on('stopped', () => {
+        callback()
+      } );
+      cluster.stop();
+    }, 100 );
+  });
+
 };
