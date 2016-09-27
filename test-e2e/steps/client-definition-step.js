@@ -10,35 +10,32 @@ const clients = clientHandler.clients;
 
 module.exports = function () {
 
-  this.Then(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) receives? at least one "([^"]*)" error "([^"]*)"$/, ( client, topicName, eventName ) => {
+  this.Then(/^(.+) receives? at least one "([^"]*)" error "([^"]*)"$/, ( clientExpression, topicName, eventName ) => {
     const topic = C.TOPIC[ topicName.toUpperCase() ];
     const event = C.EVENT[ eventName.toUpperCase() ];
 
-    const iterClients = client ? [ client ] : Object.keys( clients );
-    for ( const client of iterClients ){
-      const errorSpy = clients[ client ].error[ topic ][ event ];
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      const errorSpy = client.error[ topic ][ event ];
       sinon.assert.called( errorSpy );
       errorSpy.reset();
-    }
+    } );
   });
 
-  this.Then(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) receives? "([^"]*)" error "([^"]*)"$/, ( client, topicName, eventName ) => {
+  this.Then(/^(.+) receives? "([^"]*)" error "([^"]*)"$/, ( clientExpression, topicName, eventName ) => {
     const topic = C.TOPIC[ topicName.toUpperCase() ];
     const event = C.EVENT[ eventName.toUpperCase() ];
 
-    const iterClients = client ? [ client ] : Object.keys( clients );
-    for ( const client of iterClients ){
-      const errorSpy = clients[ client ].error[ topic ][ event ];
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      const errorSpy = client.error[ topic ][ event ];
       sinon.assert.calledOnce( errorSpy );
       errorSpy.reset();
-    }
+    } );
   });
 
-  this.Then(/^(?:all clients|(?:subscriber|publisher|client) (\S*)) received? no errors$/, ( client ) => {
-    const iterClients = client ? [ client ] : Object.keys( clients );
-    for ( const client of iterClients ){
-      clientHandler.assertNoErrors( client );
-    }
+  this.Then(/^(.+) received? no errors$/, ( clientExpression ) => {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      clientHandler.assertNoErrors( client.name );
+    } );
   });
 
   /********************************************************************************************************************************
