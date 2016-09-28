@@ -1,4 +1,4 @@
-const Cluster = require( '../tools/cluster' );
+const Cluster = require( '../../tools/cluster' );
 const Deepstream = require( 'deepstream.io' );
 
 module.exports = function() {

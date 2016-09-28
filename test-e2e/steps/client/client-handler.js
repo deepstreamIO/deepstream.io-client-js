@@ -6,7 +6,7 @@ const clients = {};
 
 const utils = require('./utils');
 
-const DeepstreamClient = require( '../../src/client' );
+const DeepstreamClient = require( '../../../src/client' );
 
 function createClient( clientName, server ) {
   clients[ clientName ] = {
