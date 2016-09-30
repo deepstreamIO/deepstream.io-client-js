@@ -9,5 +9,6 @@ node_js:
 script:
   - npm run reporter
   - npm run e2e
+  - npm run specs
 
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"

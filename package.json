@@ -14,10 +14,11 @@
     "unit": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
     "unit::watch": "watch \"npm run unit\" ./src ./test-unit",
     "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js",
-    "e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e --require ./test-e2e/steps --fail-fast",
-    "rpc-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/rpcs/ --require ./test-e2e/steps --fail-fast",
-    "event-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/events/ --require ./test-e2e/steps --fail-fast",
-    "record-e2e": " node ./node_modules/cucumber/bin/cucumber.js ./node_modules/deepstream.io-e2e/records/ --require ./test-e2e/steps --fail-fast"
+    "e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e --require ./test-e2e/steps --fail-fast",
+    "rpc-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/rpcs/ --require ./test-e2e/steps --fail-fast",
+    "event-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/events/ --require ./test-e2e/steps --fail-fast",
+    "record-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/records/ --require ./test-e2e/steps --fail-fast",
+    "specs": " node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps --fail-fast"
   },
   "repository": {
     "type": "git",
