@@ -1,6 +1,6 @@
 'use strict'
 
-const defaultDelay = process.env.defaultDelay || 10;
+const defaultDelay = process.env.DEFAULT_DELAY || 10;
 
 function parseData( data ) {
   if( data === undefined || data === 'undefined' ) {

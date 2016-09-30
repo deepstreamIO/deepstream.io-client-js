@@ -6,6 +6,9 @@ services:
 node_js:
   - "stable"
 
+env:
+  - DEFAULT_DELAY: 50
+
 script:
   - npm run reporter
   - npm run e2e

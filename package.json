@@ -34,7 +34,6 @@
   "devDependencies": {
     "browserify": "13.0.1",
     "coveralls": "^2.11.9",
-    "deepstream.io-e2e": "git+https://github.com/deepstreamIO/deepstream.io-e2e.git",
     "cucumber": "^1.3.0",
     "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "deepstream.io-cache-redis": "latest",
