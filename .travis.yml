@@ -4,7 +4,8 @@ services:
   - redis-server
 
 node_js:
-  - "stable"
+  - "6"
+  - "4"
 
 env:
   - DEFAULT_DELAY: 50
