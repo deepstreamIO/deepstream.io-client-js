@@ -1,12 +1,13 @@
 {
   "name": "deepstream.io-client-js",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "the javascript client for deepstream.io",
   "main": "src/client.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
+    "all": "npm t && npm run e2e && npm run specs",
     "test": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
     "reporter": "istanbul cover jasmine-runner.js",
     "coverage": "istanbul cover node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=jasmine.json",

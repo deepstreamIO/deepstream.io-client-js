@@ -1,3 +1,19 @@
+## [1.1.1] - 2016-09-30
+
+### Bug Fixes
+
+- Connection errors now occur on the CONNECTION topic
+- Message denied clears down associated ACK timeout messages
+
+### Enhancements
+
+- Optimize and refactor records by [@ronag](@ronag)
+
+### Misc
+
+- Porting over remaining e2e tests
+- Adding specs as part of the client project and build
+
 ## [1.1.0] - 2016-09-08
 
 ### Bug Fixes
