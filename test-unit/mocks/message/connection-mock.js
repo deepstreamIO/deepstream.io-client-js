@@ -18,7 +18,7 @@ ConnectionMock.prototype.getState = function() {
 };
 
 ConnectionMock.prototype.authenticate = function() {
-	
+
 };
 
 module.exports = ConnectionMock;
