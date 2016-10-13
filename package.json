@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "component-emitter": "1.1.2",
-    "uws": "^0.10.4"
+    "ws": "^1.1.1"
   },
   "browser": {
     "net": false
