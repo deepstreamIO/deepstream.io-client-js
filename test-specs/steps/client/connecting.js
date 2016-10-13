@@ -28,7 +28,8 @@ module.exports = function() {
 			recordReadAckTimeout: 200,
 			recordReadTimeout: 260,
 			recordDeleteTimeout: 100,
-			rpcResponseTimeout: 200
+			rpcResponseTimeout: 200,
+			useTCP: true
 		});
 		global.dsClient.on( 'error', function(){
 			errors.push( arguments );

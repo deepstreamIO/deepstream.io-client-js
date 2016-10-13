@@ -1,4 +1,4 @@
-var engineIoClient = require( 'engine.io-client' ),
+var NodeWebSocket = require( 'ws' ),
 	messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
 	TcpConnection = require( '../tcp/tcp-connection' ),
@@ -140,16 +140,24 @@ Connection.prototype.close = function() {
 /**
  * Creates the endpoint to connect to using the url deepstream
  * was initialised with. If running in node automatically uses TCP
- * for better performance
  *
  * @private
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function() {
-	if( utils.isNode ) {
-		this._endpoint = new TcpConnection( this._url );
+	if( this._options.useTCP ) {
+		if( this._endpoint ) {
+			this._endpoint.setUrl( this._url );
+			this._endpoint.open();
+			return;
+		} else {
+			this._endpoint = new TcpConnection( this._url );
+		}
 	} else {
-		this._endpoint = engineIoClient( this._url, this._options );
+		if( this._endpoint ) {
+			this._endpoint.removeAllListeners();
+		}
+		this._endpoint = new NodeWebSocket( this._url, { path: '/deepstream' } );
 	}
 
 	this._endpoint.on( 'open', this._onOpen.bind( this ) );
@@ -289,11 +297,6 @@ Connection.prototype._onClose = function() {
 		this._setState( C.CONNECTION_STATE.CLOSED );
 	}
 	else {
-		if( this._originalUrl !== this._url ) {
-			this._url = this._originalUrl;
-			this._createEndpoint();
-		}
-
 		this._tryReconnect();
 	}
 };
@@ -484,7 +487,10 @@ Connection.prototype._tryReconnect = function() {
  * @returns {void}
  */
 Connection.prototype._tryOpen = function() {
-	this._endpoint.open();
+	if( this._originalUrl !== this._url ) {
+		this._url = this._originalUrl;
+	}
+	this._createEndpoint();
 	this._reconnectTimeout = null;
 };
 
