@@ -71,7 +71,7 @@ module.exports = function() {
 		message = message.replace( /\+/g, String.fromCharCode( 30 ) );
 
 		server.send( message );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.tcpMessageWaitTime * 2 );
 	});
 
 	this.When(/^the connection to the server is lost$/, function (callback) {

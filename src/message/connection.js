@@ -147,12 +147,16 @@ Connection.prototype.close = function() {
 Connection.prototype._createEndpoint = function() {
 	if( this._options.useTCP ) {
 		if( this._endpoint ) {
+			this._endpoint.setUrl( this._url );
 			this._endpoint.open();
 			return;
 		} else {
 			this._endpoint = new TcpConnection( this._url );
 		}
 	} else {
+		if( this._endpoint ) {
+			this._endpoint.removeAllListeners();
+		}
 		this._endpoint = new NodeWebSocket( this._url, { path: '/deepstream' } );
 	}
 

@@ -31,10 +31,18 @@ var TcpConnection = function( url ) {
 util.inherits( TcpConnection, events.EventEmitter );
 
 /**
+ * Update the url
+ *
+ * @returns {void}
+ */
+TcpConnection.prototype.setUrl = function( url ) {
+	this._url = url;
+}
+
+/**
  * Creates the connection. Can be called multiple times to
  * facilitate reconnecting.
  *
- * @private
  * @returns {void}
  */
 TcpConnection.prototype.open = function() {
