@@ -1,5 +1,5 @@
 const DeepstreamClient = require( '../src/client' )
-const ds = DeepstreamClient( 'localhost:6020' )
+const ds = DeepstreamClient( 'ws://localhost:6020' )
 ds.on( 'connectionStateChanged', ( a,b) => {
 	console.log( a,b)
 })

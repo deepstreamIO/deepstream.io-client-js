@@ -1,5 +1,5 @@
-var NodeWebSocket = require( 'ws' ),
-	messageParser = require( './message-parser' ),
+var BrowserWebSocket = global.WebSocket || global.MozWebSocket;
+var messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
 	TcpConnection = require( '../tcp/tcp-connection' ),
 	utils = require( '../utils/utils' ),
@@ -154,16 +154,13 @@ Connection.prototype._createEndpoint = function() {
 			this._endpoint = new TcpConnection( this._url );
 		}
 	} else {
-		if( this._endpoint ) {
-			this._endpoint.removeAllListeners();
-		}
-		this._endpoint = new NodeWebSocket( this._url, { path: '/deepstream' } );
+		var NodeWebSocket =  require( 'ws' );
+		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url + this._options.path ) : new NodeWebSocket( this._url );
+		this._endpoint.onopen = this._onOpen.bind( this );
+		this._endpoint.onerror = this._onError.bind( this );
+		this._endpoint.onclose = this._onClose.bind( this );
+		this._endpoint.onmessage = this._onMessage.bind( this );
 	}
-
-	this._endpoint.on( 'open', this._onOpen.bind( this ) );
-	this._endpoint.on( 'error', this._onError.bind( this ) );
-	this._endpoint.on( 'close', this._onClose.bind( this ) );
-	this._endpoint.on( 'message', this._onMessage.bind( this ) );
 };
 
 /**
@@ -249,6 +246,7 @@ Connection.prototype._sendAuthParams = function() {
  * @returns {void}
  */
 Connection.prototype._onOpen = function() {
+  console.log( 'onOpen', arguments )
 	this._clearReconnect();
 	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
@@ -310,9 +308,11 @@ Connection.prototype._onClose = function() {
  * @returns {void}
  */
 Connection.prototype._onMessage = function( message ) {
-	var parsedMessages = messageParser.parse( message, this._client ),
+  console.log( 'on messag,e', message )
+	var parsedMessages = messageParser.parse( message.data, this._client ),
 		i;
 
+  console.log( parsedMessages )
 	for( i = 0; i < parsedMessages.length; i++ ) {
 		if( parsedMessages[ i ] === null ) {
 			continue;
