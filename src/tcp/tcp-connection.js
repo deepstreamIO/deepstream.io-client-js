@@ -30,6 +30,14 @@ var TcpConnection = function( url ) {
 
 util.inherits( TcpConnection, events.EventEmitter );
 
+TcpConnection.prototype.onopen = function() {};
+
+TcpConnection.prototype.onmessage = function() {};
+
+TcpConnection.prototype.onclose = function() {};
+
+TcpConnection.prototype.onError = function() {};
+
 /**
  * Update the url
  *
@@ -71,7 +79,7 @@ TcpConnection.prototype.send = function( message ) {
 	if( this._isOpen === true ) {
 		this._socket.write( message );
 	} else {
-		this.emit( 'error', 'attempt to send message on closed socket: ' + message );
+		this.onerror( 'attempt to send message on closed socket: ' + message );
 	}
 };
 
@@ -109,7 +117,7 @@ TcpConnection.prototype._onError = function( error ) {
 		msg = error.toString();
 	}
 
-	this.emit( 'error', msg );
+	this.onerror( msg );
 };
 
 /**
@@ -121,7 +129,7 @@ TcpConnection.prototype._onError = function( error ) {
  */
 TcpConnection.prototype._onConnect = function() {
 	this._isOpen = true;
-	this.emit( 'open' );
+	this.onopen();
 };
 
 /**
@@ -136,7 +144,7 @@ TcpConnection.prototype._onConnect = function() {
  */
 TcpConnection.prototype._onClose = function() {
 	this._isOpen = false;
-	this.emit( 'close' );
+	this.onclose();
 };
 
 /**
@@ -185,7 +193,7 @@ TcpConnection.prototype._onData = function( packet ) {
 		message = packet;
 	}
 
-	this.emit( 'message', message );
+	this.onmessage( { data: message } );
 };
 
 /**

@@ -19,14 +19,19 @@ var WebsocketMock = function( url ) {
 
 util.inherits( WebsocketMock, events.EventEmitter );
 
+WebsocketMock.prototype.onopen = function() {}
+WebsocketMock.prototype.onmessage = function() {}
+WebsocketMock.prototype.onclose = function() {}
+WebsocketMock.prototype.onerror = function() {}
+
 WebsocketMock.prototype.simulateOpen = function() {
 	this.isOpen = true;
-	this.emit( 'open' );
+	this.onopen();
 };
 
 WebsocketMock.prototype.close = function() {
 	this.isOpen = false;
-	this.emit( 'close' );
+	this.onclose();
 };
 
 WebsocketMock.prototype.getCallsToOpen = function() {
@@ -40,6 +45,12 @@ WebsocketMock.prototype.resetCallsToOpen = function() {
 WebsocketMock.prototype.send = function( msg ) {
 	this.messages.push( msg );
 	this.lastSendMessage = msg;
+};
+
+WebsocketMock.prototype.emit = function( type, data ) {
+	if( type === 'message' ) {
+		this.onmessage( { data: data } );
+	}
 };
 
 module.exports = WebsocketMock;

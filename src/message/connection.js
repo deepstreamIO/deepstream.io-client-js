@@ -156,11 +156,12 @@ Connection.prototype._createEndpoint = function() {
 	} else {
 		var NodeWebSocket =  require( 'ws' );
 		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url + this._options.path ) : new NodeWebSocket( this._url );
-		this._endpoint.onopen = this._onOpen.bind( this );
-		this._endpoint.onerror = this._onError.bind( this );
-		this._endpoint.onclose = this._onClose.bind( this );
-		this._endpoint.onmessage = this._onMessage.bind( this );
 	}
+
+	this._endpoint.onopen = this._onOpen.bind( this );
+	this._endpoint.onerror = this._onError.bind( this );
+	this._endpoint.onclose = this._onClose.bind( this );
+	this._endpoint.onmessage = this._onMessage.bind( this );
 };
 
 /**
@@ -246,7 +247,6 @@ Connection.prototype._sendAuthParams = function() {
  * @returns {void}
  */
 Connection.prototype._onOpen = function() {
-  console.log( 'onOpen', arguments )
 	this._clearReconnect();
 	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
@@ -308,11 +308,9 @@ Connection.prototype._onClose = function() {
  * @returns {void}
  */
 Connection.prototype._onMessage = function( message ) {
-  console.log( 'on messag,e', message )
 	var parsedMessages = messageParser.parse( message.data, this._client ),
 		i;
 
-  console.log( parsedMessages )
 	for( i = 0; i < parsedMessages.length; i++ ) {
 		if( parsedMessages[ i ] === null ) {
 			continue;
