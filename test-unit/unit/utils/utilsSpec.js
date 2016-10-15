@@ -142,9 +142,47 @@ describe( 'utils.trim removes whitespace', function(){
 	});
 });
 
+//As these tests are only ever run in node, this is a bit pointless
 describe( 'utils.isNode detects the environment', function(){
-	//As these tests are only ever run in node, this is a bit pointless
 	it( 'has detected something', function(){
 		expect( typeof utils.isNode ).toBe( 'boolean' );
+	});
+});
+
+describe( 'utils.parseUrl adds all missing parts of the url', function(){
+	it( 'accepts no protocol and default to ws', function(){
+		expect( utils.parseUrl( 'localhost', '/deepstream' ) )
+			.toBe( 'ws://localhost/deepstream' );
+	});
+
+	it( 'accepts // as protocol', function(){
+		expect( utils.parseUrl( '//localhost:6020', '/deepstream' ) )
+			.toBe( 'ws://localhost:6020/deepstream' );
+	});
+
+	it( 'accepts ws protocols', function(){
+		expect( utils.parseUrl( 'ws://localhost:6020', '/deepstream' ) )
+			.toBe( 'ws://localhost:6020/deepstream' );
+		expect( utils.parseUrl( 'wss://localhost:6020', '/deepstream' ) )
+			.toBe( 'wss://localhost:6020/deepstream' );
+	});
+
+	it( 'rejects http protocols', function(){
+		expect( function() {
+			utils.parseUrl( 'http://localhost:6020', '/deepstream' )
+		}).toThrow( new Error('Only ws and wss are supported') );
+		expect( function() {
+			utils.parseUrl( 'https://localhost:6020', '/deepstream' )
+		}).toThrow( new Error('Only ws and wss are supported') );
+	});
+
+	it( 'accepts full url with protocol and path and doesn\'t change it', function(){
+		expect( utils.parseUrl( 'ws://localhost:6020/anotherdeepstream' ) )
+			.toBe( 'ws://localhost:6020/anotherdeepstream' );
+	});
+
+	it( 'respects queries and hash', function(){
+		expect( utils.parseUrl( 'localhost?query=value#login', '/deepstream' ) )
+			.toBe( 'ws://localhost/deepstream?query=value#login' );
 	});
 });
