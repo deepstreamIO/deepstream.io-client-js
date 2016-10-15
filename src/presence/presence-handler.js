@@ -52,7 +52,7 @@ PresenceHandler.prototype.getCurrentClients = function( callback ) {
  */
 PresenceHandler.prototype.subscribeToLogins = function( callback ) {
 	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_JOIN ) ) {
-		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN, C.ACTIONS.SUBSCRIBE );
+		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN );
 		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
 	}
 	this._emitter.on( C.ACTIONS.PRESENCE_JOIN, callback );
@@ -69,7 +69,7 @@ PresenceHandler.prototype.subscribeToLogins = function( callback ) {
  */
 PresenceHandler.prototype.subscribeToLogouts = function( callback ) {
 	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_LEAVE ) ) {
-		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE, C.ACTIONS.SUBSCRIBE );
+		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE );
 		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
 	}
 	this._emitter.on( C.ACTIONS.PRESENCE_LEAVE, callback );
