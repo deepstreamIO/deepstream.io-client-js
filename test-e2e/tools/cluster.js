@@ -19,7 +19,7 @@ var Cluster = function( wsPorts, enableLogging ) {
 util.inherits( Cluster, EventEmitter );
 
 Cluster.prototype.getUrl = function( serverId ) {
-  return 'ws://localhost:' + ports[ serverId ];
+  return 'localhost:' + ports[ serverId ];
 };
 
 Cluster.prototype.updatePermissions = function( type ) {

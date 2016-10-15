@@ -1,4 +1,4 @@
-var NodeWebSocket = require( 'ws' ),
+var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
 	messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
 	TcpConnection = require( '../tcp/tcp-connection' ),
@@ -17,8 +17,6 @@ var NodeWebSocket = require( 'ws' ),
  */
 var Connection = function( client, url, options ) {
 	this._client = client;
-	this._originalUrl = url;
-	this._url = url;
 	this._options = options;
 	this._authParams = null;
 	this._authCallback = null;
@@ -34,6 +32,13 @@ var Connection = function( client, url, options ) {
 	this._sendNextPacketTimeout = null;
 	this._currentMessageResetTimeout = null;
 	this._endpoint = null;
+
+	if( this._options.useTCP ) {
+		this._originalUrl = url;
+	} else {
+		this._originalUrl = utils.parseUrl( url );
+	}
+	this._url = this._originalUrl;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 	this._createEndpoint();
@@ -154,16 +159,14 @@ Connection.prototype._createEndpoint = function() {
 			this._endpoint = new TcpConnection( this._url );
 		}
 	} else {
-		if( this._endpoint ) {
-			this._endpoint.removeAllListeners();
-		}
-		this._endpoint = new NodeWebSocket( this._url, { path: '/deepstream' } );
+		var NodeWebSocket =  require( 'ws' );
+		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url + this._options.path ) : new NodeWebSocket( this._url );
 	}
 
-	this._endpoint.on( 'open', this._onOpen.bind( this ) );
-	this._endpoint.on( 'error', this._onError.bind( this ) );
-	this._endpoint.on( 'close', this._onClose.bind( this ) );
-	this._endpoint.on( 'message', this._onMessage.bind( this ) );
+	this._endpoint.onopen = this._onOpen.bind( this );
+	this._endpoint.onerror = this._onError.bind( this );
+	this._endpoint.onclose = this._onClose.bind( this );
+	this._endpoint.onmessage = this._onMessage.bind( this );
 };
 
 /**
@@ -310,7 +313,7 @@ Connection.prototype._onClose = function() {
  * @returns {void}
  */
 Connection.prototype._onMessage = function( message ) {
-	var parsedMessages = messageParser.parse( message, this._client ),
+	var parsedMessages = messageParser.parse( message.data, this._client ),
 		i;
 
 	for( i = 0; i < parsedMessages.length; i++ ) {

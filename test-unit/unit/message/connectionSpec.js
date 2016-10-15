@@ -103,7 +103,7 @@ describe('connects - redirect', function(){
 	it( 'recieves a connection challenge and responds with url', function() {
 		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
 		expect( connection.getState() ).toBe( 'CHALLENGING' );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|ws://somehost:4444+' ) );
 		expect( clientConnectionStateChangeCount ).toBe( 2 );
 	});
 
@@ -134,7 +134,7 @@ describe('connects - redirect', function(){
 		setTimeout( function() {
 			expect( connection.getState() ).toBe( 'RECONNECTING' );
 			connection._endpoint.simulateOpen();
-			expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+			expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
 		});
 	});
 });
@@ -162,7 +162,7 @@ describe('connects - redirect rejection', function(){
 	it( 'recieves a connection challenge and responds with invalid url', function() {
 		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
 		expect( connection.getState() ).toBe( 'CHALLENGING' );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|ws://somehost:4444+' ) );
 		expect( clientConnectionStateChangeCount ).toBe( 2 );
 	});
 
@@ -357,7 +357,7 @@ describe( 'reach the max reconnect attempts and consider the maxReconnectInterva
 	it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
 		connection._endpoint.resetCallsToOpen();
-		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 	});
@@ -404,7 +404,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
 		connection._endpoint.resetCallsToOpen();
-		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 	});
@@ -443,7 +443,7 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	it( 're-establishes the connection', function( done ){
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
 		expect( connection._endpoint.getCallsToOpen() ).toBe( 2 );
-		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
 		connection._endpoint.simulateOpen();
 		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
