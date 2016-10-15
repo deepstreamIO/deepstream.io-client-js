@@ -32,14 +32,14 @@ describe( 'presence handler', function(){
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'U|S|PNL+' ) );
 	});
 
-	it( 'emits an error if no ack message is received for client login subscription', function( done ){
+	xit( 'emits an error if no ack message is received for client login subscription', function( done ){
 		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
 			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time for PNJ' ];
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();
-		}, 100 );
+		}, 20 );
 	});
 
 	it( 'notified when client logs in', function() {
