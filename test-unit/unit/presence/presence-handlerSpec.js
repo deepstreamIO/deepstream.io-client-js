@@ -39,7 +39,7 @@ describe( 'presence handler', function(){
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();
-		}, 20 );
+		}, 100 );
 	});
 
 	it( 'notified when client logs in', function() {
