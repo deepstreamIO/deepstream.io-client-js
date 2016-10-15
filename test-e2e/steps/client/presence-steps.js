@@ -16,7 +16,7 @@ module.exports = function (){
 	this.Given(/^(.+) subscribes to presence login events$/, function (clientExpression, done) {
 		clientHandler.getClients( clientExpression ).forEach( ( client ) => {
 			client.presence.callbacks[ loginEvent ] = sinon.spy();
-			client.presence.client.onClientAdded( clients[ client ].presence.callbacks[ loginEvent ] );
+			client.client.onClientAdded( client.presence.callbacks[ loginEvent ] );
 		} );
 		setTimeout( done, utils.defaultDelay );
 	});
@@ -24,7 +24,7 @@ module.exports = function (){
 	this.Given(/^(.+) subscribes to presence logout events$/, function (clientExpression, done) {
 		clientHandler.getClients( clientExpression ).forEach( ( client ) => {
 			client.presence.callbacks[ logoutEvent ] = sinon.spy();
-			client.presence.client.onClientRemoved( clients[ client ].presence.callbacks[ logoutEvent ] );
+			client.client.onClientRemoved( client.presence.callbacks[ logoutEvent ] );
 		} );
 		setTimeout( done, utils.defaultDelay );
 	});
@@ -37,11 +37,12 @@ module.exports = function (){
 		setTimeout( done, utils.defaultDelay );
 	});
 
-	this.Then(/^(.+) (?:is|are) notified that ^(.+) are logged ([^"]*)$/, function (notifeeExpression, notiferExpression, event) {
+	this.Then(/^(.+) (?:is|are) notified that (.+) logged ([^"]*)$/, function (notifeeExpression, notiferExpression, event) {
 		clientHandler.getClients( notifeeExpression ).forEach( ( notifee ) => {
 			clientHandler.getClients( notiferExpression ).forEach( ( notifier ) => {
-				sinon.assert.calledWith( notifee.presence.callbacks[ event ], notifiers[ j ].user );
+				sinon.assert.calledWith( notifee.presence.callbacks[ event ], notifier.user );
 			});
+			notifee.presence.callbacks[ event ].reset();
 		});
 	});
 

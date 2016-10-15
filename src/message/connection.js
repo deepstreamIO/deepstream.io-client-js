@@ -36,7 +36,7 @@ var Connection = function( client, url, options ) {
 	if( this._options.useTCP ) {
 		this._originalUrl = url;
 	} else {
-		this._originalUrl = utils.parseUrl( url );
+		this._originalUrl = utils.parseUrl( url, this._options.path );
 	}
 	this._url = this._originalUrl;
 

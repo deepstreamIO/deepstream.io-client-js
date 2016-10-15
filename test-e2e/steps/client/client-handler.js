@@ -85,9 +85,15 @@ function getClients( expression ) {
       return clients[ client ];
     });
   }
+  else if( result.length === 2 && result[ 1 ].indexOf(',') > -1 ) {
+    return result[1].replace(/"/g,"").split(',').map( ( client ) => {
+      return clients[ client ];
+    });
+  }
   else if( result.length === 2 ) {
-    return [ clients[ result[ 1 ] ] ];
-  } else {
+    return [ clients[ result[ 1 ].replace(/"/g,'') ] ];
+  }
+  else {
     throw `Invalid expression: ${expression}`;
   }
 }

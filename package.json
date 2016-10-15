@@ -20,7 +20,7 @@
     "event-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/events/ --require ./test-e2e/steps --fail-fast",
     "record-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/records/ --require ./test-e2e/steps --fail-fast",
     "login-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/login/ --require ./test-e2e/steps --fail-fast",
-    "presence-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/presence/ --require ./test-e2e/steps --fail-fast",
+    "presence-e2e": " node --trace-warnings ./node_modules/cucumber/bin/cucumber.js test-e2e/features/presence/ --require ./test-e2e/steps --fail-fast",
     "specs": " node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps --fail-fast"
   },
   "repository": {
