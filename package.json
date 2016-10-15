@@ -20,6 +20,7 @@
     "event-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/events/ --require ./test-e2e/steps --fail-fast",
     "record-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/records/ --require ./test-e2e/steps --fail-fast",
     "login-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/login/ --require ./test-e2e/steps --fail-fast",
+    "presence-e2e": " node --trace-warnings ./node_modules/cucumber/bin/cucumber.js test-e2e/features/presence/ --require ./test-e2e/steps --fail-fast",
     "specs": " node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps --fail-fast"
   },
   "repository": {
@@ -40,10 +41,10 @@
     "net": false
   },
   "devDependencies": {
-    "browserify": "13.0.1",
-    "coveralls": "^2.11.9",
-    "cucumber": "^1.3.0",
-    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git#enhancement/pure-uws",
+    "browserify": "^13.1.0",
+    "coveralls": "^2.11.14",
+    "cucumber": "^1.3.1",
+    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "deepstream.io-cache-redis": "latest",
     "deepstream.io-msg-redis": "latest",
     "derequire": "2.0.3",
@@ -53,11 +54,11 @@
     "grunt-contrib-uglify": "0.11.1",
     "grunt-exec": "1.0.1",
     "grunt-release": "0.13.0",
-    "istanbul": "^0.4.3",
-    "jasmine": "^2.4.1",
-    "jasmine-spec-reporter": "^2.4.0",
+    "istanbul": "^0.4.5",
+    "jasmine": "^2.5.2",
+    "jasmine-spec-reporter": "^2.7.0",
     "proxyquire": "1.7.10",
-    "sinon": "^1.17.5",
+    "sinon": "^1.17.6",
     "watch": "^1.0.1"
   },
   "author": "deepstreamHub GmbH",
