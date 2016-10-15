@@ -1,5 +1,3 @@
-var MERGE_STRATEGIES = require( './constants/merge-strategies' );
-
 module.exports = {
 	/************************************************
 	* Deepstream									*
@@ -185,14 +183,6 @@ module.exports = {
 	 *                                  your network does not block websockets.
 	 */
 	rememberUpgrade: false,
-
-	/**
-   *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
-	 *                                  If the merge strategy is not succesfull it will set an error, else set the
-	 *                                  returned data as the latest revision. This can be overriden on a per record
-	 *                                  basis by setting the `setMergeStrategy`.
-	 */
-	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
 
 	/**
 	 * @param {Boolean} recordDeepCopy Setting to false disabled deepcopying of record data

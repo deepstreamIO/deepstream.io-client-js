@@ -1,6 +1,4 @@
 var Record = require( './record' ),
-	AnonymousRecord = require( './anonymous-record' ),
-	List = require( './list' ),
 	Listener = require( '../utils/listener' ),
 	SingleNotifier = require( '../utils/single-notifier' ),
 	C = require( '../constants/constants' ),
@@ -20,7 +18,6 @@ var RecordHandler = function( options, connection, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._records = {};
-	this._lists = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
 
@@ -38,56 +35,16 @@ var RecordHandler = function( options, connection, client ) {
  * @public
  * @returns {Record}
  */
-RecordHandler.prototype.getRecord = function( name, recordOptions ) {
-	if( !this._records[ name ] ) {
-		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
-		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
-		this._records[ name ].on( 'destroyPending', this._onDestroyPending.bind( this, name ) );
-		this._records[ name ].on( 'delete', this._removeRecord.bind( this, name ) );
-		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
+RecordHandler.prototype.getRecord = function( recordName, recordOptions ) {
+	if( !this._records[ recordName ] ) {
+		this._records[ recordName ] = new Record( recordName, recordOptions || {}, this._connection, this._options, this._client );
+		this._records[ recordName ].on( 'error', this._onRecordError.bind( this, recordName ) );
+		this._records[ recordName ].on( 'destroy', this._onRecordDestroy.bind( this, recordName ) );
 	}
 
-	this._records[ name ].usages++;
+	this._records[ recordName ].usages++;
 
-	return this._records[ name ];
-};
-
-/**
- * Returns an existing List or creates a new one. A list is a specialised
- * type of record that holds an array of recordNames.
- *
- * @param   {String} name       the unique name of the list
- * @param   {[Object]} options 	A map of parameters for this particular list.
- *                              { persist: true }
- *
- * @public
- * @returns {List}
- */
-RecordHandler.prototype.getList = function( name, options ) {
-	if( !this._lists[ name ] ) {
-		this._lists[ name ] = new List( this, name, options );
-	} else {
-		this._records[ name ].usages++;
-	}
-	return this._lists[ name ];
-};
-
-/**
- * Returns an anonymous record. A anonymous record is effectively
- * a wrapper that mimicks the API of a record, but allows for the
- * underlying record to be swapped without loosing subscriptions etc.
- *
- * This is particularly useful when selecting from a number of similarly
- * structured records. E.g. a list of users that can be choosen from a list
- *
- * The only API difference to a normal record is an additional setName( name ) method.
- *
- *
- * @public
- * @returns {AnonymousRecord}
- */
-RecordHandler.prototype.getAnonymousRecord = function() {
-	return new AnonymousRecord( this );
+	return this._records[ recordName ];
 };
 
 /**
@@ -184,6 +141,15 @@ RecordHandler.prototype.has = function( name, callback ) {
 	}
 };
 
+RecordHandler.prototype.set = function( name, pathOrData, data ) {
+	var path = data ? pathOrData : undefined;
+	var data = data ? data : pathOrData;
+
+	var record = this.getRecord( name );
+	record.set( path, data );
+	record.discard();
+};
+
 /**
  * Will be called by the client for incoming messages on the RECORD topic
  *
@@ -196,8 +162,7 @@ RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
 	if( message.action === C.ACTIONS.ERROR &&
-		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
-			message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
+		( message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
 			message.data[ 0 ] !== C.ACTIONS.HAS  &&
 			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
 		)
@@ -209,26 +174,6 @@ RecordHandler.prototype._$handle = function( message ) {
 
 	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
-
-		/*
-		 * The following prevents errors that occur when a record is discarded or deleted and
-		 * recreated before the discard / delete ack message is received.
-		 *
-		 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
-		 * between another clients creation and read message for the same record
-		 */
-		if( message.data[ 0 ] === C.ACTIONS.DELETE ||
-			  message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ||
-			 ( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE  )
-			) {
-			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
-
-			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
-				this._records[ name ]._$onMessage( message );
-			}
-
-			return;
-		}
 
 		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
 			message.processedError = true;
@@ -300,37 +245,15 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
 };
 
 /**
- * When the client calls discard or delete on a record, there is a short delay
- * before the corresponding ACK message is received from the server. To avoid
- * race conditions if the record is re-requested straight away the old record is
- * removed from the cache straight awy and will only listen for one last ACK message
- *
- * @param   {String} recordName The name of the record that was just deleted / discarded
- *
- * @private
- * @returns {void}
- */
-RecordHandler.prototype._onDestroyPending = function( recordName ) {
-	if ( !this._records[ recordName ] ) {
-		this.emit( 'error', 'Record \'' + recordName + '\' does not exists' );
-		return;
-	}
-	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
-	this._destroyEventEmitter.once( 'destroy_ack_' + recordName, onMessage );
-	this._removeRecord( recordName );
-};
-
-/**
- * Callback for 'deleted' and 'discard' events from a record. Removes the record from
+ * Callback for the 'destroy' event from a record. Removes the record from
  * the registry
  *
  * @param   {String} recordName
  *
  * @returns {void}
  */
-RecordHandler.prototype._removeRecord = function( recordName ) {
+RecordHandler.prototype._onRecordDestroy = function( recordName ) {
 	delete this._records[ recordName ];
-	delete this._lists[ recordName ];
 };
 
 module.exports = RecordHandler;

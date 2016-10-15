@@ -1,5 +1,4 @@
 var C = require( './constants/constants' ),
-	MS = require( './constants/merge-strategies' ),
 	Emitter = require( 'component-emitter' ),
 	Connection = require( './message/connection' ),
 	EventHandler = require( './event/event-handler' ),
@@ -242,11 +241,5 @@ function createDeepstream( url, options ) {
 */
 Client.prototype.CONSTANTS = C;
 createDeepstream.CONSTANTS = C;
-
-/**
- * Expose merge strategies to allow consumers to access them
-*/
-Client.prototype.MERGE_STRATEGIES = MS;
-createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
