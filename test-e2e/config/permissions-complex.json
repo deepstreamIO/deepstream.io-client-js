@@ -46,14 +46,14 @@
 			"subscribe": false
 		},
 		"a-to-b/*": {
-			"publish": "user.id === 'client-a'",
-			"subscribe": "user.id === 'client-b'"
+			"publish": "user.id === 'A'",
+			"subscribe": "user.id === 'B'"
 		},
 		"news/$topic": {
 			"publish": "$topic === 'tea-cup-pigs'"
 		},
 		"number": {
-			"publish": "typeof data === 'number' && data > 10"
+			"publish": "data > 10"
 		},
 		"place/$city": {
 			"publish": "$city.toLowerCase() === data.address.city.toLowerCase()"
@@ -65,8 +65,8 @@
 			"request": true
 		},
 		"a-provide-b-request": {
-			"provide": "user.id === 'client-a'",
-			"request": "user.id === 'client-b'"
+			"provide": "user.id === 'A'",
+			"request": "user.id === 'B'"
 		},
 		"only-full-user-data": {
 			"request": "typeof data.firstname === 'string' && typeof data.lastname === 'string'"

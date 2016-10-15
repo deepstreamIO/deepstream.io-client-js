@@ -194,6 +194,7 @@ RpcHandler.prototype._$handle = function( message ) {
 		}
 		else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
 			if( message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
+				this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
 				return;
 			}
 			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {

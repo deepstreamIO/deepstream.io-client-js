@@ -1,0 +1,6 @@
+[submodule "test-specs/features"]
+	path = test-specs/features
+	url = https://github.com/deepstreamIO/deepstream.io-client-specs.git
+[submodule "test-e2e/features"]
+	path = test-e2e/features
+	url = https://github.com/deepstreamIO/deepstream.io-e2e.git

@@ -29,8 +29,8 @@ exports.TOPIC.EVENT = 'E';
 exports.TOPIC.RECORD = 'R';
 exports.TOPIC.RPC = 'P';
 exports.TOPIC.WEBRTC = 'W';
+exports.TOPIC.PRESENCE = 'U';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
-exports.TOPIC.PRESENCE = 'PN';
 
 exports.EVENT = {};
 exports.EVENT.CONNECTION_ERROR = 'connectionError';
@@ -53,6 +53,7 @@ exports.EVENT.TOO_MANY_AUTH_ATTEMPTS = 'TOO_MANY_AUTH_ATTEMPTS';
 exports.EVENT.IS_CLOSED = 'IS_CLOSED';
 exports.EVENT.UNKNOWN_CALLEE = 'UNKNOWN_CALLEE';
 exports.EVENT.RECORD_NOT_FOUND = 'RECORD_NOT_FOUND';
+exports.EVENT.NOT_SUBSCRIBED = 'NOT_SUBSCRIBED';
 
 exports.ACTIONS = {};
 exports.ACTIONS.ACK = 'A';

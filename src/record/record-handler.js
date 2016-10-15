@@ -281,6 +281,7 @@ RecordHandler.prototype._$handle = function( message ) {
 	}
 
 	if( !processed ) {
+		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
 	}
 };

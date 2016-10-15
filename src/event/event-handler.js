@@ -198,6 +198,12 @@ EventHandler.prototype._$handle = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ERROR ) {
+    if (message.data[0] === C.EVENT.MESSAGE_DENIED){
+      this._ackTimeoutRegistry.remove( message.data[1], message.data[2] );
+    }
+    else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
+      this._ackTimeoutRegistry.remove( message.data[1], C.ACTIONS.UNSUBSCRIBE );
+    }
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
 		return;

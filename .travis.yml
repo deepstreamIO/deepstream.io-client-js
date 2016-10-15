@@ -4,10 +4,15 @@ services:
   - redis-server
 
 node_js:
-  - "stable"
+  - "6"
+  - "4"
+
+env:
+  - DEFAULT_DELAY: 50
 
 script:
-  - npm run coverage
-  - npm run new-e2e
+  - npm run reporter
+  - npm run e2e
+  - npm run specs
 
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
