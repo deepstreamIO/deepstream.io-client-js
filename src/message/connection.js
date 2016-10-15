@@ -1,5 +1,5 @@
-var BrowserWebSocket = global.WebSocket || global.MozWebSocket;
-var messageParser = require( './message-parser' ),
+var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
+	messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
 	TcpConnection = require( '../tcp/tcp-connection' ),
 	utils = require( '../utils/utils' ),
@@ -17,8 +17,6 @@ var messageParser = require( './message-parser' ),
  */
 var Connection = function( client, url, options ) {
 	this._client = client;
-	this._originalUrl = url;
-	this._url = url;
 	this._options = options;
 	this._authParams = null;
 	this._authCallback = null;
@@ -34,6 +32,13 @@ var Connection = function( client, url, options ) {
 	this._sendNextPacketTimeout = null;
 	this._currentMessageResetTimeout = null;
 	this._endpoint = null;
+
+	if( this._options.useTCP ) {
+		this._originalUrl = url;
+	} else {
+		this._originalUrl = utils.parseUrl( url );
+	}
+	this._url = this._originalUrl;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
 	this._createEndpoint();

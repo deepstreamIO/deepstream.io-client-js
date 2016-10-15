@@ -139,3 +139,41 @@ exports.shallowCopy = function ( obj ) {
 	}
 	return obj;
 }
+
+/**
+ * Used to see if a protocol is specified within the url
+ * @type {RegExp}
+ */
+var hasUrlProtocol = /^wss:|^ws:|^\/\//;
+
+/**
+ * Used to see if the protocol contains any unsupported protocols
+ * @type {RegExp}
+ */
+var unsupportedProtocol = /^http:|^https:/;
+
+var URL = require( 'url' );
+
+/**
+ * Take the url passed when creating the client and ensure the correct
+ * protocol is provided
+ * @param  {String} url Url passed in by client
+ * @return {String} Url with supported protocol
+ */
+exports.parseUrl = function( url, defaultPath ) {
+	if( unsupportedProtocol.test( url ) ) {
+		throw new Error( 'Only ws and wss are supported' );
+	}
+	if( !hasUrlProtocol.test( url ) ) {
+		url = 'ws://' + url;
+	} else if( url.indexOf( '//' ) === 0  ) {
+		url = 'ws:' + url;
+	}
+	var serverUrl = URL.parse( url );
+	if (!serverUrl.host) {
+		throw new Error('invalid url, missing host');
+	}
+	serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
+	serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
+	return URL.format( serverUrl );
+};
