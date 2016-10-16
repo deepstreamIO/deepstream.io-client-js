@@ -216,27 +216,6 @@ Record.prototype.discard = function() {
 };
 
 /**
- * Deletes the record on the server.
- *
- * @public
- * @returns {void}
- */
-Record.prototype.delete = function() {
-	if( this._checkDestroyed( 'delete' ) ) {
-		return;
-	}
-	this.usages = 0;
-	this.whenReady( function() {
-		if ( this.usages === 0 && !this.isDestroying ) {
-			this.isDestroying = true;
-			this._reset();
-			this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
-			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
-		}
-	}.bind( this ) );
-};
-
-/**
  * Convenience method, similar to promises. Executes callback
  * whenever the record is ready, either immediatly or once the ready
  * event is fired
@@ -292,7 +271,7 @@ Record.prototype._$onMessage = function( message ) {
 
 /**
  * Callback for ack-messages. Acks can be received for
- * subscriptions, discards and deletes
+ * subscriptions and discards.
  *
  * @param   {Object} message parsed and validated deepstream message
  *
@@ -304,10 +283,6 @@ Record.prototype._processAckMessage = function( message ) {
 
 	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
 		clearTimeout( this._readAckTimeout );
-	}
-	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
-		this.emit( 'delete' );
-		this._destroy();
 	}
 	else if( acknowledgedAction === C.ACTIONS.UNSUBSCRIBE ) {
 		this.emit( 'discard' );
@@ -452,9 +427,7 @@ Record.prototype._normalizeArguments = function( args ) {
  */
 Record.prototype._clearTimeouts = function() {
 	clearTimeout( this._readAckTimeout );
-	clearTimeout( this._deleteAckTimeout );
 	clearTimeout( this._discardTimeout );
-	clearTimeout( this._deleteAckTimeout );
 };
 
 /**
@@ -475,7 +448,7 @@ Record.prototype._checkDestroyed = function( methodName ) {
 	return false;
 };
 /**
- * Generic handler for ack, read and delete timeouts
+ * Generic handler for ack and read timeouts
  *
  * @private
  * @returns {void}
@@ -501,7 +474,6 @@ Record.prototype._onTimeout = function( timeoutType ) {
 	 	this._eventEmitter.off();
 	 	this._resubscribeNotifier.destroy();
 	 	this.isDestroyed = true;
-	 	this.isReady = false;
 	 	this._client = null;
 		this._eventEmitter = null;
 		this._connection = null;

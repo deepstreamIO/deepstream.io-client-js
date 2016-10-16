@@ -2,9 +2,9 @@ var C = require( '../constants/constants' ),
 	ResubscribeNotifier = require( './resubscribe-notifier' );
 
 /**
- * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT 
- * and HAS functionality. The SingleNotifier multiplexes all the client requests so 
- * that they can can be notified at once, and also includes reconnection funcionality 
+ * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
+ * functionality. The SingleNotifier multiplexes all the client requests so 
+ * that they can can be notified at once, and also includes reconnection funcionality
  * incase the connection drops.
  *
  * @param {Client} client          The deepstream client
@@ -33,8 +33,8 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.hasRequest = function( name ) {		
-	return !!this._requests[ name ]; 
+SingleNotifier.prototype.hasRequest = function( name ) {
+	return !!this._requests[ name ];
 };
 
 /**
@@ -47,7 +47,7 @@ SingleNotifier.prototype.hasRequest = function( name ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.request = function( name, callback ) {	
+SingleNotifier.prototype.request = function( name, callback ) {
 	var responseTimeout;
 
 	if( !this._requests[ name ] ) {

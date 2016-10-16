@@ -21,7 +21,6 @@ var RecordHandler = function( options, connection, client ) {
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
 
-	this._hasRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout );
 	this._snapshotRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout );
 };
 
@@ -121,26 +120,6 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 	}
 };
 
-/**
- * Allows the user to query to see whether or not the record exists.
- *
- * @param   {String}	name the unique name of the record
- * @param   {Function}	callback
- *
- * @public
- */
-RecordHandler.prototype.has = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-
-	if( this._records[ name ] ) {
-		callback( null, true );
-	} else {
-		this._hasRegistry.request( name, callback );
-	}
-};
-
 RecordHandler.prototype.set = function( name, pathOrData, data ) {
 	var path = data ? pathOrData : undefined;
 	var data = data ? data : pathOrData;
@@ -163,7 +142,6 @@ RecordHandler.prototype._$handle = function( message ) {
 
 	if( message.action === C.ACTIONS.ERROR &&
 		( message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
-			message.data[ 0 ] !== C.ACTIONS.HAS  &&
 			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
 		)
 	) {
@@ -176,12 +154,6 @@ RecordHandler.prototype._$handle = function( message ) {
 		name = message.data[ 1 ];
 
 		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
-			message.processedError = true;
-			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
-			return;
-		}
-
-		if( message.data[ 0 ] === C.ACTIONS.HAS ) {
 			message.processedError = true;
 			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
 			return;
@@ -201,11 +173,6 @@ RecordHandler.prototype._$handle = function( message ) {
 	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
 		processed = true;
 		this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
-	}
-
-	if( message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest( name ) ) {
-		processed = true;
-		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 	}
 
 	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
