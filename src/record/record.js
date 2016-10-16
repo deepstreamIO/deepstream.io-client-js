@@ -37,7 +37,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._$data = Object.create( null );
 	this.version = null;
 	this._eventEmitter = new EventEmitter();
-	this._queuedMethodCalls = [];
+	this._queuedSet = [];
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._sendRead();
@@ -89,7 +89,10 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	if( !this.isReady ) {
-		this._queuedMethodCalls.push({ method: 'set', args: arguments });
+		if ( !path ) {
+			this._queuedSet = [];
+		}
+		this._queuedSet.push({ method: 'set', args: arguments });
 		return this;
 	}
 
@@ -348,10 +351,10 @@ Record.prototype._onRead = function( message ) {
  */
 Record.prototype._setReady = function() {
 	this.isReady = true;
-	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
-		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
+	for( var i = 0; i < this._queuedSet.length; i++ ) {
+		this[ this._queuedSet[ i ].method ].apply( this, this._queuedSet[ i ].args );
 	}
-	this._queuedMethodCalls = [];
+	this._queuedSet = [];
 	this.emit( 'ready' );
 };
 
