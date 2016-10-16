@@ -4,7 +4,8 @@ var jsonPath = require( './json-path' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
-	messageParser = require( '../message/message-parser' );
+	messageParser = require( '../message/message-parser' ),
+	EMPTY = Object.create( null );
 
 /**
  * This class represents a single record - an observable
@@ -34,7 +35,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.isReady = false;
 	this.isDestroyed = false;
 	this.hasProvider = false;
-	this._$data = Object.create( null );
+	this._$data = EMPTY;
 	this.version = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedSet = [];
@@ -60,7 +61,7 @@ EventEmitter( Record.prototype );
  * @returns {Mixed} value
  */
 Record.prototype.get = function( path ) {
-	return jsonPath.get( this._$data, path, this._options.recordDeepCopy );
+	return jsonPath.get( this._$data, path, false );
 };
 
 /**
@@ -100,7 +101,7 @@ Record.prototype.set = function( pathOrData, data ) {
 	data = path ? data : pathOrData;
 
 	var oldValue = this._$data;
-	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
+	var newValue = jsonPath.set( oldValue, path, data, false );
 
 	if ( oldValue === newValue ) {
 		return this;

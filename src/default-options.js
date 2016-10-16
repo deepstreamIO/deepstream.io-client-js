@@ -182,13 +182,5 @@ module.exports = {
 	 *                                  SSL/TLS connections, or if you know that
 	 *                                  your network does not block websockets.
 	 */
-	rememberUpgrade: false,
-
-	/**
-	 * @param {Boolean} recordDeepCopy Setting to false disabled deepcopying of record data
-	 *                                  when provided via `get()` in a `subscribe` callback. This
-	 *                                  improves speed at the expense of the user having to ensure
-	 *                                  object immutability.
-	 */
-	recordDeepCopy: true
+	rememberUpgrade: false
 };
