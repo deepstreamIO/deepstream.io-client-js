@@ -26,9 +26,8 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	}
 
 	this.name = name;
-	this.usages = 0;
-	this.isReady = false;
 	this.isDestroyed = false;
+	this.isDestroying = false;
 	this.hasProvider = false;
 	this.version = null;
 
@@ -36,15 +35,21 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._options = options;
-	this._$data = undefined;
 	this._eventEmitter = new EventEmitter();
-	this._queue = [];
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
+	this._reset();
 	this._sendRead();
 };
 
 EventEmitter( Record.prototype );
+
+Record.prototype._reset = function () {
+	this._$data = undefined;
+	this._queuedPatches = [];
+	this.usages = 0;
+	this.isReady = false;
+}
 
 /**
  * Returns a copy of either the entire dataset of the record
@@ -89,12 +94,12 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( path && this._queue ) {
-		this._queue.push({ path, data });
+	if( path && this._queuedPatches ) {
+		this._queuedPatches.push({ path, data });
 		return this;
 	}
 
-	this._queue = undefined;
+	this._queuedPatches = undefined;
 
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
@@ -201,7 +206,9 @@ Record.prototype.discard = function() {
 	}
 	this.usages--;
 	this.whenReady( function() {
-		if( this.usages === 0 ) {
+		if( this.usages === 0 && this.isDestroying ) {
+			this.isDestroying = true;
+			this._reset();
 			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
 			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 		}
@@ -220,7 +227,9 @@ Record.prototype.delete = function() {
 	}
 	this.usages = 0;
 	this.whenReady( function() {
-		if ( this.usage === 0 ) {
+		if ( this.usages === 0 && !this.isDestroying ) {
+			this.isDestroying = true;
+			this._reset();
 			this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
 			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 		}
@@ -256,6 +265,7 @@ Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
 		if ( this._readTimeout ) {
 			clearTimeout( this._readTimeout );
+			this._readTimeout = undefined;
 		}
 
 		if( !this.isReady ) {
@@ -272,7 +282,8 @@ Record.prototype._$onMessage = function( message ) {
 	}
 	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
 		this._clearTimeouts();
-	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+	}
+	else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
 		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
 		this.hasProvider = hasProvider;
 		this.emit( 'hasProviderChanged', hasProvider );
@@ -347,11 +358,11 @@ Record.prototype._onRead = function( message ) {
 	var oldValue = this._$data;
 	var newValue = JSON.parse( message.data[ 2 ] );
 
-	if ( this._queue ) {
-		for( var i = 0; i < this._queue.length; i++ ) {
-			newValue = jsonPath.set( newValue, this._queue[ i ].path, this._queue[ i ].data, false );
+	if ( this._queuedPatches ) {
+		for( var i = 0; i < this._queuedPatches.length; i++ ) {
+			newValue = jsonPath.set( newValue, this._queuedPatches[ i ].path, this._queuedPatches[ i ].data, false );
 		}
-		this._queue = undefined;
+		this._queuedPatches = undefined;
 	}
 
 	if ( this._$data ) {
@@ -482,6 +493,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
  * @returns {void}
  */
  Record.prototype._destroy = function() {
+  this.isDestroying = false;
  	this._clearTimeouts();
 	if ( this.usages > 0 ) {
 		this._sendRead();
