@@ -149,13 +149,10 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 		return;
 	}
 
-	if( args.triggerNow ) {
-		this.whenReady( function () {
-			this._eventEmitter.on( args.path, args.callback );
-			args.callback( this.get( args.path ) );
-		}.bind(this) );
-	} else {
-		this._eventEmitter.on( args.path, args.callback );
+	this._eventEmitter.on( args.path, args.callback );
+
+	if( args.triggerNow && this.isReady ) {
+		args.callback( this.get( args.path ) );
 	}
 };
 
@@ -338,7 +335,14 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	this.version = parseInt( message.data[ 1 ], 10 );
-	this._applyChange( jsonPath.set( this._$data, undefined, JSON.parse( message.data[ 2 ] ) ) );
+	this._$data = JSON.parse( message.data[ 2 ] );
+	if ( this._eventEmitter._callbacks ) {
+		var paths = Object.keys( this._eventEmitter._callbacks );
+
+		for ( var i = 0; i < paths.length; i++ ) {
+			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
+		}
+	}
 	this._setReady();
 };
 
