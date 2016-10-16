@@ -49,7 +49,7 @@ module.exports.set = function( data, path, value, deepCopy ) {
 		return data;
 	}
 
-	var result = utils.shallowCopy( data );
+	var result = utils.shallowCopy( data || Object.create( null ) );
 
 	var node = result;
 	for( var i = 0; i < tokens.length; i++ ) {

@@ -4,8 +4,7 @@ var jsonPath = require( './json-path' ),
 	EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
-	messageParser = require( '../message/message-parser' ),
-	EMPTY = Object.create( null );
+	messageParser = require( '../message/message-parser' );
 
 /**
  * This class represents a single record - an observable
@@ -28,17 +27,18 @@ var Record = function( name, recordOptions, connection, options, client ) {
 
 	this.name = name;
 	this.usages = 0;
+	this.isReady = false;
+	this.isDestroyed = false;
+	this.hasProvider = false;
+	this.version = null;
+
 	this._recordOptions = recordOptions;
 	this._connection = connection;
 	this._client = client;
 	this._options = options;
-	this.isReady = false;
-	this.isDestroyed = false;
-	this.hasProvider = false;
-	this._$data = EMPTY;
-	this.version = null;
+	this._$data = undefined;
 	this._eventEmitter = new EventEmitter();
-	this._queuedSet = [];
+	this._queue = [];
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._sendRead();
@@ -89,13 +89,12 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( !this.isReady ) {
-		if ( !path ) {
-			this._queuedSet = [];
-		}
-		this._queuedSet.push({ method: 'set', args: arguments });
+	if( path && this._queue ) {
+		this._queue.push({ path, data });
 		return this;
 	}
+
+	this._queue = undefined;
 
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
@@ -107,13 +106,12 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-		this.name,
-		++this.version,
-		newValue
-	]);
-
 	this._applyChange( newValue );
+
+	if ( this.isReady ) {
+		this._dispatchUpdate();
+	}
+
 	return this;
 };
 
@@ -152,7 +150,7 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 
 	this._eventEmitter.on( args.path, args.callback );
 
-	if( args.triggerNow && this.isReady ) {
+	if( args.triggerNow && this._$data ) {
 		args.callback( this.get( args.path ) );
 	}
 };
@@ -306,6 +304,14 @@ Record.prototype._processAckMessage = function( message ) {
 	}
 };
 
+Record.prototype._dispatchUpdate = function() {
+	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
+		this.name,
+		++this.version,
+		this._$data
+	]);
+}
+
 /**
  * Applies incoming updates to the record's dataset
  *
@@ -336,30 +342,24 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	this.version = parseInt( message.data[ 1 ], 10 );
-	this._$data = JSON.parse( message.data[ 2 ] );
-	if ( this._eventEmitter._callbacks ) {
-		var paths = Object.keys( this._eventEmitter._callbacks );
-
-		for ( var i = 0; i < paths.length; i++ ) {
-			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
-		}
-	}
-	this._setReady();
-};
-
-/**
- * Invokes method calls that where queued while the record wasn't ready
- * and emits the ready event
- *
- * @private
- * @returns {void}
- */
-Record.prototype._setReady = function() {
 	this.isReady = true;
-	for( var i = 0; i < this._queuedSet.length; i++ ) {
-		this[ this._queuedSet[ i ].method ].apply( this, this._queuedSet[ i ].args );
+
+	var oldValue = this._$data;
+	var newValue = JSON.parse( message.data[ 2 ] );
+
+	if ( this._queue ) {
+		for( var i = 0; i < this._queue.length; i++ ) {
+			newValue = jsonPath.set( newValue, this._queue[ i ].path, this._queue[ i ].data, false );
+		}
+		this._queue = undefined;
 	}
-	this._queuedSet = [];
+
+	if ( this._$data ) {
+		this._dispatchUpdate();
+	} else {
+		this._applyChange( JSON.parse( message.data[ 2 ] ) );
+	}
+
 	this.emit( 'ready' );
 };
 
