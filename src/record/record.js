@@ -46,7 +46,7 @@ EventEmitter( Record.prototype );
 
 Record.prototype._reset = function () {
 	this._$data = undefined;
-	this._queuedPatches = [];
+	this._patchQueue = [];
 	this.usages = 0;
 	this.isReady = false;
 }
@@ -94,12 +94,12 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	if( path && this._queuedPatches ) {
-		this._queuedPatches.push({ path, data });
+	if( path && this._patchQueue ) {
+		this._patchQueue.push({ path, data });
 		return this;
 	}
 
-	this._queuedPatches = undefined;
+	this._patchQueue = undefined;
 
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
@@ -333,11 +333,11 @@ Record.prototype._onRead = function( message ) {
 	var oldValue = this._$data;
 	var newValue = JSON.parse( message.data[ 2 ] );
 
-	if ( this._queuedPatches ) {
-		for( var i = 0; i < this._queuedPatches.length; i++ ) {
-			newValue = jsonPath.set( newValue, this._queuedPatches[ i ].path, this._queuedPatches[ i ].data, false );
+	if ( this._patchQueue ) {
+		for( var i = 0; i < this._patchQueue.length; i++ ) {
+			newValue = jsonPath.set( newValue, this._patchQueue[ i ].path, this._patchQueue[ i ].data, false );
 		}
-		this._queuedPatches = undefined;
+		this._patchQueue = undefined;
 	}
 
 	if ( this._$data ) {
