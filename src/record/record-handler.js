@@ -121,7 +121,7 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 		callback = promise.callback;
   }
 
-	if( this._records[ name ] && this._records[ name ].isReady ) {
+	if( this._records[ name ] && this._records[ name ].hasData ) {
 		callback( null, this._records[ name ].get() );
 	} else {
 		this._snapshotRegistry.request( name, callback );
