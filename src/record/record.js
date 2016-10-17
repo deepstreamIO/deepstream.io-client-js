@@ -231,7 +231,7 @@ Record.prototype.whenReady = function( callback ) {
 		callback = promise.callback;
 	}
 
-	if( this.isReady === true ) {
+	if( this.isReady ) {
 		callback();
 	} else {
 		this.once( 'ready', callback );
