@@ -154,7 +154,7 @@ RecordHandler.prototype.observe = function observe (recordName) {
         rec.off( 'error', onError );
         rec.discard();
       }
-    } );
+    }.bind( this ) );
 }
 
 /**
