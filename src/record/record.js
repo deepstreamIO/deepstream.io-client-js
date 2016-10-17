@@ -320,7 +320,7 @@ Record.prototype._applyUpdate = function( message ) {
 	var version = parseInt( message.data[ 1 ], 10 );
 	var data = JSON.parse( message.data[ 2 ] );
 
-	if ( this.version > version ) {
+	if ( this.version >= version ) {
 		return;
 	}
 
