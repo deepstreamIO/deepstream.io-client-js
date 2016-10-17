@@ -27,7 +27,8 @@
   },
   "dependencies": {
     "component-emitter": "1.1.2",
-    "engine.io-client": "^1.6.11"
+    "engine.io-client": "^1.6.11",
+    "rxjs": "5.0.0-rc.1"
   },
   "browser": {
     "net": false

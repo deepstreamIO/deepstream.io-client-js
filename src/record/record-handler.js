@@ -3,7 +3,8 @@ var Record = require( './record' ),
 	SingleNotifier = require( '../utils/single-notifier' ),
 	C = require( '../constants/constants' ),
 	messageParser = require( '../message/message-parser' ),
-	EventEmitter = require( 'component-emitter' );
+	EventEmitter = require( 'component-emitter' ),
+	Rx = require( 'rxjs' );
 
 /**
  * A collection of factories for records. This class
@@ -128,6 +129,22 @@ RecordHandler.prototype.set = function( name, pathOrData, data ) {
 	record.set( path, data );
 	record.discard();
 };
+
+RecordHandler.prototype.observe = function observe (recordName) {
+  return Rx.Observable
+    .create(o => {
+      const rec = this.getRecord(recordName)
+      const onValue = val => o.next(val)
+      const onError = err => o.error(err)
+      rec.subscribe(onValue, true)
+      rec.on('error', onError)
+      return () => {
+        rec.unsubscribe(onValue)
+        rec.off('error', onError)
+        rec.discard()
+      }
+    })
+}
 
 /**
  * Will be called by the client for incoming messages on the RECORD topic
