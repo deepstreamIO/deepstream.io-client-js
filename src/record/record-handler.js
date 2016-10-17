@@ -143,18 +143,18 @@ RecordHandler.prototype.set = function( name, pathOrData, data ) {
 
 RecordHandler.prototype.observe = function observe (recordName) {
   return Rx.Observable
-    .create(o => {
-      const rec = this.getRecord(recordName)
-      const onValue = val => o.next(val)
-      const onError = err => o.error(err)
-      rec.subscribe(onValue, true)
-      rec.on('error', onError)
-      return () => {
-        rec.unsubscribe(onValue)
-        rec.off('error', onError)
-        rec.discard()
+    .create( function( o ) {
+      const rec = this.getRecord( recordName );
+      const onValue = function ( value ) { o.next( value ); };
+      const onError = function ( error ) { o.error( error ); };
+      rec.subscribe( onValue, true );
+      rec.on( 'error', onError );
+      return function() {
+        rec.unsubscribe( onValue );
+        rec.off( 'error', onError );
+        rec.discard();
       }
-    })
+    } );
 }
 
 /**
