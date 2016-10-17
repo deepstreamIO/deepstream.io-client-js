@@ -137,6 +137,8 @@ RecordHandler.prototype.set = function( name, pathOrData, data ) {
 	var record = this.getRecord( name );
 	record.set( path, data );
 	record.discard();
+
+	return Promise.resolve();
 };
 
 RecordHandler.prototype.observe = function observe (recordName) {
