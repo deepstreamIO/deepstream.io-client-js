@@ -102,7 +102,6 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	this._patchQueue = undefined;
-	this.hasData = true;
 
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
