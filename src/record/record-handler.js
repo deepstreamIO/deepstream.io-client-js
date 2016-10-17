@@ -141,7 +141,7 @@ RecordHandler.prototype.set = function( name, pathOrData, data ) {
 	return Promise.resolve();
 };
 
-RecordHandler.prototype.observe = function observe (recordName) {
+RecordHandler.prototype.observe = function (recordName) {
   return Rx.Observable
     .create( function( o ) {
       const rec = this.getRecord( recordName );
@@ -170,8 +170,7 @@ RecordHandler.prototype._$handle = function( message ) {
 
 	if( message.action === C.ACTIONS.ERROR &&
 		( message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
-			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
-		)
+			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED )
 	) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
