@@ -68,7 +68,7 @@ Record.prototype._reset = function () {
  * @returns {Mixed} value
  */
 Record.prototype.get = function( path ) {
-	return path ? jsonPath.get( this._$data, path, false ) : this._$data || EMPTY;
+	return jsonPath.get( this._$data || EMPTY, path, false );
 };
 
 /**
