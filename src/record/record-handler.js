@@ -1,5 +1,6 @@
 var Record = require( './record' ),
 	Listener = require( '../utils/listener' ),
+	utils = require( '../utils/utils' ),
 	SingleNotifier = require( '../utils/single-notifier' ),
 	C = require( '../constants/constants' ),
 	messageParser = require( '../message/message-parser' ),
@@ -114,11 +115,19 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 		throw new Error( 'invalid argument name' );
 	}
 
+	var promise;
+	if (typeof callback === 'undefined') {
+		promise = utils.createPromise();
+		callback = promise.callback;
+  }
+
 	if( this._records[ name ] && this._records[ name ].isReady ) {
 		callback( null, this._records[ name ].get() );
 	} else {
 		this._snapshotRegistry.request( name, callback );
 	}
+
+	return promise;
 };
 
 RecordHandler.prototype.set = function( name, pathOrData, data ) {

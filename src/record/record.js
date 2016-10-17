@@ -225,11 +225,19 @@ Record.prototype.discard = function() {
  * @returns {void}
  */
 Record.prototype.whenReady = function( callback ) {
+	var promise;
+	if (typeof callback === 'undefined') {
+		promise = utils.createPromise();
+		callback = promise.callback;
+	}
+
 	if( this.isReady === true ) {
 		callback();
 	} else {
 		this.once( 'ready', callback );
 	}
+
+	return promise;
 };
 
 /**
