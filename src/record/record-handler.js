@@ -181,7 +181,7 @@ RecordHandler.prototype._$handle = function( message ) {
 
 		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
 			message.processedError = true;
-			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
+			this._snapshotRegistry.receive( name, message.data[ 2 ] );
 			return;
 		}
 
@@ -198,7 +198,7 @@ RecordHandler.prototype._$handle = function( message ) {
 
 	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
 		processed = true;
-		this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
+		this._snapshotRegistry.receive( name, null, JSON.parse( message.data[ 2 ] ) );
 	}
 
 	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&

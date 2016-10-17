@@ -334,12 +334,12 @@ Connection.prototype._onMessage = function( message ) {
  * authentication immediately. The actual 'open' event won't be emitted
  * by the client until the authentication is successful.
  *
- * If a challenge is recieved, the user will send the url to the server
+ * If a challenge is received, the user will send the url to the server
  * in response to get the appropriate redirect. If the URL is invalid the
  * server will respond with a REJECTION resulting in the client connection
  * being permanently closed.
  *
- * If a redirect is recieved, this connection is closed and updated with
+ * If a redirect is received, this connection is closed and updated with
  * a connection to the url supplied in the message.
  *
  * @param   {Object} message parsed connection message

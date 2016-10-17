@@ -70,7 +70,7 @@ SingleNotifier.prototype.request = function( name, callback ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.recieve = function( name, error, data ) {
+SingleNotifier.prototype.receive = function( name, error, data ) {
 	var entries = this._requests[ name ];
 	for( i=0; i < entries.length; i++ ) {
 		entry = entries[ i ];
