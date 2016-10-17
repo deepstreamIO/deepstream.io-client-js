@@ -337,13 +337,8 @@ Record.prototype._applyUpdate = function( message ) {
  * @returns {void}
  */
 Record.prototype._onRead = function( message ) {
-	var version = parseInt( message.data[ 1 ], 10 );
-	var data = JSON.parse( message.data[ 2 ] );
-
-	this.isReady = true;
-
-	var oldValue = this._$data;
-	var newValue = data;
+	var oldValue = JSON.parse( message.data[ 2 ] );
+	var newValue = this._$data || oldValue
 
 	if ( this._patchQueue ) {
 		for( var i = 0; i < this._patchQueue.length; i++ ) {
@@ -352,10 +347,11 @@ Record.prototype._onRead = function( message ) {
 		this._patchQueue = undefined;
 	}
 
-	this.version = version;
+	this.isReady = true;
+	this.version = parseInt( message.data[ 1 ], 10 );
 	this._applyChange( newValue );
 
-	if ( data !== this._$data ) {
+	if ( newValue !== oldValue ) {
 		this._dispatchUpdate();
 	}
 
