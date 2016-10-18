@@ -368,7 +368,7 @@ Record.prototype._onRead = function( message ) {
  Record.prototype._sendRead = function() {
  	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
  	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
- 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
+ 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.READ, [ this.name ] );
  };
 
 /**

@@ -22,8 +22,6 @@ var RecordHandler = function( options, connection, client ) {
 	this._records = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
-
-	this._snapshotRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout );
 };
 
 /**
@@ -121,11 +119,32 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 		callback = promise.callback;
   }
 
-	if( this._records[ name ] && this._records[ name ].hasData ) {
-		callback( null, this._records[ name ].get() );
-	} else {
-		this._snapshotRegistry.request( name, callback );
+	var record = this.getRecord( name );
+	var done = false;
+	var onDone;
+	var onValue = function ( value ) {
+		onDone( null, value );
 	}
+	var onError = function ( error ) {
+		onDone( error );
+	};
+	onDone = function ( error, value ) {
+		if ( done ) {
+			return;
+		}
+		if ( error ) {
+			callback( error );
+		} else {
+			callback( null, value );
+		}
+		record.off( 'error', onError );
+		record.unsubscribe( onValue );
+		record.discard();
+		done = true;
+	};
+
+	record.on('error', onError );
+	record.subscribe( onValue, true );
 
 	return promise;
 };
@@ -168,10 +187,7 @@ RecordHandler.prototype.observe = function (recordName) {
 RecordHandler.prototype._$handle = function( message ) {
 	var name;
 
-	if( message.action === C.ACTIONS.ERROR &&
-		( message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
-			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED )
-	) {
+	if( message.action === C.ACTIONS.ERROR &&	message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED ) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
 		return;
@@ -179,13 +195,6 @@ RecordHandler.prototype._$handle = function( message ) {
 
 	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
 		name = message.data[ 1 ];
-
-		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
-			message.processedError = true;
-			this._snapshotRegistry.receive( name, message.data[ 2 ] );
-			return;
-		}
-
 	} else {
 		name = message.data[ 0 ];
 	}
@@ -195,11 +204,6 @@ RecordHandler.prototype._$handle = function( message ) {
 	if( this._records[ name ] ) {
 		processed = true;
 		this._records[ name ]._$onMessage( message );
-	}
-
-	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
-		processed = true;
-		this._snapshotRegistry.receive( name, null, JSON.parse( message.data[ 2 ] ) );
 	}
 
 	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
