@@ -26,6 +26,7 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
+    "blueimp-md5": "2.4.0",
     "component-emitter": "1.1.2",
     "engine.io-client": "^1.6.11",
     "rxjs": "5.0.0-rc.1"
