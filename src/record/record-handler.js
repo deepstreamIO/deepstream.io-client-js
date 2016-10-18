@@ -39,7 +39,6 @@ RecordHandler.prototype.getRecord = function( recordName, recordOptions ) {
 		this._records[ recordName ] = new Record( recordName, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ recordName ].on( 'error', this._onRecordError.bind( this, recordName ) );
 		this._records[ recordName ].on( 'destroy', this._onRecordDestroy.bind( this, recordName ) );
-		this._records[ recordName ].on( 'hit', this._onRecordHit.bind( this, recordName ) );
 	}
 
 	this._records[ recordName ].usages++;
