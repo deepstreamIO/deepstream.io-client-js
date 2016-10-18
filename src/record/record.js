@@ -318,7 +318,8 @@ Record.prototype._dispatchUpdate = function() {
 		this.version,
 		this._$data
 	]);
-	this.version = `${parseInt(this.version.split('-')[0], 10) + 1}-${md5(JSON.stringify(this._$data))}`;
+	const start = this.version ? parseInt(this.version.split('-')[0], 10) : 0
+	this.version = `${start + 1}-${md5(JSON.stringify(this._$data))}`;
 }
 
 /**
