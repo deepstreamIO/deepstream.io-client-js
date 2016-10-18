@@ -123,7 +123,7 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 	var onDone;
 	var onValue = function ( value ) {
 		onDone( null, value );
-	}
+	};
 	var onError = function ( error ) {
 		onDone( error );
 	};
