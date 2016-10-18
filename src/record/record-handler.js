@@ -137,21 +137,39 @@ RecordHandler.prototype.snapshot = function( name, callback ) {
 		if ( done ) {
 			return;
 		}
+		record.off( 'error', onError );
+		record.unsubscribe( onValue );
+		record.discard();
+		done = true;
 		if ( error ) {
 			callback( error );
 		} else {
 			callback( null, value );
 		}
-		record.off( 'error', onError );
-		record.unsubscribe( onValue );
-		record.discard();
-		done = true;
 	};
 
 	record.on('error', onError );
 	record.subscribe( onValue, true );
 
 	return promise;
+};
+
+/**
+ * Allows the user to query to see whether or not the record exists.
+ *
+ * @param   {String}	name the unique name of the record
+ * @param   {Function}	callback
+ *
+ * @public
+ */
+RecordHandler.prototype.has = function( name, callback ) {
+	this.snapshot( name, function ( error, value ) {
+		if ( error ) {
+			callback( error );
+		} else {
+			callback( null, value && Object.keys(value).length > 0 );
+		}
+	} );
 };
 
 RecordHandler.prototype.set = function( name, pathOrData, data ) {

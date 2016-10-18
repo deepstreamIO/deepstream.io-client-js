@@ -218,6 +218,17 @@ Record.prototype.discard = function() {
 };
 
 /**
+ * Deletes the record on the server.
+ *
+ * @public
+ * @returns {void}
+ */
+Record.prototype.delete = function() {
+	this.set( Object.create( null ) );
+	this.discard();
+};
+
+/**
  * Convenience method, similar to promises. Executes callback
  * whenever the record is ready, either immediatly or once the ready
  * event is fired
