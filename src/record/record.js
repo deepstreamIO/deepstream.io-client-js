@@ -5,7 +5,7 @@ var jsonPath = require( './json-path' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
-	md5 = require('blueimp-md5'),
+	cuid = require('cuid'),
 	EMPTY = Object.create( null );
 
 /**
@@ -313,13 +313,15 @@ Record.prototype._processAckMessage = function( message ) {
 };
 
 Record.prototype._dispatchUpdate = function() {
+	const start = this.version ? parseInt(this.version.split('-')[0], 10) : 0;
+	const version = `${start + 1}-${cuid()}`;
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 		this.name,
-		this.version,
-		this._$data
+		version,
+		this._$data,
+		this.version
 	]);
-	const start = this.version ? parseInt(this.version.split('-')[0], 10) : 0
-	this.version = `${start + 1}-${md5(JSON.stringify(this._$data))}`;
+	this.version = version;
 }
 
 /**
