@@ -20,8 +20,10 @@ var RecordHandler = function( options, connection, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._records = {};
+	this._recordsDebounce = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
+	setInterval( this._onRecordDebounce.bind( this ), this._options.recordDebounce || 1000 );
 };
 
 /**
@@ -39,6 +41,9 @@ RecordHandler.prototype.getRecord = function( recordName, recordOptions ) {
 		this._records[ recordName ] = new Record( recordName, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ recordName ].on( 'error', this._onRecordError.bind( this, recordName ) );
 		this._records[ recordName ].on( 'destroy', this._onRecordDestroy.bind( this, recordName ) );
+
+		this._records[ recordName ].usages++;
+		this._recordsDebounce[ recordName ] = true;
 	}
 
 	this._records[ recordName ].usages++;
@@ -253,5 +258,17 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
 RecordHandler.prototype._onRecordDestroy = function( recordName ) {
 	delete this._records[ recordName ];
 };
+
+RecordHandler.prototype._onRecordDebounce = function () {
+	const keys = Object.keys( this._recordsDebounce );
+	for ( var n = 0; n < keys.length; ++n ) {
+		if ( this._recordsDebounce[ keys[n] ] ) {
+			this._recordsDebounce[ keys[n] ] = false;
+		} else {
+			this._records[ keys[n] ].discard();
+			delete this._recordsDebounce[ keys[n] ];
+		}
+	}
+}
 
 module.exports = RecordHandler;
