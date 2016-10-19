@@ -32,7 +32,6 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.isDestroyed = false;
 	this.isDestroying = false;
 	this.hasProvider = false;
-	this.hasData = false;
 	this.version = null;
 
 	this._recordOptions = recordOptions;
@@ -402,8 +401,6 @@ Record.prototype._applyChange = function( newData ) {
 
 	var oldData = this._$data;
 	this._$data = newData;
-
-	this.hasData = true;
 
 	if ( !this._eventEmitter._callbacks ) {
 		return;
