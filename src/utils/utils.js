@@ -1,3 +1,8 @@
+var shortid = require('shortid');
+
+shortid.seed(9823745);
+shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
 /**
  * A regular expression that matches whitespace on either side, but
  * not in the center of a string
@@ -22,6 +27,10 @@ var OBJECT = 'object';
  * @type {Boolean}
  */
 exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
+
+exports.getShortId = function () {
+	return shortid.generate();
+};
 
 exports.compareVersions = function(a, b) {
 	return a && parseInt(a.split('-')[0]) >= parseInt(b.split('-')[0]) || a > b
