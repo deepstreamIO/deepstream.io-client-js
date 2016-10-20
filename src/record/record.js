@@ -7,6 +7,11 @@ var jsonPath = require( './json-path' ),
 	messageParser = require( '../message/message-parser' ),
 	shortid = require('shortid');
 
+shortid.seed(9823745)
+shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
+var CID = shortid.generate();
+
 /**
  * This class represents a single record - an observable
  * dataset returned by client.record.getRecord()
