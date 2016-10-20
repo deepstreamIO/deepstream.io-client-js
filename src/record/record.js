@@ -106,7 +106,7 @@ Record.prototype.set = function( pathOrData, data ) {
 	data = path ? data : pathOrData;
 
 	var oldValue = this._$data;
-	var newValue = jsonPath.set( oldValue, path, data, false );
+	var newValue = jsonPath.set( oldValue, path, data );
 
 	if ( oldValue === newValue ) {
 		return this;
@@ -356,7 +356,7 @@ Record.prototype._onRead = function( message ) {
 
 	if ( this._patchQueue ) {
 		for( var i = 0; i < this._patchQueue.length; i++ ) {
-			newValue = jsonPath.set( newValue, this._patchQueue[ i ].path, this._patchQueue[ i ].data, false );
+			newValue = jsonPath.set( newValue, this._patchQueue[ i ].path, this._patchQueue[ i ].data );
 		}
 		this._patchQueue = undefined;
 	}
