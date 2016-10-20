@@ -5,8 +5,7 @@ var jsonPath = require( './json-path' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
-	shortid = require('shortid'),
-	CID = shortid.generate();
+	shortid = require('shortid');
 
 /**
  * This class represents a single record - an observable
@@ -313,7 +312,7 @@ Record.prototype._processAckMessage = function( message ) {
 
 Record.prototype._dispatchUpdate = function() {
 	const start = this.version ? parseInt( this.version.split( '-' )[ 0 ], 10 ) : 0;
-	const version = `${start + 1}-${CID}`;
+	const version = `${start + 1}-${shortid.generate()}`;
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 		this.name,
 		version,
