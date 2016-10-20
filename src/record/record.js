@@ -209,7 +209,7 @@ Record.prototype.discard = function() {
 	}
 	this.usages--;
 	this.whenReady( function() {
-		if( this.usages === 0 && this.isDestroying ) {
+		if( this.usages === 0 && !this.isDestroying ) {
 			this.isDestroying = true;
 			this._reset();
 			this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
