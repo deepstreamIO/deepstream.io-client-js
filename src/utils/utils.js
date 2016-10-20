@@ -24,7 +24,7 @@ var OBJECT = 'object';
 exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
 
 exports.compareVersions = function(a, b) {
-	return parseInt(a.split('-')[0]) >= parseInt(b.split('-')[0]) || a > b
+	return a && parseInt(a.split('-')[0]) >= parseInt(b.split('-')[0]) || a > b
 }
 
 /**
