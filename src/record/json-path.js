@@ -10,7 +10,7 @@ var cache = Object.create( null );
  * @public
  * @returns {Mixed}
  */
-module.exports.get = function ( data, path, deepCopy ) {
+module.exports.get = function ( data, path ) {
 	var tokens = tokenize( path );
 
 	for( var i = 0; i < tokens.length; i++ ) {
@@ -23,7 +23,7 @@ module.exports.get = function ( data, path, deepCopy ) {
 		data = data[ tokens[ i ] ];
 	}
 
-	return deepCopy !== false ? utils.deepCopy( data ) : data;
+	return data;
 };
 
 /**
@@ -35,15 +35,15 @@ module.exports.get = function ( data, path, deepCopy ) {
  * @public
  * @returns {Mixed} updated value
  */
-module.exports.set = function( data, path, value, deepCopy ) {
+module.exports.set = function( data, path, value ) {
 	var tokens = tokenize( path );
 
 	if ( tokens.length === 0 ) {
-		return patch( data, value, deepCopy );
+		return patch( data, value );
 	}
 
 	var oldValue = module.exports.get( data, path, false );
-	var newValue = patch( oldValue, value, deepCopy );
+	var newValue = patch( oldValue, value );
 
 	if ( newValue === oldValue ) {
 		return data;
@@ -74,10 +74,9 @@ module.exports.set = function( data, path, value, deepCopy ) {
  * Merge the new value into the old value
  * @param  {Mixed} oldValue
  * @param  {Mixed} newValue
- * @param  {boolean} deepCopy
  * @return {Mixed}
  */
-function patch( oldValue, newValue, deepCopy ) {
+function patch( oldValue, newValue ) {
 	var i;
 
 	if ( utils.deepEquals( oldValue, newValue ) ) {
@@ -86,7 +85,7 @@ function patch( oldValue, newValue, deepCopy ) {
 	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
 		var arr = [];
 		for ( i = 0; i < newValue.length; i++ ) {
-			arr[ i ] = patch( oldValue[ i ], newValue[ i ], deepCopy );
+			arr[ i ] = patch( oldValue[ i ], newValue[ i ] );
 		}
 		return arr;
 	}
@@ -94,12 +93,12 @@ function patch( oldValue, newValue, deepCopy ) {
 		var props = Object.keys( newValue );
 		var obj = Object.create( null );
 		for ( i = 0; i < props.length; i++ ) {
-			obj[ props[ i ] ] = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], deepCopy );
+			obj[ props[ i ] ] = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ] );
 		}
 		return obj;
 	}
 	else {
-		return deepCopy !== false ? utils.deepCopy( newValue ) : newValue;
+		return newValue;
 	}
 }
 

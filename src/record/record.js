@@ -6,7 +6,6 @@ var jsonPath = require( './json-path' ),
 	messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
 	shortid = require('shortid'),
-	EMPTY = Object.create( null ),
 	CID = shortid.generate();
 
 /**
@@ -69,7 +68,7 @@ Record.prototype._reset = function () {
  * @returns {Mixed} value
  */
 Record.prototype.get = function( path ) {
-	return jsonPath.get( this._$data || EMPTY, path, false );
+	return jsonPath.get( this._$data, path );
 };
 
 /**
@@ -409,8 +408,8 @@ Record.prototype._applyChange = function( newData ) {
 	var paths = Object.keys( this._eventEmitter._callbacks );
 
 	for ( var i = 0; i < paths.length; i++ ) {
-		var newValue = jsonPath.get( newData, paths[ i ], false );
-		var oldValue = jsonPath.get( oldData, paths[ i ], false );
+		var newValue = jsonPath.get( newData, paths[ i ] );
+		var oldValue = jsonPath.get( oldData, paths[ i ] );
 
 		if( newValue !== oldValue ) {
 			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
