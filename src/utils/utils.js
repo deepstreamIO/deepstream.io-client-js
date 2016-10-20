@@ -23,6 +23,10 @@ var OBJECT = 'object';
  */
 exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
 
+exports.compareVersions = function(a, b) {
+	return parseInt(a.split('-')[0]) > parseInt(b.split('-')[0]) || a > b
+}
+
 /**
  * Provides as soon as possible async execution in a cross
  * platform way

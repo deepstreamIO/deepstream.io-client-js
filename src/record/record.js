@@ -336,7 +336,7 @@ Record.prototype._applyUpdate = function( message ) {
 	var version = message.data[ 1 ];
 	var data = JSON.parse( message.data[ 2 ] );
 
-	if ( this.version > version ) {
+	if ( utils.compareVersions( this.version, version ) ) {
 		return;
 	}
 
