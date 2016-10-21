@@ -78,6 +78,49 @@ describe('connects - happy path', function(){
 });
 
 /*****************************************
+* CONNECTIVITY
+*****************************************/
+describe('connects - heartbeats', function(){
+
+	var connection,
+		authCallback = jasmine.createSpy( 'authCallback' );
+
+	beforeEach( function(){
+		connection = new Connection( clientMock, url, {
+			heartbeatInterval: 50
+		} );
+		connection._endpoint.simulateOpen();
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
+	});
+
+	afterEach( function(){
+		connection.close();
+	});
+
+	it( 'when it recieves a ping responds with a pong', function(){
+		connection._endpoint.emit( 'message', msg( 'C|P+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|PO+' ) );
+	});
+
+	it( 'when it misses one heart beat nothing happens', function( done ){
+		setTimeout( function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( null );
+			expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+			done();
+		}, 75 );
+	});
+
+	it( 'when it misses two heart beats it closes connection', function( done ){
+		setTimeout( function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( null );
+			expect( connection.getState() ).toBe( 'ERROR' );
+			expect( clientMock.lastError ).toEqual( [ 'C', 'connectionError', 'Two connections heartbeats missed successively' ] );
+			done();
+		}, 200 );
+	});
+});
+
+/*****************************************
 * REDIRECT
 *****************************************/
 describe('connects - redirect', function(){

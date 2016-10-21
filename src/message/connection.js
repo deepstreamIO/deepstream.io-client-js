@@ -32,6 +32,8 @@ var Connection = function( client, url, options ) {
 	this._sendNextPacketTimeout = null;
 	this._currentMessageResetTimeout = null;
 	this._endpoint = null;
+	this._lastHeartBeat = null;
+	this._heartbeatInterval = null;
 
 	if( this._options.useTCP ) {
 		this._originalUrl = url;
@@ -138,6 +140,7 @@ Connection.prototype.send = function( message ) {
  * @returns {void}
  */
 Connection.prototype.close = function() {
+	clearInterval( this._heartbeatInterval );
 	this._deliberateClose = true;
 	this._endpoint.close();
 };
@@ -160,7 +163,7 @@ Connection.prototype._createEndpoint = function() {
 		}
 	} else {
 		var NodeWebSocket =  require( 'ws' );
-		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url + this._options.path ) : new NodeWebSocket( this._url );
+		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url ) : new NodeWebSocket( this._url );
 	}
 
 	this._endpoint.onopen = this._onOpen.bind( this );
@@ -244,6 +247,21 @@ Connection.prototype._sendAuthParams = function() {
 };
 
 /**
+ * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
+ * to have been lost and closes it for reconnection.
+ * @return {void}
+ */
+Connection.prototype._checkHeartBeat = function() {
+	var heartBeatTolerance = this._options.heartbeatInterval * 2;
+
+	if( Date.now() - this._lastHeartBeat > heartBeatTolerance ) {
+		clearInterval( this._heartbeatInterval );
+		this._endpoint.close();
+		this._onError( 'Two connections heartbeats missed successively' );
+	}
+};
+
+/**
  * Will be invoked once the connection is established. The client
  * can't send messages yet, and needs to get a connection ACK or REDIRECT
  * from the server before authenticating
@@ -253,6 +271,10 @@ Connection.prototype._sendAuthParams = function() {
  */
 Connection.prototype._onOpen = function() {
 	this._clearReconnect();
+	if( !this._options.useTCP ) {
+		this._lastHeartBeat = Date.now();
+		this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
+	}
 	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
 
@@ -269,6 +291,7 @@ Connection.prototype._onOpen = function() {
  * @returns {void}
  */
 Connection.prototype._onError = function( error ) {
+	clearInterval( this._heartbeatInterval );
 	this._setState( C.CONNECTION_STATE.ERROR );
 
 	/*
@@ -292,6 +315,8 @@ Connection.prototype._onError = function( error ) {
  * @returns {void}
  */
 Connection.prototype._onClose = function() {
+	clearInterval( this._heartbeatInterval );
+
 	if( this._redirecting === true ) {
 		this._redirecting = false;
 		this._createEndpoint();
@@ -356,7 +381,11 @@ Connection.prototype._onMessage = function( message ) {
 Connection.prototype._handleConnectionResponse = function( message ) {
 	var data;
 
-	if( message.action === C.ACTIONS.ACK ) {
+	if( message.action === C.ACTIONS.PING ) {
+		this._lastHeartBeat = Date.now();
+		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.PONG ) );
+	}
+	else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		if( this._authParams ) {
 			this._sendAuthParams();

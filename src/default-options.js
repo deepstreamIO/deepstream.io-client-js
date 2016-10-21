@@ -4,6 +4,12 @@ module.exports = {
 	/************************************************
 	* Deepstream									*
 	************************************************/
+	/**
+	 * @param {Number} heartBeatInterval How often you expect the heartbeat to be sent. If two heatbeats are missed
+	 * in a row the client will consider the server to have disconnected and will close the connection in order to 
+	 * establish a new one.
+	 */
+	heartbeatInterval: 30000,
 
 	/**
 	 * @param {Boolean} recordPersistDefault Whether records should be

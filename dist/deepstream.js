@@ -1782,7 +1782,9 @@ var C = _dereq_( './constants/constants' ),
 	RpcHandler = _dereq_( './rpc/rpc-handler' ),
 	RecordHandler = _dereq_( './record/record-handler' ),
 	WebRtcHandler = _dereq_( './webrtc/webrtc-handler' ),
-	defaultOptions = _dereq_( './default-options' );
+	PresenceHandler = _dereq_( './presence/presence-handler' ),
+	defaultOptions = _dereq_( './default-options' ),
+	messageBuilder = _dereq_( './message/message-builder' );
 
 /**
  * deepstream.io javascript client - works in
@@ -1811,12 +1813,14 @@ var Client = function( url, options ) {
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
 	this.webrtc = new WebRtcHandler( this._options, this._connection, this );
+	this._presence = new PresenceHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.WEBRTC ] = this.webrtc._$handle.bind( this.webrtc );
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
+	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this._presence._$handle.bind( this._presence );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 
@@ -1888,6 +1892,45 @@ Client.prototype.getUid = function() {
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 
 	return timestamp + '-' + randomString;
+};
+
+/**
+ * Queries for clients logged into deepstream
+ *
+ * @param   {Function} callback Will be invoked with an array of clients
+ *
+ * @public
+ * @returns {Client}
+ */
+Client.prototype.getPresentClients = function( callback ) {
+	this._presence.getCurrentClients( callback );	
+	return this;
+};
+
+/**
+ * Subscribes client to login events from other clients
+ *
+ * @param   {Function} callback Will be invoked with the username of a client
+ *								that logs in
+ *
+ * @public
+ * @returns {void}
+ */
+Client.prototype.onClientAdded = function( callback ) {
+	this._presence.subscribeToLogins( callback );
+};
+
+/**
+ * Subscribes client to logout events from other clients
+ *
+ * @param   {Function} callback Will be invoked with the username of a client
+ *								that logs out
+ *
+ * @public
+ * @returns {void}
+ */
+Client.prototype.onClientRemoved = function( callback ) {
+	this._presence.subscribeToLogouts( callback );
 };
 
 /**
@@ -2027,7 +2070,7 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-},{"./constants/constants":10,"./constants/merge-strategies":11,"./default-options":12,"./event/event-handler":13,"./message/connection":14,"./record/record-handler":20,"./rpc/rpc-handler":22,"./webrtc/webrtc-handler":32,"component-emitter":1}],10:[function(_dereq_,module,exports){
+},{"./constants/constants":10,"./constants/merge-strategies":11,"./default-options":12,"./event/event-handler":13,"./message/connection":14,"./message/message-builder":15,"./presence/presence-handler":17,"./record/record-handler":21,"./rpc/rpc-handler":23,"./webrtc/webrtc-handler":33,"component-emitter":1}],10:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -2059,6 +2102,7 @@ exports.TOPIC.EVENT = 'E';
 exports.TOPIC.RECORD = 'R';
 exports.TOPIC.RPC = 'P';
 exports.TOPIC.WEBRTC = 'W';
+exports.TOPIC.PRESENCE = 'U';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
 
 exports.EVENT = {};
@@ -2085,6 +2129,8 @@ exports.EVENT.RECORD_NOT_FOUND = 'RECORD_NOT_FOUND';
 exports.EVENT.NOT_SUBSCRIBED = 'NOT_SUBSCRIBED';
 
 exports.ACTIONS = {};
+exports.ACTIONS.PING = 'P';
+exports.ACTIONS.PONG = 'PO';
 exports.ACTIONS.ACK = 'A';
 exports.ACTIONS.REDIRECT = 'RED';
 exports.ACTIONS.CHALLENGE = 'CH';
@@ -2114,6 +2160,9 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
+exports.ACTIONS.PRESENCE_JOIN = 'PNJ';
+exports.ACTIONS.PRESENCE_LEAVE = 'PNL';
+exports.ACTIONS.QUERY = 'Q';
 
 //WebRtc
 exports.ACTIONS.WEBRTC_REGISTER_CALLEE = 'RC';
@@ -2161,6 +2210,12 @@ module.exports = {
 	/************************************************
 	* Deepstream									*
 	************************************************/
+	/**
+	 * @param {Number} heartBeatInterval How often you expect the heartbeat to be sent. If two heatbeats are missed
+	 * in a row the client will consider the server to have disconnected and will close the connection in order to 
+	 * establish a new one.
+	 */
+	heartbeatInterval: 5000,
 
 	/**
 	 * @param {Boolean} recordPersistDefault Whether records should be
@@ -2524,7 +2579,7 @@ EventHandler.prototype._resubscribe = function() {
 
 module.exports = EventHandler;
 
-},{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":25,"../utils/listener":26,"../utils/resubscribe-notifier":27,"component-emitter":1}],14:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":26,"../utils/listener":27,"../utils/resubscribe-notifier":28,"component-emitter":1}],14:[function(_dereq_,module,exports){
 (function (global){
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
 	messageParser = _dereq_( './message-parser' ),
@@ -2560,11 +2615,13 @@ var Connection = function( client, url, options ) {
 	this._sendNextPacketTimeout = null;
 	this._currentMessageResetTimeout = null;
 	this._endpoint = null;
+	this._lastHeartBeat = null;
+	this._heartbeatInterval = null;
 
 	if( this._options.useTCP ) {
 		this._originalUrl = url;
 	} else {
-		this._originalUrl = utils.parseUrl( url );
+		this._originalUrl = utils.parseUrl( url, this._options.path );
 	}
 	this._url = this._originalUrl;
 
@@ -2666,6 +2723,7 @@ Connection.prototype.send = function( message ) {
  * @returns {void}
  */
 Connection.prototype.close = function() {
+	clearInterval( this._heartbeatInterval );
 	this._deliberateClose = true;
 	this._endpoint.close();
 };
@@ -2688,7 +2746,7 @@ Connection.prototype._createEndpoint = function() {
 		}
 	} else {
 		var NodeWebSocket =  _dereq_( 'ws' );
-		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url + this._options.path ) : new NodeWebSocket( this._url );
+		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url ) : new NodeWebSocket( this._url );
 	}
 
 	this._endpoint.onopen = this._onOpen.bind( this );
@@ -2772,6 +2830,21 @@ Connection.prototype._sendAuthParams = function() {
 };
 
 /**
+ * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
+ * to have been lost and closes it for reconnection.
+ * @return {void}
+ */
+Connection.prototype._checkHeartBeat = function() {
+	var heartBeatTolerance = this._options.heartbeatInterval * 2;
+
+	if( Date.now() - this._lastHeartBeat > heartBeatTolerance ) {
+		clearInterval( this._heartbeatInterval );
+		this._endpoint.close();
+		this._onError( 'Two connections heartbeats missed successively' );
+	}
+};
+
+/**
  * Will be invoked once the connection is established. The client
  * can't send messages yet, and needs to get a connection ACK or REDIRECT
  * from the server before authenticating
@@ -2781,6 +2854,10 @@ Connection.prototype._sendAuthParams = function() {
  */
 Connection.prototype._onOpen = function() {
 	this._clearReconnect();
+	if( !this._options.useTCP ) {
+		this._lastHeartBeat = Date.now();
+		this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
+	}
 	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
 
@@ -2797,6 +2874,7 @@ Connection.prototype._onOpen = function() {
  * @returns {void}
  */
 Connection.prototype._onError = function( error ) {
+	clearInterval( this._heartbeatInterval );
 	this._setState( C.CONNECTION_STATE.ERROR );
 
 	/*
@@ -2820,6 +2898,8 @@ Connection.prototype._onError = function( error ) {
  * @returns {void}
  */
 Connection.prototype._onClose = function() {
+	clearInterval( this._heartbeatInterval );
+
 	if( this._redirecting === true ) {
 		this._redirecting = false;
 		this._createEndpoint();
@@ -2884,7 +2964,11 @@ Connection.prototype._onMessage = function( message ) {
 Connection.prototype._handleConnectionResponse = function( message ) {
 	var data;
 
-	if( message.action === C.ACTIONS.ACK ) {
+	if( message.action === C.ACTIONS.PING ) {
+		this._lastHeartBeat = Date.now();
+		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.PONG ) );
+	}
+	else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
 		if( this._authParams ) {
 			this._sendAuthParams();
@@ -3043,7 +3127,7 @@ Connection.prototype._clearReconnect = function() {
 module.exports = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../constants/constants":10,"../tcp/tcp-connection":2,"../utils/utils":29,"./message-builder":15,"./message-parser":16,"ws":2}],15:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../tcp/tcp-connection":2,"../utils/utils":30,"./message-builder":15,"./message-parser":16,"ws":2}],15:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -3270,6 +3354,124 @@ MessageParser.prototype._parseMessage = function( message, client ) {
 
 module.exports = new MessageParser();
 },{"../constants/constants":10}],17:[function(_dereq_,module,exports){
+var EventEmitter = _dereq_( 'component-emitter' ),
+	C = _dereq_( '../constants/constants' ),
+	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
+	messageParser = _dereq_( '../message/message-parser' ),
+	messageBuilder = _dereq_( '../message/message-builder' ),
+	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' );
+
+/**
+ * The main class for presence in deepstream
+ *
+ * Provides the presence interface and handles incoming messages
+ * on the presence topic
+ *
+ * @param {Object} options deepstream configuration options
+ * @param {Connection} connection
+ * @param {Client} client
+ *
+ * @constructor
+ * @public
+ */
+var PresenceHandler = function( options, connection, client ) {
+		this._options = options;
+		this._connection = connection;
+		this._client = client;
+		this._emitter = new EventEmitter();
+		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.PRESENCE, this._options.subscriptionTimeout );
+		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
+};
+
+/**
+ * Queries for clients logged into deepstream
+ *
+ * @param   {Function} callback Will be invoked with an array of clients
+ *
+ * @public
+ * @returns {void}
+ */
+PresenceHandler.prototype.getCurrentClients = function( callback ) {
+	this._emitter.once( C.ACTIONS.QUERY, callback );
+	// At least one argument is required for a message to be permissionable
+	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [ C.ACTIONS.QUERY ] );
+};
+
+/**
+ * Subscribes to client logins in deepstream
+ *
+ * @param   {Function} callback Will be invoked with the username of a client
+ *								that logs in
+ *
+ * @public
+ * @returns {void}
+ */
+PresenceHandler.prototype.subscribeToLogins = function( callback ) {
+	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_JOIN ) ) {
+		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
+	}
+	this._emitter.on( C.ACTIONS.PRESENCE_JOIN, callback );
+};
+
+/**
+ * Subscribes to client logouts in deepstream
+ *
+ * @param   {Function} callback Will be invoked with the username of a client
+ *								that logs out
+ *
+ * @public
+ * @returns {void}
+ */
+PresenceHandler.prototype.subscribeToLogouts = function( callback ) {
+	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_LEAVE ) ) {
+		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
+	}
+	this._emitter.on( C.ACTIONS.PRESENCE_LEAVE, callback );
+};
+
+/**
+ * Handles incoming messages from the server
+ *
+ * @param   {Object} message parsed deepstream message
+ *
+ * @package private
+ * @returns {void}
+ */
+PresenceHandler.prototype._$handle = function( message ) {
+	if( message.action === C.ACTIONS.ACK ) {
+		this._ackTimeoutRegistry.clear( message );
+	}
+	else if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
+		this._emitter.emit( C.ACTIONS.PRESENCE_JOIN, message.data[ 0 ] );
+	}
+	else if( message.action === C.ACTIONS.PRESENCE_LEAVE ) {
+		this._emitter.emit( C.ACTIONS.PRESENCE_LEAVE, message.data[ 0 ] );
+	}
+	else if( message.action === C.ACTIONS.QUERY ) {
+		this._emitter.emit( C.ACTIONS.QUERY, message.data );
+	}
+	else {
+		this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action );
+	}
+};
+
+/**
+ * Resubscribes to events when connection is lost
+ *
+ * @package private
+ * @returns {void}
+ */
+PresenceHandler.prototype._resubscribe = function() {
+	var callbacks = this._emitter._callbacks;
+	for( var event in callbacks ) {
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ event ] );
+	}
+};
+
+module.exports = PresenceHandler;
+},{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":26,"../utils/resubscribe-notifier":28,"component-emitter":1}],18:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -3447,7 +3649,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":21,"component-emitter":1}],18:[function(_dereq_,module,exports){
+},{"./record":22,"component-emitter":1}],19:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' );
 var PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
 
@@ -3575,7 +3777,7 @@ function tokenize( path ) {
 	} );
 };
 
-},{"../utils/utils":29}],19:[function(_dereq_,module,exports){
+},{"../utils/utils":30}],20:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter' ),
 	Record = _dereq_( './record' ),
 	C = _dereq_( '../constants/constants' ),
@@ -3967,7 +4169,7 @@ List.prototype._getStructure = function() {
 
 module.exports = List;
 
-},{"../constants/constants":10,"./record":21,"component-emitter":1}],20:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"./record":22,"component-emitter":1}],21:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
@@ -4305,7 +4507,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 
 module.exports = RecordHandler;
 
-},{"../constants/constants":10,"../message/message-parser":16,"../utils/listener":26,"../utils/single-notifier":28,"./anonymous-record":17,"./list":19,"./record":21,"component-emitter":1}],21:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../message/message-parser":16,"../utils/listener":27,"../utils/single-notifier":29,"./anonymous-record":18,"./list":20,"./record":22,"component-emitter":1}],22:[function(_dereq_,module,exports){
 var jsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -4914,7 +5116,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
 
 module.exports = Record;
 
-},{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/resubscribe-notifier":27,"../utils/utils":29,"./json-path":18,"component-emitter":1}],22:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/resubscribe-notifier":28,"../utils/utils":30,"./json-path":19,"component-emitter":1}],23:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -5165,7 +5367,7 @@ RpcHandler.prototype._reprovide = function() {
 
 
 module.exports = RpcHandler;
-},{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":25,"../utils/resubscribe-notifier":27,"./rpc":24,"./rpc-response":23}],23:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":26,"../utils/resubscribe-notifier":28,"./rpc":25,"./rpc-response":24}],24:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
 	messageBuilder = _dereq_( '../message/message-builder' );
@@ -5273,7 +5475,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
-},{"../constants/constants":10,"../message/message-builder":15,"../utils/utils":29}],24:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../message/message-builder":15,"../utils/utils":30}],25:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
 
@@ -5351,7 +5553,7 @@ Rpc.prototype._complete = function() {
 };
 
 module.exports = Rpc;
-},{"../constants/constants":10,"../message/message-parser":16}],25:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../message/message-parser":16}],26:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	EventEmitter = _dereq_( 'component-emitter' );
 
@@ -5450,7 +5652,7 @@ AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
 
 module.exports = AckTimeoutRegistry;
 
-},{"../constants/constants":10,"component-emitter":1}],26:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"component-emitter":1}],27:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
@@ -5594,7 +5796,7 @@ Listener.prototype._showDeprecatedMessage = function( message ) {
 
 module.exports = Listener;
 
-},{"../constants/constants":10,"./resubscribe-notifier":27}],27:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"./resubscribe-notifier":28}],28:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 
 /**
@@ -5648,7 +5850,7 @@ ResubscribeNotifier.prototype.destroy = function() {
  };
 
 module.exports = ResubscribeNotifier;
-},{"../constants/constants":10}],28:[function(_dereq_,module,exports){
+},{"../constants/constants":10}],29:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
@@ -5757,7 +5959,7 @@ SingleNotifier.prototype._resendRequests = function() {
 };
 
 module.exports = SingleNotifier;
-},{"../constants/constants":10,"./resubscribe-notifier":27}],29:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"./resubscribe-notifier":28}],30:[function(_dereq_,module,exports){
 (function (process){
 /**
  * A regular expression that matches whitespace on either side, but
@@ -5902,6 +6104,42 @@ exports.shallowCopy = function ( obj ) {
 }
 
 /**
+ * Set timeout utility that adds support for disabling a timeout
+ * by passing null
+ *
+ * @param {Function} callback        the function that will be called after the given time
+ * @param {Number}   timeoutDuration the duration of the timeout in milliseconds
+ *
+ * @public
+ * @returns {Number} timeoutId
+ */
+exports.setTimeout = function( callback, timeoutDuration ) {
+	if( timeoutDuration !== null ) {
+		return setTimeout( callback, timeoutDuration );
+	} else {
+		return -1;
+	}
+};
+
+/**
+ * Set Interval utility that adds support for disabling an interval
+ * by passing null
+ *
+ * @param {Function} callback        the function that will be called after the given time
+ * @param {Number}   intervalDuration the duration of the interval in milliseconds
+ *
+ * @public
+ * @returns {Number} intervalId
+ */
+exports.setInterval = function( callback, intervalDuration ) {
+	if( intervalDuration !== null ) {
+		return setInterval( callback, intervalDuration );
+	} else {
+		return -1;
+	}
+};
+
+/**
  * Used to see if a protocol is specified within the url
  * @type {RegExp}
  */
@@ -5939,7 +6177,7 @@ exports.parseUrl = function( url, defaultPath ) {
 	return URL.format( serverUrl );
 };
 }).call(this,_dereq_('_process'))
-},{"_process":4,"url":3}],30:[function(_dereq_,module,exports){
+},{"_process":4,"url":3}],31:[function(_dereq_,module,exports){
 var WebRtcConnection = _dereq_( './webrtc-connection' ),
 	EventEmitter = _dereq_( 'component-emitter' ),
 	C = _dereq_( '../constants/constants' );
@@ -6157,7 +6395,7 @@ WebRtcCall.prototype._onEstablished = function( stream ) {
 };
 
 module.exports = WebRtcCall;
-},{"../constants/constants":10,"./webrtc-connection":31,"component-emitter":1}],31:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"./webrtc-connection":32,"component-emitter":1}],32:[function(_dereq_,module,exports){
 var Emitter = _dereq_( 'component-emitter' );
 var C = _dereq_( '../constants/constants' );
 var noop = function(){};
@@ -6376,7 +6614,7 @@ WebRtcConnection.prototype._onError = function( error ) {
 
 module.exports = WebRtcConnection;
 
-},{"../constants/constants":10,"component-emitter":1}],32:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"component-emitter":1}],33:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	WebRtcConnection = _dereq_( './webrtc-connection' ),
 	WebRtcCall = _dereq_( './webrtc-call' ),
@@ -6797,5 +7035,5 @@ WebRtcHandler.prototype._$handle = function( message ) {
 };
 
 module.exports = WebRtcHandler;
-},{"../constants/constants":10,"../utils/ack-timeout-registry":25,"./webrtc-call":30,"./webrtc-connection":31}]},{},[9])(9)
+},{"../constants/constants":10,"../utils/ack-timeout-registry":26,"./webrtc-call":31,"./webrtc-connection":32}]},{},[9])(9)
 });
