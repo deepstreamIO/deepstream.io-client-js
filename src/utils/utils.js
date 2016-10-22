@@ -1,7 +1,7 @@
 var shortid = require('shortid');
 
 shortid.seed(9823745);
-shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
+shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ#%');
 
 /**
  * A regular expression that matches whitespace on either side, but
