@@ -36,7 +36,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._options = options;
-	this._eventEmitter = new EventEmitter();
+	this._paths = {}
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._reset();
@@ -154,7 +154,9 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 		return;
 	}
 
-	this._eventEmitter.on( args.path, args.callback );
+	const callbacks = this._paths[ args.path] || (this._paths[ args.path ] = []);
+
+	callbacks.push( args.callback );
 
 	if( args.triggerNow && this._$data ) {
 		args.callback( this.get( args.path ) );
@@ -191,7 +193,19 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
-	this._eventEmitter.off( args.path, args.callback );
+
+	const callbacks = this._paths[ args.path ];
+	const index = callbacks ? callbacks.indexOf( callback ) : -1;
+
+	if (index === -1) {
+		return;
+	}
+
+	callbacks.splice(index, 1);
+
+	if (!callbacks.length) {
+		delete this._paths[ args.path ];
+	}
 };
 
 /**
@@ -400,18 +414,19 @@ Record.prototype._applyChange = function( newData ) {
 	var oldData = this._$data;
 	this._$data = newData;
 
-	if ( !this._eventEmitter._callbacks ) {
-		return;
-	}
-
-	var paths = Object.keys( this._eventEmitter._callbacks );
+	var paths = Object.keys( this._paths );
 
 	for ( var i = 0; i < paths.length; i++ ) {
 		var newValue = jsonPath.get( newData, paths[ i ] );
 		var oldValue = jsonPath.get( oldData, paths[ i ] );
 
 		if( newValue !== oldValue ) {
-			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
+			const callbacks = this._paths[ paths[ i ] ];
+			const data = this.get( paths[ i ] );
+
+			for (let n = 0; n < callbacks.length; ++n) {
+				callbacks[ n ]( data );
+			}
 		}
 	}
 };
