@@ -1,7 +1,8 @@
-var net = require('net');
+var http = require( 'http' );
+var ws = require( 'ws' );
 var config = require( '../config' );
 
-function TCPServer( tcpPort ) {
+function WSServer( port ) {
 	this.server;
 	this.isReady = false;
 	this.lastSocket;
@@ -10,10 +11,10 @@ function TCPServer( tcpPort ) {
 	this.allMessages = [];
 	this.lastMessage = null;
 
-	this.tcpPort = tcpPort || config.testServerPort;
+	this.port = port || config.testServerPort;
 }
 
-TCPServer.prototype.start = function() {
+WSServer.prototype.start = function() {
 	if( this.server ) {
 		this.stop( this.start.bind( this ) );
 	} else {
@@ -21,15 +22,15 @@ TCPServer.prototype.start = function() {
 	}
 };
 
-TCPServer.prototype.stop = function( callback ) {
+WSServer.prototype.stop = function( callback ) {
 	this.stop( callback );
 }
 
-TCPServer.prototype.send = function( message ) {
-	this.lastSocket.write( message );
+WSServer.prototype.send = function( message ) {
+	this.lastSocket.send( message );
 };
 
-TCPServer.prototype.whenReady = function( callback ) {
+WSServer.prototype.whenReady = function( callback ) {
 	if( !this.server ) {
 		this.start();
 	}
@@ -37,43 +38,51 @@ TCPServer.prototype.whenReady = function( callback ) {
 	if( this.isReady ) {
 		callback();
 	} else {
-		this.server.once( 'listening', callback );
+		this.httpServer.once( 'listening', callback );
 	}
 };
 
-TCPServer.prototype.start = function() {
-	this.server = net.createServer();
+WSServer.prototype.start = function() {
+	this.httpServer = http.createServer();
+	this.httpServer.listen( this.port, config.testServerHost );
+
+	this.server = new ws.Server({
+		server: this.httpServer,
+		perMessageDeflate: false,
+		path: '/deepstream'
+	});
 	this.server.on( 'connection', this.bindSocket.bind( this ) );
-	this.server.on( 'listening', this.onListening.bind( this ) );
-	this.server.listen( this.tcpPort, config.testServerHost );
+	this.httpServer.once( 'listening', this.onListening.bind( this ) );
 }
 
-TCPServer.prototype.stop = function( callback ) {
+WSServer.prototype.stop = function( callback ) {
 	this.isReady = false;
 
 	this.allMessages = [];
 	this.lastMessage = null;
 
 	this.connections.forEach( function( connection ) {
-		connection.end();
+		connection.close();
 	} );
-	this.server.close( callback );
+
+	this.server.close();
+	this.httpServer.close( callback );
+
 	this.server = null;
 }
 
-TCPServer.prototype.bindSocket = function( socket ) {
+WSServer.prototype.bindSocket = function( socket ) {
 	this.lastSocket = socket;
-	socket.setEncoding( 'utf8' );
-	socket.on( 'data', this.onIncomingMessage.bind( this ) );
+	socket.on( 'message', this.onIncomingMessage.bind( this ) );
 	socket.on( 'close', this.onDisconnect.bind( this, socket ) );
 	this.connections.push( socket );
 }
 
-TCPServer.prototype.onDisconnect = function( socket ) {
+WSServer.prototype.onDisconnect = function( socket ) {
 	this.connections.splice( this.connections.indexOf( socket ), 1);
 }
 
-TCPServer.prototype.onIncomingMessage = function( message ) {
+WSServer.prototype.onIncomingMessage = function( message ) {
 	var messages = message.split( String.fromCharCode( 30 ) );
 	if( !messages[ messages.length - 1 ] ) {
 		messages.splice( messages.length - 1, 1 );
@@ -84,8 +93,8 @@ TCPServer.prototype.onIncomingMessage = function( message ) {
 	this.lastMessage = messages[ messages.length - 1 ] + String.fromCharCode( 30 );
 }
 
-TCPServer.prototype.onListening = function() {
+WSServer.prototype.onListening = function() {
 	this.isReady = true;
 }
 
-module.exports = TCPServer;
+module.exports = WSServer;

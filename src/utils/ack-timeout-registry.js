@@ -26,8 +26,7 @@ EventEmitter( AckTimeoutRegistry.prototype );
 /**
  * Add an entry
  *
- * @param {String} name An identifier for the subscription, e.g. a record name, an event name,
- *                      the name of a webrtc callee etc.
+ * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @public
  * @returns {void}
@@ -42,8 +41,7 @@ AckTimeoutRegistry.prototype.add = function( name, action ) {
 /**
  * Remove an entry
  *
- * @param {String} name An identifier for the subscription, e.g. a record name, an event name,
- *                      the name of a webrtc callee etc.
+ * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @public
  * @returns {void}
@@ -81,8 +79,7 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
 /**
  * Will be invoked if the timeout has occured before the ack message was received
  *
- * @param {String} name An identifier for the subscription, e.g. a record name, an event name,
- *                      the name of a webrtc callee etc.
+ * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @private
  * @returns {void}

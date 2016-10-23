@@ -5,14 +5,12 @@ var C = require( './constants/constants' ),
 	EventHandler = require( './event/event-handler' ),
 	RpcHandler = require( './rpc/rpc-handler' ),
 	RecordHandler = require( './record/record-handler' ),
-	WebRtcHandler = require( './webrtc/webrtc-handler' ),
 	PresenceHandler = require( './presence/presence-handler' ),
 	defaultOptions = require( './default-options' ),
 	messageBuilder = require( './message/message-builder' );
 
 /**
- * deepstream.io javascript client - works in
- * node.js and browsers (using engine.io)
+ * deepstream.io javascript client
  *
  * @copyright 2016 deepstreamHub GmbH
  * @author deepstreamHub GmbH
@@ -21,7 +19,7 @@ var C = require( './constants/constants' ),
  * @{@link http://deepstream.io}
  *
  *
- * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
+ * @param {String} url     URL to connect to. The protocol can be ommited, e.g. <host>:<port>.
  * @param {Object} options A map of options that extend the ones specified in default-options.js
  *
  * @public
@@ -36,11 +34,9 @@ var Client = function( url, options ) {
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
-	this.webrtc = new WebRtcHandler( this._options, this._connection, this );
 	this._presence = new PresenceHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
-	this._messageCallbacks[ C.TOPIC.WEBRTC ] = this.webrtc._$handle.bind( this.webrtc );
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
@@ -270,7 +266,7 @@ Client.prototype._getOptions = function( options ) {
  * Exports factory function to adjust to the current JS style of
  * disliking 'new' :-)
  *
- * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
+ * @param {String} url     URL to connect to. The protocol can be ommited, e.g. <host>:<port>.
  * @param {Object} options A map of options that extend the ones specified in default-options.js
  *
  * @public

@@ -28,13 +28,12 @@ module.exports = function() {
 			recordReadAckTimeout: 200,
 			recordReadTimeout: 260,
 			recordDeleteTimeout: 100,
-			rpcResponseTimeout: 200,
-			useTCP: true
+			rpcResponseTimeout: 200
 		});
 		global.dsClient.on( 'error', function(){
 			errors.push( arguments );
 		});
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When( /^some time passes$/, function( callback ){
@@ -49,7 +48,9 @@ module.exports = function() {
 		global.dsClient.login({ username: username, password: password }, function(){
 			lastAuthArgs = arguments;
 		});
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.
+
+messageWaitTime );
 	});
 
 	this.Then( /^the last login was successful$/, function( callback ){

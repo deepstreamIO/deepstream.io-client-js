@@ -1,13 +1,12 @@
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
+	NodeWebSocket =  require( 'ws' ),
 	messageParser = require( './message-parser' ),
 	messageBuilder = require( './message-builder' ),
-	TcpConnection = require( '../tcp/tcp-connection' ),
 	utils = require( '../utils/utils' ),
 	C = require( '../constants/constants' );
 
 /**
- * Establishes a connection to a deepstream server, either
- * using TCP in node or engine.io in the browser.
+ * Establishes a connection to a deepstream server using websockets
  *
  * @param {Client} client
  * @param {String} url     Short url, e.g. <host>:<port>. Deepstream works out the protocol
@@ -35,11 +34,7 @@ var Connection = function( client, url, options ) {
 	this._lastHeartBeat = null;
 	this._heartbeatInterval = null;
 
-	if( this._options.useTCP ) {
-		this._originalUrl = url;
-	} else {
-		this._originalUrl = utils.parseUrl( url, this._options.path );
-	}
+	this._originalUrl = utils.parseUrl( url, this._options.path );
 	this._url = this._originalUrl;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
@@ -147,24 +142,13 @@ Connection.prototype.close = function() {
 
 /**
  * Creates the endpoint to connect to using the url deepstream
- * was initialised with. If running in node automatically uses TCP
+ * was initialised with.
  *
  * @private
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function() {
-	if( this._options.useTCP ) {
-		if( this._endpoint ) {
-			this._endpoint.setUrl( this._url );
-			this._endpoint.open();
-			return;
-		} else {
-			this._endpoint = new TcpConnection( this._url );
-		}
-	} else {
-		var NodeWebSocket =  require( 'ws' );
-		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url ) : new NodeWebSocket( this._url );
-	}
+	this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url ) : new NodeWebSocket( this._url );
 
 	this._endpoint.onopen = this._onOpen.bind( this );
 	this._endpoint.onerror = this._onError.bind( this );
@@ -271,10 +255,8 @@ Connection.prototype._checkHeartBeat = function() {
  */
 Connection.prototype._onOpen = function() {
 	this._clearReconnect();
-	if( !this._options.useTCP ) {
-		this._lastHeartBeat = Date.now();
-		this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
-	}
+	this._lastHeartBeat = Date.now();
+	this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
 	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
 
@@ -299,7 +281,13 @@ Connection.prototype._onError = function( error ) {
 	 * an error. So let's defer it to allow the reconnection to kick in.
 	 */
 	setTimeout(function(){
-		this._client._$onError( C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, error.toString() );
+		var msg;
+		if( error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED' ) {
+			msg = 'Can\'t connect! Deepstream server unreachable on ' + this._originalUrl;
+		} else {
+			msg = error.toString();
+		}
+		this._client._$onError( C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg );
 	}.bind( this ), 1);
 };
 

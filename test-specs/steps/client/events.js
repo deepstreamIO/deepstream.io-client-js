@@ -8,7 +8,9 @@ var listenCallback = sinon.spy();
 module.exports = function() {
 	this.When( /^the client publishes an event named "(\w*)" with data "(\w*)"$/, function( eventName, eventData, callback ){
 		global.dsClient.event.emit( eventName, eventData );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.
+
+messageWaitTime );
 	});
 
 	this.Then( /^the client received the event "(\w*)" with data "(\w*)"$/, function(eventName, eventData, callback ){
@@ -24,12 +26,16 @@ module.exports = function() {
 			lastEventName = eventName;
 			lastEventData = data;
 		});
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.
+
+messageWaitTime );
 	});
 
 	this.When( /^the client unsubscribes from an event named "(\w*)"$/, function( eventName, callback ){
 		global.dsClient.event.unsubscribe( eventName );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.
+
+messageWaitTime );
 	});
 
 	/**
@@ -37,7 +43,9 @@ module.exports = function() {
 	*/
 	this.When(/^the client listens to events matching "([^"]*)"$/, function (pattern, callback) {
 		global.dsClient.event.listen( pattern, listenCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.
+
+messageWaitTime );
 	});
 
 	this.Then(/^the client will be notified of new event match "([^"]*)"$/, function ( eventName) {
@@ -50,6 +58,8 @@ module.exports = function() {
 
 	this.When(/^the client unlistens to events matching "([^"]*)"$/, function (pattern, callback) {
 	  	global.dsClient.event.unlisten( pattern, listenCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.
+
+messageWaitTime );
 	});
 };

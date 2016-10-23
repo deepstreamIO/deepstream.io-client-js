@@ -1,9 +1,6 @@
-var MERGE_STRATEGIES = require( './constants/merge-strategies' );
+var MERGE_STRATEGIES = require('./constants/merge-strategies');
 
 module.exports = {
-	/************************************************
-	* Deepstream									*
-	************************************************/
 	/**
 	 * @param {Number} heartBeatInterval How often you expect the heartbeat to be sent. If two heatbeats are missed
 	 * in a row the client will consider the server to have disconnected and will close the connection in order to 
@@ -45,80 +42,56 @@ module.exports = {
 	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
 	 * 											no Ack-message has been received
 	 */
-	 rpcAckTimeout: 6000,
+	rpcAckTimeout: 6000,
 
-	 /**
+	/**
 	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
 	 * 											no response-message has been received
 	 */
-	 rpcResponseTimeout: 10000,
+	rpcResponseTimeout: 10000,
 
-	 /**
+	/**
 	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/
 	 * 											listening to a record before an error is thrown
 	 */
-	 subscriptionTimeout: 2000,
+	subscriptionTimeout: 2000,
 
-	 /**
-	  * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
-	  *                                      	time, the deepstream client will try to split them into smaller packets and send
-	  *                                      	these every <timeBetweenSendingQueuedPackages> ms.
-	  *
-	  *                                       	This parameter specifies the number of messages after which deepstream sends the
-	  *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
-	  *
-	  */
-	 maxMessagesPerPacket: 100,
-
-	 /**
-	  * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
-	  */
-	 timeBetweenSendingQueuedPackages: 16,
-
-	 /**
-	  * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
-	  *                                       	until an error is thrown since no ack message has been received.
-	  */
-	 recordReadAckTimeout: 1000,
-
-	 /**
-	  * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
-	  *                                       	until an error is thrown since no data has been received.
-	  */
-	 recordReadTimeout: 3000,
-
-	 /**
-	  * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
-	  *                                       	until an error is thrown since no delete ack message had been received. Please
-	  *                                       	take into account that the deletion is only complete after the record has been
-	  *                                       	deleted from both cache and storage
-	  */
-	 recordDeleteTimeout: 3000,
-
-	 /**
-	  * @param {Number} calleeAckTimeout 		The number of milliseconds from the moment webrtc.registerCallee has been
-	  *                                    		called until an error is thrown since no ACK response has been received
-	  */
-	 calleeAckTimeout: 3000,
-
-	 /**
-	  * @param {Object} rtcPeerConnectionConfig An RTCConfiguration (https://developer.mozilla.org/en/docs/Web/API/RTCConfiguration). This
-	  *                                         is used to establish your public IP address when behind a NAT (Network Address Translation)
-	  *                                         Set to null if you only intend to use WebRTC within your local network
-	  */
-	 rtcPeerConnectionConfig: { iceServers: [
-		{ url: 'stun:stun.services.mozilla.com' },
-		{ url: 'stun:stun.l.google.com:19302' }
-	]},
+	/**
+	 * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
+	 *                                      	time, the deepstream client will try to split them into smaller packets and send
+	 *                                      	these every <timeBetweenSendingQueuedPackages> ms.
+	 *
+	 *                                       	This parameter specifies the number of messages after which deepstream sends the
+	 *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
+	 *
+	 */
+	maxMessagesPerPacket: 100,
 
 
 	/**
-	 * Use TCP to connect if NodeJS. TCP is deprecated and will be removed by end
-	 * of 2017 so is recommend to only use this for backwards compatability until
-	 * then
-	 * @param {Boolean} whether to use TCP in a NodeJS environment
+	 * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
 	 */
-	useTCP: false,
+	timeBetweenSendingQueuedPackages: 16,
+
+	/**
+	 * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
+	 *                                       	until an error is thrown since no ack message has been received.
+	 */
+	recordReadAckTimeout: 1000,
+
+	/**
+	 * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
+	 *                                       	until an error is thrown since no data has been received.
+	 */
+	recordReadTimeout: 3000,
+
+	/**
+	 * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
+	 *                                       	until an error is thrown since no delete ack message had been received. Please
+	 *                                       	take into account that the deletion is only complete after the record has been
+	 *                                       	deleted from both cache and storage
+	 */
+	recordDeleteTimeout: 3000,
 
 	/**
 	 * @param {String} path path to connect to
@@ -126,7 +99,7 @@ module.exports = {
 	path: '/deepstream',
 
 	/**
-   *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
+	 *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
 	 *                                  If the merge strategy is not succesfull it will set an error, else set the
 	 *                                  returned data as the latest revision. This can be overriden on a per record
 	 *                                  basis by setting the `setMergeStrategy`.
