@@ -55,7 +55,6 @@ Cluster.prototype.stop = function() {
 
 Cluster.prototype._startServer = function( port, done ) {
   this.servers[ port ] = new DeepstreamServer({
-    tcpPort : port - 100,
     port    : port,
     serverName : 'server-' + port,
 

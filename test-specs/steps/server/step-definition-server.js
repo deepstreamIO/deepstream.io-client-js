@@ -1,9 +1,9 @@
 var config = require( '../config' );
 var check = require( '../helper' ).check;
 
-var TCPServer = require( './tcp-server' );
-var firstServer = new TCPServer( config.firstTestServerPort );
-var secondaryServer = new TCPServer( config.secondaryTestServerPort );
+var WSServer = require( './ws-server' );
+var firstServer = new WSServer( config.firstTestServerPort );
+var secondaryServer = new WSServer( config.secondaryTestServerPort );
 
 var server = firstServer;
 var uid;
@@ -19,7 +19,7 @@ var matchMessage = function( actualMessage, expectedMessage ) {
 		expectedMessage = expectedMessage.replace( /\|/g, '\\|' );
 		expectedMessage = expectedMessage.replace( '+', '\\+' );
 		expectedMessage = expectedMessage.replace( '<UID>', '([^\\|]*)' );
-		expectedMessage = expectedMessage.replace( '<FIRST_SERVER_URL>', 'localhost:' + config.testServerPort );
+		expectedMessage = expectedMessage.replace( '<FIRST_SERVER_URL>', 'ws://localhost:' + config.testServerPort + '/deepstream' );
 
 		var match = convertChars( actualMessage ).match( new RegExp( expectedMessage ) );
 		if( match ) {
@@ -64,14 +64,16 @@ module.exports = function() {
 		}
 
 		if( message.indexOf( '<SECOND_SERVER_URL>' ) !== -1 ) {
-			message = message.replace( '<SECOND_SERVER_URL>', 'localhost:' + config.secondaryTestServerPort );
+			message = message.replace( '<SECOND_SERVER_URL>', 'ws://localhost:' + config.secondaryTestServerPort + '/deepstream' );
 		}
 
 		message = message.replace( /\|/g, String.fromCharCode( 31 ) );
 		message = message.replace( /\+/g, String.fromCharCode( 30 ) );
 
 		server.send( message );
-		setTimeout( callback, config.tcpMessageWaitTime * 2 );
+		setTimeout( callback, config.
+
+messageWaitTime * 2 );
 	});
 
 	this.When(/^the connection to the server is lost$/, function (callback) {

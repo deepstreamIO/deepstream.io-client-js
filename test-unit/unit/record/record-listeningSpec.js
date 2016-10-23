@@ -48,20 +48,6 @@ describe( 'records listening', function(){
 		console.warn = originalWarn
 	})
 
-	it( 'provider neither accept nor reject', function( done ){
-		const x1 = recordHandler.getRecord( 'x/1' )
-		expect( x1.hasProvider ).toBe( false )
-		recordHandler.listen('x/.*', (data, isSubscribed) => {
-			expect( connection.lastSendMessage ).not.toBe( msg( 'R|LA|x/.*|x/1+' ) )
-		})
-
-		console.warn = function(message) {
-			expect( message ).toContain('DEPRECATED')
-			done()
-		}
-		handleResponse( [ 'x/.*', 'x/1' ])
-	})
-
 	it( 'provider accepts', function( done ){
 		const a1 = recordHandler.getRecord( 'a/1' )
 		expect( a1.hasProvider ).toBe( false )

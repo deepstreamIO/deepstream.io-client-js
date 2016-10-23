@@ -39,18 +39,6 @@ describe( 'event listening', function(){
 		console.warn = originalWarn
 	})
 
-	it( 'provider neither accept nor reject', function( done ){
-		eventHandler.listen('x/.*', (data, isSubscribed) => {
-			expect( connection.lastSendMessage ).not.toBe( msg( 'E|LA|x/.*|x/1+' ) )
-		})
-
-		console.warn = function(message) {
-			expect( message ).toContain('DEPRECATED')
-			done()
-		}
-		handleResponse( [ 'x/.*', 'x/1' ])
-	})
-
 	it( 'provider accepts', function( done ){
 		eventHandler.listen('a/.*', (data, isSubscribed, response) => {
 			response.accept()

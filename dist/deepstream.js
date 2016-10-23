@@ -1781,14 +1781,12 @@ var C = _dereq_( './constants/constants' ),
 	EventHandler = _dereq_( './event/event-handler' ),
 	RpcHandler = _dereq_( './rpc/rpc-handler' ),
 	RecordHandler = _dereq_( './record/record-handler' ),
-	WebRtcHandler = _dereq_( './webrtc/webrtc-handler' ),
 	PresenceHandler = _dereq_( './presence/presence-handler' ),
 	defaultOptions = _dereq_( './default-options' ),
 	messageBuilder = _dereq_( './message/message-builder' );
 
 /**
- * deepstream.io javascript client - works in
- * node.js and browsers (using engine.io)
+ * deepstream.io javascript client
  *
  * @copyright 2016 deepstreamHub GmbH
  * @author deepstreamHub GmbH
@@ -1797,7 +1795,7 @@ var C = _dereq_( './constants/constants' ),
  * @{@link http://deepstream.io}
  *
  *
- * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
+ * @param {String} url     URL to connect to. The protocol can be ommited, e.g. <host>:<port>.
  * @param {Object} options A map of options that extend the ones specified in default-options.js
  *
  * @public
@@ -1812,11 +1810,9 @@ var Client = function( url, options ) {
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
-	this.webrtc = new WebRtcHandler( this._options, this._connection, this );
 	this._presence = new PresenceHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
-	this._messageCallbacks[ C.TOPIC.WEBRTC ] = this.webrtc._$handle.bind( this.webrtc );
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
@@ -2046,7 +2042,7 @@ Client.prototype._getOptions = function( options ) {
  * Exports factory function to adjust to the current JS style of
  * disliking 'new' :-)
  *
- * @param {String} url     URL to connect to. The protocoll can be ommited, e.g. <host>:<port>. Use TCP URL for node.js
+ * @param {String} url     URL to connect to. The protocol can be ommited, e.g. <host>:<port>.
  * @param {Object} options A map of options that extend the ones specified in default-options.js
  *
  * @public
@@ -2070,7 +2066,7 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-},{"./constants/constants":10,"./constants/merge-strategies":11,"./default-options":12,"./event/event-handler":13,"./message/connection":14,"./message/message-builder":15,"./presence/presence-handler":17,"./record/record-handler":21,"./rpc/rpc-handler":23,"./webrtc/webrtc-handler":33,"component-emitter":1}],10:[function(_dereq_,module,exports){
+},{"./constants/constants":10,"./constants/merge-strategies":11,"./default-options":12,"./event/event-handler":13,"./message/connection":14,"./message/message-builder":15,"./presence/presence-handler":17,"./record/record-handler":21,"./rpc/rpc-handler":23,"component-emitter":1}],10:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -2101,7 +2097,6 @@ exports.TOPIC.ERROR = 'X';
 exports.TOPIC.EVENT = 'E';
 exports.TOPIC.RECORD = 'R';
 exports.TOPIC.RPC = 'P';
-exports.TOPIC.WEBRTC = 'W';
 exports.TOPIC.PRESENCE = 'U';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
 
@@ -2124,12 +2119,11 @@ exports.EVENT.LISTENER_EXISTS = 'LISTENER_EXISTS';
 exports.EVENT.NOT_LISTENING = 'NOT_LISTENING';
 exports.EVENT.TOO_MANY_AUTH_ATTEMPTS = 'TOO_MANY_AUTH_ATTEMPTS';
 exports.EVENT.IS_CLOSED = 'IS_CLOSED';
-exports.EVENT.UNKNOWN_CALLEE = 'UNKNOWN_CALLEE';
 exports.EVENT.RECORD_NOT_FOUND = 'RECORD_NOT_FOUND';
 exports.EVENT.NOT_SUBSCRIBED = 'NOT_SUBSCRIBED';
 
 exports.ACTIONS = {};
-exports.ACTIONS.PING = 'P';
+exports.ACTIONS.PING = 'PI';
 exports.ACTIONS.PONG = 'PO';
 exports.ACTIONS.ACK = 'A';
 exports.ACTIONS.REDIRECT = 'RED';
@@ -2164,21 +2158,6 @@ exports.ACTIONS.PRESENCE_JOIN = 'PNJ';
 exports.ACTIONS.PRESENCE_LEAVE = 'PNL';
 exports.ACTIONS.QUERY = 'Q';
 
-//WebRtc
-exports.ACTIONS.WEBRTC_REGISTER_CALLEE = 'RC';
-exports.ACTIONS.WEBRTC_UNREGISTER_CALLEE = 'URC';
-exports.ACTIONS.WEBRTC_OFFER = 'OF';
-exports.ACTIONS.WEBRTC_ANSWER = 'AN';
-exports.ACTIONS.WEBRTC_ICE_CANDIDATE = 'IC';
-exports.ACTIONS.WEBRTC_CALL_DECLINED = 'CD';
-exports.ACTIONS.WEBRTC_CALL_ENDED = 'CE';
-exports.ACTIONS.WEBRTC_LISTEN_FOR_CALLEES = 'LC';
-exports.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES = 'ULC';
-exports.ACTIONS.WEBRTC_ALL_CALLEES = 'WAC';
-exports.ACTIONS.WEBRTC_CALLEE_ADDED = 'WCA';
-exports.ACTIONS.WEBRTC_CALLEE_REMOVED = 'WCR';
-exports.ACTIONS.WEBRTC_IS_ALIVE = 'WIA';
-
 exports.CALL_STATE = {};
 exports.CALL_STATE.INITIAL = 'INITIAL';
 exports.CALL_STATE.CONNECTING = 'CONNECTING';
@@ -2204,18 +2183,15 @@ module.exports = {
 	}
 };
 },{}],12:[function(_dereq_,module,exports){
-var MERGE_STRATEGIES = _dereq_( './constants/merge-strategies' );
+var MERGE_STRATEGIES = _dereq_('./constants/merge-strategies');
 
 module.exports = {
-	/************************************************
-	* Deepstream									*
-	************************************************/
 	/**
 	 * @param {Number} heartBeatInterval How often you expect the heartbeat to be sent. If two heatbeats are missed
 	 * in a row the client will consider the server to have disconnected and will close the connection in order to 
 	 * establish a new one.
 	 */
-	heartbeatInterval: 5000,
+	heartbeatInterval: 30000,
 
 	/**
 	 * @param {Boolean} recordPersistDefault Whether records should be
@@ -2251,80 +2227,56 @@ module.exports = {
 	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
 	 * 											no Ack-message has been received
 	 */
-	 rpcAckTimeout: 6000,
+	rpcAckTimeout: 6000,
 
-	 /**
+	/**
 	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
 	 * 											no response-message has been received
 	 */
-	 rpcResponseTimeout: 10000,
+	rpcResponseTimeout: 10000,
 
-	 /**
+	/**
 	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/
 	 * 											listening to a record before an error is thrown
 	 */
-	 subscriptionTimeout: 2000,
+	subscriptionTimeout: 2000,
 
-	 /**
-	  * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
-	  *                                      	time, the deepstream client will try to split them into smaller packets and send
-	  *                                      	these every <timeBetweenSendingQueuedPackages> ms.
-	  *
-	  *                                       	This parameter specifies the number of messages after which deepstream sends the
-	  *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
-	  *
-	  */
-	 maxMessagesPerPacket: 100,
-
-	 /**
-	  * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
-	  */
-	 timeBetweenSendingQueuedPackages: 16,
-
-	 /**
-	  * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
-	  *                                       	until an error is thrown since no ack message has been received.
-	  */
-	 recordReadAckTimeout: 1000,
-
-	 /**
-	  * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
-	  *                                       	until an error is thrown since no data has been received.
-	  */
-	 recordReadTimeout: 3000,
-
-	 /**
-	  * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
-	  *                                       	until an error is thrown since no delete ack message had been received. Please
-	  *                                       	take into account that the deletion is only complete after the record has been
-	  *                                       	deleted from both cache and storage
-	  */
-	 recordDeleteTimeout: 3000,
-
-	 /**
-	  * @param {Number} calleeAckTimeout 		The number of milliseconds from the moment webrtc.registerCallee has been
-	  *                                    		called until an error is thrown since no ACK response has been received
-	  */
-	 calleeAckTimeout: 3000,
-
-	 /**
-	  * @param {Object} rtcPeerConnectionConfig An RTCConfiguration (https://developer.mozilla.org/en/docs/Web/API/RTCConfiguration). This
-	  *                                         is used to establish your public IP address when behind a NAT (Network Address Translation)
-	  *                                         Set to null if you only intend to use WebRTC within your local network
-	  */
-	 rtcPeerConnectionConfig: { iceServers: [
-		{ url: 'stun:stun.services.mozilla.com' },
-		{ url: 'stun:stun.l.google.com:19302' }
-	]},
+	/**
+	 * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
+	 *                                      	time, the deepstream client will try to split them into smaller packets and send
+	 *                                      	these every <timeBetweenSendingQueuedPackages> ms.
+	 *
+	 *                                       	This parameter specifies the number of messages after which deepstream sends the
+	 *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
+	 *
+	 */
+	maxMessagesPerPacket: 100,
 
 
 	/**
-	 * Use TCP to connect if NodeJS. TCP is deprecated and will be removed by end
-	 * of 2017 so is recommend to only use this for backwards compatability until
-	 * then
-	 * @param {Boolean} whether to use TCP in a NodeJS environment
+	 * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
 	 */
-	useTCP: false,
+	timeBetweenSendingQueuedPackages: 16,
+
+	/**
+	 * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
+	 *                                       	until an error is thrown since no ack message has been received.
+	 */
+	recordReadAckTimeout: 1000,
+
+	/**
+	 * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
+	 *                                       	until an error is thrown since no data has been received.
+	 */
+	recordReadTimeout: 3000,
+
+	/**
+	 * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
+	 *                                       	until an error is thrown since no delete ack message had been received. Please
+	 *                                       	take into account that the deletion is only complete after the record has been
+	 *                                       	deleted from both cache and storage
+	 */
+	recordDeleteTimeout: 3000,
 
 	/**
 	 * @param {String} path path to connect to
@@ -2332,7 +2284,7 @@ module.exports = {
 	path: '/deepstream',
 
 	/**
-   *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
+	 *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
 	 *                                  If the merge strategy is not succesfull it will set an error, else set the
 	 *                                  returned data as the latest revision. This can be overriden on a per record
 	 *                                  basis by setting the `setMergeStrategy`.
@@ -2347,7 +2299,6 @@ module.exports = {
 	 */
 	recordDeepCopy: true
 };
-
 },{"./constants/merge-strategies":11}],13:[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
@@ -2582,15 +2533,14 @@ module.exports = EventHandler;
 },{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":26,"../utils/listener":27,"../utils/resubscribe-notifier":28,"component-emitter":1}],14:[function(_dereq_,module,exports){
 (function (global){
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
+	NodeWebSocket =  _dereq_( 'ws' ),
 	messageParser = _dereq_( './message-parser' ),
 	messageBuilder = _dereq_( './message-builder' ),
-	TcpConnection = _dereq_( '../tcp/tcp-connection' ),
 	utils = _dereq_( '../utils/utils' ),
 	C = _dereq_( '../constants/constants' );
 
 /**
- * Establishes a connection to a deepstream server, either
- * using TCP in node or engine.io in the browser.
+ * Establishes a connection to a deepstream server using websockets
  *
  * @param {Client} client
  * @param {String} url     Short url, e.g. <host>:<port>. Deepstream works out the protocol
@@ -2618,11 +2568,7 @@ var Connection = function( client, url, options ) {
 	this._lastHeartBeat = null;
 	this._heartbeatInterval = null;
 
-	if( this._options.useTCP ) {
-		this._originalUrl = url;
-	} else {
-		this._originalUrl = utils.parseUrl( url, this._options.path );
-	}
+	this._originalUrl = utils.parseUrl( url, this._options.path );
 	this._url = this._originalUrl;
 
 	this._state = C.CONNECTION_STATE.CLOSED;
@@ -2730,24 +2676,13 @@ Connection.prototype.close = function() {
 
 /**
  * Creates the endpoint to connect to using the url deepstream
- * was initialised with. If running in node automatically uses TCP
+ * was initialised with.
  *
  * @private
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function() {
-	if( this._options.useTCP ) {
-		if( this._endpoint ) {
-			this._endpoint.setUrl( this._url );
-			this._endpoint.open();
-			return;
-		} else {
-			this._endpoint = new TcpConnection( this._url );
-		}
-	} else {
-		var NodeWebSocket =  _dereq_( 'ws' );
-		this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url ) : new NodeWebSocket( this._url );
-	}
+	this._endpoint = BrowserWebSocket ? new BrowserWebSocket( this._url ) : new NodeWebSocket( this._url );
 
 	this._endpoint.onopen = this._onOpen.bind( this );
 	this._endpoint.onerror = this._onError.bind( this );
@@ -2854,10 +2789,8 @@ Connection.prototype._checkHeartBeat = function() {
  */
 Connection.prototype._onOpen = function() {
 	this._clearReconnect();
-	if( !this._options.useTCP ) {
-		this._lastHeartBeat = Date.now();
-		this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
-	}
+	this._lastHeartBeat = Date.now();
+	this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
 	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
 };
 
@@ -2882,7 +2815,13 @@ Connection.prototype._onError = function( error ) {
 	 * an error. So let's defer it to allow the reconnection to kick in.
 	 */
 	setTimeout(function(){
-		this._client._$onError( C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, error.toString() );
+		var msg;
+		if( error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED' ) {
+			msg = 'Can\'t connect! Deepstream server unreachable on ' + this._originalUrl;
+		} else {
+			msg = error.toString();
+		}
+		this._client._$onError( C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg );
 	}.bind( this ), 1);
 };
 
@@ -3127,7 +3066,7 @@ Connection.prototype._clearReconnect = function() {
 module.exports = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../constants/constants":10,"../tcp/tcp-connection":2,"../utils/utils":30,"./message-builder":15,"./message-parser":16,"ws":2}],15:[function(_dereq_,module,exports){
+},{"../constants/constants":10,"../utils/utils":30,"./message-builder":15,"./message-parser":16,"ws":2}],15:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -5582,8 +5521,7 @@ EventEmitter( AckTimeoutRegistry.prototype );
 /**
  * Add an entry
  *
- * @param {String} name An identifier for the subscription, e.g. a record name, an event name,
- *                      the name of a webrtc callee etc.
+ * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @public
  * @returns {void}
@@ -5598,8 +5536,7 @@ AckTimeoutRegistry.prototype.add = function( name, action ) {
 /**
  * Remove an entry
  *
- * @param {String} name An identifier for the subscription, e.g. a record name, an event name,
- *                      the name of a webrtc callee etc.
+ * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @public
  * @returns {void}
@@ -5637,8 +5574,7 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
 /**
  * Will be invoked if the timeout has occured before the ack message was received
  *
- * @param {String} name An identifier for the subscription, e.g. a record name, an event name,
- *                      the name of a webrtc callee etc.
+ * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @private
  * @returns {void}
@@ -5749,7 +5685,6 @@ Listener.prototype._$onMessage = function( message ) {
 		clearTimeout( this._ackTimeout );
 	} else if ( message.action === C
 		.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
-		this._showDeprecatedMessage( message );
 		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
 	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		this._callback( message.data[ 1 ], false );
@@ -5776,22 +5711,6 @@ Listener.prototype._sendListen = function() {
  */
 Listener.prototype._onAckTimeout = function() {
 	this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
-};
-
-/*
- * Shows a deprecation message to users before 1.1
- *
- * @private
- * @returns {void}
- */
-Listener.prototype._showDeprecatedMessage = function( message ) {
-	if( this._callback.length !== 3 ) {
-	var deprecatedMessage = 'DEPRECATED: listen should explicitly accept or reject for pattern: ' + message.data[ 0 ];
-	deprecatedMessage += '\nhttps://github.com/deepstreamIO/deepstream.io-client-js/issues/212';
-		if( console && console.warn ) {
-			console.warn( deprecatedMessage );
-		}
-	}
 };
 
 module.exports = Listener;
@@ -6177,863 +6096,5 @@ exports.parseUrl = function( url, defaultPath ) {
 	return URL.format( serverUrl );
 };
 }).call(this,_dereq_('_process'))
-},{"_process":4,"url":3}],31:[function(_dereq_,module,exports){
-var WebRtcConnection = _dereq_( './webrtc-connection' ),
-	EventEmitter = _dereq_( 'component-emitter' ),
-	C = _dereq_( '../constants/constants' );
-
-/**
- * This class represents a single call between two peers
- * in all its states. It's returned by ds.webrtc.makeCall
- * as well as passed to the callback of 
- * ds.webrtc.registerCallee( name, callback );
- *
- * @constructor
- * @extends {EventEmitter}
- *
- * @event established <remoteStream>
- * @event declined <reason>
- * @event error <error>
- * @event stateChange <state>
- * @event ended
- *
- * @param {Object} settings
- *
- * {
- * 		isOutgoing: <Boolean>, 
- * 		connection: <Deepstream Connection>,
- * 		localId: <String>,
- * 		remoteId: <String>,
- * 		localStream: <MediaStream>,
- * 		offer: <Offer SDP>
- * }
- *
- * @param {Object} options deepstream options
- */
-var WebRtcCall = function( settings, options ) {
-	this._connection = settings.connection;
-	this._localId = settings.localId;
-	this._remoteId = settings.remoteId;
-	this._localStream = settings.localStream;
-	this._offer = settings.offer;
-	this._$webRtcConnection = null;
-	this._bufferedIceCandidates = [];
-	this._options = options;
-
-	this.state = C.CALL_STATE.INITIAL;
-	this.metaData = settings.metaData || null;
-	this.callee = settings.isOutgoing ? settings.remoteId : settings.localId;
-	this.isOutgoing = settings.isOutgoing;
-	this.isIncoming = !settings.isOutgoing;
-	this.isAccepted = false;
-	this.isDeclined = false;
-	
-	if( this.isOutgoing ) {
-		this._initiate();
-	}
-};
-
-EventEmitter( WebRtcCall.prototype );
-
-/**
- * Accept an incoming call
- *
- * @param   {MediaStream} localStream
- *
- * @public
- * @returns {void}
- */
-WebRtcCall.prototype.accept = function( localStream ) {
-	if( this.isAccepted ) {
-		throw new Error( 'Incoming call is already accepted' );
-	}
-
-	if( this.isDeclined ) {
-		throw new Error( 'Can\'t accept incoming call. Call was already declined' );
-	}
-
-	this.isAccepted = true;
-
-	this._$webRtcConnection = new WebRtcConnection( this._connection, this._options, this._localId, this._remoteId );
-	
-	if( localStream ) {
-		this._$webRtcConnection.addStream( localStream );
-	}
-	
-	this._$webRtcConnection.setRemoteDescription( new RTCSessionDescription( this._offer ) );
-	this._$webRtcConnection.createAnswer();
-	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
-	this._$webRtcConnection.on( 'error', this.emit.bind( this, 'error' ) );
-
-	for( var i = 0; i < this._bufferedIceCandidates.length; i++ ) {
-		this._$webRtcConnection.addIceCandidate( this._bufferedIceCandidates[ i ] );
-	}
-	
-	this._bufferedIceCandidates = [];
-	this._stateChange( C.CALL_STATE.ACCEPTED );
-};
-
-/**
- * Decline an incoming call
- *
- * @param   {[String]} reason An optional reason as to why the call was declined
- *
- * @private
- * @returns {void}
- */
-WebRtcCall.prototype.decline = function( reason ) {
-	if( this.isAccepted ) {
-		throw new Error( 'Can\'t decline incoming call. Call was already accepted' );
-	}
-
-	if( this.isDeclined ) {
-		throw new Error( 'Incoming call was already declined' );
-	}
-
-	this.isDeclined = true;
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_DECLINED, [ this._localId, this._remoteId, reason || null ] );
-	this._$declineReceived( reason || null );
-};
-
-/**
- * Ends a call that's in progress.
- *
- * @public
- * @returns {void}
- */
-WebRtcCall.prototype.end = function() {
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_CALL_ENDED, [ this._localId, this._remoteId, null ] );
-	this._$close();
-};
-
-/**
- * Closes the connection and ends the call. This can be invoked from the
- * outside as a result of an incoming end message as well as by calling end()
- *
- * @protected
- * @returns {void}
- */
-WebRtcCall.prototype._$close = function() {
-	this._stateChange( C.CALL_STATE.ENDED );
-	if( this._$webRtcConnection ) {
-		this._$webRtcConnection.close();
-	}
-	this.emit( 'ended' );
-};
-
-/**
- * Add an ICE (Interactive Connection Establishing) Candidate
- *
- * @param   {RTCIceCandidate} iceCandidate An object, describing a host and port combination
- *                                         that the peers can try to connect on
- *
- * @protected
- * @returns {void}
- */
-WebRtcCall.prototype._$addIceCandidate = function( iceCandidate ) {
-	if( this.isIncoming && this.isAccepted === false ) {
-		this._bufferedIceCandidates.push( iceCandidate );
-	} else {
-		this._$webRtcConnection.addIceCandidate( iceCandidate );
-	}
-};
-
-/**
- * Will be invoked by the webrtcHandler if a decline message is received from the other party
- *
- * @param   {[String]} reason Optional reason as to why the call was declined
- *
- * @protected
- * @returns {void}
- */
-WebRtcCall.prototype._$declineReceived = function( reason ) {
-	this.isDeclined = true;
-	this.isAccepted = false;
-	this._stateChange( C.CALL_STATE.DECLINED );
-	this.emit( 'declined', reason );
-};
-
-/**
- * Is invoked for every stateChange
- *
- * @param   {String} state one of C.CALL_STATE
- *
- * @private
- * @returns {void}
- */
-WebRtcCall.prototype._stateChange = function( state ) {
-	this.state = state;
-	this.emit( 'stateChange', state );
-};
-
-/**
- * Initiates the an outgoing call
- *
- * @private
- * @returns {void}
- */
-WebRtcCall.prototype._initiate = function() {
-	this._stateChange( C.CALL_STATE.CONNECTING );
-	this._$webRtcConnection = new WebRtcConnection( this._connection, this._options, this._localId, this._remoteId );
-	this._$webRtcConnection.initiate( this._localStream, this.metaData );
-	this._$webRtcConnection.on( 'stream', this._onEstablished.bind( this ) );
-};
-
-/**
- * Callback for accept messages. Sets the call to established and informs the client
- *
- * @param   {MediaStream} stream
- *
- * @private
- * @returns {void}
- */
-WebRtcCall.prototype._onEstablished = function( stream ) {
-	this.isDeclined = false;
-	this.isAccepted = true;
-	this._stateChange( C.CALL_STATE.ESTABLISHED );
-	this.emit( 'established', stream );
-};
-
-module.exports = WebRtcCall;
-},{"../constants/constants":10,"./webrtc-connection":32,"component-emitter":1}],32:[function(_dereq_,module,exports){
-var Emitter = _dereq_( 'component-emitter' );
-var C = _dereq_( '../constants/constants' );
-var noop = function(){};
-
-/**
- * This class wraps around the native RTCPeerConnection
- * object (https://developer.mozilla.org/en/docs/Web/API/RTCPeerConnection)
- * and provides a thin layer of deepstream integration
- *
- * @constructor
- * 
- * @event error {Error}
- * @event stream {MediaStream}
- * 
- * @param {Connection} connection deepstream connection
- * @param {Object} options deepstream options
- * @param {String} localId    either a random id for outgoing calls or a callee name for incoming calls
- * @param {String} remoteId   either a random id for incoming calls or a callee name for outgoing calls
- */
-var WebRtcConnection = function( connection, options, localId, remoteId ) {
-	this._connection = connection;
-	this._remoteId = remoteId;
-	this._localId = localId;
-
-	this._peerConnection = new RTCPeerConnection( options.rtcPeerConnectionConfig );
-	this._peerConnection.onaddstream = this._onStream.bind( this );
-	this._peerConnection.onicecandidate = this._onIceCandidate.bind( this );
-	this._peerConnection.oniceconnectionstatechange = this._onIceConnectionStateChange.bind( this );
-	this._constraints = { mandatory: { OfferToReceiveAudio: true, OfferToReceiveVideo: true } };
-};
-
-Emitter( WebRtcConnection.prototype );
-
-/**
- * Initiates a connection if this is an outgoing call
- *
- * @param   {MediaStream} stream   the local media stream
- * @param   {Mixed} metaData metaData will be attached to the offer
- *
- * @public
- * @returns {void}
- */
-WebRtcConnection.prototype.initiate = function( stream, metaData ) {
-	this._peerConnection.addStream( stream );
-	this._peerConnection.createOffer( this._onOfferCreated.bind( this, metaData ), this._onError.bind( this ) );
-};
-
-/**
- * Closes the connection
- *
- * @public
- * @returns {void}
- */
-WebRtcConnection.prototype.close = function() {
-	this._peerConnection.close();
-};
-
-/**
- * Add a Media Stream to the connection
- *
- * @param   {MediaStream} stream   the local media stream
- *
- * @public
- * @returns {void}
- */
-WebRtcConnection.prototype.addStream = function( stream ) {
-	this._peerConnection.addStream( stream );
-};
-
-/**
- * Adds a remote description SDP
- *
- * @param {RTCSessionDescription} remoteDescription A session description SDP (https://developer.mozilla.org/en/docs/Web/API/RTCSessionDescription)
- * 
- * @public
- * @returns {void}
- */
-WebRtcConnection.prototype.setRemoteDescription = function( remoteDescription ) {
-	this._peerConnection.setRemoteDescription( remoteDescription, noop, this._onError.bind( this ) );
-};
-
-/**
- * Create an answer SDP
- *
- * @public
- * @returns {void}
- */
-WebRtcConnection.prototype.createAnswer = function() {
-	this._peerConnection.createAnswer( this._onAnswerCreated.bind( this ), this._onError.bind( this ), this._constraints );
-};
-
-/**
- * Adds an RTCIceCandidate to the peerConnection
- *
- * @param {RTCIceCandidate} iceCandidate
- *
- * @public
- * @returns {void}
- */
-WebRtcConnection.prototype.addIceCandidate = function( iceCandidate ) {
-	this._peerConnection.addIceCandidate( iceCandidate, noop, this._onError.bind( this ) );
-};
-
-/**
- * Callback for incoming stream
- *
- * @param   {MediaStreamEvent} event (https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamEvent)
- *
- * @private
- * @returns {void}
- */
-WebRtcConnection.prototype._onStream = function( event ) {
-	this.emit( 'stream', event.stream );
-};
-
-/**
- * Callback once the offer was created (why does this happen asynchronously?)
- *
- * @param   {Mixed} metaData
- * @param   {RTCSessionDescription} offer
- *
- * @private
- * @returns {void}
- */
-WebRtcConnection.prototype._onOfferCreated = function( metaData, offer ) {
-	this._sendMsg( C.ACTIONS.WEBRTC_OFFER, JSON.stringify({
-		sdp: offer.sdp,
-		type: offer.type,
-		meta: metaData
-	}));
-	this._peerConnection.setLocalDescription( offer, noop, this._onError.bind( this ) );
-};
-
-/**
- * Callback once the answer was created (why does this happen asynchronously?)
- *
- * @param   {Mixed} metaData
- * @param   {RTCSessionDescription} answer
- *
- * @private
- * @returns {void}
- */
-WebRtcConnection.prototype._onAnswerCreated = function( answer ) {
-	this._sendMsg( C.ACTIONS.WEBRTC_ANSWER, answer.toJSON() );
-	this._peerConnection.setLocalDescription( answer, noop, this._onError.bind( this ) );
-};	
-
-/**
- * Sends a message via deepstream
- *
- * @param   {String} action one of C.ACTIONS
- * @param   {String} data
- *
- * @private
- * @returns {void}
- */
-WebRtcConnection.prototype._sendMsg = function( action, data ) {
-	this._connection.sendMsg( 
-		C.TOPIC.WEBRTC,
-		action,
-		[ this._localId, this._remoteId, data ]
-	);
-};
-
-/**
- * Callback for incoming ICECandidates
- *
- * @param   {RTCPeerConnectionIceEvent} event https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnectionIceEvent
- *
- * @private
- * @returns {void}
- */
-WebRtcConnection.prototype._onIceCandidate = function( event ) {
-	if( event.candidate ) {
-		this._sendMsg( C.ACTIONS.WEBRTC_ICE_CANDIDATE, event.candidate.toJSON() );
-	}
-};
-
-/**
- *  Callback for changes to the ICE connection state
- *  
- *  Available states are
- *  
- * "new": the ICE agent is gathering addresses or waiting for remote candidates (or both).
- * "checking": the ICE agent has remote candidates, on at least one component, and is check them, though it has not found a connection yet. At the same time, it may still be gathering candidates.
- * "connected": the ICE agent has found a usable connection for each component, but is still testing more remote candidates for a better connection. At the same time, it may still be gathering candidates.
- * "completed": the ICE agent has found a usable connection for each component, and is no more testing remote candidates.
- * "failed": the ICE agent has checked all the remote candidates and didn't find a match for at least one component. Connections may have been found for some components.
- * "disconnected": liveness check has failed for at least one component. This may be a transient state, e. g. on a flaky network, that can recover by itself.
- * "closed": the ICE agent has shutdown and is not answering to requests.
- *
- * @private
- * @returns {void}
- */
-WebRtcConnection.prototype._onIceConnectionStateChange = function() {
-	if( this._peerConnection.iceConnectionState === 'disconnected' ) {
-		this._connection.sendMsg( 
-			C.TOPIC.WEBRTC,
-			C.ACTIONS.WEBRTC_IS_ALIVE,
-			[ this._remoteId ]
-		);
-	}
-};
-
-/**
- * Error callback
- *
- * @param   {Error} error
- *
- * @private
- * @returns {void}
- */
-WebRtcConnection.prototype._onError = function( error ) {
-	this.emit( 'error', error );
-};
-
-module.exports = WebRtcConnection;
-
-},{"../constants/constants":10,"component-emitter":1}],33:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' ),
-	WebRtcConnection = _dereq_( './webrtc-connection' ),
-	WebRtcCall = _dereq_( './webrtc-call' ),
-	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
-	CALLEE_UPDATE_EVENT = 'callee-update';
-
-/**
- * The main class for webrtc operations
- * 
- * Provides an interface to register callees, make calls and listen 
- * for callee registrations
- *
- * WebRTC (Web Real Time Communication) is a standard that allows browsers
- * to share video, audio and data-streams via a peer connection. A server is only
- * used to establish and end calls
- *
- * To learn more, please have a look at the WebRTC documentation on MDN
- *
- * https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API
- * 
- * @param {Object} options deepstream configuration options
- * @param {Connection} connection
- * @param {Client} client
- * 
- * @constructor
- * @public
- */
-var WebRtcHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._localCallees = {};
-	this._remoteCallees = [];
-	this._remoteCalleesCallback = null;
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.WEBRTC, this._options.calleeAckTimeout );
-	this._ackTimeoutRegistry.on( 'timeout', this._removeCallee.bind( this ) );
-	this._calls = {};
-};
-
-/**
- * Register a "callee" (an endpoint that can receive incoming audio and video streams). Callees are comparable
- * to entries in a phonebook. They have a unique identifier (their name) and an on-call function that will be invoked
- * whenever another client calls makeCall.
- *
- * @param   {String} 	name     A name that can be used in makeCall to establish a connection to this callee
- * @param   {Function} 	onCallFn Callback for incoming calls. Will be invoked with a <webrtc-call> object and meta-data
- *
- * @public
- * @returns {void}
- */
-WebRtcHandler.prototype.registerCallee = function( name, onCallFn ) {
-	this._checkCompatibility();
-
-	if( typeof name !== 'string' ) {
-		throw new Error( 'Invalid callee name ' + name );
-	}
-
-	if( typeof onCallFn !== 'function' ) {
-		throw new Error( 'Callback is not a function' );
-	}
-
-	if( this._localCallees[ name ] ) {
-		throw new Error( 'Callee ' + name + ' is already registered' );
-	}
-
-	this._localCallees[ name ] = onCallFn;
-	this._ackTimeoutRegistry.add( name );
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_REGISTER_CALLEE, [ name ] );
-};
-
-/**
- * Removes a callee that was previously registered with WebRtcHandler.registerCallee
- *
- * @param   {String} name calleeName
- *
- * @public
- * @returns {void}
- */
-WebRtcHandler.prototype.unregisterCallee = function( name ) {
-	if( !this._localCallees[ name ] ) {
-		throw new Error( 'Callee is not registered' );
-	}
-	
-	this._removeCallee( name );
-	this._ackTimeoutRegistry.add( name );
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_UNREGISTER_CALLEE, [ name ] );
-};
-
-/**
- * Creates a call to another registered callee. This call can still be declined or remain unanswered. The call
- * object that this method returns will emit an 'established' event once the other side has accepted it and shares
- * its video/audio stream.
- *
- * @param   {String} calleeName  The name of a previously registered callee
- * @param 	{Object} metaData	Additional information that will be passed to the receiver's onCall function
- * @param   {[MediaStream]} localStream A local media stream. Can be ommited if the call is used purely for data.
-
- * @public
- * @returns {WebRtcCall}
- */
-WebRtcHandler.prototype.makeCall = function( calleeName, metaData, localStream ) {
-	this._checkCompatibility();
-
-	if( typeof calleeName !== 'string' ) {
-		throw new Error( 'Callee must be provided as string' );
-	}
-
-	if( typeof metaData !== 'object' ) {
-		throw new Error( 'metaData must be provided' );
-	}
-
-	if( this._calls[ calleeName ] ) {
-		throw new Error( 'Call with ' + calleeName + ' is already in progress' );
-	}
-
-	var localId = this._client.getUid();
-
-	this._ackTimeoutRegistry.add( localId );
-
-	return this._createCall( calleeName, {
-		isOutgoing: true,
-		connection: this._connection, 
-		localId: localId, 
-		remoteId: calleeName, 
-		localStream: localStream,
-		offer: null,
-		metaData: metaData
-	});
-};
- 
-/**
- * Register a listener that will be invoked with all callees that are currently registered. This is
- * useful to create a "phone-book" display. Only one listener can be registered at a time
- *
- * @param   {Function} callback Will be invoked initially and every time a callee is added or removed
- *
- * @public
- * @returns {void}
- */
-WebRtcHandler.prototype.listenForCallees = function( callback ) {
-	if( this._remoteCalleesCallback !== null ) {
-		throw new Error( 'Already listening for callees' );
-	}
-	this._remoteCalleesCallback = callback;
-	this._ackTimeoutRegistry.add( CALLEE_UPDATE_EVENT );
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_LISTEN_FOR_CALLEES );
-};
-
-/**
- * Removes the listener that was previously registered with listenForCallees
- *
- * @public
- * @returns {void}
- */
-WebRtcHandler.prototype.unlistenForCallees = function() {
-	if( !this._remoteCalleesCallback ) {
-		throw new Error( 'Not listening for callees' );
-	}
-	this._remoteCalleesCallback = null;
-	this._ackTimeoutRegistry.add( CALLEE_UPDATE_EVENT );
-	this._connection.sendMsg( C.TOPIC.WEBRTC, C.ACTIONS.WEBRTC_UNLISTEN_FOR_CALLEES );
-};
-
-/**
- * This method is invoked whenever an incoming call message is received. It constracts
- * a call object and passes it to the callback function that was registered with registerCallee
- *
- * @param   {Object} message parsed deepstream message
- *
- * @private
- * @returns {void}
- */
-WebRtcHandler.prototype._handleIncomingCall = function( message ) {
-	var remoteId = message.data[ 0 ],
-		localId = message.data[ 1 ],
-		offer = JSON.parse( message.data[ 2 ] ),
-		call = this._createCall( remoteId, {
-			isOutgoing: false,
-			connection: this._connection, 
-			localId: localId, 
-			remoteId: remoteId, 
-			localStream: null,
-			metaData: offer.meta,
-			offer: offer
-		});
-
-	this._localCallees[ localId ]( call, offer.meta );
-};
-
-/**
- * Removes a call from the internal cache. This can be the result of a call ending, being
- * declined or erroring.
- *
- * @param   {String} id The temporary id (receiverName for incoming-, senderName for outgoing calls)
- *
- * @private
- * @returns {void}
- */
-WebRtcHandler.prototype._removeCall = function( id ) {
-	delete this._calls[ id ];
-};
-
-/**
- * Creates a new instance of WebRtcCall
- *
- * @param   {String} id The temporary id (receiverName for incoming-, senderName for outgoing calls)
- * @param   {Object} settings Call settings. Please see WebRtcCall for details
- *
- * @private
- * @returns {void}
- */
-WebRtcHandler.prototype._createCall = function( id, settings ) {
-	this._calls[ id ] = new WebRtcCall( settings, this._options );
-	this._calls[ id ].on( 'ended', this._removeCall.bind( this, id ) );
-	return this._calls[ id ];
-};
-
-/**
- * All call-related messages (offer, answer, ice candidate, decline, end etc.) share the same data signature.
- *
- * [ senderName, receiverName, arbitrary data string ]
- *
- * This method makes sure the message is in the correct format.
- *
- * @param   {Object}  message A parsed deepstream message
- *
- * @private
- * @returns {Boolean}
- */
-WebRtcHandler.prototype._isValidMessage = function( message ) {
-	return message.data.length === 3 &&
-	typeof message.data[ 0 ] === 'string' &&
-	typeof message.data[ 1 ] === 'string' &&
-	typeof message.data[ 2 ] === 'string';
-};
-
-/**
- * Returns true if the messages is an update to the list of updated callees
- *
- * @param   {Object}  message A parsed deepstream message
- *
- * @private
- * @returns {Boolean}
- */
-WebRtcHandler.prototype._isCalleeUpdate = function( message ) {
-	return 	message.action === C.ACTIONS.WEBRTC_ALL_CALLEES ||
-			message.action === C.ACTIONS.WEBRTC_CALLEE_ADDED ||
-			message.action === C.ACTIONS.WEBRTC_CALLEE_REMOVED;
-};
-
-/**
- * The WebRTC specification is still very much in flux and implementations are fairly unstandardized. To
- * get WebRTC to work across all supporting browsers it is therefor crucial to use a shim / adapter script
- * to normalize implementation specifities.
- *
- * This adapter script however is not included with the client. This is for three reasons:
- * 
- * - Whilst WebRTC is a great feature of deepstream, it is not a central one. Most usecases will probably
- *   focus on Records, Events and RPCs. We've therefor choosen to rather reduce the client size and leave
- *   it to WebRTC users to include the script themselves
- *
- * - Since the API differences are still subject to frequent change it is likely that updates to the WebRTC
- *   adapter script will be quite frequent. By making it a seperate dependency it can be updated individually
- *   as soon as it is released.
- *
- * - Whilst working well, the code quality of adapter is rather poor. It lives in the global namespace, adds
- *   console logs etc.
- *
- * This method checks if all the WebRTC related objects that it will use further down the line are present
- * and if not recommends usage of the WebRTC adapter script
- *
- * @private
- * @returns {void}
- */
-WebRtcHandler.prototype._checkCompatibility = function() {
-	if(
-		typeof RTCPeerConnection === 'undefined' ||
-		typeof RTCSessionDescription === 'undefined' ||
-		typeof RTCIceCandidate === 'undefined'
-	){
-		var msg =  'RTC global objects not detected. \n';
-			msg += 'deepstream expects a standardized WebRtc implementation (e.g. no vendor prefixes etc.) \n';
-			msg += 'until WebRtc is fully supported, we recommend including the official WebRTC adapter script \n';
-			msg += 'which can be found at https://github.com/webrtc/adapter';
-
-		throw new Error( msg );
-	}
-};
-
-/**
- * Removes a callee from the internal cache as a result of an ACK timeout or the callee being unregistered.
- *
- * @param   {String} calleeName A local callee that was previously registered using registerCallee
- *
- * @private
- * @returns {void}
- */
-WebRtcHandler.prototype._removeCallee = function( calleeName ) {
-	delete this._localCallees[ calleeName ];
-};
-
-/**
- * Processes an update to the list of callees that are registered with deepstream. When listenForCallees
- * is initally called, it receives a full list of all registered callees. From there on it is only
- * send deltas. This method merges the delta updates into the full array of registered callees and
- * invokes the listener callback with the result.
- *
- * @param   {Object} message a parsed deepstream message
- *
- * @private
- * @returns {void}
- */
-WebRtcHandler.prototype._processCalleeUpdate = function( message ) {
-	if( this._remoteCalleesCallback === null ) {
-		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
-		return;
-	}
-
-	if( message.action === C.ACTIONS.WEBRTC_ALL_CALLEES ) {
-		this._remoteCallees = message.data;
-	}
-
-	var index = this._remoteCallees.indexOf( message.data[ 0 ] );
-	
-	if( message.action === C.ACTIONS.WEBRTC_CALLEE_ADDED ) {
-		if( index !== -1 ) {
-			return;
-		}
-		this._remoteCallees.push( message.data[ 0 ] );
-	}
-	else if ( message.action === C.ACTIONS.WEBRTC_CALLEE_REMOVED ) {
-		if( index === -1 ) {
-			return;
-		}
-		this._remoteCallees.splice( index, 1 );
-	}
-
-	this._remoteCalleesCallback( this._remoteCallees );
-};
-
-/**
- * The main method for incoming WebRTC messages.
- *
- * @param   {Object} message a parsed deepstream message
- *
- *
- * @private
- * 
- * @returns {void}
- */
-WebRtcHandler.prototype._$handle = function( message ) {
-	var call,
-		sessionDescription,
-		iceCandidate;
-
-	if( message.action === C.ACTIONS.ERROR ) {
-		this._client._$onError( C.TOPIC.WEBRTC, message.data[ 0 ], message.data[ 1 ] );
-		return;
-	}
-
-	if( message.action === C.ACTIONS.ACK ) {
-		this._ackTimeoutRegistry.clear( message );
-		return;
-	}
-
-	if( this._isCalleeUpdate( message ) ) {
-		this._processCalleeUpdate( message );
-		return;	
-	}
-
-	if( message.action === C.ACTIONS.WEBRTC_IS_ALIVE ) {
-		if( message.data[ 1 ] === 'false' && this._calls[ message.data[ 0 ] ] ) {
-			this._calls[ message.data[ 0 ] ]._$close();
-		}
-		return;
-	}
-
-	if( !this._isValidMessage( message ) ) {
-		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.MESSAGE_PARSE_ERROR, message );
-		return;
-	}
-
-	if( message.action === C.ACTIONS.WEBRTC_OFFER ) {
-		this._handleIncomingCall( message );
-		return;
-	}
-
-	call = this._calls[ message.data[ 0 ] ] || this._calls[ message.data[ 1 ] ];
-
-	if( !call ) {
-		this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
-		return;
-	}
-	
-	if ( message.action === C.ACTIONS.WEBRTC_ANSWER ) {
-		sessionDescription = new RTCSessionDescription( JSON.parse( message.data[ 2 ] ) );
-		call._$webRtcConnection.setRemoteDescription( sessionDescription );
-		return;
-	}
-	
-	if( message.action === C.ACTIONS.WEBRTC_ICE_CANDIDATE ) {
-		iceCandidate = new RTCIceCandidate( JSON.parse( message.data[ 2 ] ) );
-		call._$addIceCandidate( iceCandidate );
-		return;
-	}
-
-	if( message.action === C.ACTIONS.WEBRTC_CALL_DECLINED ) {
-		call._$declineReceived( message.data[ 2 ] );
-		return;
-	}
-	
-	if( message.action === C.ACTIONS.WEBRTC_CALL_ENDED ) {
-		call._$close();
-		return;
-	}
-
-	this._client._$onError( C.TOPIC.WEBRTC, C.EVENT.EVENT.MESSAGE_PARSE_ERROR, 'unsupported action ' + message.action );
-};
-
-module.exports = WebRtcHandler;
-},{"../constants/constants":10,"../utils/ack-timeout-registry":26,"./webrtc-call":31,"./webrtc-connection":32}]},{},[9])(9)
+},{"_process":4,"url":3}]},{},[9])(9)
 });

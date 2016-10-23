@@ -10,17 +10,17 @@ module.exports = function() {
 
 	this.When(/^the client creates a record named "([^"]*)"$/, function (recordName, callback) {
 		records[ recordName ] = global.dsClient.record.getRecord( recordName );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client sets the record "([^"]*)" "([^"]*)" to "(.+)"$/, function (recordName, path, value, callback) {
 	  records[ recordName ].set( path, value );
-	  setTimeout( callback, config.tcpMessageWaitTime );
+	  setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client sets the record "([^"]*)" to (.+)$/, function (recordName, value, callback) {
 	  records[ recordName ].set( JSON.parse( value ) );
-	  setTimeout( callback, config.tcpMessageWaitTime );
+	  setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.Then(/^the client record "([^"]*)" data is (.*)$/, function (recordName, data, callback) {
@@ -29,12 +29,12 @@ module.exports = function() {
 
 	this.When(/^the client discards the record named "([^"]*)"$/, function (recordName, callback) {
 		records[ recordName ].discard();
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client deletes the record named "([^"]*)"$/, function (recordName, callback) {
 	 	records[ recordName ].delete();
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	/**
@@ -42,7 +42,7 @@ module.exports = function() {
 	*/
 	this.When(/^the client listens to a record matching "([^"]*)"$/, function (pattern, callback) {
 		global.dsClient.record.listen( pattern, listenCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.Then(/^the client will be notified of new record match "([^"]*)"$/, function (recordName) {
@@ -56,7 +56,7 @@ module.exports = function() {
 
 	this.When(/^the client unlistens to a record matching "([^"]*)"$/, function (pattern, callback) {
 	  	global.dsClient.record.unlisten( pattern, listenCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	/**
@@ -64,22 +64,22 @@ module.exports = function() {
 	*/
 	this.When(/^the client subscribes to "([^"]*)" for the record "([^"]*)"$/, function (path, recordName, callback) {
 	  	records[ recordName ].subscribe( path, subscribeCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client unsubscribes to the entire record "([^"]*)" changes$/, function (recordName, callback) {
 	  	records[ recordName ].unsubscribe( subscribeCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client unsubscribes to "([^"]*)" for the record "([^"]*)"$/, function (path, recordName, callback) {
 	  	records[ recordName ].unsubscribe( path, subscribeCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client subscribes to the entire record "([^"]*)" changes$/, function (recordName, callback) {
 	  	records[ recordName ].subscribe( subscribeCallback );
-		setTimeout( callback, config.tcpMessageWaitTime );
+		setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.Then(/^the client will not be notified of the record change$/, function () {

@@ -94,7 +94,6 @@ Listener.prototype._$onMessage = function( message ) {
 		clearTimeout( this._ackTimeout );
 	} else if ( message.action === C
 		.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
-		this._showDeprecatedMessage( message );
 		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
 	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		this._callback( message.data[ 1 ], false );
@@ -121,22 +120,6 @@ Listener.prototype._sendListen = function() {
  */
 Listener.prototype._onAckTimeout = function() {
 	this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
-};
-
-/*
- * Shows a deprecation message to users before 1.1
- *
- * @private
- * @returns {void}
- */
-Listener.prototype._showDeprecatedMessage = function( message ) {
-	if( this._callback.length !== 3 ) {
-	var deprecatedMessage = 'DEPRECATED: listen should explicitly accept or reject for pattern: ' + message.data[ 0 ];
-	deprecatedMessage += '\nhttps://github.com/deepstreamIO/deepstream.io-client-js/issues/212';
-		if( console && console.warn ) {
-			console.warn( deprecatedMessage );
-		}
-	}
 };
 
 module.exports = Listener;

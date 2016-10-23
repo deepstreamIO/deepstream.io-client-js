@@ -21,7 +21,7 @@ module.exports = function( grunt ) {
 				},
 				options: {
 					postBundleCB: dereqCallback,
-					ignore: [ './src/tcp/tcp-connection.js', 'ws' ],
+					ignore: [ 'ws' ],
 					browserifyOptions: {
 						standalone: 'deepstream',
 						//'builtins': []
@@ -37,7 +37,7 @@ module.exports = function( grunt ) {
 					watch: true,
 					keepAlive: true,
 					postBundleCB: dereqCallback,
-					ignore: [ './src/tcp/tcp-connection.js' ],
+					ignore: [ 'ws' ],
 					browserifyOptions: {
 						standalone: 'deepstream',
 					}
