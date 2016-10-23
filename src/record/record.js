@@ -36,7 +36,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this._connection = connection;
 	this._client = client;
 	this._options = options;
-	this._paths = {}
+	this._paths = {};
 
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
 	this._reset();
@@ -46,7 +46,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 EventEmitter( Record.prototype );
 
 Record.prototype._reset = function () {
-	this._$data = undefined;
+	this._data = undefined;
 	this._patchQueue = [];
 	this.usages = 0;
 	this.isReady = false;
@@ -67,7 +67,7 @@ Record.prototype._reset = function () {
  * @returns {Mixed} value
  */
 Record.prototype.get = function( path ) {
-	return jsonPath.get( this._$data, path );
+	return jsonPath.get( this._data, path );
 };
 
 /**
@@ -105,7 +105,7 @@ Record.prototype.set = function( pathOrData, data ) {
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
 
-	var oldValue = this._$data;
+	var oldValue = this._data;
 	var newValue = jsonPath.set( oldValue, path, data );
 
 	if ( oldValue === newValue ) {
@@ -158,7 +158,7 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
 
 	callbacks.push( args.callback );
 
-	if( args.triggerNow && this._$data ) {
+	if( args.triggerNow && this._data ) {
 		args.callback( this.get( args.path ) );
 	}
 };
@@ -330,7 +330,7 @@ Record.prototype._dispatchUpdate = function() {
 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 		this.name,
 		version,
-		this._$data,
+		this._data,
 		this.version
 	] );
 	this.version = version;
@@ -353,7 +353,7 @@ Record.prototype._applyUpdate = function( message ) {
 	}
 
 	this.version = version;
-	this._applyChange( jsonPath.set( this._$data, undefined, data ) );
+	this._applyChange( jsonPath.set( this._data, undefined, data ) );
 };
 
 /**
@@ -366,7 +366,7 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	var oldValue = JSON.parse( message.data[ 2 ] );
-	var newValue = this._$data || oldValue
+	var newValue = this._data || oldValue
 
 	if ( this._patchQueue ) {
 		for( var i = 0; i < this._patchQueue.length; i++ ) {
@@ -411,8 +411,8 @@ Record.prototype._applyChange = function( newData ) {
 		return;
 	}
 
-	var oldData = this._$data;
-	this._$data = newData;
+	var oldData = this._data;
+	this._data = newData;
 
 	var paths = Object.keys( this._paths );
 
