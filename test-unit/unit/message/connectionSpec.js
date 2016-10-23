@@ -98,7 +98,7 @@ describe('connects - heartbeats', function(){
 	});
 
 	it( 'when it recieves a ping responds with a pong', function(){
-		connection._endpoint.emit( 'message', msg( 'C|P+' ) );
+		connection._endpoint.emit( 'message', msg( 'C|PI+' ) );
 		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|PO+' ) );
 	});
 

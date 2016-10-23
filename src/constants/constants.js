@@ -56,7 +56,7 @@ exports.EVENT.RECORD_NOT_FOUND = 'RECORD_NOT_FOUND';
 exports.EVENT.NOT_SUBSCRIBED = 'NOT_SUBSCRIBED';
 
 exports.ACTIONS = {};
-exports.ACTIONS.PING = 'P';
+exports.ACTIONS.PING = 'PI';
 exports.ACTIONS.PONG = 'PO';
 exports.ACTIONS.ACK = 'A';
 exports.ACTIONS.REDIRECT = 'RED';
