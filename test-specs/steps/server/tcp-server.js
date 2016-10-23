@@ -16,7 +16,7 @@ function TCPServer( tcpPort ) {
 TCPServer.prototype.start = function() {
 	if( this.server ) {
 		this.stop( this.start.bind( this ) );
-	} else { 
+	} else {
 		this.start();
 	}
 };

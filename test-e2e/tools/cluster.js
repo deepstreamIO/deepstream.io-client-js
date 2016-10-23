@@ -9,9 +9,9 @@ const Logger = require('./test-logger');
 
 var ports;
 
-var Cluster = function( tcpPorts, enableLogging ) {
-  ports = tcpPorts;
-  this._ports = tcpPorts;
+var Cluster = function( wsPorts, enableLogging ) {
+  ports = wsPorts;
+  this._ports = wsPorts;
   this._enableLogging = enableLogging;
   this.servers = {};
   ports.forEach( this._startServer.bind( this ) );
@@ -55,8 +55,8 @@ Cluster.prototype.stop = function() {
 
 Cluster.prototype._startServer = function( port, done ) {
   this.servers[ port ] = new DeepstreamServer({
-    port       : port - 100,
-    tcpPort    : port,
+    tcpPort : port - 100,
+    port    : port,
     serverName : 'server-' + port,
 
     stateReconciliationTimeout : 100,
@@ -103,7 +103,6 @@ Cluster.prototype._startServer = function( port, done ) {
     this.servers[ port ].set( 'logger', new Logger() );
   }
 
-  this.servers[ port ].set( 'showLogo', false );
   this.servers[ port ].on( 'stopped', this._checkStopped.bind( this ) );
   this.servers[ port ].start();
 };

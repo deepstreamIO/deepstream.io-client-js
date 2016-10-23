@@ -11,6 +11,11 @@ const clients = clientHandler.clients;
 
 module.exports = function (){
 
+  this.Given(/^(?:subscriber|publisher|client) (\S*) logs out$/, ( client, done ) => {
+    clients[ client ].client.close();
+    setTimeout( done, utils.defaultDelay );
+  });
+
   this.Given(/^(?:subscriber|publisher|client) (\S*) connects to server (\d+)$/, (client, server, done) => {
     clientHandler.createClient( client, server );
     done();
@@ -19,7 +24,8 @@ module.exports = function (){
   this.Given(/^(?:subscriber|publisher|client) (\S*) connects and logs into server (\d+)$/, (client, server, done) => {
     clientHandler.createClient( client, server );
     clients[ client ].client.login( { username: client, password: 'abcdefgh' }, () => {
-      done();
+      clients[ client ].user = client;
+      setTimeout( done, utils.defaultDelay );
     } );
   });
 
@@ -28,8 +34,9 @@ module.exports = function (){
         username: username,
         password: password
     }, ( success, data ) => {
-      clients[ client  ].login( success, data );
-      done();
+      clients[ client ].login( success, data );
+      clients[ client ].user = username;
+      setTimeout( done, utils.defaultDelay );
     } );
   });
 

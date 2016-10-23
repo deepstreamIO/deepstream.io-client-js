@@ -29,6 +29,7 @@ exports.TOPIC.EVENT = 'E';
 exports.TOPIC.RECORD = 'R';
 exports.TOPIC.RPC = 'P';
 exports.TOPIC.WEBRTC = 'W';
+exports.TOPIC.PRESENCE = 'U';
 exports.TOPIC.PRIVATE = 'PRIVATE/';
 
 exports.EVENT = {};
@@ -53,6 +54,8 @@ exports.EVENT.RECORD_NOT_FOUND = 'RECORD_NOT_FOUND';
 exports.EVENT.NOT_SUBSCRIBED = 'NOT_SUBSCRIBED';
 
 exports.ACTIONS = {};
+exports.ACTIONS.PING = 'PI';
+exports.ACTIONS.PONG = 'PO';
 exports.ACTIONS.ACK = 'A';
 exports.ACTIONS.REDIRECT = 'RED';
 exports.ACTIONS.CHALLENGE = 'CH';
@@ -76,6 +79,9 @@ exports.ACTIONS.ERROR = 'E';
 exports.ACTIONS.REQUEST = 'REQ';
 exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
+exports.ACTIONS.PRESENCE_JOIN = 'PNJ';
+exports.ACTIONS.PRESENCE_LEAVE = 'PNL';
+exports.ACTIONS.QUERY = 'Q';
 
 //WebRtc
 exports.ACTIONS.WEBRTC_REGISTER_CALLEE = 'RC';

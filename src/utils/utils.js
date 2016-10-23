@@ -167,3 +167,77 @@ exports.createPromise = function() {
 	promise.callback = callback;
 	return promise;
 }
+
+/**
+ * Set timeout utility that adds support for disabling a timeout
+ * by passing null
+ *
+ * @param {Function} callback        the function that will be called after the given time
+ * @param {Number}   timeoutDuration the duration of the timeout in milliseconds
+ *
+ * @public
+ * @returns {Number} timeoutId
+ */
+exports.setTimeout = function( callback, timeoutDuration ) {
+	if( timeoutDuration !== null ) {
+		return setTimeout( callback, timeoutDuration );
+	} else {
+		return -1;
+	}
+};
+
+/**
+ * Set Interval utility that adds support for disabling an interval
+ * by passing null
+ *
+ * @param {Function} callback        the function that will be called after the given time
+ * @param {Number}   intervalDuration the duration of the interval in milliseconds
+ *
+ * @public
+ * @returns {Number} intervalId
+ */
+exports.setInterval = function( callback, intervalDuration ) {
+	if( intervalDuration !== null ) {
+		return setInterval( callback, intervalDuration );
+	} else {
+		return -1;
+	}
+};
+
+/**
+ * Used to see if a protocol is specified within the url
+ * @type {RegExp}
+ */
+var hasUrlProtocol = /^wss:|^ws:|^\/\//;
+
+/**
+ * Used to see if the protocol contains any unsupported protocols
+ * @type {RegExp}
+ */
+var unsupportedProtocol = /^http:|^https:/;
+
+var URL = require( 'url' );
+
+/**
+ * Take the url passed when creating the client and ensure the correct
+ * protocol is provided
+ * @param  {String} url Url passed in by client
+ * @return {String} Url with supported protocol
+ */
+exports.parseUrl = function( url, defaultPath ) {
+	if( unsupportedProtocol.test( url ) ) {
+		throw new Error( 'Only ws and wss are supported' );
+	}
+	if( !hasUrlProtocol.test( url ) ) {
+		url = 'ws://' + url;
+	} else if( url.indexOf( '//' ) === 0  ) {
+		url = 'ws:' + url;
+	}
+	var serverUrl = URL.parse( url );
+	if (!serverUrl.host) {
+		throw new Error('invalid url, missing host');
+	}
+	serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
+	serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
+	return URL.format( serverUrl );
+};

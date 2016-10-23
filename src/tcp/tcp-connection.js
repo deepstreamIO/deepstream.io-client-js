@@ -5,7 +5,7 @@ var net = require( 'net' ),
 	C = require( '../constants/constants' );
 
 /**
- * An alternative to the engine.io connection for backend processes (or 
+ * An alternative to the engine.io connection for backend processes (or
  * other clients that speak TCP). Exposes the same interface as the engine.io
  * client
  *
@@ -15,7 +15,7 @@ var net = require( 'net' ),
  * @emits open
  * @emits close
  * @emits message
- * 
+ *
  * @constructor
  */
 var TcpConnection = function( url ) {
@@ -30,11 +30,27 @@ var TcpConnection = function( url ) {
 
 util.inherits( TcpConnection, events.EventEmitter );
 
+TcpConnection.prototype.onopen = function() {};
+
+TcpConnection.prototype.onmessage = function() {};
+
+TcpConnection.prototype.onclose = function() {};
+
+TcpConnection.prototype.onError = function() {};
+
+/**
+ * Update the url
+ *
+ * @returns {void}
+ */
+TcpConnection.prototype.setUrl = function( url ) {
+	this._url = url;
+}
+
 /**
  * Creates the connection. Can be called multiple times to
  * facilitate reconnecting.
  *
- * @private
  * @returns {void}
  */
 TcpConnection.prototype.open = function() {
@@ -63,7 +79,7 @@ TcpConnection.prototype.send = function( message ) {
 	if( this._isOpen === true ) {
 		this._socket.write( message );
 	} else {
-		this.emit( 'error', 'attempt to send message on closed socket: ' + message );
+		this.onerror( 'attempt to send message on closed socket: ' + message );
 	}
 };
 
@@ -94,14 +110,14 @@ TcpConnection.prototype.close = function() {
  */
 TcpConnection.prototype._onError = function( error ) {
 	var msg;
-	
+
 	if( error.code === 'ECONNREFUSED' ) {
 		msg = 'Can\'t connect! Deepstream server unreachable on ' + this._url;
 	} else {
 		msg = error.toString();
 	}
-	
-	this.emit( 'error', msg );
+
+	this.onerror( msg );
 };
 
 /**
@@ -113,7 +129,7 @@ TcpConnection.prototype._onError = function( error ) {
  */
 TcpConnection.prototype._onConnect = function() {
 	this._isOpen = true;
-	this.emit( 'open' );
+	this.onopen();
 };
 
 /**
@@ -128,7 +144,7 @@ TcpConnection.prototype._onConnect = function() {
  */
 TcpConnection.prototype._onClose = function() {
 	this._isOpen = false;
-	this.emit( 'close' );
+	this.onclose();
 };
 
 /**
@@ -136,13 +152,13 @@ TcpConnection.prototype._onClose = function() {
  * is set to utf-8 by both the client and the server, so the
  * message parameter should always be a string. Let's make sure that
  * no binary data / buffers get into the message pipeline though.
- * 
+ *
  * IMPORTANT: There is no guarantee that this method is invoked for complete
  * messages only. Especially under heavy load, packets are written as quickly
  * as possible. Therefor every message ends with a MESSAGE_SEPERATOR charactor
  * and it is this methods responsibility to buffer and concatenate the messages
  * accordingly
- * 
+ *
  * @param   {String} packet
  *
  * @private
@@ -166,7 +182,7 @@ TcpConnection.prototype._onData = function( packet ) {
 		this._messageBuffer += packet;
 		return;
 	}
-	
+
 	// Message that completes previously received message
 	if( this._messageBuffer.length !== 0 ) {
 		message = this._messageBuffer + packet;
@@ -177,7 +193,7 @@ TcpConnection.prototype._onData = function( packet ) {
 		message = packet;
 	}
 
-	this.emit( 'message', message );
+	this.onmessage( { data: message } );
 };
 
 /**
@@ -192,7 +208,7 @@ TcpConnection.prototype._onData = function( packet ) {
  */
 TcpConnection.prototype._getOptions = function() {
 	var parsedUrl = {};
-	
+
 	if( this._url.indexOf( '/' ) === -1 ) {
 		parsedUrl.hostname = this._url.split( ':' )[ 0 ];
 		parsedUrl.port = this._url.split( ':' )[ 1 ];

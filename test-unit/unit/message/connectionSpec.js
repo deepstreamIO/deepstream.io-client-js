@@ -2,8 +2,8 @@
 
 var proxyquire = require( 'proxyquire' ).noCallThru(),
 	C = require( '../../../src/constants/constants' ),
-	TcpConnectionMock = require( '../../mocks/tcp/tcp-connection-mock' ),
-	Connection = proxyquire( '../../../src/message/connection', { '../tcp/tcp-connection': TcpConnectionMock } ),
+	WebsocketMock = require( '../../mocks/transport/websocket-mock' ),
+	Connection = proxyquire( '../../../src/message/connection', { 'ws': WebsocketMock } ),
 	clientMock = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,
 	url = 'somehost:4444',
@@ -78,6 +78,49 @@ describe('connects - happy path', function(){
 });
 
 /*****************************************
+* CONNECTIVITY
+*****************************************/
+describe('connects - heartbeats', function(){
+
+	var connection,
+		authCallback = jasmine.createSpy( 'authCallback' );
+
+	beforeEach( function(){
+		connection = new Connection( clientMock, url, {
+			heartbeatInterval: 50
+		} );
+		connection._endpoint.simulateOpen();
+		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
+	});
+
+	afterEach( function(){
+		connection.close();
+	});
+
+	it( 'when it recieves a ping responds with a pong', function(){
+		connection._endpoint.emit( 'message', msg( 'C|PI+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|PO+' ) );
+	});
+
+	it( 'when it misses one heart beat nothing happens', function( done ){
+		setTimeout( function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( null );
+			expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
+			done();
+		}, 75 );
+	});
+
+	it( 'when it misses two heart beats it closes connection', function( done ){
+		setTimeout( function() {
+			expect( connection._endpoint.lastSendMessage ).toBe( null );
+			expect( connection.getState() ).toBe( 'ERROR' );
+			expect( clientMock.lastError ).toEqual( [ 'C', 'connectionError', 'Two connections heartbeats missed successively' ] );
+			done();
+		}, 200 );
+	});
+});
+
+/*****************************************
 * REDIRECT
 *****************************************/
 describe('connects - redirect', function(){
@@ -103,7 +146,7 @@ describe('connects - redirect', function(){
 	it( 'recieves a connection challenge and responds with url', function() {
 		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
 		expect( connection.getState() ).toBe( 'CHALLENGING' );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|ws://somehost:4444+' ) );
 		expect( clientConnectionStateChangeCount ).toBe( 2 );
 	});
 
@@ -131,9 +174,11 @@ describe('connects - redirect', function(){
 	it( 'connects to the original url after it loses the connection', function(){
 		connection._endpoint.close();
 
-		expect( connection.getState() ).toBe( 'RECONNECTING' );
-		connection._endpoint.simulateOpen();
-		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		setTimeout( function() {
+			expect( connection.getState() ).toBe( 'RECONNECTING' );
+			connection._endpoint.simulateOpen();
+			expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
+		});
 	});
 });
 
@@ -160,7 +205,7 @@ describe('connects - redirect rejection', function(){
 	it( 'recieves a connection challenge and responds with invalid url', function() {
 		connection._endpoint.emit( 'message', msg( 'C|CH+' ) );
 		expect( connection.getState() ).toBe( 'CHALLENGING' );
-		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|somehost:4444+' ) );
+		expect( connection._endpoint.lastSendMessage ).toBe( msg( 'C|CHR|ws://somehost:4444+' ) );
 		expect( clientConnectionStateChangeCount ).toBe( 2 );
 	});
 
@@ -354,7 +399,8 @@ describe( 'reach the max reconnect attempts and consider the maxReconnectInterva
 
 	it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
-		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		connection._endpoint.resetCallsToOpen();
+		expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 	});
@@ -370,17 +416,19 @@ describe( 'reach the max reconnect attempts and consider the maxReconnectInterva
 	});
 
 	it( 'loses the connection', function( done ){
-		expect( connection._endpoint.callsToOpen ).toBe( 0 );
+		expect( connection._endpoint.getCallsToOpen() ).toBe( 0 );
 		connection._endpoint.close();
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
-		expect( connection._endpoint.callsToOpen ).toBe( 0 );
+		expect( connection._endpoint.getCallsToOpen() ).toBe( 0 );
 
-		clientMock.on( C.MAX_RECONNECTION_ATTEMPTS_REACHED, done )
+		clientMock.on( C.MAX_RECONNECTION_ATTEMPTS_REACHED, function() {
+			process.nextTick( done );
+		} )
 
 		function checkForXinTime(amount, timeout) {
 			setTimeout(function(){
 				connection._endpoint.close();
-				expect( connection._endpoint.callsToOpen ).toBe( amount );
+				expect( connection._endpoint.getCallsToOpen() ).toBe( amount );
 			}, timeout);
 		}
 
@@ -396,9 +444,10 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 		authCallback = jasmine.createSpy( 'invalid auth callback' ),
 		options = {reconnectIntervalIncrement: 10, maxReconnectAttempts: 5 };
 
-		it( 'creates the connection', function(){
+	it( 'creates the connection', function(){
 		connection = new Connection( clientMock, url, options );
-		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		connection._endpoint.resetCallsToOpen();
+		expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
 		expect( connection.getState() ).toBe( 'CLOSED' );
 		expect( connection._endpoint.lastSendMessage ).toBe( null );
 	});
@@ -414,35 +463,35 @@ describe( 'tries to reconnect if the connection drops unexpectedly', function(){
 	});
 
 	it( 'loses the connection', function( done ){
-		expect( connection._endpoint.callsToOpen ).toBe( 0 );
+		expect( connection._endpoint.getCallsToOpen() ).toBe( 0 );
 		connection._endpoint.close();
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
-		expect( connection._endpoint.callsToOpen ).toBe( 0 );
+		expect( connection._endpoint.getCallsToOpen() ).toBe( 0 );
 
 		setTimeout(function(){
-			expect( connection._endpoint.callsToOpen ).toBe( 1 );
+			expect( connection._endpoint.getCallsToOpen() ).toBe( 1 );
 		}, 1 );
 
 		setTimeout(function(){
 			connection._endpoint.close();
-			expect( connection._endpoint.callsToOpen ).toBe( 1 );
+			expect( connection._endpoint.getCallsToOpen() ).toBe( 1 );
 		}, 50 );
 
 		setTimeout(function(){
-			expect( connection._endpoint.callsToOpen ).toBe( 2 );
+			expect( connection._endpoint.getCallsToOpen() ).toBe( 2 );
 			done();
 		}, 100 );
 	});
 
 	it( 're-establishes the connection', function( done ){
 		expect( connection.getState() ).toBe( 'RECONNECTING' );
-		expect( connection._endpoint.callsToOpen ).toBe( 2 );
-		expect( connection._endpoint.url ).toBe( 'somehost:4444' );
+		expect( connection._endpoint.getCallsToOpen() ).toBe( 2 );
+		expect( connection._endpoint.url ).toBe( 'ws://somehost:4444' );
 		connection._endpoint.simulateOpen();
 		connection._endpoint.emit( 'message', msg( 'C|A+' ) );
 		expect( connection.getState() ).toBe( 'AWAITING_AUTHENTICATION' );
 			setTimeout(function(){
-			expect( connection._endpoint.callsToOpen ).toBe( 2 );
+			expect( connection._endpoint.getCallsToOpen() ).toBe( 2 );
 			done();
 		}, 40 );
 	});
