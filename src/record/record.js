@@ -235,20 +235,14 @@ Record.prototype.delete = function() {
  *
  * @returns {void}
  */
-Record.prototype.whenReady = function( callback ) {
-	var promise;
-	if (typeof callback === 'undefined') {
-		promise = utils.createPromise();
-		callback = promise.callback;
-	}
-
-	if( this.isReady ) {
-		callback();
-	} else {
-		this.once( 'ready', callback );
-	}
-
-	return promise;
+Record.prototype.whenReady = function( ) {
+	return new Promise( ( resolve ) => {
+		if( this.isReady ) {
+			resolve( this );
+		} else {
+			this.once( 'ready', resolve( this ) );
+		}
+	} );
 };
 
 /**

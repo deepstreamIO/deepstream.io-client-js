@@ -153,21 +153,6 @@ exports.shallowCopy = function ( obj ) {
 	return obj;
 }
 
-exports.createPromise = function() {
-	var callback = null;
-	var promise = new Promise( function( resolve, reject ) {
-		callback = function( err, value ) {
-			if ( err ) {
-				reject( err );
-			} else {
-				resolve( value );
-			}
-		};
-	} );
-	promise.callback = callback;
-	return promise;
-}
-
 /**
  * Set timeout utility that adds support for disabling a timeout
  * by passing null

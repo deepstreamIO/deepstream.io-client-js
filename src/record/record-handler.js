@@ -117,98 +117,69 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 	}
 };
 
-/**
- * Retrieve the current record data without subscribing to changes
- *
- * @param   {String}	name the unique name of the record
- * @param   {Function}	callback
- *
- * @public
- */
-RecordHandler.prototype.snapshot = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
+
+RecordHandler.prototype.get = function( recordName ) {
+	if ( typeof recordName !== 'string' || recordName.length === 0 ) {
+		throw new Error( 'invalid argument recordName' );
 	}
 
-	var promise;
-	if (typeof callback === 'undefined') {
-		promise = utils.createPromise();
-		callback = promise.callback;
-  }
-
-	var record = this.getRecord( name );
-	var done = false;
-	var onDone;
-	var onValue = function ( value ) {
-		onDone( null, value );
-	};
-	var onError = function ( error ) {
-		onDone( error );
-	};
-	onDone = function ( error, value ) {
-		if ( done ) {
-			return;
-		}
-		record.off( 'error', onError );
-		record.unsubscribe( onValue );
-		record.discard();
-		done = true;
-		if ( error ) {
-			callback( error );
-		} else {
-			callback( null, value );
-		}
-	};
-
-	record.on('error', onError );
-	record.subscribe( onValue, true );
-
-	return promise;
+	var record = this.getRecord( recordName );
+	return record
+		.whenReady()
+		.then( () => record.get() )
+		.then( val => record.discard() )
+		.catch( err => {
+			record.discard();
+			throw err;
+		});
 };
 
-/**
- * Allows the user to query to see whether or not the record exists.
- *
- * @param   {String}	name the unique name of the record
- * @param   {Function}	callback
- *
- * @public
- */
-RecordHandler.prototype.has = function( name, callback ) {
-	this.snapshot( name, function ( error, value ) {
-		if ( error ) {
-			callback( error );
-		} else {
-			callback( null, value && Object.keys(value).length > 0 );
-		}
-	} );
-};
+RecordHandler.prototype.set = function( recordName, pathOrData, dataOrNil ) {
+	if ( typeof recordName !== 'string' || recordName.length === 0 ) {
+		throw new Error( 'invalid argument recordName' );
+	}
 
-RecordHandler.prototype.set = function( name, pathOrData, data ) {
-	var path = data ? pathOrData : undefined;
-	var data = data ? data : pathOrData;
+	const path = dataOrNil ? pathOrData : undefined;
+	const data = dataOrNil ? dataOrNil : pathOrData;
 
-	var record = this.getRecord( name );
+	const record = this.getRecord( recordName );
 	record.set( path, data );
 	record.discard();
 
-	return Promise.resolve();
+	return record.whenReady();
 };
 
-RecordHandler.prototype.observe = function (recordName) {
+RecordHandler.prototype.update = function( recordName, pathOrUpdater, updaterOrNil ) {
+	if ( typeof recordName !== 'string' || recordName.length === 0 ) {
+		throw new Error( 'invalid argument recordName' );
+	}
+
+	const path = updaterOrNil ? pathOrUpdater : undefined;
+	const updater = updaterOrNil ? updaterOrNil : pathOrUpdater;
+
+	return this
+		.get( recordName, path )
+		.then( data => this.set( recordName, path, updater( data ) ) );
+};
+
+RecordHandler.prototype.observe = function ( recordName ) {
   return Rx.Observable
-    .create( function( o ) {
-      const rec = this.getRecord( recordName );
-      const onValue = function ( value ) { o.next( value ); };
-      const onError = function ( error ) { o.error( error ); };
-      rec.subscribe( onValue, true );
-      rec.on( 'error', onError );
-      return function() {
-        rec.unsubscribe( onValue );
-        rec.off( 'error', onError );
-        rec.discard();
-      }
-    }.bind( this ) );
+    .create( ( o ) => {
+			if ( typeof recordName !== 'string' || recordName.length === 0 ) {
+				o.error ( new Error( 'invalid argument recordName' ) );
+			} else {
+	      const record = this.getRecord( recordordName );
+	      const onValue = function ( value ) { o.next( value ); };
+	      const onError = function ( error ) { o.error( error ); };
+	      record.subscribe( onValue, true );
+	      record.on( 'error', onError );
+	      return () => {
+	        record.unsubscribe( onValue );
+	        record.off( 'error', onError );
+	        record.discard();
+	      }
+			}
+    } );
 }
 
 /**
