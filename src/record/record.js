@@ -47,7 +47,7 @@ Record.prototype.set = function( pathOrData, data ) {
 	}
 
 	if( path && this._patchQueue ) {
-		this._patchQueue.push({ path, data });
+		this._patchQueue.push( { path, data } );
 	} else {
 		this._patchQueue = undefined;
 	}
@@ -290,7 +290,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
 	this.emit( 'error', timeoutType );
 };
 
- Record.prototype._destroy = function() {
+Record.prototype._destroy = function() {
   this.isDestroying = false;
  	this._clearTimeouts();
 	if ( this.usages > 0 ) {

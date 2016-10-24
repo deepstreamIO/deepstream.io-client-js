@@ -1,4 +1,5 @@
-var shortid = require('shortid');
+const URL = require( 'url' );
+const shortid = require('shortid');
 
 shortid.seed(9823745);
 shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_~');
@@ -9,14 +10,26 @@ shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX
  *
  * @type {RegExp}
  */
-var TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+const TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
 
 /**
  * Used in typeof comparisons
  *
  * @type {String}
  */
-var OBJECT = 'object';
+const OBJECT = 'object';
+
+/**
+ * Used to see if a protocol is specified within the url
+ * @type {RegExp}
+ */
+const hasUrlProtocol = /^wss:|^ws:|^\/\//;
+
+/**
+ * Used to see if the protocol contains any unsupported protocols
+ * @type {RegExp}
+ */
+const unsupportedProtocol = /^http:|^https:/;
 
 /**
  * True if environment is node, false if it's a browser
@@ -143,8 +156,8 @@ exports.shallowCopy = function ( obj ) {
 		return obj.slice( 0 );
 	}
 	else if ( typeof obj === OBJECT ) {
-		var copy = Object.create( null );
-		var props = Object.keys( obj );
+		const copy = Object.create( null );
+		const props = Object.keys( obj );
 		for ( var i = 0; i < props.length; i++ ) {
 			copy[ props[ i ] ] = obj[ props[ i ] ];
 		}
@@ -190,20 +203,6 @@ exports.setInterval = function( callback, intervalDuration ) {
 };
 
 /**
- * Used to see if a protocol is specified within the url
- * @type {RegExp}
- */
-var hasUrlProtocol = /^wss:|^ws:|^\/\//;
-
-/**
- * Used to see if the protocol contains any unsupported protocols
- * @type {RegExp}
- */
-var unsupportedProtocol = /^http:|^https:/;
-
-var URL = require( 'url' );
-
-/**
  * Take the url passed when creating the client and ensure the correct
  * protocol is provided
  * @param  {String} url Url passed in by client
@@ -218,7 +217,7 @@ exports.parseUrl = function( url, defaultPath ) {
 	} else if( url.indexOf( '//' ) === 0  ) {
 		url = 'ws:' + url;
 	}
-	var serverUrl = URL.parse( url );
+	const serverUrl = URL.parse( url );
 	if (!serverUrl.host) {
 		throw new Error('invalid url, missing host');
 	}
@@ -229,7 +228,7 @@ exports.parseUrl = function( url, defaultPath ) {
 
 exports.requestIdleCallback = !exports.isNode && window.requestIdleCallback && window.requestIdleCallback.bind(window) ||
   function (cb) {
-    var start = Date.now();
+    const start = Date.now();
     return setTimeout(function () {
       cb( {
         didTimeout: false,
