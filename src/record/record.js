@@ -97,10 +97,9 @@ Record.prototype.set = function( pathOrData, data ) {
 
 	if( path && this._patchQueue ) {
 		this._patchQueue.push({ path, data });
-		return this;
+	} else {
+		this._patchQueue = undefined
 	}
-
-	this._patchQueue = undefined;
 
 	var path = arguments.length === 1 ? undefined : pathOrData;
 	data = path ? data : pathOrData;
@@ -352,7 +351,7 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	var oldValue = JSON.parse( message.data[ 2 ] );
-	var newValue = this._data || oldValue
+	var newValue = this._data;
 
 	if ( this._patchQueue ) {
 		for( var i = 0; i < this._patchQueue.length; i++ ) {
