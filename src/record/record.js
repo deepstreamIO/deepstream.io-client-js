@@ -1,4 +1,4 @@
-var jsonPath = require( './json-path' ),
+const jsonPath = require( './json-path' ),
 	utils = require( '../utils/utils' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	EventEmitter = require( 'component-emitter' ),
@@ -21,7 +21,7 @@ var jsonPath = require( './json-path' ),
  *
  * @constructor
  */
-var Record = function( name, recordOptions, connection, options, client ) {
+const Record = function( name, recordOptions, connection, options, client ) {
 	if ( typeof name !== 'string' || name.length === 0 ) {
 		throw new Error( 'invalid argument name' );
 	}
@@ -140,7 +140,7 @@ Record.prototype.set = function( pathOrData, data ) {
  * @returns {void}
  */
 Record.prototype.subscribe = function( path, callback, triggerNow ) {
-	var args = this._normalizeArguments( arguments );
+	const args = this._normalizeArguments( arguments );
 
 	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
 		throw new Error( 'invalid argument path' );
@@ -178,7 +178,7 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
  * @returns {void}
  */
 Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
-	var args = this._normalizeArguments( arguments );
+	const args = this._normalizeArguments( arguments );
 
 	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
 		throw new Error( 'invalid argument path' );
@@ -190,6 +190,7 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
 	if( this._checkDestroyed( 'unsubscribe' ) ) {
 		return;
 	}
+
 	this._eventEmitter.off( args.path, args.callback );
 };
 
@@ -283,7 +284,7 @@ Record.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Record.prototype._processAckMessage = function( message ) {
-	var acknowledgedAction = message.data[ 0 ];
+	const acknowledgedAction = message.data[ 0 ];
 
 	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
 		clearTimeout( this._readAckTimeout );
@@ -315,8 +316,8 @@ Record.prototype._dispatchUpdate = function() {
  * @returns {void}
  */
 Record.prototype._applyUpdate = function( message ) {
-	var version = message.data[ 1 ];
-	var data = JSON.parse( message.data[ 2 ] );
+	const version = message.data[ 1 ];
+	const data = JSON.parse( message.data[ 2 ] );
 
 	if ( utils.compareVersions( this.version, version ) ) {
 		return;
@@ -335,11 +336,11 @@ Record.prototype._applyUpdate = function( message ) {
  * @returns {void}
  */
 Record.prototype._onRead = function( message ) {
-	var oldValue = JSON.parse( message.data[ 2 ] );
-	var newValue = this._data || oldValue;
+	const oldValue = JSON.parse( message.data[ 2 ] );
+	const newValue = this._data || oldValue;
 
 	if ( this._patchQueue ) {
-		for( var i = 0; i < this._patchQueue.length; i++ ) {
+		for( let i = 0; i < this._patchQueue.length; i++ ) {
 			newValue = jsonPath.set( newValue, this._patchQueue[ i ].path, this._patchQueue[ i ].data );
 		}
 		this._patchQueue = undefined;
@@ -381,18 +382,18 @@ Record.prototype._applyChange = function( newData ) {
 		return;
 	}
 
-	var oldData = this._data;
+	const oldData = this._data;
 	this._data = newData;
 
 	if ( !this._eventEmitter._callbacks ) {
 		return;
 	}
 
-	var paths = Object.keys( this._eventEmitter._callbacks );
+	const paths = Object.keys( this._eventEmitter._callbacks );
 
-	for ( var i = 0; i < paths.length; i++ ) {
-		var newValue = jsonPath.get( newData, paths[ i ] );
-		var oldValue = jsonPath.get( oldData, paths[ i ] );
+	for ( let i = 0; i < paths.length; i++ ) {
+		const newValue = jsonPath.get( newData, paths[ i ] );
+		const oldValue = jsonPath.get( oldData, paths[ i ] );
 
 		if( newValue !== oldValue ) {
 			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
@@ -409,9 +410,9 @@ Record.prototype._applyChange = function( newData ) {
  * @returns {Object} arguments map
  */
 Record.prototype._normalizeArguments = function( args ) {
-	var result = Object.create( null );
+	const result = Object.create( null );
 
-	for( var i = 0; i < args.length; i++ ) {
+	for( let i = 0; i < args.length; i++ ) {
 		if( typeof args[ i ] === 'string' ) {
 			result.path = args[ i ];
 		}

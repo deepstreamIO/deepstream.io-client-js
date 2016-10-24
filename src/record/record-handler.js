@@ -28,7 +28,7 @@ var RecordHandler = function( options, connection, client ) {
 
 RecordHandler.prototype._cleanup = function () {
 	utils.requestIdleCallback( function() {
-		for ( var key of this._debounce.prev ) {
+		for ( let key of this._debounce.prev ) {
 			this._records[ key ].discard();
 		}
 		this._debounce.prev = this._debounce.next;
@@ -191,36 +191,35 @@ RecordHandler.prototype.observe = function ( recordName ) {
  * @returns {void}
  */
 RecordHandler.prototype._$handle = function( message ) {
-	var name;
-
 	if( message.action === C.ACTIONS.ERROR &&	message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED ) {
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
 		return;
 	}
 
+	let recordName;
 	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
-		name = message.data[ 1 ];
+		recordName = message.data[ 1 ];
 	} else {
-		name = message.data[ 0 ];
+		recordName = message.data[ 0 ];
 	}
 
-	var processed = false;
+	const processed = false;
 
-	if( this._records[ name ] ) {
+	if( this._records[ recordName ] ) {
 		processed = true;
-		this._records[ name ]._$onMessage( message );
+		this._records[ recordName ]._$onMessage( message );
 	}
 
 	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
-		this._listener[ name ] && this._listener[ name ].destroyPending
+		this._listener[ recordName ] && this._listener[ recordName ].destroyPending
 	) {
 		processed = true;
-		this._listener[ name ].destroy();
-		delete this._listener[ name ];
-	} else if( this._listener[ name ] ) {
+		this._listener[ recordName ].destroy();
+		delete this._listener[ recordName ];
+	} else if( this._listener[ recordName ] ) {
 		processed = true;
-		this._listener[ name ]._$onMessage( message );
+		this._listener[ recordName ]._$onMessage( message );
 	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
 		processed = true;
