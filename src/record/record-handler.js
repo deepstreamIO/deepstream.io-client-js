@@ -68,7 +68,7 @@ RecordHandler.prototype.unlisten = function( pattern ) {
 		throw new Error( 'invalid argument pattern' );
 	}
 
-	var listener = this._listener[ pattern ];
+	const listener = this._listener[ pattern ];
 	if( listener && !listener.destroyPending ) {
 		listener.sendDestroy();
 	} else if( this._listener[ pattern ] ) {
@@ -85,7 +85,7 @@ RecordHandler.prototype.get = function( recordName ) {
 		throw new Error( 'invalid argument recordName' );
 	}
 
-	var record = this.getRecord( recordName );
+	const record = this.getRecord( recordName );
 	return record
 		.whenReady()
 		.then( () => record.get() )
