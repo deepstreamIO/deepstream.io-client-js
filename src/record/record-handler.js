@@ -92,11 +92,11 @@ RecordHandler.prototype.get = function( recordName ) {
 		.then( val => {
 			record.discard();
 			return val;
-		})
+		} )
 		.catch( err => {
 			record.discard();
 			throw err;
-		});
+		} );
 };
 
 RecordHandler.prototype.set = function( recordName, pathOrData, dataOrNil ) {
