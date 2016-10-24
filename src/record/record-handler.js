@@ -89,7 +89,10 @@ RecordHandler.prototype.get = function( recordName ) {
 	return record
 		.whenReady()
 		.then( () => record.get() )
-		.then( val => record.discard() )
+		.then( val => {
+			record.discard();
+			return val;
+		})
 		.catch( err => {
 			record.discard();
 			throw err;
