@@ -78,6 +78,8 @@ module.exports = {
 	 */
 	recordReadAckTimeout: 1000,
 
+	recordDiscardDelay: 10000,
+
 	/**
 	 * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
 	 *                                       	until an error is thrown since no data has been received.

@@ -22,7 +22,20 @@ var RecordHandler = function( options, connection, client ) {
 	this._records = {};
 	this._listener = {};
 	this._destroyEventEmitter = new EventEmitter();
+	this._debounce = { prev: new Set(), next: new Set() };
+	this._cleanup();
 };
+
+RecordHandler.prototype._cleanup = function () {
+	utils.requestIdleCallback( function() {
+		for ( var key of this._debounce.prev ) {
+			this._records[ key ].discard();
+		}
+		this._debounce.prev = this._debounce.next;
+		this._debounce.next = new Set();
+		setTimeout( this._cleanup.bind( this ), this._options.recordDiscardDelay );
+	}.bind( this ) );
+}
 
 /**
  * Returns an existing record or creates a new one.
@@ -39,6 +52,11 @@ RecordHandler.prototype.getRecord = function( recordName, recordOptions ) {
 		this._records[ recordName ] = new Record( recordName, recordOptions || {}, this._connection, this._options, this._client );
 		this._records[ recordName ].on( 'error', this._onRecordError.bind( this, recordName ) );
 		this._records[ recordName ].on( 'destroy', this._onRecordDestroy.bind( this, recordName ) );
+	}
+
+	if ( !this._debounce.next.has ( recordName ) ) {
+		this._records[ recordName ].usages++;
+		this._debounce.next.add( recordName );
 	}
 
 	this._records[ recordName ].usages++;
