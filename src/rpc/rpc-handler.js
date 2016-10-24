@@ -1,6 +1,7 @@
 var C = require( '../constants/constants' ),
 	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
+	utils = require( '../utils/utils' ),
 	RpcResponse = require( './rpc-response' ),
 	Rpc = require( './rpc' ),
 	messageParser= require( '../message/message-parser' ),
@@ -101,8 +102,8 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 		throw new Error( 'invalid argument callback' );
 	}
 
-	var uid = this._client.getUid(),
-		typedData = messageBuilder.typed( data );
+	const uid = utils.getShortId();
+	const typedData = messageBuilder.typed( data );
 
 	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );

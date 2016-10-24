@@ -99,21 +99,6 @@ Client.prototype.getConnectionState = function() {
 };
 
 /**
- * Returns a random string. The first block of characters
- * is a timestamp, in order to allow databases to optimize for semi-
- * sequentuel numberings
- *
- * @public
- * @returns {String} unique id
- */
-Client.prototype.getUid = function() {
-	var timestamp = (new Date()).getTime().toString(36),
-		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
-
-	return timestamp + '-' + randomString;
-};
-
-/**
  * Queries for clients logged into deepstream
  *
  * @param   {Function} callback Will be invoked with an array of clients
@@ -122,7 +107,7 @@ Client.prototype.getUid = function() {
  * @returns {Client}
  */
 Client.prototype.getPresentClients = function( callback ) {
-	this._presence.getCurrentClients( callback );	
+	this._presence.getCurrentClients( callback );
 	return this;
 };
 
