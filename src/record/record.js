@@ -226,12 +226,12 @@ Record.prototype.discard = function() {
  *
  * @returns {void}
  */
-Record.prototype.whenReady = function( ) {
+Record.prototype.whenReady = function() {
 	return new Promise( ( resolve ) => {
 		if( this.isReady ) {
 			resolve( this );
 		} else {
-			this.once( 'ready', resolve( this ) );
+			this.once( 'ready', () => resolve( this ) );
 		}
 	} );
 };
