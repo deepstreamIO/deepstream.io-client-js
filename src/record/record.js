@@ -345,7 +345,7 @@ Record.prototype._applyUpdate = function( message ) {
  */
 Record.prototype._onRead = function( message ) {
 	var oldValue = JSON.parse( message.data[ 2 ] );
-	var newValue = this._data;
+	var newValue = this._data || oldValue;
 
 	if ( this._patchQueue ) {
 		for( var i = 0; i < this._patchQueue.length; i++ ) {
