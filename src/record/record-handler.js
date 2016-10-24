@@ -1,21 +1,13 @@
-var Record = require( './record' ),
-	Listener = require( '../utils/listener' ),
-	utils = require( '../utils/utils' ),
-	SingleNotifier = require( '../utils/single-notifier' ),
-	C = require( '../constants/constants' ),
-	messageParser = require( '../message/message-parser' ),
-	EventEmitter = require( 'component-emitter' ),
-	Rx = require( 'rxjs' );
+const Record = require( './record' );
+const Listener = require( '../utils/listener' );
+const utils = require( '../utils/utils' );
+const SingleNotifier = require( '../utils/single-notifier' );
+const C = require( '../constants/constants' );
+const messageParser = require( '../message/message-parser' );
+const EventEmitter = require( 'component-emitter' );
+const Rx = require( 'rxjs' );
 
-/**
- * A collection of factories for records. This class
- * is exposed as client.record
- *
- * @param {Object} options    deepstream options
- * @param {Connection} connection
- * @param {Client} client
- */
-var RecordHandler = function( options, connection, client ) {
+const RecordHandler = function( options, connection, client ) {
 	this._options = options;
 	this._connection = connection;
 	this._client = client;
@@ -27,26 +19,16 @@ var RecordHandler = function( options, connection, client ) {
 };
 
 RecordHandler.prototype._cleanup = function () {
-	utils.requestIdleCallback( function() {
+	utils.requestIdleCallback( () => {
 		for ( let key of this._debounce.prev ) {
 			this._records[ key ].discard();
 		}
 		this._debounce.prev = this._debounce.next;
 		this._debounce.next = new Set();
 		setTimeout( this._cleanup.bind( this ), this._options.recordDiscardDelay );
-	}.bind( this ) );
+	} );
 }
 
-/**
- * Returns an existing record or creates a new one.
- *
- * @param   {String} name          		the unique name of the record
- * @param   {[Object]} recordOptions 	A map of parameters for this particular record.
- *                                    	{ persist: true }
- *
- * @public
- * @returns {Record}
- */
 RecordHandler.prototype.getRecord = function( recordName, recordOptions ) {
 	if( !this._records[ recordName ] ) {
 		this._records[ recordName ] = new Record( recordName, recordOptions || {}, this._connection, this._options, this._client );
@@ -63,17 +45,6 @@ RecordHandler.prototype.getRecord = function( recordName, recordOptions ) {
 	return this._records[ recordName ];
 };
 
-/**
- * Allows to listen for record subscriptions made by this or other clients. This
- * is useful to create "active" data providers, e.g. providers that only provide
- * data for a particular record if a user is actually interested in it
- *
- * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
- * @param   {Function} callback
- *
- * @public
- * @returns {void}
- */
 RecordHandler.prototype.listen = function( pattern, callback ) {
 	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
 		throw new Error( 'invalid argument pattern' );
@@ -92,15 +63,6 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
 	this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
 };
 
-/**
- * Removes a listener that was previously registered with listenForSubscriptions
- *
- * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
- * @param   {Function} callback
- *
- * @public
- * @returns {void}
- */
 RecordHandler.prototype.unlisten = function( pattern ) {
 	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
 		throw new Error( 'invalid argument pattern' );
@@ -182,14 +144,6 @@ RecordHandler.prototype.observe = function ( recordName ) {
     } );
 }
 
-/**
- * Will be called by the client for incoming messages on the RECORD topic
- *
- * @param   {Object} message parsed and validated deepstream message
- *
- * @package private
- * @returns {void}
- */
 RecordHandler.prototype._$handle = function( message ) {
 	if( message.action === C.ACTIONS.ERROR &&	message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED ) {
 		message.processedError = true;
@@ -223,7 +177,7 @@ RecordHandler.prototype._$handle = function( message ) {
 	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
 		processed = true;
-	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
 		// record can receive a HAS_PROVIDER after discarding the record
 		processed = true;
 	}
@@ -234,27 +188,10 @@ RecordHandler.prototype._$handle = function( message ) {
 	}
 };
 
-/**
- * Callback for 'error' events from the record.
- *
- * @param   {String} recordName
- * @param   {String} error
- *
- * @private
- * @returns {void}
- */
 RecordHandler.prototype._onRecordError = function( recordName, error ) {
 	this._client._$onError( C.TOPIC.RECORD, error, recordName );
 };
 
-/**
- * Callback for the 'destroy' event from a record. Removes the record from
- * the registry
- *
- * @param   {String} recordName
- *
- * @returns {void}
- */
 RecordHandler.prototype._onRecordDestroy = function( recordName ) {
 	delete this._records[ recordName ];
 };
