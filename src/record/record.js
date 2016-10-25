@@ -192,14 +192,13 @@ Record.prototype._dispatchUpdate = function () {
 
 Record.prototype._applyUpdate = function (message) {
   const version = message.data[1]
-  const data = JSON.parse(message.data[2])
 
   if (utils.compareVersions(this.version, version)) {
     return
   }
 
   this.version = version
-  this._applyChange(jsonPath.set(this._data, undefined, data))
+  this._applyChange(jsonPath.set(this._data, undefined, JSON.parse(message.data[2])))
 }
 
 Record.prototype._onRead = function (message) {
