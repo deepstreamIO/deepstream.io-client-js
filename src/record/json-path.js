@@ -4,7 +4,7 @@ const PARTS_REG_EXP = /([^\.\[\]\s]+)/g
 const cache = Object.create(null)
 
 module.exports.get = function (data, path) {
-  const tokens = tokenize(path)
+  const tokens = module.exports.tokenize(path)
 
   for (let i = 0; i < tokens.length; i++) {
     if (data === undefined) {
@@ -20,14 +20,14 @@ module.exports.get = function (data, path) {
 }
 
 module.exports.set = function (data, path, value) {
-  const tokens = tokenize(path)
+  const tokens = module.exports.tokenize(path)
 
   if (tokens.length === 0) {
-    return patch(data, value)
+    return module.exports.patch(data, value)
   }
 
   const oldValue = module.exports.get(data, path, false)
-  const newValue = patch(oldValue, value)
+  const newValue = module.exports.patch(oldValue, value)
 
   if (newValue === oldValue) {
     return data
@@ -51,20 +51,20 @@ module.exports.set = function (data, path, value) {
   return result
 }
 
-function patch (oldValue, newValue) {
+module.exports.patch = function (oldValue, newValue) {
   if (utils.deepEquals(oldValue, newValue)) {
     return oldValue
   } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
     const arr = []
     for (let i = 0; i < newValue.length; i++) {
-      arr[i] = patch(oldValue[i], newValue[i])
+      arr[i] = module.exports.patch(oldValue[i], newValue[i])
     }
     return arr
   } else if (!Array.isArray(newValue) && typeof oldValue === 'object' && typeof newValue === 'object') {
     const props = Object.keys(newValue)
     const obj = Object.create(null)
     for (let i = 0; i < props.length; i++) {
-      obj[props[i]] = patch(oldValue[props[i]], newValue[props[i]])
+      obj[props[i]] = module.exports.patch(oldValue[props[i]], newValue[props[i]])
     }
     return obj
   } else {
@@ -72,7 +72,7 @@ function patch (oldValue, newValue) {
   }
 }
 
-function tokenize (path) {
+module.exports.tokenize = function (path) {
   if (cache[path]) {
     return cache[path]
   }
