@@ -354,7 +354,7 @@ Connection.prototype._handleMessages = function (deadline) {
 			if (!message) {
 				break;
 			}
-			this._parsedMessages = messageParser.parse( message, this._client );
+			this._parsedMessages = messageParser.parse( message.data, this._client );
 		}
 		else {
 			var parsedMessage = this._parsedMessages.shift();
