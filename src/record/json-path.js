@@ -26,7 +26,7 @@ module.exports.set = function (data, path, value) {
     return module.exports.patch(data, value)
   }
 
-  const oldValue = module.exports.get(data, path, false)
+  const oldValue = module.exports.get(data, path)
   const newValue = module.exports.patch(oldValue, value)
 
   if (newValue === oldValue) {
