@@ -101,8 +101,8 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
     throw new Error('invalid argument recordName')
   }
 
-  const path = dataOrNil ? pathOrData : undefined
-  const data = dataOrNil || pathOrData
+  const path = dataOrNil === undefined ? undefined : pathOrData
+  const data = dataOrNil === undefined ? pathOrData : dataOrNil
 
   const record = this.getRecord(recordName)
   record.set(path, data)
@@ -116,8 +116,8 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
     throw new Error('invalid argument recordName')
   }
 
-  const path = updaterOrNil ? pathOrUpdater : undefined
-  const updater = updaterOrNil || pathOrUpdater
+  const path = updaterOrNil === undefined ? undefined : pathOrUpdater
+  const updater = updaterOrNil === undefined ? pathOrUpdater : updaterOrNil
 
   return this
     .get(recordName, path)
