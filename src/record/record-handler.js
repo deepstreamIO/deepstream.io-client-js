@@ -23,20 +23,23 @@ RecordHandler.prototype._cleanup = function () {
     }
     this._debounce.prev = this._debounce.next
     this._debounce.next = new Set()
-    setTimeout(this._cleanup.bind(this), this._options.recordDiscardDelay)
+    setTimeout(this._cleanup.bind(this), this._options.recordTTL)
   })
 }
 
 RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
   if (!this._records[recordName]) {
     this._records[recordName] = new Record(recordName, recordOptions || {}, this._connection, this._options, this._client)
-    this._records[recordName].on('error', this._onRecordError.bind(this, recordName))
-    this._records[recordName].on('destroy', this._onRecordDestroy.bind(this, recordName))
-  }
-
-  if (!this._debounce.next.has(recordName)) {
-    this._records[recordName].usages++
-    this._debounce.next.add(recordName)
+    this._records[recordName].on('error', error => {
+      this._client._$onError(C.TOPIC.RECORD, error, recordName)
+    })
+    this._records[recordName].on('destroy', () => {
+      delete this._records[recordName]
+    })
+    if (!this._debounce.next.has(recordName)) {
+      this._records[recordName].usages++
+      this._debounce.next.add(recordName)
+    }
   }
 
   this._records[recordName].usages++
@@ -186,14 +189,6 @@ RecordHandler.prototype._$handle = function (message) {
     message.processedError = true
     this._client._$onError(C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, recordName)
   }
-}
-
-RecordHandler.prototype._onRecordError = function (recordName, error) {
-  this._client._$onError(C.TOPIC.RECORD, error, recordName)
-}
-
-RecordHandler.prototype._onRecordDestroy = function (recordName) {
-  delete this._records[recordName]
 }
 
 module.exports = RecordHandler
