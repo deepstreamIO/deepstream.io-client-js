@@ -108,6 +108,16 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
   this._eventEmitter.off(args.path, args.callback)
 }
 
+Record.prototype.whenReady = function () {
+  return new Promise((resolve) => {
+    if (this.isReady) {
+      resolve(this)
+    } else {
+      this.once('ready', () => resolve(this))
+    }
+  })
+}
+
 Record.prototype.discard = function () {
   if (this._checkDestroyed('discard')) {
     return
@@ -123,16 +133,6 @@ Record.prototype.discard = function () {
         this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
       }
     })
-}
-
-Record.prototype.whenReady = function () {
-  return new Promise((resolve) => {
-    if (this.isReady) {
-      resolve(this)
-    } else {
-      this.once('ready', () => resolve(this))
-    }
-  })
 }
 
 Record.prototype._$onMessage = function (message) {
