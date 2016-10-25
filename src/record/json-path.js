@@ -1,125 +1,89 @@
-var utils = require( '../utils/utils' );
-var PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
+const utils = require('../utils/utils')
+const PARTS_REG_EXP = /([^\.\[\]\s]+)/g
 
-var cache = Object.create( null );
+const cache = Object.create(null)
 
-/**
- * Returns the value of the path or
- * undefined if the path can't be resolved
- *
- * @public
- * @returns {Mixed}
- */
-module.exports.get = function ( data, path ) {
-	var tokens = tokenize( path );
+module.exports.get = function (data, path) {
+  const tokens = tokenize(path)
 
-	for( var i = 0; i < tokens.length; i++ ) {
-		if ( data === undefined ) {
-			return undefined;
-		}
-		if ( typeof data !== 'object' ) {
-			throw new Error( 'invalid data or path' );
-		}
-		data = data[ tokens[ i ] ];
-	}
+  for (let i = 0; i < tokens.length; i++) {
+    if (data === undefined) {
+      return undefined
+    }
+    if (typeof data !== 'object') {
+      throw new Error('invalid data or path')
+    }
+    data = data[tokens[i]]
+  }
 
-	return data;
-};
-
-/**
- * Sets the value of the path. If the path (or parts
- * of it) doesn't exist yet, it will be created
- *
- * @param {Mixed} value
- *
- * @public
- * @returns {Mixed} updated value
- */
-module.exports.set = function( data, path, value ) {
-	var tokens = tokenize( path );
-
-	if ( tokens.length === 0 ) {
-		return patch( data, value );
-	}
-
-	var oldValue = module.exports.get( data, path, false );
-	var newValue = patch( oldValue, value );
-
-	if ( newValue === oldValue ) {
-		return data;
-	}
-
-	var result = utils.shallowCopy( data || Object.create( null ) );
-
-	var node = result;
-	for( var i = 0; i < tokens.length; i++ ) {
-		if ( i === tokens.length - 1) {
-			node[ tokens[ i ] ] = newValue;
-		}
-		else if( node[ tokens[ i ] ] !== undefined ) {
-			node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
-		}
-		else if( tokens[ i + 1 ] && !isNaN( tokens[ i + 1 ] ) ){
-			node = node[ tokens[ i ] ] = [];
-		}
-		else {
-			node = node[ tokens[ i ] ] = Object.create( null );
-		}
-	}
-
-	return result;
-};
-
-/**
- * Merge the new value into the old value
- * @param  {Mixed} oldValue
- * @param  {Mixed} newValue
- * @return {Mixed}
- */
-function patch( oldValue, newValue ) {
-	var i;
-
-	if ( utils.deepEquals( oldValue, newValue ) ) {
-		return oldValue;
-	}
-	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
-		var arr = [];
-		for ( i = 0; i < newValue.length; i++ ) {
-			arr[ i ] = patch( oldValue[ i ], newValue[ i ] );
-		}
-		return arr;
-	}
-	else if ( !Array.isArray( newValue ) && typeof oldValue === 'object' && typeof newValue === 'object' ) {
-		var props = Object.keys( newValue );
-		var obj = Object.create( null );
-		for ( i = 0; i < props.length; i++ ) {
-			obj[ props[ i ] ] = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ] );
-		}
-		return obj;
-	}
-	else {
-		return newValue;
-	}
+  return data
 }
 
-/**
- * Parses the path. Splits it into
- * keys for objects and indices for arrays.
- *
- * @returns Array of tokens
- */
-function tokenize( path ) {
-	if ( cache[ path ] ) {
-		return cache[ path ];
-	}
+module.exports.set = function (data, path, value) {
+  const tokens = tokenize(path)
 
-	var parts = String(path) !== 'undefined' ? String( path ).match(PARTS_REG_EXP) : [];
+  if (tokens.length === 0) {
+    return patch(data, value)
+  }
 
-	if ( !parts ) {
-		throw new Error('invalid path ' + path)
-	}
+  const oldValue = module.exports.get(data, path, false)
+  const newValue = patch(oldValue, value)
 
-	return cache[ path ] = parts.map( function( part ) {
-		return !isNaN( part ) ? parseInt( part, 10 ) : part;
-	} );
-};
+  if (newValue === oldValue) {
+    return data
+  }
+
+  const result = utils.shallowCopy(data || Object.create(null))
+
+  let node = result
+  for (let i = 0; i < tokens.length; i++) {
+    if (i === tokens.length - 1) {
+      node[tokens[i]] = newValue
+    } else if (node[tokens[i]] !== undefined) {
+      node = node[tokens[i]] = utils.shallowCopy(node[tokens[i]])
+    } else if (tokens[i + 1] && !isNaN(tokens[i + 1])) {
+      node = node[tokens[i]] = []
+    } else {
+      node = node[tokens[i]] = Object.create(null)
+    }
+  }
+
+  return result
+}
+
+function patch (oldValue, newValue) {
+  if (utils.deepEquals(oldValue, newValue)) {
+    return oldValue
+  } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+    const arr = []
+    for (let i = 0; i < newValue.length; i++) {
+      arr[i] = patch(oldValue[i], newValue[i])
+    }
+    return arr
+  } else if (!Array.isArray(newValue) && typeof oldValue === 'object' && typeof newValue === 'object') {
+    const props = Object.keys(newValue)
+    const obj = Object.create(null)
+    for (let i = 0; i < props.length; i++) {
+      obj[props[i]] = patch(oldValue[props[i]], newValue[props[i]])
+    }
+    return obj
+  } else {
+    return newValue
+  }
+}
+
+function tokenize (path) {
+  if (cache[path]) {
+    return cache[path]
+  }
+
+  const parts = String(path) !== 'undefined' ? String(path).match(PARTS_REG_EXP) : []
+
+  if (!parts) {
+    throw new Error('invalid path ' + path)
+  }
+
+  cache[path] = parts.map((part) => !isNaN(part) ? parseInt(part, 10) : part)
+
+  return cache[path]
+}
