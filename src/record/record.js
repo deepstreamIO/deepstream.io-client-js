@@ -45,14 +45,14 @@ Record.prototype.set = function (pathOrData, data) {
     return this
   }
 
+  const path = arguments.length === 1 ? undefined : pathOrData
+  data = path ? data : pathOrData
+
   if (path && this._patchQueue) {
     this._patchQueue.push({ path, data })
   } else {
     this._patchQueue = undefined
   }
-
-  const path = arguments.length === 1 ? undefined : pathOrData
-  data = path ? data : pathOrData
 
   const oldValue = this._data
   const newValue = jsonPath.set(oldValue, path, data)
