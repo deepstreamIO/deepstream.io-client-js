@@ -52,7 +52,7 @@ module.exports = function (){
     setTimeout( done, utils.defaultDelay );
   });
 
-  this.When(/^(.+) calls the RPC "([^"]*)" with arguments? ("[^"]*"|\d+|\{.*\})$/, ( clientExpression, rpc, args, done ) => {
+  this.When(/^(.+) calls? the RPC "([^"]*)" with arguments? ("[^"]*"|\d+|\{.*\})$/, ( clientExpression, rpc, args, done ) => {
     clientHandler.getClients( clientExpression ).forEach( ( client ) => {
       const callback = client.rpc.callbacks[ rpc ] = sinon.spy();
       client.client.rpc.make( rpc, JSON.parse(args), ( a, b ) => {
@@ -62,7 +62,7 @@ module.exports = function (){
     setTimeout( done, utils.defaultDelay );
   });
 
-  this.Then(/(.+) receives a response for RPC "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, ( clientExpression, rpc, data ) => {
+  this.Then(/(.+) receives? a response for RPC "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, ( clientExpression, rpc, data ) => {
     clientHandler.getClients( clientExpression ).forEach( ( client ) => {
       sinon.assert.calledOnce(client.rpc.callbacks[ rpc ]);
       sinon.assert.calledWith(client.rpc.callbacks[ rpc ], null, JSON.parse(data).toString() );
@@ -70,7 +70,7 @@ module.exports = function (){
     } );
   });
 
-  this.Then(/(.+) receives a response for RPC "([^"]*)" with error "([^"]*)"$/, ( clientExpression, rpc, error ) => {
+  this.Then(/(.+) receives? a response for RPC "([^"]*)" with error "([^"]*)"$/, ( clientExpression, rpc, error ) => {
     clientHandler.getClients( clientExpression ).forEach( ( client ) => {
       sinon.assert.calledOnce(client.rpc.callbacks[ rpc ]);
       sinon.assert.calledWith(client.rpc.callbacks[ rpc ], error);
@@ -78,14 +78,14 @@ module.exports = function (){
     } );
   });
 
-  this.Then(/(.+) RPCs? "([^"]*)" (?:is|are) (never called|called once|(\d+) times?)$/, ( clientExpression, rpc, times, nTimes ) => {
+  this.Then(/(.+) RPCs? "([^"]*)" (?:is|are) (never called|called (?:once|(\d+) times?))$/, ( clientExpression, rpc, times, nTimes ) => {
     var timesCalled;
     if ( times.match( /never/ ) ){
       timesCalled = 0;
     } else if ( times.match( /once/ ) ){
       timesCalled = 1;
     } else {
-      timesCalled = nTimes;
+      timesCalled = parseInt( nTimes, 10 );
     }
 
     clientHandler.getClients( clientExpression ).forEach( ( client ) => {

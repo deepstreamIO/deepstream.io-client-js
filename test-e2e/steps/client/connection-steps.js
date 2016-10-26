@@ -11,77 +11,100 @@ const clients = clientHandler.clients;
 
 module.exports = function (){
 
-  this.Given(/^(?:subscriber|publisher|client) (\S*) logs out$/, ( client, done ) => {
-    clients[ client ].client.close();
-    setTimeout( done, utils.defaultDelay );
-  });
+  /*
+  this.Then(/^(.+) receives? at least one "([^"]*)" error "([^"]*)"$/, ( clientExpression, topicName, eventName ) => {
+    const topic = C.TOPIC[ topicName.toUpperCase() ];
+    const event = C.EVENT[ eventName.toUpperCase() ];
 
-  this.Given(/^(?:subscriber|publisher|client) (\S*) connects to server (\d+)$/, (client, server, done) => {
-    clientHandler.createClient( client, server );
-    done();
-  });
-
-  this.Given(/^(?:subscriber|publisher|client) (\S*) connects and logs into server (\d+)$/, (client, server, done) => {
-    clientHandler.createClient( client, server );
-    clients[ client ].client.login( { username: client, password: 'abcdefgh' }, () => {
-      clients[ client ].user = client;
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+  */
+  this.Given(/^(.+) logs? out$/, ( clientExpression, done ) => {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      client.client.close();
       setTimeout( done, utils.defaultDelay );
-    } );
+    } )
   });
 
-  this.Given(/^(?:subscriber|publisher|client) (\S*) logs in with username "([^"]*)" and password "([^"]*)"$/, ( client, username, password, done ) => {
-    clients[ client ].client.login( {
+  this.Given(/^(.+) connects to server (\d+)$/, (clientExpression, server, done) => {
+    clientHandler.getClientNames( clientExpression ).forEach( ( clientName ) => {
+      clientHandler.createClient( clientName, server );
+      done();
+    } )
+  });
+
+  this.Given(/^(.+) connects? and logs? into server (\d+)$/, (clientExpression, server, done) => {
+    clientHandler.getClientNames( clientExpression ).forEach( ( clientName ) => {
+      const client = clientHandler.createClient( clientName, server );
+      client.client.login( { username: clientName, password: 'abcdefgh' }, () => {
+        client.user = clientName;
+        setTimeout( done, utils.defaultDelay );
+      } );
+    } )
+  });
+
+  this.Given(/^(.+) logs? in with username "([^"]*)" and password "([^"]*)"$/, ( clientExpression, username, password, done ) => {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      client.client.login( {
         username: username,
         password: password
-    }, ( success, data ) => {
-      clients[ client ].login( success, data );
-      clients[ client ].user = username;
-      setTimeout( done, utils.defaultDelay );
-    } );
+      }, ( success, data ) => {
+        client.login( success, data );
+        client.user = username;
+        setTimeout( done, utils.defaultDelay );
+      } );
+    } )
   });
 
-  this.When(/^(?:subscriber|publisher|client) (\S*) attempts to login with username "([^"]*)" and password "([^"]*)"$/, ( client, username, password ) => {
-    clients[ client ].client.login( {
+  this.When(/^(.+) attempts? to login with username "([^"]*)" and password "([^"]*)"$/, ( clientExpression, username, password ) => {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      client.client.login( {
         username: username,
         password: password
-    } );
+      } );
+    } )
   } );
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) is notified of too many login attempts$/, ( client ) => {
-    const loginSpy = clients[ client ].login;
-    sinon.assert.callCount( loginSpy, 2 );
-    sinon.assert.calledWith( loginSpy, false, undefined );
-    sinon.assert.calledWith( loginSpy, false, 'too many authentication attempts' );
-    loginSpy.reset();
+  this.Then(/^(.+) (?:is|are) notified of too many login attempts$/, ( clientExpression ) => {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      const loginSpy = client.login;
+      sinon.assert.callCount( loginSpy, 2 );
+      sinon.assert.calledWith( loginSpy, false, undefined );
+      sinon.assert.calledWith( loginSpy, false, 'too many authentication attempts' );
+      loginSpy.reset();
+    } )
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*) receives (no|an (un)?authenticated) login response(?: with data (\{.*\}))?$/, ( client, no, unauth, data ) => {
-    const loginSpy = clients[ client ].login;
-    if ( no.match(/^no$/) ) {
-      sinon.assert.notCalled( loginSpy )
-    } else if ( !unauth ) {
-      sinon.assert.calledOnce( loginSpy );
-      if ( data ) {
-        sinon.assert.calledWith( loginSpy, true, JSON.parse( data ) );
+  this.Then(/^(.+) receives? (no|an (un)?authenticated) login response(?: with data (\{.*\}))?$/, ( clientExpression, no, unauth, data ) => {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      const loginSpy = client.login;
+      if ( no.match(/^no$/) ) {
+        sinon.assert.notCalled( loginSpy )
+      } else if ( !unauth ) {
+        sinon.assert.calledOnce( loginSpy );
+        if ( data ) {
+          sinon.assert.calledWith( loginSpy, true, JSON.parse( data ) );
+        }
+        else {
+          sinon.assert.calledWith( loginSpy, true, null );
+        }
       }
       else {
-        sinon.assert.calledWith( loginSpy, true, null );
+        sinon.assert.calledOnce( loginSpy );
+        sinon.assert.calledWith( loginSpy, false );
       }
-    }
-    else {
-      sinon.assert.calledOnce( loginSpy );
-      sinon.assert.calledWith( loginSpy, false );
-    }
-    loginSpy.reset();
+      loginSpy.reset();
+    } )
   });
 
-  this.Then(/^(?:subscriber|publisher|client) (\S*)'s connection times out$/, ( client, done ) => {
-    setTimeout( () => {
-      const errorSpy = clients[ client ].error[ C.TOPIC.CONNECTION ][ C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT ];
-      sinon.assert.calledOnce( errorSpy );
-      errorSpy.reset();
-      done();
-    }, 1000 );
+  this.Then(/^(.+) connections? times? out$/, ( clientExpression, done ) => {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+      setTimeout( () => {
+        const errorSpy = client.error[ C.TOPIC.CONNECTION ][ C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT ];
+        sinon.assert.calledOnce( errorSpy );
+        errorSpy.reset();
+        done();
+      }, 1000 );
+    } )
   });
 
 }

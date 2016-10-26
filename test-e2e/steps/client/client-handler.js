@@ -9,12 +9,14 @@ const utils = require('./utils');
 const DeepstreamClient = require( '../../../src/client' );
 
 function createClient( clientName, server ) {
-  clients[ clientName ] = {
-    name: clientName,
-    client: DeepstreamClient( global.cluster.getUrl( server - 1 ), {
+  const gatewayUrl = global.cluster.getUrl( server - 1, clientName );
+  const client = DeepstreamClient( gatewayUrl, {
       maxReconnectInterval: 300,
       maxReconnectAttempts: 20,
-    } ),
+    } );
+  clients[ clientName ] = {
+    name: clientName,
+    client: client,
     login: sinon.spy(),
     error: {},
     event: {
@@ -75,27 +77,29 @@ function createClient( clientName, server ) {
     clientErrors[ topic ][ event ] = clientErrors[ topic ][ event ] || sinon.spy();
     clients[ clientName ].error[ topic ][ event ]( message );
   });
+
+  return clients[ clientName ];
 }
 
-function getClients( expression ) {
+function getClientNames( expression ) {
   const clientExpression = /all clients|(?:subscriber|publisher|clients?) ([^\s']*)(?:'s)?/;
   const result = clientExpression.exec( expression );
   if( result[ 0 ] === 'all clients' ) {
-    return Object.keys( clients ).map( ( client ) => {
-      return clients[ client ];
-    });
+    return Object.keys( clients );
   }
   else if( result.length === 2 && result[ 1 ].indexOf(',') > -1 ) {
-    return result[1].replace(/"/g,"").split(',').map( ( client ) => {
-      return clients[ client ];
-    });
+    return result[1].replace(/"/g,"").split(',');
   }
   else if( result.length === 2 ) {
-    return [ clients[ result[ 1 ].replace(/"/g,'') ] ];
+    return [ result[ 1 ].replace(/"/g,'') ];
   }
   else {
     throw `Invalid expression: ${expression}`;
   }
+}
+
+function getClients( expression ) {
+  return getClientNames( expression ).map( client => clients[ client ] );
 }
 
 function assertNoErrors( client ){
@@ -110,6 +114,7 @@ function assertNoErrors( client ){
 module.exports = {
   clients,
   createClient,
+  getClientNames,
   getClients,
   assertNoErrors
 }
