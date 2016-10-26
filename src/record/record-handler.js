@@ -80,7 +80,7 @@ RecordHandler.prototype.unlisten = function (pattern) {
   }
 }
 
-RecordHandler.prototype.get = function (recordName) {
+RecordHandler.prototype.get = function (recordName, pathOrNil) {
   if (typeof recordName !== 'string' || recordName.length === 0) {
     throw new Error('invalid argument recordName')
   }
@@ -88,7 +88,7 @@ RecordHandler.prototype.get = function (recordName) {
   const record = this.getRecord(recordName)
   return record
     .whenReady()
-    .then(() => record.get())
+    .then(() => record.get(pathOrNil))
     .then(val => {
       record.discard()
       return val
@@ -104,11 +104,14 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
     throw new Error('invalid argument recordName')
   }
 
-  const path = dataOrNil === undefined ? undefined : pathOrData
-  const data = dataOrNil === undefined ? pathOrData : dataOrNil
-
   const record = this.getRecord(recordName)
-  record.set(path, data)
+
+  if (arguments.length === 2) {
+    record.set(pathOrData)
+  } else {
+    record.set(pathOrData, dataOrNil)
+  }
+
   record.discard()
 
   return record.whenReady()
@@ -119,12 +122,26 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
     throw new Error('invalid argument recordName')
   }
 
-  const path = updaterOrNil === undefined ? undefined : pathOrUpdater
-  const updater = updaterOrNil === undefined ? pathOrUpdater : updaterOrNil
+  const path = arguments.length === 2 ? undefined : pathOrUpdater
+  const updater = arguments.length === 2 ? pathOrUpdater : updaterOrNil
 
-  return this
-    .get(recordName, path)
-    .then(data => this.set(recordName, path, updater(data)))
+  const record = this.getRecord(recordName)
+  return record
+    .whenReady()
+    .then(() => updater(record.get(path)))
+    .then(val => {
+      if (arguments.length === 2) {
+        record.set(val)
+      } else {
+        record.set(path, val)
+      }
+      record.discard()
+      return val
+    })
+    .catch(err => {
+      record.discard()
+      throw err
+    })
 }
 
 RecordHandler.prototype.observe = function (recordName) {
