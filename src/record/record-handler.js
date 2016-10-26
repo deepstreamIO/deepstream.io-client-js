@@ -4,6 +4,7 @@ const utils = require('../utils/utils')
 const C = require('../constants/constants')
 const EventEmitter = require('component-emitter')
 const Rx = require('rxjs')
+const LRU = require('lru-cache')
 
 const RecordHandler = function (options, connection, client) {
   this._options = options
@@ -12,38 +13,42 @@ const RecordHandler = function (options, connection, client) {
   this._records = {}
   this._listener = {}
   this._destroyEventEmitter = new EventEmitter()
-  this._debounce = { prev: new Set(), next: new Set() }
-  this._cleanup()
+  this._cache = LRU({
+    maxAge: options.recordTTL,
+    dispose (recordName, record) {
+      record.discard()
+    }
+  })
+  this._prune()
 }
 
-RecordHandler.prototype._cleanup = function () {
+RecordHandler.prototype._prune = function () {
   utils.requestIdleCallback(() => {
-    for (let key of this._debounce.prev) {
-      this._records[key].discard()
-    }
-    this._debounce.prev = this._debounce.next
-    this._debounce.next = new Set()
-    setTimeout(this._cleanup.bind(this), this._options.recordTTL)
+    this._cache.prune()
+    setTimeout(this._prune.bind(this), this._options.recordTTL)
   })
 }
 
 RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
-  if (!this._records[recordName]) {
-    this._records[recordName] = new Record(recordName, recordOptions || {}, this._connection, this._options, this._client)
-    this._records[recordName].on('error', error => {
+  let record = this._records[recordName]
+  if (!record) {
+    record = new Record(recordName, recordOptions || {}, this._connection, this._options, this._client)
+    record.on('error', error => {
       this._client._$onError(C.TOPIC.RECORD, error, recordName)
     })
-    this._records[recordName].on('destroy', () => {
+    record.on('destroy', () => {
       delete this._records[recordName]
     })
-    if (!this._debounce.next.has(recordName)) {
-      this._records[recordName].usages++
-      this._debounce.next.add(recordName)
-    }
+    this._records[recordName] = record
   }
 
-  this._records[recordName].usages++
-  return this._records[recordName]
+  if (!this._cache.get(recordName)) {
+    record.usages++
+    this._cache.set(recordName, record)
+  }
+
+  record.usages++
+  return record
 }
 
 RecordHandler.prototype.listen = function (pattern, callback) {
@@ -90,10 +95,12 @@ RecordHandler.prototype.get = function (recordName, pathOrNil) {
     .whenReady()
     .then(() => record.get(pathOrNil))
     .then(val => {
+      this._cache.get(recordName)
       record.discard()
       return val
     })
     .catch(err => {
+      this._cache.get(recordName)
       record.discard()
       throw err
     })
@@ -112,6 +119,7 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
     record.set(pathOrData, dataOrNil)
   }
 
+  this._cache.get(recordName)
   record.discard()
 
   return record.whenReady()
@@ -135,10 +143,12 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
       } else {
         record.set(path, val)
       }
+      this._cache.get(recordName)
       record.discard()
       return val
     })
     .catch(err => {
+      this._cache.get(recordName)
       record.discard()
       throw err
     })
