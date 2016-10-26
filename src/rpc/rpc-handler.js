@@ -102,7 +102,7 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 		throw new Error( 'invalid argument callback' );
 	}
 
-	const uid = utils.getShortId();
+	const uid = utils.nuid();
 	const typedData = messageBuilder.typed( data );
 
 	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );

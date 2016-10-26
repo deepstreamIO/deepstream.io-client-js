@@ -180,7 +180,7 @@ Record.prototype._processAckMessage = function (message) {
 
 Record.prototype._dispatchUpdate = function () {
   const start = this.version ? parseInt(this.version.split('-')[0], 10) : 0
-  const version = `${start + 1}-${utils.getShortId()}`
+  const version = `${start + 1}-${utils.nuid()}`
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
     this.name,
     version,

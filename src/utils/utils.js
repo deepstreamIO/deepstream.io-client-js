@@ -1,8 +1,18 @@
-const URL = require( 'url' );
-const shortid = require('shortid');
+const URL = require( 'url' )
+const randomBytes = require('randombytes')
 
-shortid.seed(9823745);
-shortid.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_~');
+const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ~abcdefghijklmnopqrstuvwxyz_'
+
+function encode (number) {
+  let str = ''
+
+  for (let n = 0; number > 0; ++n) {
+    str = ALPHABET[number & 0x3F] + str
+    number = Math.floor(number / 64)
+  }
+
+  return str
+}
 
 /**
  * A regular expression that matches whitespace on either side, but
@@ -41,12 +51,30 @@ const unsupportedProtocol = /^http:|^https:/;
  */
 exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
 
-exports.getShortId = function () {
-	return shortid.generate();
-};
+exports.nuid = function () {
+  let str = encode(Date.now()) + encode(parseInt(randomBytes(6).toString('hex'), 16))
+
+  while (str.length < 12) {
+    str = '0' + str
+  }
+
+  return str.substr(0, 12)
+}
 
 exports.compareVersions = function(a, b) {
 	return (a && parseInt(a.split('-')[0])) >= (b && parseInt(b.split('-')[0])) || a > b
+}
+
+function encode (number) {
+	let str = ''
+	let done = false
+	let loopCounter = 0
+
+	while (!done) {
+		str = str + ALPHABET[number >> (4 * loopCounter) & 0x0f ]
+		done = number < Math.pow(16, loopCounter + 1)
+	}
+	return str
 }
 
 /**
