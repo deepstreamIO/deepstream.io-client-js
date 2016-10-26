@@ -24,11 +24,11 @@ exports.nuid = function () {
   let str = exports.encode(Date.now()) +
             exports.encode(parseInt(randomBytes(6).toString('hex'), 16))
 
-  while (str.length < 12) {
+  while (str.length < 14) {
     str = str + '0'
   }
 
-  return str.substr(0, 12)
+  return str.substr(0, 14)
 }
 
 exports.compareVersions = function (a, b) {
