@@ -6,6 +6,8 @@ const cache = Object.create(null)
 module.exports.get = function (data, path) {
   const tokens = module.exports.tokenize(path)
 
+  data = data || Object.create(null)
+
   for (let i = 0; i < tokens.length; i++) {
     if (data === undefined) {
       return undefined
