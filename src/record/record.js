@@ -21,6 +21,7 @@ const Record = function (name, recordOptions, connection, options, client) {
   this._client = client
   this._options = options
   this._eventEmitter = new EventEmitter()
+  this._patchQueue = []
 
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
   this._reset()
