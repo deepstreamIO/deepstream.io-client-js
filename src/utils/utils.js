@@ -32,7 +32,7 @@ exports.nuid = function () {
 }
 
 exports.compareVersions = function (a, b) {
-  return (a && parseInt(a.split('-')[0], 10)) >= (b && parseInt(b.split('-')[0], 10)) || a > b
+  return (a && parseInt(a.split('-')[0], 10)) >= (b && parseInt(b.split('-')[0], 10)) || a >= b
 }
 
 exports.nextTick = function (fn) {
