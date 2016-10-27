@@ -122,7 +122,9 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
   this._cache.get(recordName)
   record.discard()
 
-  return record.whenReady()
+  record
+    .whenReady()
+    .then(() => new Promise(resolve => setTimeout(resolve, 1)))
 }
 
 RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrNil) {
