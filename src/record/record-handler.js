@@ -166,6 +166,7 @@ RecordHandler.prototype.observe = function (recordName) {
         record.subscribe(onValue, true)
         record.on('error', onError)
         return () => {
+          this._cache.get(recordName)
           record.unsubscribe(onValue)
           record.off('error', onError)
           record.discard()
