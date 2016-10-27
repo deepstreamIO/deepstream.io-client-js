@@ -21,7 +21,6 @@ const Record = function (name, recordOptions, connection, options, client) {
   this._client = client
   this._options = options
   this._eventEmitter = new EventEmitter()
-  this._patchQueue = []
 
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
   this._reset()
@@ -207,6 +206,7 @@ Record.prototype._onRead = function (message) {
   let newValue = this._data || oldValue
 
   if (this._patchQueue) {
+    newValue = oldValue
     for (let i = 0; i < this._patchQueue.length; i++) {
       newValue = jsonPath.set(newValue, this._patchQueue[i].path, this._patchQueue[i].data)
     }
