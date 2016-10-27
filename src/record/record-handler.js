@@ -22,6 +22,16 @@ const RecordHandler = function (options, connection, client) {
   this._prune()
 }
 
+RecordHandler.prototype._hit = function (record, discard) {
+  if (!this._cache.get(record.name)) {
+    record.usages++
+    this._cache.set(record.name, record)
+  }
+  if (discard) {
+    record.discard()
+  }
+}
+
 RecordHandler.prototype._prune = function () {
   utils.requestIdleCallback(() => {
     this._cache.prune()
@@ -42,10 +52,7 @@ RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
     this._records[recordName] = record
   }
 
-  if (!this._cache.get(recordName)) {
-    record.usages++
-    this._cache.set(recordName, record)
-  }
+  this._hit(record)
 
   record.usages++
   return record
@@ -95,13 +102,11 @@ RecordHandler.prototype.get = function (recordName, pathOrNil) {
     .whenReady()
     .then(() => record.get(pathOrNil))
     .then(val => {
-      this._cache.get(recordName)
-      record.discard()
+      this._hit(record, true)
       return val
     })
     .catch(err => {
-      this._cache.get(recordName)
-      record.discard()
+      this._hit(record, true)
       throw err
     })
 }
@@ -119,8 +124,7 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
     record.set(pathOrData, dataOrNil)
   }
 
-  this._cache.get(recordName)
-  record.discard()
+  this._hit(record, true)
 
   return record.whenReady()
 }
@@ -143,13 +147,11 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
       } else {
         record.set(path, val)
       }
-      this._cache.get(recordName)
-      record.discard()
+      this._hit(record, true)
       return val
     })
     .catch(err => {
-      this._cache.get(recordName)
-      record.discard()
+      this._hit(record, true)
       throw err
     })
 }
@@ -166,10 +168,9 @@ RecordHandler.prototype.observe = function (recordName) {
         record.subscribe(onValue, true)
         record.on('error', onError)
         return () => {
-          this._cache.get(recordName)
           record.unsubscribe(onValue)
           record.off('error', onError)
-          record.discard()
+          this._hit(record, true)
         }
       }
     })
