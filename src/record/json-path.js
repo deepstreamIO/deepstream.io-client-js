@@ -79,7 +79,7 @@ module.exports.tokenize = function (path) {
     return cache[path]
   }
 
-  const parts = String(path) !== 'undefined' ? String(path).match(PARTS_REG_EXP) : []
+  const parts = path && String(path) !== 'undefined' ? String(path).match(PARTS_REG_EXP) : []
 
   if (!parts) {
     throw new Error('invalid path ' + path)
