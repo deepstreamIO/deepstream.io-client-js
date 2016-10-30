@@ -1,12 +1,10 @@
 const utils = require('../utils/utils')
 const PARTS_REG_EXP = /([^\.\[\]\s]+)/g
 
-const cache = Object.create(null)
+const cache = new Map()
 
 module.exports.get = function (data, path) {
   const tokens = module.exports.tokenize(path)
-
-  data = data || Object.create(null)
 
   for (let i = 0; i < tokens.length; i++) {
     if (data === undefined) {
@@ -75,17 +73,17 @@ module.exports.patch = function (oldValue, newValue) {
 }
 
 module.exports.tokenize = function (path) {
-  if (cache[path]) {
-    return cache[path]
+  if (cache.has(path)) {
+    return cache.get(path)
   }
 
-  const parts = path && String(path) !== 'undefined' ? String(path).match(PARTS_REG_EXP) : []
+  const parts = path ? String(path).match(PARTS_REG_EXP) : []
 
   if (!parts) {
     throw new Error('invalid path ' + path)
   }
 
-  cache[path] = parts.map((part) => !isNaN(part) ? parseInt(part, 10) : part)
+  cache.set(path, parts.map((part) => !isNaN(part) ? parseInt(part, 10) : part))
 
-  return cache[path]
+  return cache.get(path)
 }
