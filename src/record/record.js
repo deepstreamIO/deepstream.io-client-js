@@ -34,20 +34,20 @@ Record.prototype.get = function (path) {
   return jsonPath.get(this._data, path)
 }
 
-Record.prototype.set = function (pathOrData, data) {
-  if (arguments.length === 1 && typeof pathOrData !== 'object') {
-    throw new Error('invalid argument data')
-  }
-  if (arguments.length === 2 && (typeof pathOrData !== 'string' || pathOrData.length === 0)) {
-    throw new Error('invalid argument path')
-  }
-
+Record.prototype.set = function (pathOrData, dataOrNil) {
   if (this._checkDestroyed('set')) {
     return this
   }
 
   const path = arguments.length === 1 ? undefined : pathOrData
-  data = path ? data : pathOrData
+  const data = arguments.length === 1 ? pathOrData : dataOrNil
+
+  if (typeof data !== 'object') {
+    throw new Error('invalid argument data')
+  }
+  if (path !== undefined && (typeof path !== 'string' || path.length === 0)) {
+    throw new Error('invalid argument path')
+  }
 
   if (path && this._patchQueue) {
     this._patchQueue.push({ path, data })
@@ -109,7 +109,7 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
   const callbacks = this._paths.get(args.path) || []
 
   if (args.callback) {
-    const index = callbacks.indexOf(callback)
+    const index = callbacks.indexOf(args.callback)
     if (index !== -1) {
       callbacks.splice(index, 1)
     }
