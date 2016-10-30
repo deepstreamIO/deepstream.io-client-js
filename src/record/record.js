@@ -116,10 +116,6 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
   } else {
     callbacks.splice(0)
   }
-
-  if (callbacks.length === 0) {
-    this._paths.delete(args.path)
-  }
 }
 
 Record.prototype.whenReady = function () {
@@ -252,19 +248,17 @@ Record.prototype._applyChange = function (newData) {
   const oldData = this._data
   this._data = newData
 
-  const paths = this._paths.keys()
-
-  for (let i = 0; i < paths.length; i++) {
-    const newValue = jsonPath.get(newData, paths[i])
-    const oldValue = jsonPath.get(oldData, paths[i])
+  for (const path of this._paths.keys()) {
+    const newValue = jsonPath.get(newData, path)
+    const oldValue = jsonPath.get(oldData, path)
 
     if (newValue === oldValue) {
       continue
     }
 
-    const callbacks = this._paths.get(paths[i]) || []
+    const callbacks = this._paths.get(path)
     for (let k = 0; k < callbacks.length; ++k) {
-      callbacks[k](paths[i], newValue)
+      callbacks[k](newValue)
     }
   }
 }
