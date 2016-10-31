@@ -211,15 +211,16 @@ Connection.prototype._sendQueuedMessages = function() {
 
 	var messages = this._queuedMessages.splice( 0, this._options.maxMessagesPerPacket );
 
-	this._endpoint.send( messages.join( '' ), function( error ) {
-		if( error ) {
-			this._queuedMessages = messages.concat(this._queuedMessages);
-			this._onError( error );
-		}
-		else if( this._queuedMessages.length > 0 ) {
+  try {
+		this._endpoint.send( messages.join( '' ) );
+
+		if( this._queuedMessages.length > 0 ) {
 			this._queueNextPacket();
 		}
-	}.bind( this ) );
+  } catch ( error ) {
+		this._queuedMessages = messages.concat( this._queuedMessages );
+		this._onError( error );
+  }
 };
 
 /**
