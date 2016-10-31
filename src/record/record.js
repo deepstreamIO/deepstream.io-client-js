@@ -256,9 +256,8 @@ Record.prototype._applyChange = function (newData) {
       continue
     }
 
-    const callbacks = this._paths.get(path)
-    for (let k = 0; k < callbacks.length; ++k) {
-      callbacks[k](newValue)
+    for (const callback of this._paths.get(path)) {
+      callback(newValue)
     }
   }
 }
