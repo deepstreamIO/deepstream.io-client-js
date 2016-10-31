@@ -151,7 +151,7 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 	}
 
 	if( this._providers[ name ] ) {
-		response = new RpcResponse( this._connection,name, correlationId );
+		response = new RpcResponse( this._connection, name, correlationId );
 		this._providers[ name ]( data, response );
 	} else {
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ name, correlationId ] );
