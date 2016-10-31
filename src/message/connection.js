@@ -208,14 +208,10 @@ Connection.prototype._sendQueuedMessages = function () {
 
   const messages = this._queuedMessages.splice(0, this._options.maxMessagesPerPacket)
 
-  try {
-    this._endpoint.send(messages.join(''))
-    if (this._queuedMessages.length > 0) {
-      this._queueNextPacket()
-    }
-  } catch (error) {
+  if (!this._send(messages.join(''))) {
     this._queuedMessages = messages.concat(this._queuedMessages)
-    this._onError(error)
+  } else if (this._queuedMessages.length > 0) {
+    this._queueNextPacket()
   }
 }
 
@@ -243,7 +239,7 @@ Connection.prototype._queueNextPacket = function () {
 Connection.prototype._sendAuthParams = function () {
   this._setState(C.CONNECTION_STATE.AUTHENTICATING)
   var authMessage = messageBuilder.getMsg(C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ])
-  this._endpoint.send(authMessage)
+  this._send(authMessage)
 }
 
 /**
@@ -400,7 +396,7 @@ Connection.prototype._handleMessages = function (deadline) {
 Connection.prototype._handleConnectionResponse = function (message) {
   if (message.action === C.ACTIONS.PING) {
     this._lastHeartBeat = Date.now()
-    this._endpoint.send(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.PONG))
+    this._send(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.PONG))
   } else if (message.action === C.ACTIONS.ACK) {
     this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION)
     if (this._authParams) {
@@ -408,7 +404,7 @@ Connection.prototype._handleConnectionResponse = function (message) {
     }
   } else if (message.action === C.ACTIONS.CHALLENGE) {
     this._setState(C.CONNECTION_STATE.CHALLENGING)
-    this._endpoint.send(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ]))
+    this._send(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ]))
   } else if (message.action === C.ACTIONS.REJECTION) {
     this._challengeDenied = true
     this.close()
@@ -547,6 +543,16 @@ Connection.prototype._clearReconnect = function () {
   clearTimeout(this._reconnectTimeout)
   this._reconnectTimeout = null
   this._reconnectionAttempt = 0
+}
+
+Connection.prototype._send = function (msg) {
+  try {
+    this._endpoint.send(msg)
+    return true
+  } catch (error) {
+    this._onError(error)
+    return false
+  }
 }
 
 module.exports = Connection
