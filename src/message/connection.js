@@ -208,14 +208,15 @@ Connection.prototype._sendQueuedMessages = function () {
 
   const messages = this._queuedMessages.splice(0, this._options.maxMessagesPerPacket)
 
-  this._endpoint.send(messages.join(''), error => {
-    if (error) {
-      this._queuedMessages = messages.concat(this._queuedMessages)
-      this._onError(error)
-    } else if (this._queuedMessages.length > 0) {
+  try {
+    this._endpoint.send(messages.join(''))
+    if (this._queuedMessages.length > 0) {
       this._queueNextPacket()
     }
-  })
+  } catch (error) {
+    this._queuedMessages = messages.concat(this._queuedMessages)
+    this._onError(error)
+  }
 }
 
 /**
