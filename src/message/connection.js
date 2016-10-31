@@ -203,20 +203,23 @@ Connection.prototype._sendQueuedMessages = function() {
 		return;
 	}
 
+	this._sendNextPacketTimeout = null;
+
 	if( this._queuedMessages.length === 0 ) {
-		this._sendNextPacketTimeout = null;
 		return;
 	}
 
-	var message = this._queuedMessages.splice( 0, this._options.maxMessagesPerPacket ).join( '' );
+	var messages = this._queuedMessages.splice( 0, this._options.maxMessagesPerPacket );
 
-	if( this._queuedMessages.length !== 0 ) {
-		this._queueNextPacket();
-	} else {
-		this._sendNextPacketTimeout = null;
-	}
-
-	this._endpoint.send( message );
+	this._endpoint.send( messages.join( '' ), function( error ) {
+		if( error ) {
+			this._queuedMessages = messages.concat(this._queuedMessages);
+			this._onError( error );
+		}
+		else if( this._queuedMessages.length > 0 ) {
+			this._queueNextPacket();
+		}
+	}.bind( this ) );
 };
 
 /**
