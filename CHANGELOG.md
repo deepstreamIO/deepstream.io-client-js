@@ -1,3 +1,19 @@
+## [2.0.0-rc.1] - 2016-11-01
+
+### Enhancements
+
+- Added heartbeats over WebSocket connection
+- Presence has been added to query and subscribe to who is online with the cluster
+- E2E tests refactored
+
+### Breaking Changes
+
+- Changed format of RPC request ACK messages to be more consistent with the rest of the specs
+[#408](https://github.com/deepstreamIO/deepstream.io/issues/408)
+- We now depend only on browser/node.js WebSockets, removing support for TCP and engine.io
+- Support for webRTC has been removed
+- Supports deepstream.io v2.0.0+ only
+
 ## [1.1.1] - 2016-09-30
 
 ### Bug Fixes
