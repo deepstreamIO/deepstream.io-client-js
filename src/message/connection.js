@@ -183,7 +183,7 @@ Connection.prototype._resetCurrentMessageCount = function() {
  * @returns {void}
  */
 Connection.prototype._sendQueuedMessages = function() {
-	if( this._state !== C.CONNECTION_STATE.OPEN ) {
+	if( this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== WebSocket.OPEN ) {
 		return;
 	}
 
