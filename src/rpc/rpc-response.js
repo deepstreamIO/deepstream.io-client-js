@@ -30,7 +30,11 @@ var RpcResponse = function( connection, name, correlationId ) {
  */
 RpcResponse.prototype.ack = function() {
 	if( this._isAcknowledged === false ) {
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ACK, [ this._name, this._correlationId ] );
+		this._connection.sendMsg(
+			C.TOPIC.RPC,
+			C.ACTIONS.ACK,
+			[ C.ACTIONS.REQUEST, this._name, this._correlationId ]
+		);
 		this._isAcknowledged = true;
 	}
 };
