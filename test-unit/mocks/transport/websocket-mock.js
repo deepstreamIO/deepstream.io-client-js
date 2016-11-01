@@ -26,6 +26,7 @@ WebsocketMock.prototype.onerror = function() {}
 
 WebsocketMock.prototype.simulateOpen = function() {
 	this.isOpen = true;
+  this.readyState = WebsocketMock.OPEN;
 	this.onopen();
 };
 

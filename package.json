@@ -15,12 +15,12 @@
     "unit": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
     "unit::watch": "watch \"npm run unit\" ./src ./test-unit",
     "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js",
-    "e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e --require ./test-e2e/steps --fail-fast",
-    "rpc-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/rpcs/ --require ./test-e2e/steps --fail-fast",
-    "event-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/events/ --require ./test-e2e/steps --fail-fast",
-    "record-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/records/ --require ./test-e2e/steps --fail-fast",
-    "login-e2e": " node ./node_modules/cucumber/bin/cucumber.js test-e2e/features/login/ --require ./test-e2e/steps --fail-fast",
-    "presence-e2e": " node --trace-warnings ./node_modules/cucumber/bin/cucumber.js test-e2e/features/presence/ --require ./test-e2e/steps --fail-fast",
+    "e2e": "node ./node_modules/cucumber/bin/cucumber.js test-e2e --require ./test-e2e/steps --fail-fast",
+    "rpc-e2e": "npm run e2e -- --tags @rpcs",
+    "event-e2e": "npm run e2e -- --tags @events",
+    "record-e2e": "npm run e2e -- --tags @records",
+    "login-e2e": "npm run e2e -- --tags @login",
+    "presence-e2e": "npm run e2e -- --tags @presence",
     "specs": " node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps --fail-fast"
   },
   "repository": {
@@ -41,7 +41,8 @@
     "ws": "^1.1.1"
   },
   "browser": {
-    "net": false
+    "net": false,
+    "ws": false
   },
   "devDependencies": {
     "browserify": "^13.1.0",

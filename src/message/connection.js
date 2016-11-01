@@ -195,28 +195,25 @@ Connection.prototype._resetCurrentMessageCount = function () {
  * @private
  * @returns {void}
  */
-Connection.prototype._sendQueuedMessages = function () {
-  if (this._state !== C.CONNECTION_STATE.OPEN) {
-    return
+Connection.prototype._sendQueuedMessages = function() {
+  if (this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN) {
+    return;
   }
-
-  this._sendNextPacketTimeout = null
 
   if (this._queuedMessages.length === 0) {
+    this._sendNextPacketTimeout = null
     return
   }
 
-  const messages = this._queuedMessages.splice(0, this._options.maxMessagesPerPacket)
+  const message = this._queuedMessages.splice(0, this._options.maxMessagesPerPacket ).join( '' )
 
-  try {
-    this._endpoint.send(messages.join(''))
-    if (this._queuedMessages.length > 0) {
-      this._queueNextPacket()
-    }
-  } catch (error) {
-    this._queuedMessages = messages.concat(this._queuedMessages)
-    this._onError(error)
+  if (this._queuedMessages.length !== 0) {
+    this._queueNextPacket();
+  } else {
+    this._sendNextPacketTimeout = null
   }
+
+  this._endpoint.send(message)
 }
 
 /**

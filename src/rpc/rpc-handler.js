@@ -152,7 +152,7 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 	}
 
 	if( this._providers[ name ] ) {
-		response = new RpcResponse( this._connection,name, correlationId );
+		response = new RpcResponse( this._connection, name, correlationId );
 		this._providers[ name ]( data, response );
 	} else {
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ name, correlationId ] );
@@ -184,29 +184,28 @@ RpcHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
+	// handle auth/denied subscription errors
+	if( message.action === C.ACTIONS.ERROR ) {
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
+			return;
+		}
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
+			this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
+			return;
+		}
+	}
 
 	/*
 	 * Error messages always have the error as first parameter. So the
 	 * order is different to ack and response messages
 	 */
-	if( message.action === C.ACTIONS.ERROR ) {
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
-			return;
-		}
-		else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
-			if( message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
-				this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
-				return;
-			}
-			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {
-				rpcName = message.data[ 1 ];
-				correlationId = message.data[ 3 ];
-			}
+	if( message.action === C.ACTIONS.ERROR || message.action === C.ACTIONS.ACK ) {
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.REQUEST ) {
+			correlationId = message.data[ 3 ];
 		} else {
-			rpcName = message.data[ 1 ];
 			correlationId = message.data[ 2 ];
 		}
-
+		rpcName = message.data[ 1 ];
 	} else {
 		rpcName = message.data[ 0 ];
 		correlationId = message.data[ 1 ];

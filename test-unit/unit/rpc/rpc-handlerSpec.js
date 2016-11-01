@@ -44,44 +44,44 @@ describe( 'handles rpc providers', function() {
 			done();
 		}, 100 );
 	});
-	
+
 	it( 'replies to sync rpc request', function(){
 		rpcHandler._$handle({
 			topic: 'RPC',
 			action: 'REQ',
 			data: [ 'addTwo', '678', 'O{"numA":2,"numB":3, "sync": true}' ]
 		});
-		
+
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|RES|addTwo|678|N5+' ) );
 	});
-	
+
 	it( 'replies to async rpc request', function( done ){
 		rpcHandler._$handle({
 			topic: 'RPC',
 			action: 'REQ',
 			data: [ 'addTwo', '123', 'O{"numA":7,"numB":3}' ]
 		});
-		
+
 		setTimeout(function(){
-				expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|addTwo|123+' ) );
+				expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|REQ|addTwo|123+' ) );
 		}, 3 );
-	
+
 		setTimeout(function(){
 			expect( connectionMock.lastSendMessage ).toBe( msg( 'P|RES|addTwo|123|N10+' ) );
 			done();
 		}, 30 );
 	});
-	
+
 	it( 'sends rejection if no provider exists', function() {
 	    rpcHandler._$handle({
 			topic: 'RPC',
 			action: 'REQ',
 			data: [ 'doesNotExist', '432', 'O{"numA":7,"numB":3}' ]
 		});
-		
+
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|REJ|doesNotExist|432+' ) );
 	});
-	
+
 	it( 'deregisters providers', function() {
 	    rpcHandler.unprovide( 'addTwo' );
 	    expect( connectionMock.lastSendMessage ).toBe( msg( 'P|US|addTwo+' ) );
@@ -103,7 +103,7 @@ describe( 'handles rpc providers', function() {
 			action: 'REQ',
 			data: [ 'addTwo', '434', 'O{"numA":2,"numB":7, "sync": true}' ]
 		});
-		
+
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|REJ|addTwo|434+' ) );
 	});
 });
@@ -111,43 +111,43 @@ describe( 'handles rpc providers', function() {
 describe( 'makes rpcs', function() {
     var rpcHandler,
     	callback = jasmine.createSpy( 'rpc callback' );
-    
+
     it( 'creates the RPC handler', function(){
 		rpcHandler = new RpcHandler( options, connectionMock, clientMock );
 		expect( rpcHandler.provide ).toBeDefined();
 	});
-	
+
 	it( 'makes a successful rpc for addTwo', function() {
 		rpcHandler.make( 'addTwo', { numA: 3, numB: 8 }, callback );
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|REQ|addTwo|1|O{"numA":3,"numB":8}+' ) );
 		expect( callback ).not.toHaveBeenCalled();
-		
+
 		rpcHandler._$handle({
 			topic: 'RPC',
 			action: 'RES',
 			data: [ 'addTwo', '1', 'N11' ]
 		});
-		
+
 		expect( callback ).toHaveBeenCalledWith( null, 11 );
 	});
-	
+
 	it( 'makes rpc for addTwo, but receives an error', function() {
 		rpcHandler.make( 'addTwo', { numA: 3, numB: 8 }, callback );
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|REQ|addTwo|1|O{"numA":3,"numB":8}+' ) );
-		
+
 		rpcHandler._$handle({
 			topic: 'RPC',
 			action: 'E',
 			data: [ 'NO_PROVIDER', 'addTwo', '1' ]
 		});
-		
+
 		expect( callback ).toHaveBeenCalledWith( 'NO_PROVIDER' );
 	});
-	
+
 	it( 'makes rpc for addTwo, but doesn\'t receive ack in time', function( done ) {
 		rpcHandler.make( 'addTwo', { numA: 3, numB: 8 }, callback );
 		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|REQ|addTwo|1|O{"numA":3,"numB":8}+' ) );
-		
+
 		setTimeout(function() {
 			expect( callback ).toHaveBeenCalledWith( 'ACK_TIMEOUT' );
 			done();
