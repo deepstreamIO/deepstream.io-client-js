@@ -1,11 +1,11 @@
-var C = require( '../constants/constants' ),
-	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
-	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
-	utils = require( '../utils/utils' ),
-	RpcResponse = require( './rpc-response' ),
-	Rpc = require( './rpc' ),
-	messageParser= require( '../message/message-parser' ),
-	messageBuilder = require( '../message/message-builder' );
+const C = require('../constants/constants')
+const AckTimeoutRegistry = require('../utils/ack-timeout-registry')
+const ResubscribeNotifier = require('../utils/resubscribe-notifier')
+const utils = require('../utils/utils')
+const RpcResponse = require('./rpc-response')
+const Rpc = require('./rpc')
+const messageParser = require('../message/message-parser')
+const messageBuilder = require('../message/message-builder')
 
 /**
  * The main class for remote procedure calls
@@ -20,24 +20,24 @@ var C = require( '../constants/constants' ),
  * @constructor
  * @public
  */
-var RpcHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._rpcs = {};
-	this._providers = {};
-	this._provideAckTimeouts = {};
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.RPC, this._options.subscriptionTimeout );
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._reprovide.bind( this ) );
-};
+const RpcHandler = function (options, connection, client) {
+  this._options = options
+  this._connection = connection
+  this._client = client
+  this._rpcs = {}
+  this._providers = {}
+  this._provideAckTimeouts = {}
+  this._ackTimeoutRegistry = new AckTimeoutRegistry(client, C.TOPIC.RPC, this._options.subscriptionTimeout)
+  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._reprovide.bind(this))
+}
 
 /**
  * Registers a callback function as a RPC provider. If another connected client calls
  * client.rpc.make() the request will be routed to this method
  *
  * The callback will be invoked with two arguments:
- * 		{Mixed} data The data passed to the client.rpc.make function
- *   	{RpcResponse} rpcResponse An object with methods to respons, acknowledge or reject the request
+ *     {Mixed} data The data passed to the client.rpc.make function
+ *     {RpcResponse} rpcResponse An object with methods to respons, acknowledge or reject the request
  *
  * Only one callback can be registered for a RPC at a time
  *
@@ -47,21 +47,21 @@ var RpcHandler = function( options, connection, client ) {
  * @public
  * @returns void
  */
-RpcHandler.prototype.provide = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if( this._providers[ name ] ) {
-		throw new Error( 'RPC ' + name + ' already registered' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+RpcHandler.prototype.provide = function (name, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name')
+  }
+  if (this._providers[name]) {
+    throw new Error('RPC ' + name + ' already registered')
+  }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback')
+  }
 
-	this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
-	this._providers[ name ] = callback;
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ name ] );
-};
+  this._ackTimeoutRegistry.add(name, C.ACTIONS.SUBSCRIBE)
+  this._providers[name] = callback
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [name])
+}
 
 /**
  * Unregisters this client as a provider for a remote procedure call
@@ -71,17 +71,17 @@ RpcHandler.prototype.provide = function( name, callback ) {
  * @public
  * @returns {void}
  */
-RpcHandler.prototype.unprovide = function( name ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
+RpcHandler.prototype.unprovide = function (name) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name')
+  }
 
-	if( this._providers[ name ] ) {
-		delete this._providers[ name ];
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
-	}
-};
+  if (this._providers[name]) {
+    delete this._providers[name]
+    this._ackTimeoutRegistry.add(name, C.ACTIONS.UNSUBSCRIBE)
+    this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [name])
+  }
+}
 
 /**
  * Executes the actual remote procedure call
@@ -94,20 +94,23 @@ RpcHandler.prototype.unprovide = function( name ) {
  * @public
  * @returns {void}
  */
-RpcHandler.prototype.make = function( name, data, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+RpcHandler.prototype.make = function (name, data, callback) {
+  if (callback === undefined) {
+    return new Promise((resolve, reject) => this.make(name, data, (err, result) => err ? reject(err) : resolve(result)))
+  }
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name')
+  }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback')
+  }
 
-	const uid = utils.nuid();
-	const typedData = messageBuilder.typed( data );
+  const uid = utils.nuid()
+  const typedData = messageBuilder.typed(data)
 
-	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
-};
+  this._rpcs[uid] = new Rpc(this._options, callback, this._client)
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REQUEST, [name, uid, typedData])
+}
 
 /**
  * Retrieves a RPC instance for a correlationId or throws an error
@@ -119,16 +122,16 @@ RpcHandler.prototype.make = function( name, data, callback ) {
  * @private
  * @returns {Rpc}
  */
-RpcHandler.prototype._getRpc = function( correlationId, rpcName, rawMessage ) {
-	var rpc = this._rpcs[ correlationId ];
+RpcHandler.prototype._getRpc = function (correlationId, rpcName, rawMessage) {
+  var rpc = this._rpcs[correlationId]
 
-	if( !rpc ) {
-		this._client._$onError( C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rawMessage );
-		return null;
-	}
+  if (!rpc) {
+    this._client._$onError(C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rawMessage)
+    return null
+  }
 
-	return rpc;
-};
+  return rpc
+}
 
 /**
  * Handles incoming rpc REQUEST messages. Instantiates a new response object
@@ -141,23 +144,22 @@ RpcHandler.prototype._getRpc = function( correlationId, rpcName, rawMessage ) {
  * @private
  * @returns {void}
  */
-RpcHandler.prototype._respondToRpc = function( message ) {
-	var name = message.data[ 0 ],
-		correlationId = message.data[ 1 ],
-		data = null,
-		response;
+RpcHandler.prototype._respondToRpc = function (message) {
+  const name = message.data[0]
+  const correlationId = message.data[1]
 
-	if( message.data[ 2 ] ) {
-		data = messageParser.convertTyped( message.data[ 2 ], this._client );
-	}
+  let data = null
+  if (message.data[2]) {
+    data = messageParser.convertTyped(message.data[2], this._client)
+  }
 
-	if( this._providers[ name ] ) {
-		response = new RpcResponse( this._connection, name, correlationId );
-		this._providers[ name ]( data, response );
-	} else {
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ name, correlationId ] );
-	}
-};
+  if (this._providers[name]) {
+    const response = new RpcResponse(this._connection, name, correlationId)
+    this._providers[name](data, response)
+  } else {
+    this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REJECTION, [name, correlationId])
+  }
+}
 
 /**
  * Distributes incoming messages from the server
@@ -168,71 +170,69 @@ RpcHandler.prototype._respondToRpc = function( message ) {
  * @private
  * @returns {void}
  */
-RpcHandler.prototype._$handle = function( message ) {
-	var rpcName, correlationId, rpc;
+RpcHandler.prototype._$handle = function (message) {
+  var rpcName, correlationId, rpc
 
-	// RPC Requests
-	if( message.action === C.ACTIONS.REQUEST ) {
-		this._respondToRpc( message );
-		return;
-	}
+  // RPC Requests
+  if (message.action === C.ACTIONS.REQUEST) {
+    this._respondToRpc(message)
+    return
+  }
 
-	// RPC subscription Acks
-	if( message.action === C.ACTIONS.ACK &&
-		( message.data[ 0 ] === C.ACTIONS.SUBSCRIBE  || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) ) {
-		this._ackTimeoutRegistry.clear( message );
-		return;
-	}
+  // RPC subscription Acks
+  if (message.action === C.ACTIONS.ACK &&
+     (message.data[0] === C.ACTIONS.SUBSCRIBE || message.data[0] === C.ACTIONS.UNSUBSCRIBE)) {
+    this._ackTimeoutRegistry.clear(message)
+    return
+  }
 
-	// handle auth/denied subscription errors
-	if( message.action === C.ACTIONS.ERROR ) {
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
-			return;
-		}
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
-			this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
-			return;
-		}
-	}
+  // handle auth/denied subscription errors
+  if (message.action === C.ACTIONS.ERROR) {
+    if (message.data[0] === C.EVENT.MESSAGE_PERMISSION_ERROR) {
+      return
+    }
+    if (message.data[0] === C.EVENT.MESSAGE_DENIED && message.data[2] === C.ACTIONS.SUBSCRIBE) {
+      this._ackTimeoutRegistry.remove(message.data[1], C.ACTIONS.SUBSCRIBE)
+      return
+    }
+  }
 
-	/*
-	 * Error messages always have the error as first parameter. So the
-	 * order is different to ack and response messages
-	 */
-	if( message.action === C.ACTIONS.ERROR || message.action === C.ACTIONS.ACK ) {
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.REQUEST ) {
-			correlationId = message.data[ 3 ];
-		} else {
-			correlationId = message.data[ 2 ];
-		}
-		rpcName = message.data[ 1 ];
-	} else {
-		rpcName = message.data[ 0 ];
-		correlationId = message.data[ 1 ];
-	}
+  /*
+   * Error messages always have the error as first parameter. So the
+   * order is different to ack and response messages
+   */
+  if (message.action === C.ACTIONS.ERROR || message.action === C.ACTIONS.ACK) {
+    if (message.data[0] === C.EVENT.MESSAGE_DENIED && message.data[2] === C.ACTIONS.REQUEST) {
+      correlationId = message.data[3]
+    } else {
+      correlationId = message.data[2]
+    }
+    rpcName = message.data[1]
+  } else {
+    rpcName = message.data[0]
+    correlationId = message.data[1]
+  }
 
-	/*
-	* Retrieve the rpc object
-	*/
-	rpc = this._getRpc( correlationId, rpcName, message.raw );
-	if( rpc === null ) {
-		return;
-	}
+  /*
+  * Retrieve the rpc object
+  */
+  rpc = this._getRpc(correlationId, rpcName, message.raw)
+  if (rpc === null) {
+    return
+  }
 
-	// RPC Responses
-	if( message.action === C.ACTIONS.ACK ) {
-		rpc.ack();
-	}
-	else if( message.action === C.ACTIONS.RESPONSE ) {
-		rpc.respond( message.data[ 2 ] );
-		delete this._rpcs[ correlationId ];
-	}
-	else if( message.action === C.ACTIONS.ERROR ) {
-		message.processedError = true;
-		rpc.error( message.data[ 0 ] );
-		delete this._rpcs[ correlationId ];
-	}
-};
+  // RPC Responses
+  if (message.action === C.ACTIONS.ACK) {
+    rpc.ack()
+  } else if (message.action === C.ACTIONS.RESPONSE) {
+    rpc.respond(message.data[2])
+    delete this._rpcs[correlationId]
+  } else if (message.action === C.ACTIONS.ERROR) {
+    message.processedError = true
+    rpc.error(message.data[0])
+    delete this._rpcs[correlationId]
+  }
+}
 
 /**
  * Reregister providers to events when connection is lost
@@ -240,11 +240,10 @@ RpcHandler.prototype._$handle = function( message ) {
  * @package private
  * @returns {void}
  */
-RpcHandler.prototype._reprovide = function() {
-	for( var rpcName in this._providers ) {
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ rpcName ] );
-	}
-};
+RpcHandler.prototype._reprovide = function () {
+  for (const rpcName in this._providers) {
+    this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [rpcName])
+  }
+}
 
-
-module.exports = RpcHandler;
+module.exports = RpcHandler
