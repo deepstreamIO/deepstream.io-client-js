@@ -2717,7 +2717,7 @@ Connection.prototype._resetCurrentMessageCount = function() {
  * @returns {void}
  */
 Connection.prototype._sendQueuedMessages = function() {
-	if( this._state !== C.CONNECTION_STATE.OPEN ) {
+	if( this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN ) {
 		return;
 	}
 
@@ -5209,7 +5209,7 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 	}
 
 	if( this._providers[ name ] ) {
-		response = new RpcResponse( this._connection,name, correlationId );
+		response = new RpcResponse( this._connection, name, correlationId );
 		this._providers[ name ]( data, response );
 	} else {
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ name, correlationId ] );
@@ -5241,29 +5241,28 @@ RpcHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
+	// handle auth/denied subscription errors
+	if( message.action === C.ACTIONS.ERROR ) {
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
+			return;
+		}
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
+			this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
+			return;
+		}
+	}
 
 	/*
 	 * Error messages always have the error as first parameter. So the
 	 * order is different to ack and response messages
 	 */
-	if( message.action === C.ACTIONS.ERROR ) {
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
-			return;
-		}
-		else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
-			if( message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
-				this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
-				return;
-			}
-			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {
-				rpcName = message.data[ 1 ];
-				correlationId = message.data[ 3 ];
-			}
+	if( message.action === C.ACTIONS.ERROR || message.action === C.ACTIONS.ACK ) {
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.REQUEST ) {
+			correlationId = message.data[ 3 ];
 		} else {
-			rpcName = message.data[ 1 ];
 			correlationId = message.data[ 2 ];
 		}
-
+		rpcName = message.data[ 1 ];
 	} else {
 		rpcName = message.data[ 0 ];
 		correlationId = message.data[ 1 ];
@@ -5306,6 +5305,7 @@ RpcHandler.prototype._reprovide = function() {
 
 
 module.exports = RpcHandler;
+
 },{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":26,"../utils/resubscribe-notifier":28,"./rpc":25,"./rpc-response":24}],24:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
@@ -5339,7 +5339,11 @@ var RpcResponse = function( connection, name, correlationId ) {
  */
 RpcResponse.prototype.ack = function() {
 	if( this._isAcknowledged === false ) {
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ACK, [ this._name, this._correlationId ] );
+		this._connection.sendMsg(
+			C.TOPIC.RPC,
+			C.ACTIONS.ACK,
+			[ C.ACTIONS.REQUEST, this._name, this._correlationId ]
+		);
 		this._isAcknowledged = true;
 	}
 };
@@ -5414,6 +5418,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
+
 },{"../constants/constants":10,"../message/message-builder":15,"../utils/utils":30}],25:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
