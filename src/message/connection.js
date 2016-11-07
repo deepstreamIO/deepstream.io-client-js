@@ -213,7 +213,24 @@ Connection.prototype._sendQueuedMessages = function () {
     this._sendNextPacketTimeout = null
   }
 
-  this._endpoint.send(message)
+  this._submit(message)
+}
+
+/**
+ * Sends a message to over the endpoint connection directly
+ *
+ * Will generate a connection error if the websocket was closed
+ * prior to an onclose event.
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._submit = function (message) {
+  if (this._endpoint.readyState === this._endpoint.OPEN) {
+    this._endpoint.send(message)
+  } else {
+    this._onError('Tried to send message on a closed websocket connection')
+  }
 }
 
 /**
@@ -239,8 +256,8 @@ Connection.prototype._queueNextPacket = function () {
  */
 Connection.prototype._sendAuthParams = function () {
   this._setState(C.CONNECTION_STATE.AUTHENTICATING)
-  var authMessage = messageBuilder.getMsg(C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ])
-  this._endpoint.send(authMessage)
+  const authMessage = messageBuilder.getMsg(C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ])
+  this._submit(authMessage)
 }
 
 /**
@@ -397,7 +414,7 @@ Connection.prototype._handleMessages = function (deadline) {
 Connection.prototype._handleConnectionResponse = function (message) {
   if (message.action === C.ACTIONS.PING) {
     this._lastHeartBeat = Date.now()
-    this._endpoint.send(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.PONG))
+    this._submit(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.PONG))
   } else if (message.action === C.ACTIONS.ACK) {
     this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION)
     if (this._authParams) {
@@ -405,7 +422,7 @@ Connection.prototype._handleConnectionResponse = function (message) {
     }
   } else if (message.action === C.ACTIONS.CHALLENGE) {
     this._setState(C.CONNECTION_STATE.CHALLENGING)
-    this._endpoint.send(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ]))
+    this._submit(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ]))
   } else if (message.action === C.ACTIONS.REJECTION) {
     this._challengeDenied = true
     this.close()
