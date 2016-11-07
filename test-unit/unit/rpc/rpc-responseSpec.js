@@ -13,7 +13,7 @@ describe( 'sends the correct response messages - happy path', function(){
 
 	it( 'sends an ack message automatically', function( done ){
 		setTimeout(function(){
-			expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|addTwo|123+' ) );
+			expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|REQ|addTwo|123+' ) );
 			done();
 		}, 10 );
 	});
@@ -44,7 +44,7 @@ describe( 'sends the correct response messages - ack behaviour', function(){
 
 	it( 'sends ack message', function() {
 		response.ack();
-		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|addTwo|123+' ) );
+		expect( connectionMock.lastSendMessage ).toBe( msg( 'P|A|REQ|addTwo|123+' ) );
 	});
 
 	it( 'doesn\'t send multiple ack messages', function() {
