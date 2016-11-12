@@ -20,8 +20,7 @@ const Record = function (name, recordOptions, connection, options, client) {
   this._connection = connection
   this._client = client
   this._options = options
-  this._data = undefined
-  this._paths = new Map()
+  this._eventEmitter = new EventEmitter()
 
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
   this._reset()
@@ -85,7 +84,7 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
     return
   }
 
-  this._paths.set(args.path, (this._paths.get(args.path) || []).concat(args.callback))
+  this._eventEmitter.on(args.path, args.callback)
 
   if (args.triggerNow && this._data) {
     args.callback(this.get(args.path))
@@ -106,16 +105,7 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
     return
   }
 
-  const callbacks = this._paths.get(args.path) || []
-
-  if (args.callback) {
-    const index = callbacks.indexOf(args.callback)
-    if (index !== -1) {
-      callbacks.splice(index, 1)
-    }
-  } else {
-    callbacks.splice(0)
-  }
+  this._eventEmitter.off(args.path, args.callback)
 }
 
 Record.prototype.whenReady = function () {
@@ -248,16 +238,18 @@ Record.prototype._applyChange = function (newData) {
   const oldData = this._data
   this._data = newData
 
-  for (const path of this._paths.keys()) {
-    const newValue = jsonPath.get(newData, path)
-    const oldValue = jsonPath.get(oldData, path)
+  if (!this._eventEmitter._callbacks) {
+    return
+  }
 
-    if (newValue === oldValue) {
-      continue
-    }
+  const paths = Object.keys(this._eventEmitter._callbacks)
 
-    for (const callback of this._paths.get(path)) {
-      callback(newValue)
+  for (let i = 0; i < paths.length; i++) {
+    const newValue = jsonPath.get(newData, paths[i])
+    const oldValue = jsonPath.get(oldData, paths[i])
+
+    if (newValue !== oldValue) {
+      this._eventEmitter.emit(paths[i], this.get(paths[i]))
     }
   }
 }
@@ -303,9 +295,11 @@ Record.prototype._destroy = function () {
   if (this.usages > 0) {
     this._sendRead()
   } else {
+    this._eventEmitter.off()
     this._resubscribeNotifier.destroy()
     this.isDestroyed = true
     this._client = null
+    this._eventEmitter = null
     this._connection = null
     this.emit('destroy')
   }
