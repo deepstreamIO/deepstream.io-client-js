@@ -37,42 +37,52 @@ var PresenceHandler = function( options, connection, client ) {
  */
 PresenceHandler.prototype.getCurrentClients = function( callback ) {
 	this._emitter.once( C.ACTIONS.QUERY, callback );
-	// At least one argument is required for a message to be permissionable
-	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [ C.ACTIONS.QUERY ] );
+	this._ackTimeoutRegistry.add( C.ACTIONS.QUERY, C.TOPIC.PRESENCE);
+	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY );
 };
 
 /**
- * Subscribes to client logins in deepstream
+ * Subscribes to client logins or logouts in deepstream
  *
+ * @param 	{String} event the presence join or leave event to subscribe to
  * @param   {Function} callback Will be invoked with the username of a client
- *								that logs in
+ *								that logs in or out
  *
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.subscribeToLogins = function( callback ) {
-	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_JOIN ) ) {
-		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN );
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
+PresenceHandler.prototype.subscribe = function( event, callback ) {
+	if ( callback !== undefined && typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
-	this._emitter.on( C.ACTIONS.PRESENCE_JOIN, callback );
+
+	if( !this._emitter.hasListeners( event ) ) {
+		this._ackTimeoutRegistry.add( event, C.ACTIONS.SUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ event ] );
+	}
+	this._emitter.on( event, callback );
 };
 
 /**
- * Subscribes to client logouts in deepstream
+ * Removes a callback for a specified presence event
  *
+ * @param 	{String} event the presence join or leave event to subscribe to
  * @param   {Function} callback Will be invoked with the username of a client
- *								that logs out
+ *								that logs in or out
  *
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.subscribeToLogouts = function( callback ) {
-	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_LEAVE ) ) {
-		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE );
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
+PresenceHandler.prototype.unsubscribe = function( event, callback ) {
+	if ( callback !== undefined && typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
-	this._emitter.on( C.ACTIONS.PRESENCE_LEAVE, callback );
+	this._emitter.off( event, callback );
+
+	if( !this._emitter.hasListeners( event ) ) {
+		this._ackTimeoutRegistry.add( event, C.ACTIONS.UNSUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [ event ] );
+	}	
 };
 
 /**

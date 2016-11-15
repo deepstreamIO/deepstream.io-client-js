@@ -137,7 +137,7 @@ Client.prototype.getPresentClients = function( callback ) {
  * @returns {void}
  */
 Client.prototype.onClientAdded = function( callback ) {
-	this._presence.subscribeToLogins( callback );
+	this._presence.subscribe( C.ACTIONS.PRESENCE_JOIN, callback );
 };
 
 /**
@@ -150,7 +150,31 @@ Client.prototype.onClientAdded = function( callback ) {
  * @returns {void}
  */
 Client.prototype.onClientRemoved = function( callback ) {
-	this._presence.subscribeToLogouts( callback );
+	this._presence.subscribe( C.ACTIONS.PRESENCE_LEAVE, callback );
+};
+
+/**
+ * Removes the callback for login events
+ *
+ * @param   {Function} callback 
+ *
+ * @public
+ * @returns {void}
+ */
+Client.prototype.offClientAdded = function( callback ) {
+	this._presence.unsubscribe( C.ACTIONS.PRESENCE_JOIN, callback );
+};
+
+/**
+ * Removes the callback for logout events
+ *
+ * @param   {Function} callback
+ * 
+ * @public
+ * @returns {void}
+ */
+Client.prototype.offClientRemoved = function( callback ) {
+	this._presence.unsubscribe( C.ACTIONS.PRESENCE_LEAVE, callback );
 };
 
 /**
