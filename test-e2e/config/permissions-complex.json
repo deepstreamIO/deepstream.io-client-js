@@ -71,5 +71,10 @@
 		"only-full-user-data": {
 			"request": "typeof data.firstname === 'string' && typeof data.lastname === 'string'"
 		}
+	},
+	"presence": {
+		"*": {
+			"query": true
+		}
 	}
 }

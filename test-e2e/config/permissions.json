@@ -20,5 +20,12 @@
 			"provide": true,
 			"request": true
 		}
+	},
+	"presence": {
+		"*": {
+			"query": true,
+			"logins": false,
+			"logouts": true
+		}
 	}
 }
