@@ -45,44 +45,41 @@ PresenceHandler.prototype.getCurrentClients = function( callback ) {
 /**
  * Subscribes to client logins or logouts in deepstream
  *
- * @param 	{String} event the presence join or leave event to subscribe to
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs in or out
+ * @param   {Function} callback Will be invoked with the type of event that occurred
+ * 								either 'PRESENCE_JOIN' or 'PRESENCE_LEAVE' and the username of the client
  *
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.subscribe = function( event, callback ) {
+PresenceHandler.prototype.subscribe = function( callback ) {
 	if ( callback !== undefined && typeof callback !== 'function' ) {
 		throw new Error( 'invalid argument callback' );
 	}
 
-	if( !this._emitter.hasListeners( event ) ) {
-		this._ackTimeoutRegistry.add( event, C.ACTIONS.SUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ event ] );
+	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
+		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.TOPIC.PRESENCE ] );
 	}
-	this._emitter.on( event, callback );
+	this._emitter.on( C.TOPIC.PRESENCE, callback );
 };
 
 /**
- * Removes a callback for a specified presence event
+ * Removes the callback for presence events
  *
- * @param 	{String} event the presence join or leave event to subscribe to
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs in or out
+ * @param   {Function} callback
  *
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.unsubscribe = function( event, callback ) {
+PresenceHandler.prototype.unsubscribe = function( callback ) {
 	if ( callback !== undefined && typeof callback !== 'function' ) {
 		throw new Error( 'invalid argument callback' );
 	}
-	this._emitter.off( event, callback );
+	this._emitter.off( C.TOPIC.PRESENCE, callback );
 
-	if( !this._emitter.hasListeners( event ) ) {
-		this._ackTimeoutRegistry.add( event, C.ACTIONS.UNSUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [ event ] );
+	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
+		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [ C.TOPIC.PRESENCE ] );
 	}	
 };
 
@@ -99,10 +96,10 @@ PresenceHandler.prototype._$handle = function( message ) {
 		this._ackTimeoutRegistry.clear( message );
 	}
 	else if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
-		this._emitter.emit( C.ACTIONS.PRESENCE_JOIN, message.data[ 0 ] );
+		this._emitter.emit( C.TOPIC.PRESENCE, C.ACTIONS.PRESENCE_JOIN, message.data[ 0 ] );
 	}
 	else if( message.action === C.ACTIONS.PRESENCE_LEAVE ) {
-		this._emitter.emit( C.ACTIONS.PRESENCE_LEAVE, message.data[ 0 ] );
+		this._emitter.emit( C.TOPIC.PRESENCE, C.ACTIONS.PRESENCE_LEAVE, message.data[ 0 ] );
 	}
 	else if( message.action === C.ACTIONS.QUERY ) {
 		this._emitter.emit( C.ACTIONS.QUERY, message.data );

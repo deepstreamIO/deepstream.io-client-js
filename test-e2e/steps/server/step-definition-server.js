@@ -1,5 +1,5 @@
 const Cluster = require( '../../tools/cluster' );
-const Deepstream = require( 'deepstream.io' );
+const Deepstream = require( '../../../../deepstream.io/src/deepstream.io' );
 
 module.exports = function() {
 

@@ -130,51 +130,26 @@ Client.prototype.getPresentClients = function( callback ) {
 /**
  * Subscribes client to login events from other clients
  *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs in
+ * @param   {Function} callback Will be invoked with the type of event that occurred
+ * 								either 'PRESENCE_JOIN' or 'PRESENCE_LEAVE' and the username of the client
  *
  * @public
  * @returns {void}
  */
-Client.prototype.onClientAdded = function( callback ) {
-	this._presence.subscribe( C.ACTIONS.PRESENCE_JOIN, callback );
+Client.prototype.onPresenceEvent = function( callback ) {
+	this._presence.subscribe( callback );
 };
 
 /**
- * Subscribes client to logout events from other clients
- *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs out
- *
- * @public
- * @returns {void}
- */
-Client.prototype.onClientRemoved = function( callback ) {
-	this._presence.subscribe( C.ACTIONS.PRESENCE_LEAVE, callback );
-};
-
-/**
- * Removes the callback for login events
+ * Removes the callback for presence events
  *
  * @param   {Function} callback 
  *
  * @public
  * @returns {void}
  */
-Client.prototype.offClientAdded = function( callback ) {
-	this._presence.unsubscribe( C.ACTIONS.PRESENCE_JOIN, callback );
-};
-
-/**
- * Removes the callback for logout events
- *
- * @param   {Function} callback
- * 
- * @public
- * @returns {void}
- */
-Client.prototype.offClientRemoved = function( callback ) {
-	this._presence.unsubscribe( C.ACTIONS.PRESENCE_LEAVE, callback );
+Client.prototype.offPresenceEvent = function( callback ) {
+	this._presence.unsubscribe( callback );
 };
 
 /**
