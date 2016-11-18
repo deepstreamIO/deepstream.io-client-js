@@ -1,3 +1,36 @@
+## [2.0.0] - 2016-11-18
+
+### Features
+- Added support for the deepstream `presence` API, enabling querying and
+  subscribing to who is online within a cluster. For example:
+  ``` javascript
+  ds.presence.getAll((users) => {
+    users.forEach((username) => {
+      console.log(`${username} is online`)
+    })
+  })
+  ds.presence.subscribe((username, loggedIn) => {
+    if (loggedIn) {
+      console.log(`${username} has logged in`)
+    } else {
+      console.log(`${username} has logged out`)
+    }
+  })
+  ```
+### Enhancements
+
+- Added heartbeats over WebSocket connection
+- Presence has been added to query and subscribe to who is online with the cluster
+- E2E tests refactored
+
+### Breaking Changes
+
+- Changed format of RPC request ACK messages to be more consistent with the rest of the specs
+[#408](https://github.com/deepstreamIO/deepstream.io/issues/408)
+- We now depend only on browser/node.js WebSockets, removing support for TCP and engine.io
+- Support for webRTC has been removed
+- Supports deepstream.io v2.0.0+ only
+
 ## [1.1.1] - 2016-09-30
 
 ### Bug Fixes
