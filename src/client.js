@@ -34,13 +34,13 @@ var Client = function( url, options ) {
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
-	this._presence = new PresenceHandler( this._options, this._connection, this );
+	this.presence = new PresenceHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
-	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this._presence._$handle.bind( this._presence );
+	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this.presence._$handle.bind( this.presence );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 
@@ -112,45 +112,6 @@ Client.prototype.getUid = function() {
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 
 	return timestamp + '-' + randomString;
-};
-
-/**
- * Queries for clients logged into deepstream
- *
- * @param   {Function} callback Will be invoked with an array of clients
- *
- * @public
- * @returns {Client}
- */
-Client.prototype.getPresentClients = function( callback ) {
-	this._presence.getCurrentClients( callback );	
-	return this;
-};
-
-/**
- * Subscribes client to login events from other clients
- *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs in
- *
- * @public
- * @returns {void}
- */
-Client.prototype.onClientAdded = function( callback ) {
-	this._presence.subscribeToLogins( callback );
-};
-
-/**
- * Subscribes client to logout events from other clients
- *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs out
- *
- * @public
- * @returns {void}
- */
-Client.prototype.onClientRemoved = function( callback ) {
-	this._presence.subscribeToLogouts( callback );
 };
 
 /**
