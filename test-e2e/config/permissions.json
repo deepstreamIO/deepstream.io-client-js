@@ -1,4 +1,9 @@
 {
+	"presence": {
+		"*": {
+			"allow": true
+		}
+	},
 	"record": {
 		"*": {
 			"create": true,
@@ -19,13 +24,6 @@
 		"*": {
 			"provide": true,
 			"request": true
-		}
-	},
-	"presence": {
-		"*": {
-			"query": true,
-			"logins": false,
-			"logouts": true
 		}
 	}
 }
