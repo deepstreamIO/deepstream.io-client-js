@@ -113,7 +113,6 @@ PresenceHandler.prototype._$handle = function( message ) {
 		this._emitter.emit( C.ACTIONS.QUERY, message.data );
 	}
 	else {
-		console.log( 1, message)
 		this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action );
 	}
 };
