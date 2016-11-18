@@ -25,11 +25,11 @@
 
 ### Breaking Changes
 
+- Supports deepstream.io v2.0.0+ only
 - Changed format of RPC request ACK messages to be more consistent with the rest of the specs
 [#408](https://github.com/deepstreamIO/deepstream.io/issues/408)
 - We now depend only on browser/node.js WebSockets, removing support for TCP and engine.io
 - Support for webRTC has been removed
-- Supports deepstream.io v2.0.0+ only
 
 ## [1.1.1] - 2016-09-30
 
