@@ -8,3 +8,21 @@ The Browser / Node Client for [deepstream.io](http://deepstream.io/)
 For API documentation see the [documentation page](http://deepstream.io/docs/)!
 
 For tutorials see the [tutorial page](http://deepstream.io/tutorials/)!
+
+## Usage with Typescript
+
+This repository comes with the Typescript typings bundled. No need to download them separately!
+
+1. Make sure the `src/client.d.ts` file is accessible to the Typescript compiler. Do this by making sure it's an included file in tsconfig.json by adding a `typeRoots` defininition. (Required Typescript 2.0 or higher.)
+
+>  "typeRoots": [
+     "./node_modules/deepstream.io-client.js/src/client.d.ts"
+    ]
+
+2. Import the module in ES6 style.
+
+```typescript
+import * as deepstream from 'deepstream.io-client-js';
+
+const client = deepstream('http://localhost').login();
+```
