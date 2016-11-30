@@ -104,7 +104,7 @@ Record.prototype.get = function( path ) {
  * @public
  * @returns {void}
  */
-Record.prototype.set = function( pathOrData, data ) {
+Record.prototype.set = function( pathOrData, data, callback ) {
 	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
 		throw new Error( 'invalid argument data' );
 	}
@@ -131,7 +131,7 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	this._sendUpdate( path, data );
+	this._sendUpdate( path, data, true );
 	this._applyChange( newValue );
 	return this;
 };
@@ -325,12 +325,13 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 	}
 };
 
-Record.prototype._sendUpdate = function ( path, data ) {
+Record.prototype._sendUpdate = function ( path, data, updateSuccess ) {
 	this.version++;
 	if( !path ) {
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 			this.name,
 			this.version,
+			updateSuccess,
 			data
 		]);
 	} else {
@@ -338,6 +339,7 @@ Record.prototype._sendUpdate = function ( path, data ) {
 			this.name,
 			this.version,
 			path,
+			updateSuccess,
 			messageBuilder.typed( data )
 		]);
 	}
