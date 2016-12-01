@@ -121,10 +121,14 @@ module.exports = function() {
 
 	this.Then(/^the client is told the record "([^"]*)" encountered an error retrieving snapshot$/, function (recordName) {
          sinon.assert.calledWith( snapshotCallback, "RECORD_NOT_FOUND" );
+		 sinon.assert.calledOnce( snapshotCallback );
+		 snapshotCallback.reset();
     });
 
 	this.Then(/^the client is provided the snapshot for record "([^"]*)" with data "(.*)"$/, function (recordName, data) {
          sinon.assert.calledWith( snapshotCallback, null, JSON.parse( data ) );
+		 sinon.assert.calledOnce( snapshotCallback );
+		 snapshotCallback.reset();
     });
 
 	/**
@@ -137,9 +141,13 @@ module.exports = function() {
 
 	this.Then(/^the client is told the record "([^"]*)" exists$/, function (recordName) {
 		sinon.assert.calledWith( hasCallback, null, true );
+		sinon.assert.calledOnce( hasCallback );
+		hasCallback.reset();
     });
 
 	this.Then(/^the client is told the record "([^"]*)" doesn't exist$/, function (recordName) {
 		sinon.assert.calledWith( hasCallback, null, false );
+		sinon.assert.calledOnce( hasCallback );
+		hasCallback.reset();
     });
 };
