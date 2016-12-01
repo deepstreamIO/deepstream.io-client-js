@@ -83,6 +83,9 @@ function patch( oldValue, newValue, deepCopy ) {
 	if ( utils.deepEquals( oldValue, newValue ) ) {
 		return oldValue;
 	}
+	else if ( oldValue === null || newValue === null ) {
+		return newValue;
+	}
 	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
 		var arr = [];
 		for ( i = 0; i < newValue.length; i++ ) {
