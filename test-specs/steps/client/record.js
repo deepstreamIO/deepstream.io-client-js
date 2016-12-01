@@ -127,6 +127,9 @@ module.exports = function() {
          sinon.assert.calledWith( snapshotCallback, null, JSON.parse( data ) );
     });
 
+	/**
+	 * Has
+	 */
 	this.Given(/^the client checks if the server has the record "([^"]*)"$/, function (recordName, callback) {
 		global.dsClient.record.has( recordName, hasCallback );
 		setTimeout( callback, config.messageWaitTime );
@@ -134,5 +137,9 @@ module.exports = function() {
 
 	this.Then(/^the client is told the record "([^"]*)" exists$/, function (recordName) {
 		sinon.assert.calledWith( hasCallback, null, true );
+    });
+
+	this.Then(/^the client is told the record "([^"]*)" doesn't exist$/, function (recordName) {
+		sinon.assert.calledWith( hasCallback, null, false );
     });
 };
