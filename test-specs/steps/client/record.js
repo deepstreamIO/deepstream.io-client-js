@@ -5,7 +5,7 @@ var check = require( '../helper' ).check;
 var records = {};
 var subscribeCallback = sinon.spy();
 var listenCallback = sinon.spy();
-var snapshotCallback;
+var snapshotCallback = sinon.spy();
 var hasCallback = sinon.spy();
 
 module.exports = function() {
@@ -110,7 +110,6 @@ module.exports = function() {
 	 * Snapshot
 	 */
 	this.Given(/^the client requests a snapshot for the record "([^"]*)"$/, function (recordName, callback) {
-		snapshotCallback = sinon.spy();
 		global.dsClient.record.snapshot( recordName, snapshotCallback );
 		setTimeout( callback, config.messageWaitTime );
     });
