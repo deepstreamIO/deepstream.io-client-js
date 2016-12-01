@@ -12,11 +12,15 @@ module.exports = function() {
 
 	this.Then( /^the client is notified that no clients are connected$/, function(){
         sinon.assert.calledWith( queryCallback, [] );
+		sinon.assert.calledOnce( queryCallback );
+		queryCallback.reset();
 	});
     
     this.Then(/^the client is notified that clients "([^"]*)" are connected$/, function (clients) {
 		var connected_clients = clients.split(',');
 		sinon.assert.calledWith( queryCallback, connected_clients );
+		sinon.assert.calledOnce( queryCallback );
+		queryCallback.reset();
     });
 
 	/**
@@ -34,16 +38,17 @@ module.exports = function() {
 
 	this.When( /^the client is notified that client "(\w*)" logged in$/, function( username ){
 		sinon.assert.calledWith( subscribeCallback, username, true );
+		sinon.assert.calledOnce( subscribeCallback );
 		subscribeCallback.reset();
 	});
 
 	this.When( /^the client is notified that client "(\w*)" logged out$/, function( username ){
 		sinon.assert.calledWith( subscribeCallback, username, false );
+		sinon.assert.calledOnce( subscribeCallback );
 		subscribeCallback.reset();
 	});
 
 	this.When( /^the client is not notified that client "(\w*)" logged in$/, function( username ){
 		sinon.assert.notCalled( subscribeCallback );
-		subscribeCallback.reset();
 	});
 };
