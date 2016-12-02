@@ -117,6 +117,14 @@ messageWaitTime * 2 );
 		callback( !matchFound && ( 'No match for message ' + message + ' found. Current messages: ' + server.allMessages ) );
 	} );
 
+	this.Then( /^the server didn't receive the message (.*)$/, function( message, callback ) {
+		var matchFound = false;
+		for( var i=0; i<server.allMessages.length && !matchFound; i++) {
+			matchFound = matchMessage( server.allMessages[ i ], message );
+		}
+		callback( !matchFound && ( 'Match for message ' + message + ' found. Current messages: ' + server.allMessages ) );
+	} );
+
 	this.Then( /^the server has received (\d*) messages$/, function( numberOfMessages, callback ) {
 		check( 'number of received messages', Number( numberOfMessages ), server.allMessages.length, callback );
 	});
