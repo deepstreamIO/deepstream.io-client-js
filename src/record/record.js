@@ -105,6 +105,8 @@ Record.prototype.get = function( path ) {
  * @returns {void}
  */
 Record.prototype.set = function( pathOrData, data, callback ) {
+	var config = {};
+
 	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
 		throw new Error( 'invalid argument data' );
 	}
@@ -131,7 +133,9 @@ Record.prototype.set = function( pathOrData, data, callback ) {
 		return this;
 	}
 
-	this._sendUpdate( path, data, true );
+	config.writeSuccess = callback !== undefined ? true : false;
+
+	this._sendUpdate( path, data, config );
 	this._applyChange( newValue );
 	return this;
 };
@@ -325,22 +329,23 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 	}
 };
 
-Record.prototype._sendUpdate = function ( path, data, updateSuccess ) {
-	this.version++;
+Record.prototype._sendUpdate = function ( path, data, config ) {
+	this.version++; 
+	config = JSON.stringify( config );
 	if( !path ) {
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 			this.name,
 			this.version,
-			updateSuccess,
-			data
+			data,
+			config
 		]);
 	} else {
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
 			this.name,
 			this.version,
 			path,
-			updateSuccess,
-			messageBuilder.typed( data )
+			messageBuilder.typed( data ),
+			config
 		]);
 	}
 };
