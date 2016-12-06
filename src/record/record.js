@@ -38,6 +38,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.version = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
+	this._callbacks = {};
 
 	this._mergeStrategy = null;
 	if( options.mergeStrategy ) {
@@ -133,8 +134,12 @@ Record.prototype.set = function( pathOrData, data, callback ) {
 		return this;
 	}
 
-	config.writeSuccess = callback !== undefined ? true : false;
-
+	if( callback !== undefined ) {
+		config.writeSuccess = true;
+		var newVersion = this.version + 1;
+		this._callbacks[ newVersion ] = callback;
+	}
+	
 	this._sendUpdate( path, data, config );
 	this._applyChange( newValue );
 	return this;
