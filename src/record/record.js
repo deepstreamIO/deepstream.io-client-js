@@ -106,8 +106,6 @@ Record.prototype.get = function( path ) {
  * @returns {void}
  */
 Record.prototype.set = function( pathOrData, data, callback ) {
-	var config = {};
-
 	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
 		throw new Error( 'invalid argument data' );
 	}
@@ -134,7 +132,9 @@ Record.prototype.set = function( pathOrData, data, callback ) {
 		return this;
 	}
 
+	var config;
 	if( callback !== undefined ) {
+		config = {};
 		config.writeSuccess = true;
 		var newVersion = this.version + 1;
 		this._callbacks[ newVersion ] = callback;
@@ -300,7 +300,6 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message, this._client );
 	}
 	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT_ERROR ) {
-		console.log('Calling with', message.data[ 2 ], this._callbacks[ message.data[ 1 ] ] )
 		this._callbacks[ message.data[ 1 ] ]( JSON.parse( message.data[ 2 ] ) );
 		delete this._callbacks[ message.data[ 1 ] ];
 	}
@@ -341,21 +340,17 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 
 Record.prototype._sendUpdate = function ( path, data, config ) {
 	this.version++; 
+	var msgData;
 	if( !path ) {
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-			this.name,
-			this.version,
-			data,
-			config
-		]);
+		msgData = config === undefined ?
+			[ this.name, this.version, data ] :
+			[ this.name, this.version, data, config ];
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, msgData );
 	} else {
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
-			this.name,
-			this.version,
-			path,
-			messageBuilder.typed( data ),
-			config
-		]);
+		msgData = config === undefined ?
+			[ this.name, this.version, path, messageBuilder.typed( data ) ] :
+			[ this.name, this.version, path, messageBuilder.typed( data ), config ];
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, msgData );
 	}
 };
 
@@ -442,19 +437,18 @@ Record.prototype._applyUpdate = function( message ) {
 	if( this.version === null ) {
 		this.version = version;
 	}
-	// else if( this.version + 1 !== version ) {
-	// 	if( message.action === C.ACTIONS.PATCH ) {
-	// 		/**
-	// 		* Request a snapshot so that a merge can be done with the read reply which contains
-	// 		* the full state of the record
-	// 		**/
-	// 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [ this.name ] );
-	// 	} else {
-	// 		//console.log('Recovering here, incoming version', version, 'current version', this.version, 'this.version + version', this.version + 1)
-	// 		this._recoverRecord( version, data, message );
-	// 	}
-	// 	return;
-	// }
+	else if( this.version + 1 !== version ) {
+		if( message.action === C.ACTIONS.PATCH ) {
+			/**
+			* Request a snapshot so that a merge can be done with the read reply which contains
+			* the full state of the record
+			**/
+			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [ this.name ] );
+		} else {
+			this._recoverRecord( version, data, message );
+		}
+		return;
+	}
 
 	this.version = version;
 	this._applyChange( jsonPath.set( this._$data, message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined, data ) );

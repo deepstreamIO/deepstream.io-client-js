@@ -143,7 +143,7 @@ module.exports = function (){
     setTimeout( done, utils.defaultDelay );
   });
 
-  this.When(/^(.+) requires write acknowledgements for record "([^"]*)"$/, function ( clientExpression, recordName ) {
+  this.When(/^(.+) requires? write acknowledgements for record "([^"]*)"$/, function ( clientExpression, recordName ) {
     clientHandler.getClients( clientExpression ).forEach( ( client ) => {
         client.record.records[ recordName ].setCallback = sinon.spy();
     } );
@@ -160,7 +160,7 @@ module.exports = function (){
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
       recordData.record.set( path, utils.parseData( data ), recordData.setCallback );
     } );
-    setTimeout( done, 1000 );
+    setTimeout( done, utils.defaultDelay );
   });
 
   this.Then(/^(.+) is told that the record "([^"]*)" was set without error$/, function ( clientExpression, recordName ) {

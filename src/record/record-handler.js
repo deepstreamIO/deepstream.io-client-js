@@ -193,7 +193,6 @@ RecordHandler.prototype.has = function( name, callback ) {
  * @returns {void}
  */
 RecordHandler.prototype._$handle = function( message ) {
-	console.log( message )
 	var name;
 	if( message.action === C.ACTIONS.ERROR &&
 		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
