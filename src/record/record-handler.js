@@ -193,8 +193,8 @@ RecordHandler.prototype.has = function( name, callback ) {
  * @returns {void}
  */
 RecordHandler.prototype._$handle = function( message ) {
+	console.log( message )
 	var name;
-
 	if( message.action === C.ACTIONS.ERROR &&
 		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
 			message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
@@ -216,7 +216,7 @@ RecordHandler.prototype._$handle = function( message ) {
 		 *
 		 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
 		 * between another clients creation and read message for the same record
-		 */
+		 */ 
 		if( message.data[ 0 ] === C.ACTIONS.DELETE ||
 			  message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ||
 			 ( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE  )

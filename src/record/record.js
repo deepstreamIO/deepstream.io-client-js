@@ -139,7 +139,7 @@ Record.prototype.set = function( pathOrData, data, callback ) {
 		var newVersion = this.version + 1;
 		this._callbacks[ newVersion ] = callback;
 	}
-	
+
 	this._sendUpdate( path, data, config );
 	this._applyChange( newValue );
 	return this;
@@ -299,6 +299,11 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
 		this._applyUpdate( message, this._client );
 	}
+	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT_ERROR ) {
+		console.log('Calling with', message.data[ 2 ], this._callbacks[ message.data[ 1 ] ] )
+		this._callbacks[ message.data[ 1 ] ]( JSON.parse( message.data[ 2 ] ) );
+		delete this._callbacks[ message.data[ 1 ] ];
+	}
 	// Otherwise it should be an error, and dealt with accordingly
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
 		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
@@ -327,7 +332,7 @@ Record.prototype._$onMessage = function( message ) {
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
 	message.processedError = true;
 	if( this._mergeStrategy ) {
-		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData ) );
+		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData, message ) );
 	}
 	else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
@@ -336,7 +341,6 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 
 Record.prototype._sendUpdate = function ( path, data, config ) {
 	this.version++; 
-	config = JSON.stringify( config );
 	if( !path ) {
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
 			this.name,
@@ -367,21 +371,23 @@ Record.prototype._sendUpdate = function ( path, data, config ) {
  * @private
  * @returns {void}
  */
-Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
+Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, message, error, data ) {
 	if( !error ) {
+		var oldVersion = this.version;
 		this.version = remoteVersion;
 
+		var callback = this._callbacks[ oldVersion ];
+		delete this._callbacks[ oldVersion ]
+		this._callbacks[ Number(this.version) + 1 ] = callback;
+		
 		var oldValue = this._$data;
 		var newValue = jsonPath.set( oldValue, undefined, data, false );
-
-/*		if( utils.deepEquals( newValue, remoteData ) ) {
-			return;
-		}*/
 		if ( oldValue === newValue ) {
 			return;
 		}
 
-		this._sendUpdate( undefined, data );
+		var config = message.data[ 4 ];
+		this._sendUpdate( undefined, data, config );
 		this._applyChange( newValue );
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
@@ -436,18 +442,19 @@ Record.prototype._applyUpdate = function( message ) {
 	if( this.version === null ) {
 		this.version = version;
 	}
-	else if( this.version + 1 !== version ) {
-		if( message.action === C.ACTIONS.PATCH ) {
-			/**
-			* Request a snapshot so that a merge can be done with the read reply which contains
-			* the full state of the record
-			**/
-			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [ this.name ] );
-		} else {
-			this._recoverRecord( version, data, message );
-		}
-		return;
-	}
+	// else if( this.version + 1 !== version ) {
+	// 	if( message.action === C.ACTIONS.PATCH ) {
+	// 		/**
+	// 		* Request a snapshot so that a merge can be done with the read reply which contains
+	// 		* the full state of the record
+	// 		**/
+	// 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [ this.name ] );
+	// 	} else {
+	// 		//console.log('Recovering here, incoming version', version, 'current version', this.version, 'this.version + version', this.version + 1)
+	// 		this._recoverRecord( version, data, message );
+	// 	}
+	// 	return;
+	// }
 
 	this.version = version;
 	this._applyChange( jsonPath.set( this._$data, message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined, data ) );
