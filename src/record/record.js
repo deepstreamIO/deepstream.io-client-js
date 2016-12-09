@@ -105,13 +105,39 @@ Record.prototype.get = function( path ) {
  * @public
  * @returns {void}
  */
-Record.prototype.set = function( pathOrData, data, callback ) {
-	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
-		throw new Error( 'invalid argument data' );
+Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
+	var path,
+		data;
+	// set( object )
+	if( arguments.length === 1 || ( arguments.length === 2 && dataOrCallback === undefined ) ) {
+		if( typeof pathOrData !== 'object' ) {
+			throw new Error( 'invalid argument data' );
+		}
+		data = pathOrData;
 	}
-	if( arguments.length === 2 && ( typeof pathOrData !== 'string' || pathOrData.length === 0 ) ) {
-		throw new Error( 'invalid argument path' )
+	else if( arguments.length === 2 || ( arguments.length === 3 && callback === undefined ) ) {
+		// set( path, data )
+		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
+			path = pathOrData;
+			data = dataOrCallback
+		} 
+		// set( data, callback )
+		else if( typeof pathOrData === 'object' && typeof dataOrCallback === 'function' ) {
+			data = pathOrData;
+			callback = dataOrCallback;
+		}
+		else {
+			throw new Error( 'invalid argument path' )
+		}
 	}
+	else if( arguments.length === 3 ) {
+		if( typeof pathOrData !== 'string' || pathOrData.length === 0 || typeof callback !== 'function' ) {
+			throw new Error( 'invalid arguments, must pass in a string, a value and a function')
+		}
+		path = pathOrData;
+		data = dataOrCallback;
+	}
+
 
 	if( this._checkDestroyed( 'set' ) ) {
 		return this;
@@ -121,9 +147,6 @@ Record.prototype.set = function( pathOrData, data, callback ) {
 		this._queuedMethodCalls.push({ method: 'set', args: arguments });
 		return this;
 	}
-
-	var path = arguments.length === 1 ? undefined : pathOrData;
-	data = path ? data : pathOrData;
 
 	var oldValue = this._$data;
 	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
@@ -300,7 +323,7 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message, this._client );
 	}
 	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT_ERROR ) {
-		this._callbacks[ message.data[ 1 ] ]( JSON.parse( message.data[ 2 ] ) );
+		this._callbacks[ message.data[ 1 ] ]( messageParser.convertTyped( message.data[ 2 ] ) );
 		delete this._callbacks[ message.data[ 1 ] ];
 	}
 	// Otherwise it should be an error, and dealt with accordingly

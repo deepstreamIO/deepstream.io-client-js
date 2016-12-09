@@ -16,13 +16,29 @@ module.exports = function() {
 	});
 
 	this.When(/^the client sets the record "([^"]*)" "([^"]*)" to "(.+)"$/, function (recordName, path, value, callback) {
-	  records[ recordName ].set( path, value );
+	  records[ recordName ].set( path, value, records[ recordName ].setCallback );
 	  setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client sets the record "([^"]*)" to (.+)$/, function (recordName, value, callback) {
-	  records[ recordName ].set( JSON.parse( value ) );
+	  records[ recordName ].set( JSON.parse( value ), records[ recordName ].setCallback );
 	  setTimeout( callback, config.messageWaitTime );
+	});
+
+	this.When(/^the client requires write acknowledgement on record "([^"]*)"$/, function (recordName) {
+	  records[ recordName ].setCallback = sinon.spy();
+	});
+
+	this.When(/^the client is notified that the record "([^"]*)" was written without error$/, function (recordName) {
+	  sinon.assert.calledWith( records[ recordName ].setCallback, null );
+	  sinon.assert.calledOnce( records[ recordName ].setCallback );
+	  records[ recordName ].setCallback.reset();
+	});
+
+	this.When(/^the client is notified that the record "([^"]*)" was written with error "([^"]*)"$/, function (recordName, errorMessage) {
+	  sinon.assert.calledWith( records[ recordName ].setCallback, errorMessage );
+	  sinon.assert.calledOnce( records[ recordName ].setCallback );
+	  records[ recordName ].setCallback.reset();
 	});
 
 	this.Then(/^the client record "([^"]*)" data is (.*)$/, function (recordName, data, callback) {
