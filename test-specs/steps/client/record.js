@@ -16,12 +16,18 @@ module.exports = function() {
 	});
 
 	this.When(/^the client sets the record "([^"]*)" "([^"]*)" to "(.+)"$/, function (recordName, path, value, callback) {
-	  records[ recordName ].set( path, value, records[ recordName ].setCallback );
+	  if( records[ recordName ].setCallback )
+	  	records[ recordName ].set( path, value, records[ recordName ].setCallback );
+	  else
+	  	records[ recordName ].set( path, value );
 	  setTimeout( callback, config.messageWaitTime );
 	});
 
 	this.When(/^the client sets the record "([^"]*)" to (.+)$/, function (recordName, value, callback) {
-	  records[ recordName ].set( JSON.parse( value ), records[ recordName ].setCallback );
+	  if( records[ recordName ].setCallback )
+	  	records[ recordName ].set( JSON.parse( value ), records[ recordName ].setCallback );
+	  else
+	  	records[ recordName ].set( JSON.parse( value ) );
 	  setTimeout( callback, config.messageWaitTime );
 	});
 

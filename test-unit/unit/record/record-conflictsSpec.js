@@ -6,11 +6,12 @@ var Record = require( '../../../src/record/record.js' ),
 	options = { recordReadAckTimeout: 100, recordReadTimeout: 200, mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS };
 
 describe( 'getting a merge conflict from the server', function(){
-	var record, errorCallback, connection;
+	var record, errorCallback, connection, setCallback;
 
 	beforeAll( function() {
 		errorCallback = jasmine.createSpy( 'errorCallback' );
 		subscribeCallback = jasmine.createSpy( 'subscribeCallback' );
+		setCallback = jasmine.createSpy( 'setCallback' );
 		connection = new MockConnection();
 		record = new Record( 'recordConflict', {}, connection, options, new ClientMock() );
 
@@ -413,5 +414,40 @@ describe( 'getting a merge conflict from the server', function(){
 		} );
 
 	} );
+
+	describe( 'when it updates a record with a write acknowledgement', function() {
+
+		beforeAll( function() {
+			setCallback.calls.reset();
+			record.setMergeStrategy( MERGE_STRATEGIES.REMOTE_WINS );
+			record.set( {"name":"Alex"}, setCallback )
+		} );
+
+		describe( 'that is behind remote and different', function() {
+
+			it( 'receives version exists error', function() {
+				record._$onMessage( { topic: 'R', action: 'E', data: [ 'VERSION_EXISTS', 'testRecord', 2, '{ "otherReason": "behindVersion" }' ] } )
+			} );
+			
+			it( 'sends update to server', function() {
+				expect( connection.lastSendMessage ).toBe( msg( 'R|U|recordConflict|3|{"otherReason":"behindVersion"}+' ) );
+			} );
+
+			it( 'receives write succes', function() {
+				record._$onMessage( { topic: 'R', action: 'WS', data: [ 'conflictRecord', 3, 'L' ] } )
+			})
+
+			it( 'is now the correct version', function() {
+				expect( record.version ).toBe( 3 );
+			} );
+
+			it( 'callback is called with successful write', function() {
+				expect( setCallback.calls.count() ).toBe( 1 );
+				expect( setCallback ).toHaveBeenCalledWith( null );
+			} );
+
+		} );
+	
+	});
 
 } );

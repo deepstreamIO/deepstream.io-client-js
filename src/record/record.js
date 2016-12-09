@@ -109,13 +109,12 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 	var path,
 		data;
 	// set( object )
-	if( arguments.length === 1 || ( arguments.length === 2 && dataOrCallback === undefined ) ) {
-		if( typeof pathOrData !== 'object' ) {
+	if( arguments.length === 1 ) {
+		if( typeof pathOrData !== 'object' )
 			throw new Error( 'invalid argument data' );
-		}
 		data = pathOrData;
 	}
-	else if( arguments.length === 2 || ( arguments.length === 3 && callback === undefined ) ) {
+	else if( arguments.length === 2 ) {
 		// set( path, data )
 		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
 			path = pathOrData;

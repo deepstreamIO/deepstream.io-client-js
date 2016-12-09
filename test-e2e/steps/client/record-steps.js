@@ -151,14 +151,20 @@ module.exports = function (){
 
   this.When(/^(.+) sets? the record "([^"]*)" with data '([^']+)'$/, function ( clientExpression, recordName, data, done) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
-      recordData.record.set( utils.parseData( data ), recordData.setCallback );
+      if( recordData.setCallback )
+        recordData.record.set( utils.parseData( data ), recordData.setCallback );
+      else 
+        recordData.record.set( utils.parseData( data ) );
     } );
     setTimeout( done, utils.defaultDelay );
   });
 
   this.When(/^(.+) sets? the record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function ( clientExpression, recordName, path, data, done) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
-      recordData.record.set( path, utils.parseData( data ), recordData.setCallback );
+      if( recordData.setCallback ) 
+        recordData.record.set( path, utils.parseData( data ), recordData.setCallback );
+      else
+        recordData.record.set( path, utils.parseData( data ) );
     } );
     setTimeout( done, utils.defaultDelay );
   });

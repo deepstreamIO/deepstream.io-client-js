@@ -7,7 +7,8 @@ var Record = require( '../../../src/record/record.js' ),
 describe( 'setting values sends the right messages to the server', function(){
 	var record,
 		callback = jasmine.createSpy( 'firstnameCallback' ),
-		connection = new MockConnection();
+		connection = new MockConnection(),
+		setCallback = jasmine.createSpy( 'setCallback' );
 
 	it( 'creates the record', function(){
 		expect( connection.lastSendMessage ).toBe( null );
@@ -35,5 +36,15 @@ describe( 'setting values sends the right messages to the server', function(){
 
 	it( 'throws error for invalid record data', function(){ 
 		expect(function(){ record.set( undefined ); }).toThrow();
+	});
+
+	it( 'sends update messages for entire data changes with callback', function(){
+		record.set({ name: 'Alex'}, setCallback);
+		expect( connection.lastSendMessage ).toBe( msg( 'R|U|testRecord|4|{"name":"Alex"}|{"writeSuccess":true}+' ) );
+	});
+
+	it( 'sends update messages for path changes with callback', function(){
+		record.set( 'name', 'Wolfram', setCallback );
+		expect( connection.lastSendMessage ).toBe( msg( 'R|P|testRecord|5|name|SWolfram|{"writeSuccess":true}+' ) );
 	});
 });
