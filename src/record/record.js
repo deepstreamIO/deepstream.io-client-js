@@ -161,8 +161,11 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		config.writeSuccess = true;
 		var newVersion = this.version + 1;
 		this._callbacks[ newVersion ] = callback;
+		var connectionState = this._client.getConnectionState();
+		if( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING ) {
+			callback( 'Connection error: error updating record as connection was closed' );
+		}
 	}
-
 	this._sendUpdate( path, data, config );
 	this._applyChange( newValue );
 	return this;

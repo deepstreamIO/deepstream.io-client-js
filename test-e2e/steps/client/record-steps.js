@@ -171,6 +171,14 @@ module.exports = function (){
     } );
   });
 
+  this.Then(/^(.+) is told that the record "([^"]*)" experienced error "([^"]*)" while setting$/, function ( clientExpression, recordName, errorMessage ) {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      sinon.assert.calledOnce( recordData.setCallback );
+      sinon.assert.calledWith( recordData.setCallback, errorMessage );
+      recordData.setCallback.reset();
+    } );
+  });
+
  this.Given(/^(.+) requests? a snapshot of record "([^"]*)"$/, function ( clientExpression, recordName, done) {
     clientHandler.getClients( clientExpression ).forEach( ( client ) => {
       client.client.record.snapshot( recordName, client.record.snapshotCallback );
