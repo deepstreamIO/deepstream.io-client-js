@@ -129,6 +129,7 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 			throw new Error( 'invalid argument path' )
 		}
 	}
+	// set( path, data, callback )
 	else if( arguments.length === 3 ) {
 		if( typeof pathOrData !== 'string' || pathOrData.length === 0 || typeof callback !== 'function' ) {
 			throw new Error( 'invalid arguments, must pass in a string, a value and a function')
@@ -136,7 +137,6 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		path = pathOrData;
 		data = dataOrCallback;
 	}
-
 
 	if( this._checkDestroyed( 'set' ) ) {
 		return this;

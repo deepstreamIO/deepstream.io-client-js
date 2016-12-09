@@ -350,7 +350,6 @@ Connection.prototype._onMessage = function( message ) {
 		if( parsedMessages[ i ] === null ) {
 			continue;
 		}
-		
 		else if( parsedMessages[ i ].topic === C.TOPIC.CONNECTION ) {
 			this._handleConnectionResponse( parsedMessages[ i ] );
 		}
