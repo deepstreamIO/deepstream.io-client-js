@@ -5,6 +5,8 @@ var check = require( '../helper' ).check;
 var records = {};
 var subscribeCallback = sinon.spy();
 var listenCallback = sinon.spy();
+var snapshotCallback = sinon.spy();
+var hasCallback = sinon.spy();
 
 module.exports = function() {
 
@@ -104,4 +106,47 @@ module.exports = function() {
 		subscribeCallback.reset();
 	});
 
+	/**
+	 * Snapshot
+	 */
+	this.Given(/^the client requests a snapshot for the record "([^"]*)"$/, function (recordName, callback) {
+		global.dsClient.record.snapshot( recordName, snapshotCallback );
+		setTimeout( callback, config.messageWaitTime );
+    });
+
+	this.Then(/^the client has no response for the snapshot of record "([^"]*)"$/, function (recordName) {
+         sinon.assert.notCalled( snapshotCallback );
+    });
+
+	this.Then(/^the client is told the record "([^"]*)" encountered an error retrieving snapshot$/, function (recordName) {
+         sinon.assert.calledWith( snapshotCallback, "RECORD_NOT_FOUND" );
+		 sinon.assert.calledOnce( snapshotCallback );
+		 snapshotCallback.reset();
+    });
+
+	this.Then(/^the client is provided the snapshot for record "([^"]*)" with data "(.*)"$/, function (recordName, data) {
+         sinon.assert.calledWith( snapshotCallback, null, JSON.parse( data ) );
+		 sinon.assert.calledOnce( snapshotCallback );
+		 snapshotCallback.reset();
+    });
+
+	/**
+	 * Has
+	 */
+	this.Given(/^the client checks if the server has the record "([^"]*)"$/, function (recordName, callback) {
+		global.dsClient.record.has( recordName, hasCallback );
+		setTimeout( callback, config.messageWaitTime );
+    });
+
+	this.Then(/^the client is told the record "([^"]*)" exists$/, function (recordName) {
+		sinon.assert.calledWith( hasCallback, null, true );
+		sinon.assert.calledOnce( hasCallback );
+		hasCallback.reset();
+    });
+
+	this.Then(/^the client is told the record "([^"]*)" doesn't exist$/, function (recordName) {
+		sinon.assert.calledWith( hasCallback, null, false );
+		sinon.assert.calledOnce( hasCallback );
+		hasCallback.reset();
+    });
 };

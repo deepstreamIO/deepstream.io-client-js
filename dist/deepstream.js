@@ -1810,13 +1810,13 @@ var Client = function( url, options ) {
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );
-	this._presence = new PresenceHandler( this._options, this._connection, this );
+	this.presence = new PresenceHandler( this._options, this._connection, this );
 
 	this._messageCallbacks = {};
 	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
 	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
 	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
-	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this._presence._$handle.bind( this._presence );
+	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this.presence._$handle.bind( this.presence );
 	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
 };
 
@@ -1888,45 +1888,6 @@ Client.prototype.getUid = function() {
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 
 	return timestamp + '-' + randomString;
-};
-
-/**
- * Queries for clients logged into deepstream
- *
- * @param   {Function} callback Will be invoked with an array of clients
- *
- * @public
- * @returns {Client}
- */
-Client.prototype.getPresentClients = function( callback ) {
-	this._presence.getCurrentClients( callback );	
-	return this;
-};
-
-/**
- * Subscribes client to login events from other clients
- *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs in
- *
- * @public
- * @returns {void}
- */
-Client.prototype.onClientAdded = function( callback ) {
-	this._presence.subscribeToLogins( callback );
-};
-
-/**
- * Subscribes client to logout events from other clients
- *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs out
- *
- * @public
- * @returns {void}
- */
-Client.prototype.onClientRemoved = function( callback ) {
-	this._presence.subscribeToLogouts( callback );
 };
 
 /**
@@ -2717,7 +2678,7 @@ Connection.prototype._resetCurrentMessageCount = function() {
  * @returns {void}
  */
 Connection.prototype._sendQueuedMessages = function() {
-	if( this._state !== C.CONNECTION_STATE.OPEN ) {
+	if( this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN ) {
 		return;
 	}
 
@@ -2734,8 +2695,25 @@ Connection.prototype._sendQueuedMessages = function() {
 		this._sendNextPacketTimeout = null;
 	}
 
-	this._endpoint.send( message );
+	this._submit( message );
 };
+
+/**
+ * Sends a message to over the endpoint connection directly
+ *
+ * Will generate a connection error if the websocket was closed
+ * prior to an onclose event.
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._submit = function( message ) {
+	if( this._endpoint.readyState === this._endpoint.OPEN ) {
+		this._endpoint.send( message );
+	} else {
+		this._onError( 'Tried to send message on a closed websocket connection' );
+	}
+}
 
 /**
  * Schedules the next packet whilst the connection is under
@@ -2761,7 +2739,7 @@ Connection.prototype._queueNextPacket = function() {
 Connection.prototype._sendAuthParams = function() {
 	this._setState( C.CONNECTION_STATE.AUTHENTICATING );
 	var authMessage = messageBuilder.getMsg( C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ] );
-	this._endpoint.send( authMessage );
+	this._submit( authMessage );
 };
 
 /**
@@ -2905,7 +2883,7 @@ Connection.prototype._handleConnectionResponse = function( message ) {
 
 	if( message.action === C.ACTIONS.PING ) {
 		this._lastHeartBeat = Date.now();
-		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.PONG ) );
+		this._submit( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.PONG ) );
 	}
 	else if( message.action === C.ACTIONS.ACK ) {
 		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
@@ -2915,7 +2893,7 @@ Connection.prototype._handleConnectionResponse = function( message ) {
 	}
 	else if( message.action === C.ACTIONS.CHALLENGE ) {
 		this._setState( C.CONNECTION_STATE.CHALLENGING );
-		this._endpoint.send( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );
+		this._submit( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );
 	}
 	else if( message.action === C.ACTIONS.REJECTION ) {
 		this._challengeDenied = true;
@@ -3323,51 +3301,62 @@ var PresenceHandler = function( options, connection, client ) {
 };
 
 /**
- * Queries for clients logged into deepstream
+ * Queries for clients logged into deepstream.
  *
  * @param   {Function} callback Will be invoked with an array of clients
  *
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.getCurrentClients = function( callback ) {
+PresenceHandler.prototype.getAll = function( callback ) {
+	if( !this._emitter.hasListeners( C.ACTIONS.QUERY ) ) {
+		// At least one argument is required for a message to be permissionable
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [ C.ACTIONS.QUERY ] );
+	}
 	this._emitter.once( C.ACTIONS.QUERY, callback );
-	// At least one argument is required for a message to be permissionable
-	this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [ C.ACTIONS.QUERY ] );
 };
 
 /**
- * Subscribes to client logins in deepstream
+ * Subscribes to client logins or logouts in deepstream
  *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs in
+ * @param   {Function} callback Will be invoked with the username of a client,
+ *                              and a boolean to indicate if it was a login or
+ *                              logout event
+ * @public
+ * @returns {void}
+ */
+PresenceHandler.prototype.subscribe = function( callback ) {
+	if ( callback !== undefined && typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
+	}
+
+	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
+		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.SUBSCRIBE ] );
+	}
+
+	this._emitter.on( C.TOPIC.PRESENCE, callback );
+};
+
+/**
+ * Removes a callback for a specified presence event
+ *
+ * @param   {Function} callback The callback to unregister via {PresenceHandler#unsubscribe}
  *
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.subscribeToLogins = function( callback ) {
-	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_JOIN ) ) {
-		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_JOIN );
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_JOIN ] );
+PresenceHandler.prototype.unsubscribe = function( callback ) {
+	if ( callback !== undefined && typeof callback !== 'function' ) {
+		throw new Error( 'invalid argument callback' );
 	}
-	this._emitter.on( C.ACTIONS.PRESENCE_JOIN, callback );
-};
 
-/**
- * Subscribes to client logouts in deepstream
- *
- * @param   {Function} callback Will be invoked with the username of a client
- *								that logs out
- *
- * @public
- * @returns {void}
- */
-PresenceHandler.prototype.subscribeToLogouts = function( callback ) {
-	if( !this._emitter.hasListeners( C.ACTIONS.PRESENCE_LEAVE ) ) {
-		this._ackTimeoutRegistry.add( C.ACTIONS.PRESENCE_LEAVE );
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.PRESENCE_LEAVE ] );
+	this._emitter.off( C.TOPIC.PRESENCE, callback );
+
+	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
+		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE );
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [ C.ACTIONS.UNSUBSCRIBE ] );
 	}
-	this._emitter.on( C.ACTIONS.PRESENCE_LEAVE, callback );
 };
 
 /**
@@ -3379,14 +3368,19 @@ PresenceHandler.prototype.subscribeToLogouts = function( callback ) {
  * @returns {void}
  */
 PresenceHandler.prototype._$handle = function( message ) {
-	if( message.action === C.ACTIONS.ACK ) {
+	if( message.action === C.ACTIONS.ERROR && message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
+		this._ackTimeoutRegistry.remove( C.TOPIC.PRESENCE, message.data[ 1 ] );
+		message.processedError = true;
+		this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.MESSAGE_DENIED, message.data[ 1 ] );
+	}
+	else if( message.action === C.ACTIONS.ACK ) {
 		this._ackTimeoutRegistry.clear( message );
 	}
 	else if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
-		this._emitter.emit( C.ACTIONS.PRESENCE_JOIN, message.data[ 0 ] );
+		this._emitter.emit( C.TOPIC.PRESENCE, message.data[ 0 ], true );
 	}
 	else if( message.action === C.ACTIONS.PRESENCE_LEAVE ) {
-		this._emitter.emit( C.ACTIONS.PRESENCE_LEAVE, message.data[ 0 ] );
+		this._emitter.emit( C.TOPIC.PRESENCE, message.data[ 0 ], false );
 	}
 	else if( message.action === C.ACTIONS.QUERY ) {
 		this._emitter.emit( C.ACTIONS.QUERY, message.data );
@@ -3397,15 +3391,15 @@ PresenceHandler.prototype._$handle = function( message ) {
 };
 
 /**
- * Resubscribes to events when connection is lost
+ * Resubscribes to presence subscription when connection is lost
  *
  * @package private
  * @returns {void}
  */
 PresenceHandler.prototype._resubscribe = function() {
 	var callbacks = this._emitter._callbacks;
-	for( var event in callbacks ) {
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ event ] );
+	if( callbacks && callbacks[ C.TOPIC.PRESENCE ] ) {
+		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.SUBSCRIBE ] );
 	}
 };
 
@@ -5209,7 +5203,7 @@ RpcHandler.prototype._respondToRpc = function( message ) {
 	}
 
 	if( this._providers[ name ] ) {
-		response = new RpcResponse( this._connection,name, correlationId );
+		response = new RpcResponse( this._connection, name, correlationId );
 		this._providers[ name ]( data, response );
 	} else {
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ name, correlationId ] );
@@ -5241,29 +5235,28 @@ RpcHandler.prototype._$handle = function( message ) {
 		return;
 	}
 
+	// handle auth/denied subscription errors
+	if( message.action === C.ACTIONS.ERROR ) {
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
+			return;
+		}
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
+			this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
+			return;
+		}
+	}
 
 	/*
 	 * Error messages always have the error as first parameter. So the
 	 * order is different to ack and response messages
 	 */
-	if( message.action === C.ACTIONS.ERROR ) {
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
-			return;
-		}
-		else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
-			if( message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
-				this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
-				return;
-			}
-			else if( message.data[ 2 ] === C.ACTIONS.REQUEST ) {
-				rpcName = message.data[ 1 ];
-				correlationId = message.data[ 3 ];
-			}
+	if( message.action === C.ACTIONS.ERROR || message.action === C.ACTIONS.ACK ) {
+		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.REQUEST ) {
+			correlationId = message.data[ 3 ];
 		} else {
-			rpcName = message.data[ 1 ];
 			correlationId = message.data[ 2 ];
 		}
-
+		rpcName = message.data[ 1 ];
 	} else {
 		rpcName = message.data[ 0 ];
 		correlationId = message.data[ 1 ];
@@ -5306,6 +5299,7 @@ RpcHandler.prototype._reprovide = function() {
 
 
 module.exports = RpcHandler;
+
 },{"../constants/constants":10,"../message/message-builder":15,"../message/message-parser":16,"../utils/ack-timeout-registry":26,"../utils/resubscribe-notifier":28,"./rpc":25,"./rpc-response":24}],24:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
@@ -5339,7 +5333,11 @@ var RpcResponse = function( connection, name, correlationId ) {
  */
 RpcResponse.prototype.ack = function() {
 	if( this._isAcknowledged === false ) {
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ACK, [ this._name, this._correlationId ] );
+		this._connection.sendMsg(
+			C.TOPIC.RPC,
+			C.ACTIONS.ACK,
+			[ C.ACTIONS.REQUEST, this._name, this._correlationId ]
+		);
 		this._isAcknowledged = true;
 	}
 };
@@ -5414,6 +5412,7 @@ RpcResponse.prototype._performAutoAck = function() {
 };
 
 module.exports = RpcResponse;
+
 },{"../constants/constants":10,"../message/message-builder":15,"../utils/utils":30}],25:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' );
