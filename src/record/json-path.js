@@ -56,6 +56,8 @@ module.exports.set = function (data, path, value) {
 module.exports.patch = function (oldValue, newValue) {
   if (utils.deepEquals(oldValue, newValue)) {
     return oldValue
+  } else if (oldValue === null || newValue === null) {
+    return newValue
   } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
     const arr = []
     for (let i = 0; i < newValue.length; i++) {

@@ -113,6 +113,20 @@ describe( 'objects are created from paths and their value is set correctly', fun
 		});
 	});
 
+	it( 'sets values for null values', function(){
+		var record = { _$data:{
+			job: null,
+  			joinedAt: 1480020987915
+		}};
+		var jobId = { id: 88 };
+		record._$data = jsonPath.set( record._$data, 'job', jobId, true );
+		expect( jsonPath.get( record._$data, 'job.id' ) ).toBe( 88 );
+		expect( record._$data ).toEqual({
+			job: { id: 88 },
+			joinedAt: 1480020987915
+		});
+	});
+
 	it( 'extends existing objects', function(){
 		var record = { _$data: { firstname: 'Wolfram' } };
 		record._$data = jsonPath.set( record._$data, 'lastname', 'Hempel' );
