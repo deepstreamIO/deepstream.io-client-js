@@ -126,7 +126,7 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
 
   this._hit(record, true)
 
-  return record.whenReady()
+  return Promise.resolve()
 }
 
 RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrNil) {
