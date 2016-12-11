@@ -38,7 +38,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.version = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
-	this._callbacks = {};
+	this._writeCallbacks = {};
 
 	this._mergeStrategy = null;
 	if( options.mergeStrategy ) {
@@ -159,7 +159,7 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		config = {};
 		config.writeSuccess = true;
 		var newVersion = this.version + 1;
-		this._callbacks[ newVersion ] = callback;
+		this._writeCallbacks[ newVersion ] = callback;
 		var connectionState = this._client.getConnectionState();
 		if( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING ) {
 			callback( 'Connection error: error updating record as connection was closed' );
@@ -325,8 +325,11 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message, this._client );
 	}
 	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT_ERROR ) {
-		this._callbacks[ message.data[ 1 ] ]( messageParser.convertTyped( message.data[ 2 ] ) );
-		delete this._callbacks[ message.data[ 1 ] ];
+		const version = message.data[1]
+		if (this._writeCallbacks[version] !== undefined) {
+			this._writeCallbacks[ message.data[ 1 ] ]( messageParser.convertTyped( message.data[ 2 ] ) );
+			delete this._writeCallbacks[ message.data[ 1 ] ];
+		}
 	}
 	// Otherwise it should be an error, and dealt with accordingly
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
@@ -396,10 +399,6 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, messa
 		var oldVersion = this.version;
 		this.version = remoteVersion;
 
-		var callback = this._callbacks[ oldVersion ];
-		delete this._callbacks[ oldVersion ]
-		this._callbacks[ Number(this.version) + 1 ] = callback;
-		
 		var oldValue = this._$data;
 		var newValue = jsonPath.set( oldValue, undefined, data, false );
 		if ( oldValue === newValue ) {
@@ -452,7 +451,6 @@ Record.prototype._processAckMessage = function( message ) {
 Record.prototype._applyUpdate = function( message ) {
 	var version = parseInt( message.data[ 1 ], 10 );
 	var data;
-
 	if( message.action === C.ACTIONS.PATCH ) {
 		data = messageParser.convertTyped( message.data[ 3 ], this._client );
 	} else {
