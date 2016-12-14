@@ -324,11 +324,11 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message, this._client );
 	}
 	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT_ERROR ) {
-		var versions = messageParser.convertTyped( message.data[ 1 ] );
+		var versions = messageParser.convertTyped( message.data[ 1 ], this._client );
 		for (var i = 0; i < versions.length; i++) {
 			var callback = this._writeCallbacks[ versions[ i ] ];
 			if( callback !== undefined ) {
-				callback( messageParser.convertTyped( message.data[ 2 ] ) )
+				callback( messageParser.convertTyped( message.data[ 2 ], this._client ) )
 				delete this._writeCallbacks[ versions[ i ] ];
 			}
 		}
