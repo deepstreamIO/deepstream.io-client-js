@@ -158,8 +158,7 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 	if( callback !== undefined ) {
 		config = {};
 		config.writeSuccess = true;
-		var newVersion = this.version + 1;
-		this._writeCallbacks[ newVersion ] = callback;
+		this._setUpCallback(this.version, callback)
 		var connectionState = this._client.getConnectionState();
 		if( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING ) {
 			callback( 'Connection error: error updating record as connection was closed' );
@@ -325,10 +324,13 @@ Record.prototype._$onMessage = function( message ) {
 		this._applyUpdate( message, this._client );
 	}
 	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT_ERROR ) {
-		const version = message.data[1]
-		if (this._writeCallbacks[version] !== undefined) {
-			this._writeCallbacks[ message.data[ 1 ] ]( messageParser.convertTyped( message.data[ 2 ] ) );
-			delete this._writeCallbacks[ message.data[ 1 ] ];
+		var versions = messageParser.convertTyped( message.data[ 1 ] );
+		for (var i = 0; i < versions.length; i++) {
+			var callback = this._writeCallbacks[ versions[ i ] ];
+			if( callback !== undefined ) {
+				callback( messageParser.convertTyped( message.data[ 2 ] ) )
+				delete this._writeCallbacks[ versions[ i ] ];
+			}
 		}
 	}
 	// Otherwise it should be an error, and dealt with accordingly
@@ -406,6 +408,11 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, messa
 		}
 
 		var config = message.data[ 4 ];
+		if( config && JSON.parse( config ).writeSuccess ) {
+			var callback = this._writeCallbacks[ oldVersion ]; 
+			delete this._writeCallbacks[ oldVersion ];
+			this._setUpCallback( this.version, callback )
+		}
 		this._sendUpdate( undefined, data, config );
 		this._applyChange( newValue );
 	} else {
@@ -506,6 +513,11 @@ Record.prototype._setReady = function() {
 	this._queuedMethodCalls = [];
 	this.emit( 'ready' );
 };
+
+Record.prototype._setUpCallback = function(currentVersion, callback) {
+	var newVersion = Number( this.version ) + 1;
+	this._writeCallbacks[ newVersion ] = callback;
+}
 
 /**
  * Sends the read message, either initially at record
