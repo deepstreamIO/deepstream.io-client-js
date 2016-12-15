@@ -112,5 +112,12 @@ module.exports = {
 	 *                                  improves speed at the expense of the user having to ensure
 	 *                                  object immutability.
 	 */
-	recordDeepCopy: true
+	recordDeepCopy: true,
+
+	/**
+	 * @param {Object} nodeSocketOptions    Options to pass to the websocket constructor in node.
+	 * @default null
+	 * @see https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketaddress-protocols-options
+	 */
+	nodeSocketOptions: null
 };
