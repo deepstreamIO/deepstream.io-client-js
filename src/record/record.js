@@ -323,11 +323,14 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
 		this._applyUpdate( message, this._client );
 	}
-	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT_ERROR ) {
-		var versions = messageParser.convertTyped( message.data[ 1 ], this._client );
+	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT ) {
+		var versions = message.data[ 1 ];
+		console.log('here', versions)
 		for (var i = 0; i < versions.length; i++) {
 			var callback = this._writeCallbacks[ versions[ i ] ];
 			if( callback !== undefined ) {
+				console.log('callback not undefined')
+				console.log('calling with', messageParser.convertTyped( message.data[ 2 ], this._client ) )
 				callback( messageParser.convertTyped( message.data[ 2 ], this._client ) )
 				delete this._writeCallbacks[ versions[ i ] ];
 			}
