@@ -38,6 +38,7 @@ var Record = function( name, recordOptions, connection, options, client ) {
 	this.version = null;
 	this._eventEmitter = new EventEmitter();
 	this._queuedMethodCalls = [];
+	this._writeCallbacks = {};
 
 	this._mergeStrategy = null;
 	if( options.mergeStrategy ) {
@@ -104,12 +105,37 @@ Record.prototype.get = function( path ) {
  * @public
  * @returns {void}
  */
-Record.prototype.set = function( pathOrData, data ) {
-	if( arguments.length === 1 && typeof pathOrData !== 'object' ) {
-		throw new Error( 'invalid argument data' );
+Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
+	var path,
+		data;
+	// set( object )
+	if( arguments.length === 1 ) {
+		if( typeof pathOrData !== 'object' )
+			throw new Error( 'invalid argument data' );
+		data = pathOrData;
 	}
-	if( arguments.length === 2 && ( typeof pathOrData !== 'string' || pathOrData.length === 0 ) ) {
-		throw new Error( 'invalid argument path' )
+	else if( arguments.length === 2 ) {
+		// set( path, data )
+		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
+			path = pathOrData;
+			data = dataOrCallback
+		} 
+		// set( data, callback )
+		else if( typeof pathOrData === 'object' && typeof dataOrCallback === 'function' ) {
+			data = pathOrData;
+			callback = dataOrCallback;
+		}
+		else {
+			throw new Error( 'invalid argument path' )
+		}
+	}
+	// set( path, data, callback )
+	else if( arguments.length === 3 ) {
+		if( typeof pathOrData !== 'string' || pathOrData.length === 0 || typeof callback !== 'function' ) {
+			throw new Error( 'invalid arguments, must pass in a string, a value and a function')
+		}
+		path = pathOrData;
+		data = dataOrCallback;
 	}
 
 	if( this._checkDestroyed( 'set' ) ) {
@@ -121,9 +147,6 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	var path = arguments.length === 1 ? undefined : pathOrData;
-	data = path ? data : pathOrData;
-
 	var oldValue = this._$data;
 	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
 
@@ -131,7 +154,17 @@ Record.prototype.set = function( pathOrData, data ) {
 		return this;
 	}
 
-	this._sendUpdate( path, data );
+	var config;
+	if( callback !== undefined ) {
+		config = {};
+		config.writeSuccess = true;
+		this._setUpCallback(this.version, callback)
+		var connectionState = this._client.getConnectionState();
+		if( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING ) {
+			callback( 'Connection error: error updating record as connection was closed' );
+		}
+	}
+	this._sendUpdate( path, data, config );
 	this._applyChange( newValue );
 	return this;
 };
@@ -290,6 +323,16 @@ Record.prototype._$onMessage = function( message ) {
 	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
 		this._applyUpdate( message, this._client );
 	}
+	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT ) {
+		var versions = JSON.parse(message.data[ 1 ]);
+		for (var i = 0; i < versions.length; i++) {
+			var callback = this._writeCallbacks[ versions[ i ] ];
+			if( callback !== undefined ) {
+				callback( messageParser.convertTyped( message.data[ 2 ], this._client ) )
+				delete this._writeCallbacks[ versions[ i ] ];
+			}
+		}
+	}
 	// Otherwise it should be an error, and dealt with accordingly
 	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
 		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
@@ -318,28 +361,26 @@ Record.prototype._$onMessage = function( message ) {
 Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
 	message.processedError = true;
 	if( this._mergeStrategy ) {
-		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData ) );
+		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData, message ) );
 	}
 	else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
 	}
 };
 
-Record.prototype._sendUpdate = function ( path, data ) {
-	this.version++;
+Record.prototype._sendUpdate = function ( path, data, config ) {
+	this.version++; 
+	var msgData;
 	if( !path ) {
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
-			this.name,
-			this.version,
-			data
-		]);
+		msgData = config === undefined ?
+			[ this.name, this.version, data ] :
+			[ this.name, this.version, data, config ];
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, msgData );
 	} else {
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, [
-			this.name,
-			this.version,
-			path,
-			messageBuilder.typed( data )
-		]);
+		msgData = config === undefined ?
+			[ this.name, this.version, path, messageBuilder.typed( data ) ] :
+			[ this.name, this.version, path, messageBuilder.typed( data ), config ];
+		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, msgData );
 	}
 };
 
@@ -355,21 +396,24 @@ Record.prototype._sendUpdate = function ( path, data ) {
  * @private
  * @returns {void}
  */
-Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, error, data ) {
+Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, message, error, data ) {
 	if( !error ) {
+		var oldVersion = this.version;
 		this.version = remoteVersion;
 
 		var oldValue = this._$data;
 		var newValue = jsonPath.set( oldValue, undefined, data, false );
-
-/*		if( utils.deepEquals( newValue, remoteData ) ) {
-			return;
-		}*/
 		if ( oldValue === newValue ) {
 			return;
 		}
 
-		this._sendUpdate( undefined, data );
+		var config = message.data[ 4 ];
+		if( config && JSON.parse( config ).writeSuccess ) {
+			var callback = this._writeCallbacks[ oldVersion ]; 
+			delete this._writeCallbacks[ oldVersion ];
+			this._setUpCallback( this.version, callback )
+		}
+		this._sendUpdate( undefined, data, config );
 		this._applyChange( newValue );
 	} else {
 		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
@@ -414,7 +458,6 @@ Record.prototype._processAckMessage = function( message ) {
 Record.prototype._applyUpdate = function( message ) {
 	var version = parseInt( message.data[ 1 ], 10 );
 	var data;
-
 	if( message.action === C.ACTIONS.PATCH ) {
 		data = messageParser.convertTyped( message.data[ 3 ], this._client );
 	} else {
@@ -470,6 +513,11 @@ Record.prototype._setReady = function() {
 	this._queuedMethodCalls = [];
 	this.emit( 'ready' );
 };
+
+Record.prototype._setUpCallback = function(currentVersion, callback) {
+	var newVersion = Number( this.version ) + 1;
+	this._writeCallbacks[ newVersion ] = callback;
+}
 
 /**
  * Sends the read message, either initially at record

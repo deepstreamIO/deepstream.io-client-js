@@ -28,6 +28,7 @@ module.exports = function (){
           deleteCallback: sinon.spy(),
           callbackError: sinon.spy(),
           subscribeCallback: sinon.spy(),
+          setCallback: undefined,
           subscribePathCallbacks: {}
         }
         recordData.record.on( 'discard', recordData.discardCallback );
@@ -142,18 +143,46 @@ module.exports = function (){
     setTimeout( done, utils.defaultDelay );
   });
 
+  this.When(/^(.+) requires? write acknowledgements for record "([^"]*)"$/, function ( clientExpression, recordName ) {
+    clientHandler.getClients( clientExpression ).forEach( ( client ) => {
+        client.record.records[ recordName ].setCallback = sinon.spy();
+    } );
+  });
+
   this.When(/^(.+) sets? the record "([^"]*)" with data '([^']+)'$/, function ( clientExpression, recordName, data, done) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
-      recordData.record.set( utils.parseData( data ) );
+      if( recordData.setCallback )
+        recordData.record.set( utils.parseData( data ), recordData.setCallback );
+      else 
+        recordData.record.set( utils.parseData( data ) );
     } );
     setTimeout( done, utils.defaultDelay );
   });
 
   this.When(/^(.+) sets? the record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, function ( clientExpression, recordName, path, data, done) {
     getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
-      recordData.record.set( path, utils.parseData( data ) );
+      if( recordData.setCallback ) 
+        recordData.record.set( path, utils.parseData( data ), recordData.setCallback );
+      else
+        recordData.record.set( path, utils.parseData( data ) );
     } );
     setTimeout( done, utils.defaultDelay );
+  });
+
+  this.Then(/^(.+) is told that the record "([^"]*)" was set without error$/, function ( clientExpression, recordName ) {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      sinon.assert.calledOnce( recordData.setCallback );
+      sinon.assert.calledWith( recordData.setCallback, null );
+      recordData.setCallback.reset();
+    } );
+  });
+
+  this.Then(/^(.+) is told that the record "([^"]*)" experienced error "([^"]*)" while setting$/, function ( clientExpression, recordName, errorMessage ) {
+    getRecordData( clientExpression, recordName ).forEach( ( recordData ) => {
+      sinon.assert.calledOnce( recordData.setCallback );
+      sinon.assert.calledWith( recordData.setCallback, errorMessage );
+      recordData.setCallback.reset();
+    } );
   });
 
  this.Given(/^(.+) requests? a snapshot of record "([^"]*)"$/, function ( clientExpression, recordName, done) {

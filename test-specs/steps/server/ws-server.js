@@ -22,15 +22,13 @@ WSServer.prototype.start = function() {
 	}
 };
 
-WSServer.prototype.stop = function( callback ) {
-	this.stop( callback );
-}
-
 WSServer.prototype.send = function( message ) {
 	this.lastSocket.send( message );
 };
 
 WSServer.prototype.whenReady = function( callback ) {
+	this.allMessages = []
+
 	if( !this.server ) {
 		this.start();
 	}
