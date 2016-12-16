@@ -434,7 +434,7 @@ describe( 'getting a merge conflict from the server', function(){
 			} );
 
 			it( 'receives write succes', function() {
-				record._$onMessage( { topic: 'R', action: 'WS', data: [ 'conflictRecord', 'O[3]', 'L' ] } )
+				record._$onMessage( { topic: 'R', action: 'WA', data: [ 'conflictRecord', '[3]', 'L' ] } )
 			})
 
 			it( 'is now the correct version', function() {
