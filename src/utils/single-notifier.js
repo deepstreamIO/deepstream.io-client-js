@@ -72,6 +72,12 @@ SingleNotifier.prototype.request = function( name, callback ) {
  */
 SingleNotifier.prototype.receive = function( name, error, data ) {
 	var entries = this._requests[ name ];
+
+	if( !entries ) {
+		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, 'no entry for ' + name );
+		return;
+	}
+
 	for( i=0; i < entries.length; i++ ) {
 		entry = entries[ i ];
 		clearTimeout( entry.timeout );
