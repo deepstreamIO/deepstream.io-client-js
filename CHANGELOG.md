@@ -1,3 +1,19 @@
+## [2.1.0] - 2016-11-15
+
+### Features
+
+- Record write acknowledgement. Records are now able to be set with an optional callback which will be called with any errors from storing the record in cache/storage [#290](https://github.com/deepstreamIO/deepstream.io-client-js/pull/290)
+
+### Enhancements
+
+- Additional tests around presence and records [#284](https://github.com/deepstreamIO/deepstream.io-client-js/pull/284) and [#285](https://github.com/deepstreamIO/deepstream.io-client-js/pull/285)
+- Allow passing of node socket options into constructor [#289](https://github.com/deepstreamIO/deepstream.io-client-js/issues/289)
+
+### Bug Fixes
+
+- Fix bug in JSON path when updating nested null values [#281](https://github.com/deepstreamIO/deepstream.io-client-js/issues/281)
+- Adding check for undefined entries in single notifier [#291](https://github.com/deepstreamIO/deepstream.io-client-js/pull/291)
+
 ## [2.0.0] - 2016-11-18
 
 ### Features
