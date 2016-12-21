@@ -1,4 +1,10 @@
-## [2.1.0] - 2016-11-15
+## [2.1.1] - 2016-12-21
+
+### Bug Fixes
+
+- Fixed the generated dist release files
+
+## [2.1.0] - 2016-12-20
 
 ### Features
 
