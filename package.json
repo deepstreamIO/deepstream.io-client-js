@@ -48,7 +48,7 @@
     "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "deepstream.io-cache-redis": "latest",
     "deepstream.io-msg-redis": "latest",
-    "derequire": "2.0.3",
+    "derequire": "2.0.6",
     "grunt": "~0.4.5",
     "grunt-browserify": "4.0.1",
     "grunt-cli": "^1.2.0",
