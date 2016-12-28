@@ -12,6 +12,10 @@
 			"read": true,
 			"listen": true
 		},
+		"d/*": {
+			"create": "_('perm/JohnDoe').boolean",
+			"read": "_('perm/JohnDoe').boolean"
+		},
 		"public-read-private-write/$userid": {
 			"read": true,
 			"create": "user.id === $userid",
