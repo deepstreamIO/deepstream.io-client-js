@@ -9,8 +9,8 @@ export const ConnectionStates = {
     RECONNECTING: 'RECONNECTING'
 };
 
-export const MessageSeparator = String.fromCharCode( 30 ); // ASCII Record Seperator 1E
-export const MessagePartSeparator = String.fromCharCode( 31 ); // ASCII Unit Separator 1F
+export const MessageSeparator = String.fromCharCode(30); // ASCII Record Seperator 1E
+export const MessagePartSeparator = String.fromCharCode(31); // ASCII Unit Separator 1F
 
 export const Types = {
     STRING: 'S',

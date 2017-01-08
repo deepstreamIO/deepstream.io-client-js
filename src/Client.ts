@@ -133,7 +133,7 @@ export class Client extends Emitter {
 	 * @package private
 	 * @returns {void}
 	 */
-	private _$onMessage(message: ParsedMessage): void {
+	public _$onMessage(message: ParsedMessage): void {
 		if( this._messageCallbacks[ message.topic ] ) {
 			this._messageCallbacks[ message.topic ]( message );
 		} else {
