@@ -1,11 +1,19 @@
 {
   "compilerOptions": {
     "target": "es6",
+    "sourceMap": true,
     "module": "commonjs",
     "moduleResolution": "node",
-    "sourceMap": true,
-    "outDir": "dist/"
+
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+
+    "outDir": "dist/",
+    "declaration": true
   },
+  "include": [
+    "./src/**/*"
+  ],
   "exclude": [
     "node_modules"
   ]

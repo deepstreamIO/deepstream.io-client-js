@@ -1,4 +1,14 @@
-var C = require( '../constants/constants' );
+import { Actions, MessagePartSeparator } from "../constants/constants";
+import { Client } from "../client";
+
+export interface ParsedMessage {
+    raw: string,
+    topic: string,
+    action: string,
+    data: string[],
+    processedError?: boolean
+}
+
 
 /**
  * Parses ASCII control character seperated
@@ -6,142 +16,142 @@ var C = require( '../constants/constants' );
  *
  * @constructor
  */
-var MessageParser = function() {
-	this._actions = this._getActions();
-};
+export class MessageParser {
+    private _actions: {[key: string]: string};
 
-/**
- * Main interface method. Receives a raw message
- * string, containing one or more messages
- * and returns an array of parsed message objects
- * or null for invalid messages
- *
- * @param   {String} message raw message
- *
- * @public
- *
- * @returns {Array} array of parsed message objects
- *                  following the format
- *                  {
- *                  	raw: <original message string>
- *                  	topic: <string>
- *                  	action: <string - shortcode>
- *                  	data: <array of strings>
- *                  }
- */
-MessageParser.prototype.parse = function( message, client ) {
-	var parsedMessages = [],
-		rawMessages = message.split( C.MESSAGE_SEPERATOR ),
-		i;
+    public constructor() {
+        this._actions = this._getActions();
+    }
 
-	for( i = 0; i < rawMessages.length; i++ ) {
-		if( rawMessages[ i ].length > 2 ) {
-			parsedMessages.push( this._parseMessage( rawMessages[ i ], client ) );
-		}
-	}
+    /**
+     * Main interface method. Receives a raw message
+     * string, containing one or more messages
+     * and returns an array of parsed message objects
+     * or null for invalid messages
+     *
+     * @param   {String} message raw message
+     *
+     * @public
+     *
+     * @returns {Array} array of parsed message objects
+     *                  following the format
+     *                  {
+	 *                  	raw: <original message string>
+	 *                  	topic: <string>
+	 *                  	action: <string - shortcode>
+	 *                  	data: <array of strings>
+	 *                  }
+     */
+    public parse(message: string, client: Client): ParsedMessage[] {
+        let parsedMessages: ParsedMessage[] = [],
+            rawMessages = message.split(C.MESSAGE_SEPERATOR),
+            i: number;
 
-	return parsedMessages;
-};
+        for (i = 0; i < rawMessages.length; i++) {
+            if (rawMessages[i].length > 2) {
+                parsedMessages.push(this._parseMessage(rawMessages[i], client));
+            }
+        }
 
-/**
- * Deserializes values created by MessageBuilder.typed to
- * their original format
- * 
- * @param {String} value
- *
- * @public
- * @returns {Mixed} original value
- */
-MessageParser.prototype.convertTyped = function( value, client ) {
-	var type = value.charAt( 0 );
-	
-	if( type === C.TYPES.STRING ) {
-		return value.substr( 1 );
-	}
-	
-	if( type === C.TYPES.OBJECT ) {
-		try {
-			return JSON.parse( value.substr( 1 ) );
-		} catch( e ) {
-			client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')' );
-			return;
-		}
-	}
-	
-	if( type === C.TYPES.NUMBER ) {
-		return parseFloat( value.substr( 1 ) );
-	}
-	
-	if( type === C.TYPES.NULL ) {
-		return null;
-	}
-	
-	if( type === C.TYPES.TRUE ) {
-		return true;
-	}
-	
-	if( type === C.TYPES.FALSE ) {
-		return false;
-	}
-	
-	if( type === C.TYPES.UNDEFINED ) {
-		return undefined;
-	}
-	
-	client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')' );
-};
+        return parsedMessages;
+    }
 
-/**
- * Turns the ACTION:SHORTCODE constants map
- * around to facilitate shortcode lookup
- *
- * @private
- *
- * @returns {Object} actions
- */
-MessageParser.prototype._getActions = function() {
-	var actions = {},
-		key;
+    /**
+     * Deserializes values created by MessageBuilder.typed to
+     * their original format
+     *
+     * @param {String} value
+     *
+     * @public
+     * @returns {Mixed} original value
+     */
+    public convertedType(value: string, client: Client): any {
+        let type = value.charAt(0);
 
-	for( key in C.ACTIONS ) {
-		actions[ C.ACTIONS[ key ] ] = key;
-	}
+        if (type === C.TYPES.STRING) {
+            return value.substr(1);
+        }
 
-	return actions;
-};
+        if (type === C.TYPES.OBJECT) {
+            try {
+                return JSON.parse(value.substr(1));
+            } catch (e) {
+                client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')');
+                return;
+            }
+        }
 
-/**
- * Parses an individual message (as oposed to a 
- * block of multiple messages as is processed by .parse())
- *
- * @param   {String} message
- *
- * @private
- * 
- * @returns {Object} parsedMessage
- */
-MessageParser.prototype._parseMessage = function( message, client ) {
-	var parts = message.split( C.MESSAGE_PART_SEPERATOR ), 
-		messageObject = {};
+        if (type === C.TYPES.NUMBER) {
+            return parseFloat(value.substr(1));
+        }
 
-	if( parts.length < 2 ) {
-		message.processedError = true;
-		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts' );
-		return null;
-	}
+        if (type === C.TYPES.NULL) {
+            return null;
+        }
 
-	if( this._actions[ parts[ 1 ] ] === undefined ) {
-		message.processedError = true;
-		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[ 1 ] );
-		return null;
-	}
+        if (type === C.TYPES.TRUE) {
+            return true;
+        }
 
-	messageObject.raw = message;
-	messageObject.topic = parts[ 0 ];
-	messageObject.action = parts[ 1 ];
-	messageObject.data = parts.splice( 2 );
+        if (type === C.TYPES.FALSE) {
+            return false;
+        }
 
-	return messageObject;
-};
+        if (type === C.TYPES.UNDEFINED) {
+            return undefined;
+        }
 
-module.exports = new MessageParser();
+        client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')');
+    }
+
+    /**
+     * Turns the ACTION:SHORTCODE constants map
+     * around to facilitate shortcode lookup
+     *
+     * @private
+     *
+     * @returns {Object} actions
+     */
+    private _getActions(): {[key: string]: string} {
+        let actions: {[key: string]: string} = {},
+            key: string;
+
+        for (key in Actions) {
+            actions[(Actions as any)[key]] = key;
+        }
+
+        return actions;
+    }
+
+    /**
+     * Parses an individual message (as oposed to a
+     * block of multiple messages as is processed by .parse())
+     *
+     * @param   {String} message
+     *
+     * @private
+     *
+     * @returns {Object} parsedMessage
+     */
+    private _parseMessage(message: string, client: Client): ParsedMessage | undefined {
+        let parts = message.split(MessagePartSeparator);
+
+        if (parts.length < 2) {
+            // message.processedError = true; // I'm not sure this is correct since it's being set on a primitive
+            client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts');
+            return undefined;
+        }
+
+        if (this._actions[parts[1]] === undefined) {
+            // message.processedError = true;
+            client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[1]);
+            return undefined;
+        }
+        return {
+            raw: message,
+            topic: parts[0],
+            action: parts[1],
+            data: parts.splice(2)
+        };
+    }
+}

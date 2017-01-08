@@ -1,5 +1,4 @@
-var C = require( '../constants/constants' ),
-	SEP = C.MESSAGE_PART_SEPERATOR;
+import { MessageSeparator } from "../constants/constants";
 
 /**
  * Creates a deepstream message string, based on the 
@@ -11,12 +10,12 @@ var C = require( '../constants/constants' ),
  *
  * @returns {String} deepstream message string
  */
-exports.getMsg = function( topic, action, data ) {
-	if( data && !( data instanceof Array ) ) {
+export function getMsg(topic: string, action: string, data: any[]): string {
+	if( data && !(data instanceof Array) ) {
 		throw new Error( 'data must be an array' );
 	}
-	var sendData = [ topic, action ],
-		i;
+	let sendData = [ topic, action ],
+		i: number;
 
 	if( data ) {
 		for( i = 0; i < data.length; i++ ) {
@@ -28,8 +27,8 @@ exports.getMsg = function( topic, action, data ) {
 		}
 	}
 
-	return sendData.join( SEP ) + C.MESSAGE_SEPERATOR;
-};
+	return sendData.join(MessageSeparator) + C.MESSAGE_SEPERATOR;
+}
 
 /**
  * Converts a serializable value into its string-representation and adds
@@ -42,8 +41,8 @@ exports.getMsg = function( topic, action, data ) {
  * @public
  * @returns {String} string representation of the value
  */
-exports.typed = function( value ) {
-	var type = typeof value;
+export function typed(value: any): string {
+	let type = typeof value;
 	
 	if( type === 'string' ) {
 		return C.TYPES.STRING + value;
@@ -74,4 +73,4 @@ exports.typed = function( value ) {
 	}
 	
 	throw new Error( 'Can\'t serialize type ' + value );
-};
+}

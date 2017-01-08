@@ -56,7 +56,7 @@ export const Event = {
     NOT_SUBSCRIBED: 'NOT_SUBSCRIBED'
 };
 
-const Actions = {
+export const Actions = {
     PING: 'PI',
     PONG: 'PO',
     ACK: 'A',
@@ -93,7 +93,7 @@ const Actions = {
     WRITE_ACKNOWLEDGEMENT: 'WA'
 };
 
-const CallState = {
+export const CallState = {
     INITIAL: 'INITIAL',
     CONNECTING: 'CONNECTING',
     ESTABLISHED: 'ESTABLISHED',

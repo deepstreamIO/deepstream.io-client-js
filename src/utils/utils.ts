@@ -4,14 +4,14 @@
  *
  * @type {RegExp}
  */
-var TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+export const TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
 
 /**
  * Used in typeof comparisons
  *
  * @type {String}
  */
-var OBJECT = 'object';
+export const OBJECT = 'object';
 
 /**
  * True if environment is node, false if it's a browser
@@ -21,7 +21,7 @@ var OBJECT = 'object';
  * @public
  * @type {Boolean}
  */
-exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
+export const isNode = typeof process !== 'undefined' && process.toString() === '[object process]';
 
 /**
  * Provides as soon as possible async execution in a cross
@@ -32,8 +32,8 @@ exports.isNode = typeof process !== 'undefined' && process.toString() === '[obje
  * @public
  * @returns {void}
  */
-exports.nextTick = function( fn ) {
-	if( exports.isNode ) {
+export function nextTick(fn: () => void) {
+	if (isNode) {
 		process.nextTick( fn );
 	} else {
 		setTimeout( fn, 0 );
@@ -48,7 +48,7 @@ exports.nextTick = function( fn ) {
  * @public
  * @returns {String} trimmedString
  */
-exports.trim = function( inputString ) {
+export function trim (inputString: string): string {
 	if( inputString.trim ) {
 		return inputString.trim();
 	} else {
@@ -77,7 +77,7 @@ exports.trim = function( inputString ) {
  * @public
  * @returns {Boolean} isEqual
  */
-exports.deepEquals= function( objA, objB ) {
+export function deepEquals(objA: any, objB: any): boolean {
 	if ( objA === objB ) {
 		return true
 	}
@@ -107,7 +107,7 @@ exports.deepEquals= function( objA, objB ) {
  * @public
  * @returns {Mixed} clone
  */
-exports.deepCopy = function( obj ) {
+export function deepCopy<T>(obj: T): T {
 	if( typeof obj === OBJECT ) {
 		return JSON.parse( JSON.stringify( obj ) );
 	} else {
@@ -125,15 +125,15 @@ exports.deepCopy = function( obj ) {
  * @public
  * @returns {Mixed} clone
  */
-exports.shallowCopy = function ( obj ) {
+export function shallowCopy<T>(obj: T): T {
 	if ( Array.isArray( obj ) ) {
-		return obj.slice( 0 );
+		return obj.slice( 0 ) as any as T;
 	}
 	else if ( typeof obj === OBJECT ) {
-		var copy = Object.create( null );
-		var props = Object.keys( obj );
-		for ( var i = 0; i < props.length; i++ ) {
-			copy[ props[ i ] ] = obj[ props[ i ] ];
+		let copy = Object.create( null );
+		let props = Object.keys( obj );
+		for (let i = 0; i < props.length; i++) {
+			copy[props[i]] = (obj as any)[props[i]];
 		}
 	  return copy;
 	}
@@ -150,13 +150,13 @@ exports.shallowCopy = function ( obj ) {
  * @public
  * @returns {Number} timeoutId
  */
-exports.setTimeout = function( callback, timeoutDuration ) {
+export function timeout(callback: () => void, timeoutDuration: number): number {
 	if( timeoutDuration !== null ) {
 		return setTimeout( callback, timeoutDuration );
 	} else {
 		return -1;
 	}
-};
+}
 
 /**
  * Set Interval utility that adds support for disabling an interval
@@ -168,27 +168,27 @@ exports.setTimeout = function( callback, timeoutDuration ) {
  * @public
  * @returns {Number} intervalId
  */
-exports.setInterval = function( callback, intervalDuration ) {
+export function setInterval(callback: () => void, intervalDuration: number): number {
 	if( intervalDuration !== null ) {
 		return setInterval( callback, intervalDuration );
 	} else {
 		return -1;
 	}
-};
+}
 
 /**
  * Used to see if a protocol is specified within the url
  * @type {RegExp}
  */
-var hasUrlProtocol = /^wss:|^ws:|^\/\//;
+export const hasUrlProtocol = /^wss:|^ws:|^\/\//;
 
 /**
  * Used to see if the protocol contains any unsupported protocols
  * @type {RegExp}
  */
-var unsupportedProtocol = /^http:|^https:/;
+export const unsupportedProtocol = /^http:|^https:/;
 
-var URL = require( 'url' );
+import URL = require( 'url' );
 
 /**
  * Take the url passed when creating the client and ensure the correct
@@ -196,7 +196,7 @@ var URL = require( 'url' );
  * @param  {String} url Url passed in by client
  * @return {String} Url with supported protocol
  */
-exports.parseUrl = function( url, defaultPath ) {
+export function parseUrl(url: string, defaultPath: string): string {
 	if( unsupportedProtocol.test( url ) ) {
 		throw new Error( 'Only ws and wss are supported' );
 	}
@@ -205,11 +205,11 @@ exports.parseUrl = function( url, defaultPath ) {
 	} else if( url.indexOf( '//' ) === 0  ) {
 		url = 'ws:' + url;
 	}
-	var serverUrl = URL.parse( url );
+	let serverUrl = URL.parse( url );
 	if (!serverUrl.host) {
 		throw new Error('invalid url, missing host');
 	}
 	serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
 	serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
 	return URL.format( serverUrl );
-};
+}

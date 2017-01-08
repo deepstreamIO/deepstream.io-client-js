@@ -1,3 +1,5 @@
+import { ParsedMessage } from "../message/message-parser";
+import { Connection } from "../message/connection";
 var messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
 	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
@@ -17,213 +19,220 @@ var messageBuilder = require( '../message/message-builder' ),
  * @public
  * @constructor
  */
-var EventHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._emitter = new EventEmitter();
-	this._listener = {};
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
-};
+export class EventHandler {
+	private _options: any; // TODO: Proper type
+	private _connection: Connection;
+	private _client: Client;
+	private _emitter: EventEmitter;
+	private _listener: Listener;
+	private _ackTimeoutRegistry: AckTimeoutRegistry;
+	private _resubscribeNotifier: ResubscribeNotifier;
 
-/**
- * Subscribe to an event. This will receive both locally emitted events
- * as well as events emitted by other connected clients.
- *
- * @param   {String}   name
- * @param   {Function} callback
- *
- * @public
- * @returns {void}
- */
-EventHandler.prototype.subscribe = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
+	public constructor(options: any, connection: Connection, client: Client) {
+		this._options = options;
+		this._connection = connection;
+		this._client = client;
+		this._emitter = new EventEmitter();
+		this._listener = {};
+		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
+		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 	}
 
-	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
-	}
-
-	this._emitter.on( name, callback );
-};
-
-/**
- * Removes a callback for a specified event. If all callbacks
- * for an event have been removed, the server will be notified
- * that the client is unsubscribed as a listener
- *
- * @param   {String}   name
- * @param   {Function} callback
- *
- * @public
- * @returns {void}
- */
-EventHandler.prototype.unsubscribe = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if ( callback !== undefined && typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
-	this._emitter.off( name, callback );
-
-	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
-	}
-};
-
-/**
- * Emits an event locally and sends a message to the server to
- * broadcast the event to the other connected clients
- *
- * @param   {String} name
- * @param   {Mixed} data will be serialized and deserialized to its original type.
- *
- * @public
- * @returns {void}
- */
-EventHandler.prototype.emit = function( name, data ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-
-	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
-	this._emitter.emit( name, data );
-};
-
-/**
- * Allows to listen for event subscriptions made by this or other clients. This
- * is useful to create "active" data providers, e.g. providers that only provide
- * data for a particular event if a user is actually interested in it
- *
- * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
- * @param   {Function} callback
- *
- * @public
- * @returns {void}
- */
-EventHandler.prototype.listen = function( pattern, callback ) {
-	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
-		throw new Error( 'invalid argument pattern' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
-
-	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
-		return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
-	} else if( this._listener[ pattern ] ) {
-		this._listener[ pattern ].destroy();
-	}
-
-	this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
-};
-
-/**
- * Removes a listener that was previously registered with listenForSubscriptions
- *
- * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
- * @param   {Function} callback
- *
- * @public
- * @returns {void}
- */
-EventHandler.prototype.unlisten = function( pattern ) {
-	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
-		throw new Error( 'invalid argument pattern' );
-	}
-
-	var listener = this._listener[ pattern ];
-
-	if( listener && !listener.destroyPending ) {
-		listener.sendDestroy();
-	} else if( this._listener[ pattern ] ) {
-		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
-		this._listener[ pattern ].destroy();
-		delete this._listener[ pattern ];
-	} else {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
-	}
-};
-
-/**
- * Handles incoming messages from the server
- *
- * @param   {Object} message parsed deepstream message
- *
- * @package private
- * @returns {void}
- */
-EventHandler.prototype._$handle = function( message ) {
-	var name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
-
-	if( message.action === C.ACTIONS.EVENT ) {
-		processed = true;
-		if( message.data && message.data.length === 2 ) {
-			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
-		} else {
-			this._emitter.emit( name );
+	/**
+	 * Subscribe to an event. This will receive both locally emitted events
+	 * as well as events emitted by other connected clients.
+	 *
+	 * @param   {String}   name
+	 * @param   {Function} callback
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public subscribe(name: string, callback: () => void): void { // TODO: Proper callback type
+		if ( typeof name !== 'string' || name.length === 0 ) {
+			throw new Error( 'invalid argument name' );
 		}
-		return;
+		if ( typeof callback !== 'function' ) {
+			throw new Error( 'invalid argument callback' );
+		}
+
+		if( !this._emitter.hasListeners( name ) ) {
+			this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
+			this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
+		}
+
+		this._emitter.on( name, callback );
 	}
 
-	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
-		this._listener[ name ] && this._listener[ name ].destroyPending
-	) {
-		this._listener[ name ].destroy();
-		delete this._listener[ name ];
-		return;
-	} else if( this._listener[ name ] ) {
-		processed = true;
-		this._listener[ name ]._$onMessage( message );
-		return;
-	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
-		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
-		return;
-	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
-		// record can receive a HAS_PROVIDER after discarding the record
-		return;
+	/**
+	 * Removes a callback for a specified event. If all callbacks
+	 * for an event have been removed, the server will be notified
+	 * that the client is unsubscribed as a listener
+	 *
+	 * @param   {String}   name
+	 * @param   {Function} callback
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public unsubscribe(name: string, callback: () => void): void { // TODO: Callback type
+		if ( typeof name !== 'string' || name.length === 0 ) {
+			throw new Error( 'invalid argument name' );
+		}
+		if ( callback !== undefined && typeof callback !== 'function' ) {
+			throw new Error( 'invalid argument callback' );
+		}
+		this._emitter.off( name, callback );
+
+		if( !this._emitter.hasListeners( name ) ) {
+			this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
+			this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
+		}
 	}
 
-	if( message.action === C.ACTIONS.ACK ) {
-		this._ackTimeoutRegistry.clear( message );
-		return;
+	/**
+	 * Emits an event locally and sends a message to the server to
+	 * broadcast the event to the other connected clients
+	 *
+	 * @param   {String} name
+	 * @param   {Mixed} data will be serialized and deserialized to its original type.
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public emit(name: string, data: string): void {
+		if ( typeof name !== 'string' || name.length === 0 ) {
+			throw new Error( 'invalid argument name' );
+		}
+
+		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
+		this._emitter.emit( name, data );
 	}
 
-	if( message.action === C.ACTIONS.ERROR ) {
-    if (message.data[0] === C.EVENT.MESSAGE_DENIED){
-      this._ackTimeoutRegistry.remove( message.data[1], message.data[2] );
-    }
-    else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
-      this._ackTimeoutRegistry.remove( message.data[1], C.ACTIONS.UNSUBSCRIBE );
-    }
-		message.processedError = true;
-		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
-		return;
+	/**
+	 * Allows to listen for event subscriptions made by this or other clients. This
+	 * is useful to create "active" data providers, e.g. providers that only provide
+	 * data for a particular event if a user is actually interested in it
+	 *
+	 * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
+	 * @param   {Function} callback
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public listen(pattern: string, callback: () => void): void { // TODO: Callback type
+		if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+			throw new Error( 'invalid argument pattern' );
+		}
+		if ( typeof callback !== 'function' ) {
+			throw new Error( 'invalid argument callback' );
+		}
+
+		if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
+			return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
+		} else if( this._listener[ pattern ] ) {
+			this._listener[ pattern ].destroy();
+		}
+
+		this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
 	}
 
-	this._client._$onError( C.TOPIC.EVENT, C.EVENT.UNSOLICITED_MESSAGE, name );
-};
+	/**
+	 * Removes a listener that was previously registered with listenForSubscriptions
+	 *
+	 * @param   {String}   pattern  A combination of alpha numeric characters and wildcards( * )
+	 * @param   {Function} callback
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public unlisten(pattern: string): void {
+		if ( typeof pattern !== 'string' || pattern.length === 0 ) {
+			throw new Error( 'invalid argument pattern' );
+		}
 
+		let listener = this._listener[ pattern ];
 
-/**
- * Resubscribes to events when connection is lost
- *
- * @package private
- * @returns {void}
- */
-EventHandler.prototype._resubscribe = function() {
-	var callbacks = this._emitter._callbacks;
-	for( var eventName in callbacks ) {
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+		if( listener && !listener.destroyPending ) {
+			listener.sendDestroy();
+		} else if( this._listener[ pattern ] ) {
+			this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
+			this._listener[ pattern ].destroy();
+			delete this._listener[ pattern ];
+		} else {
+			this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
+		}
 	}
-};
 
-module.exports = EventHandler;
+	/**
+	 * Handles incoming messages from the server
+	 *
+	 * @param   {Object} message parsed deepstream message
+	 *
+	 * @package private
+	 * @returns {void}
+	 */
+	private _handle(message: ParsedMessage): void {
+		let name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
+
+		if( message.action === C.ACTIONS.EVENT ) {
+			processed = true;
+			if( message.data && message.data.length === 2 ) {
+				this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
+			} else {
+				this._emitter.emit( name );
+			}
+			return;
+		}
+
+		if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+			this._listener[ name ] && this._listener[ name ].destroyPending
+		) {
+			this._listener[ name ].destroy();
+			delete this._listener[ name ];
+			return;
+		} else if( this._listener[ name ] ) {
+			processed = true;
+			this._listener[ name ]._$onMessage( message );
+			return;
+		} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+			// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+			return;
+		}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+			// record can receive a HAS_PROVIDER after discarding the record
+			return;
+		}
+
+		if( message.action === C.ACTIONS.ACK ) {
+			this._ackTimeoutRegistry.clear( message );
+			return;
+		}
+
+		if( message.action === C.ACTIONS.ERROR ) {
+			if (message.data[0] === C.EVENT.MESSAGE_DENIED){
+				this._ackTimeoutRegistry.remove( message.data[1], message.data[2] );
+			}
+			else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
+				this._ackTimeoutRegistry.remove( message.data[1], C.ACTIONS.UNSUBSCRIBE );
+			}
+			message.processedError = true;
+			this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
+			return;
+		}
+
+		this._client._$onError( C.TOPIC.EVENT, C.EVENT.UNSOLICITED_MESSAGE, name );
+	}
+
+	/**
+	 * Resubscribes to events when connection is lost
+	 *
+	 * @package private
+	 * @returns {void}
+	 */
+	private _resubscribe(): void {
+		let callbacks = this._emitter._callbacks;
+		for(let eventName in callbacks) {
+			this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+		}
+	}
+}

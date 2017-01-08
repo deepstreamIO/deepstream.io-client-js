@@ -9,6 +9,10 @@ var C = require( './constants/constants' ),
 	defaultOptions = require( './default-options' ),
 	messageBuilder = require( './message/message-builder' );
 
+export class Client {
+
+}
+
 /**
  * deepstream.io javascript client
  *
