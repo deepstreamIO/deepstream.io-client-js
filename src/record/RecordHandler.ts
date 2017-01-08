@@ -50,7 +50,7 @@ export class RecordHandler {
 	 * @public
 	 * @returns {Record}
 	 */
-	public getRecord(name: string, recordOptions: { persist?: true }): Record {
+	public getRecord(name: string, recordOptions?: { persist?: true }): Record {
 		if( !this._records[ name ] ) {
 			this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._client );
 			this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );

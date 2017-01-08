@@ -28,7 +28,7 @@ export class Record extends Emitter {
 
     public name: string;
     public usages: number;
-    private _recordOptions: { persists?: boolean };
+    private _recordOptions: {persists?: boolean};
     private _connection: Connection;
     private _client: Client;
     public isReady: boolean;
@@ -46,7 +46,9 @@ export class Record extends Emitter {
     private _deleteAckTimeout: ScheduledEventHandler;
     private _discardTimeout: ScheduledEventHandler;
 
-    private get _options(): DeepstreamOptions { return this._client.options; }
+    private get _options(): DeepstreamOptions {
+        return this._client.options;
+    }
 
     public constructor();
     public constructor(name: string, recordOptions: any, connection: Connection, client: Client);
@@ -594,7 +596,7 @@ export class Record extends Emitter {
      * @private
      * @returns {Object} arguments map
      */
-    private _normalizeArguments(args: any[]): {path?: string, triggerNow?: boolean, callback?: (data: any) => void} {
+    public _normalizeArguments(args: any[]): {path?: string, triggerNow?: boolean, callback?: Record.SubscribeCallback} {
         // If arguments is already a map of normalized parameters
         // (e.g. when called by AnonymousRecord), just return it.
         if (args.length === 1 && typeof args[0] === 'object') {

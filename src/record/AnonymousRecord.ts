@@ -19,164 +19,176 @@ import { RecordHandler } from "./RecordHandler";
  * @constructor
  */
 export class AnonymousRecord extends Record {
-	private _recordHandler: RecordHandler;
-	private _record: Record;
-	private _subscriptions: any[]; // TODO: Type
+    private _recordHandler: RecordHandler;
+    private _record: Record;
+    private _subscriptions: any[]; // TODO: Type
 
-	public constructor(recordHandler: RecordHandler) {
-		super();
+    public constructor(recordHandler: RecordHandler) {
+        super();
 
-		this.name = undefined as any;
-		this._recordHandler = recordHandler;
-		this._record = undefined as any;
-		this._subscriptions = [];
-		this._proxyMethod( 'delete' );
-		this._proxyMethod( 'set' );
-		this._proxyMethod( 'discard' );
-	}
+        this.name = undefined as any;
+        this._recordHandler = recordHandler;
+        this._record = undefined as any;
+        this._subscriptions = [];
+        this._proxyMethod('delete');
+        this._proxyMethod('set');
+        this._proxyMethod('discard');
+    }
 
-	/**
-	 * Proxies the actual record's get method. It is valid
-	 * to call get prior to setName - if no record exists,
-	 * the method returns undefined
-	 *
-	 * @param   {[String]} path A json path. If non is provided,
-	 *                          the entire record is returned.
-	 *
-	 * @public
-	 * @returns {mixed}    the value of path or the entire object
-	 */
-	public get(path: string): any {
-		if( this._record === null ) {
-			return undefined;
-		}
+    /**
+     * Proxies the actual record's get method. It is valid
+     * to call get prior to setName - if no record exists,
+     * the method returns undefined
+     *
+     * @param   {[String]} path A json path. If non is provided,
+     *                          the entire record is returned.
+     *
+     * @public
+     * @returns {mixed}    the value of path or the entire object
+     */
+    public get(path: string): any {
+        if (this._record === null) {
+            return undefined;
+        }
 
-		return this._record.get( path );
-	}
+        return this._record.get(path);
+    }
 
-	/**
-	 * Proxies the actual record's subscribe method. The same parameters
-	 * can be used. Can be called prior to setName(). Please note, triggerIfReady
-	 * will always be set to true to reflect changes in the underlying record.
-	 *
-	 * @param   {[String]} path 	A json path. If non is provided,
-	 *	                          	it subscribes to changes for the entire record.
-	 *
-	 * @param 	{Function} callback A callback function that will be invoked whenever
-	 *                              the subscribed path or record updates
-	 *
-	 * @public
-	 * @returns {void}
-	 */
-	public subscribe(...args: any[]): void {
-		var parameters = Record.prototype._normalizeArguments( args );
-		parameters.triggerNow = true;
-		this._subscriptions.push( parameters );
+    /**
+     * Proxies the actual record's subscribe method. The same parameters
+     * can be used. Can be called prior to setName(). Please note, triggerIfReady
+     * will always be set to true to reflect changes in the underlying record.
+     *
+     * @param   {[String]} path    A json path. If non is provided,
+     *                                it subscribes to changes for the entire record.
+     *
+     * @param    {Function} callback A callback function that will be invoked whenever
+     *                              the subscribed path or record updates
+     *
+     * @public
+     * @returns {void}
+     */
+    public subscribe(path: string, callback: Record.SubscribeCallback): void;
+    public subscribe(callback: Record.SubscribeCallback): void;
+    public subscribe(...args: any[]): void {
+        let parameters = Record.prototype._normalizeArguments(args);
+        parameters.triggerNow = true;
+        this._subscriptions.push(parameters);
 
-		if( this._record !== null ) {
-			this._record.subscribe( parameters );
-		}
-	}
+        if (this._record && parameters.callback) {
+            if (parameters.path) {
+                this._record.subscribe(parameters.path, parameters.callback);
+            } else {
+                this._record.subscribe(parameters.callback);
+            }
+        }
+    }
 
-	/**
-	 * Proxies the actual record's unsubscribe method. The same parameters
-	 * can be used. Can be called prior to setName()
-	 *
-	 * @param   {[String]} path 	A json path. If non is provided,
-	 *	                          	it subscribes to changes for the entire record.
-	 *
-	 * @param 	{Function} callback A callback function that will be invoked whenever
-	 *                              the subscribed path or record updates
-	 *
-	 * @public
-	 * @returns {void}
-	 */
-	public unsubscribe(...args: any[]): void {
-		let parameters = Record.prototype._normalizeArguments( args ),
-			subscriptions = [],
-			i;
+    /**
+     * Proxies the actual record's unsubscribe method. The same parameters
+     * can be used. Can be called prior to setName()
+     *
+     * @param   {[String]} path    A json path. If non is provided,
+     *                                it subscribes to changes for the entire record.
+     *
+     * @param    {Function} callback A callback function that will be invoked whenever
+     *                              the subscribed path or record updates
+     *
+     * @public
+     * @returns {void}
+     */
+    public unsubscribe(path: string, callback: Record.SubscribeCallback): void;
+    public unsubscribe(callback: Record.SubscribeCallback): void;
+    public unsubscribe(...args: any[]): void {
+        let parameters = Record.prototype._normalizeArguments(args),
+            subscriptions = [],
+            i;
 
-		for( i = 0; i < this._subscriptions.length; i++ ) {
-			if(
-				this._subscriptions[ i ].path !== parameters.path ||
-				this._subscriptions[ i ].callback !== parameters.callback
-			) {
-				subscriptions.push( this._subscriptions[ i ] );
-			}
-		}
+        for (i = 0; i < this._subscriptions.length; i++) {
+            if (
+                this._subscriptions[i].path !== parameters.path ||
+                this._subscriptions[i].callback !== parameters.callback
+            ) {
+                subscriptions.push(this._subscriptions[i]);
+            }
+        }
 
-		this._subscriptions = subscriptions;
+        this._subscriptions = subscriptions;
 
-		if( this._record !== null ) {
-			this._record.unsubscribe( parameters );
-		}
-	}
+        if (this._record && parameters.callback) {
+            if (parameters.path) {
+                this._record.subscribe(parameters.path, parameters.callback);
+            } else {
+                this._record.subscribe(parameters.callback);
+            }
+        }
+    }
 
-	/**
-	 * Sets the underlying record the anonymous record is bound
-	 * to. Can be called multiple times.
-	 *
-	 * @param {String} recordName
-	 *
-	 * @public
-	 * @returns {void}
-	 */
-	public setName(recordName: string): void {
-		this.name = recordName;
+    /**
+     * Sets the underlying record the anonymous record is bound
+     * to. Can be called multiple times.
+     *
+     * @param {String} recordName
+     *
+     * @public
+     * @returns {void}
+     */
+    public setName(recordName: string): void {
+        this.name = recordName;
 
-		let i: number;
+        let i: number;
 
-		if( this._record !== null && !this._record.isDestroyed) {
-			for( i = 0; i < this._subscriptions.length; i++ ) {
-				this._record.unsubscribe( this._subscriptions[ i ] );
-			}
-			this._record.discard();
-		}
+        if (this._record !== null && !this._record.isDestroyed) {
+            for (i = 0; i < this._subscriptions.length; i++) {
+                this._record.unsubscribe(this._subscriptions[i]);
+            }
+            this._record.discard();
+        }
 
-		this._record = this._recordHandler.getRecord( recordName );
+        this._record = this._recordHandler.getRecord(recordName);
 
-		for( i = 0; i < this._subscriptions.length; i++ ) {
-			this._record.subscribe( this._subscriptions[ i ] );
-		}
+        for (i = 0; i < this._subscriptions.length; i++) {
+            this._record.subscribe(this._subscriptions[i]);
+        }
 
-		this._record.whenReady( this.emit.bind( this, 'ready' ) );
-		this.emit( 'nameChanged', recordName );
-	}
+        this._record.whenReady(this.emit.bind(this, 'ready'));
+        this.emit('nameChanged', recordName);
+    }
 
-	/**
-	 * Adds the specified method to this method and forwards it
-	 * to _callMethodOnRecord
-	 *
-	 * @param   {String} methodName
-	 *
-	 * @private
-	 * @returns {void}
-	 */
-	private _proxyMethod(methodName: string): void {
-		this[ methodName ] = this._callMethodOnRecord.bind( this, methodName );
-	}
+    /**
+     * Adds the specified method to this method and forwards it
+     * to _callMethodOnRecord
+     *
+     * @param   {String} methodName
+     *
+     * @private
+     * @returns {void}
+     */
+    private _proxyMethod(methodName: string): void {
+        (this as any)[methodName] = this._callMethodOnRecord.bind(this, methodName);
+    }
 
-	/**
-	 * Invokes the specified method with the provided parameters on
-	 * the underlying record. Throws erros if the method is not
-	 * specified yet or doesn't expose the method in question
-	 *
-	 * @param   {String} methodName
-	 *
-	 * @private
-	 * @returns {Mixed} the return value of the actual method
-	 */
-	private _callMethodOnRecord(methodName: string): any {
-		if( this._record === null ) {
-			throw new Error( 'Can`t invoke ' + methodName + '. AnonymousRecord not initialised. Call setName first' );
-		}
+    /**
+     * Invokes the specified method with the provided parameters on
+     * the underlying record. Throws erros if the method is not
+     * specified yet or doesn't expose the method in question
+     *
+     * @param   {String} methodName
+     *
+     * @private
+     * @returns {Mixed} the return value of the actual method
+     */
+    private _callMethodOnRecord(methodName: string): any {
+        if (this._record === null) {
+            throw new Error('Can`t invoke ' + methodName + '. AnonymousRecord not initialised. Call setName first');
+        }
 
-		if( typeof this._record[ methodName ] !== 'function' ) {
-			throw new Error( methodName + ' is not a method on the record' );
-		}
+        if (typeof (this._record as any)[methodName] !== 'function') {
+            throw new Error(methodName + ' is not a method on the record');
+        }
 
-		var args = Array.prototype.slice.call( arguments, 1 );
+        var args = Array.prototype.slice.call(arguments, 1);
 
-		return this._record[ methodName ].apply( this._record, args );
-	}
+        return (this._record as any)[methodName].apply(this._record, args);
+    }
 }
