@@ -1,4 +1,4 @@
-import { MergeStrategy, RemoteWins } from "./constants/merge-strategies";
+import { MergeStrategy, RemoteWins } from "./constants/MergeStrategies";
 
 export interface DeepstreamOptions {
 	heartbeatInterval?: number,

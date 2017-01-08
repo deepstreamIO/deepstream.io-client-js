@@ -1,6 +1,6 @@
 import URL = require("url");
 import NodeWebSocket = require('ws')
-import { ParsedMessage } from "./message-parser";
+import { ParsedMessage } from "./MessageParser";
 
 let BrowserWebSocket = WebSocket || MozWebSocket; // TODO: should be global.WebSocket
 

@@ -1,5 +1,5 @@
-import { Actions, MessagePartSeparator } from "../constants/constants";
-import { Client } from "../client";
+import { Actions, MessagePartSeparator } from "../constants/Constants";
+import { Client } from "../Client";
 
 export interface ParsedMessage {
     raw: string,

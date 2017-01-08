@@ -1,12 +1,12 @@
-import { Client } from "../client";
-import { Connection } from "../message/connection";
-import { Record } from "./record";
-import { List } from "./list";
+import { Client } from "../Client";
+import { Connection } from "../message/Connection";
+import { Record } from "./Record";
+import { List } from "./List";
 import Emitter = require("component-emitter");
-import { SingleNotifier } from "../utils/single-notifier";
-import { Actions, Topics } from "../constants/constants";
-import { AnonymousRecord } from "./anonymous-record";
-import { ParsedMessage } from "../message/message-parser";
+import { SingleNotifier } from "../utils/SingleNotifier";
+import { Actions, Topics } from "../constants/Constants";
+import { AnonymousRecord } from "./AnonymousRecord";
+import { ParsedMessage } from "../message/MessageParser";
 
 /**
  * A collection of factories for records. This class

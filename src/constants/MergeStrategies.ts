@@ -1,4 +1,4 @@
-import { Record } from "../record/record";
+import { Record } from "../record/Record";
 
 export type MergeCallback = (error?: string, data?: any) => void;
 

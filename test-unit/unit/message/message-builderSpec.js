@@ -1,6 +1,6 @@
 /* global describe, it, expect */
-var C = require( '../../../src/constants/constants' ),
-	messageBuilder = require( '../../../src/message/message-builder' ),
+var C = require( '../../../src/constants/Constants' ),
+	messageBuilder = require( '../../../src/message/MessageBuilder' ),
 	msg = require( '../../test-helper/test-helper' ).msg;
 
 describe( 'messageBuilder composes valid deepstream messages', function(){

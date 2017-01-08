@@ -1,4 +1,4 @@
-import { MessageSeparator } from "../constants/constants";
+import { MessageSeparator } from "../constants/Constants";
 
 /**
  * Creates a deepstream message string, based on the 

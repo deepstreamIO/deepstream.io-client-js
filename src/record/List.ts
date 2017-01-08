@@ -5,9 +5,9 @@
 // 	ENTRY_REMOVED_EVENT = 'entry-removed',
 // 	ENTRY_MOVED_EVENT = 'entry-moved';
 
-import { RecordHandler } from "./record-handler";
+import { RecordHandler } from "./RecordHandler";
 import Emitter = require("component-emitter");
-import { Record } from "./record";
+import { Record } from "./Record";
 
 /**
  * A List is a specialised Record that contains

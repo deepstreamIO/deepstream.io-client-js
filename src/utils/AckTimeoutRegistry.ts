@@ -1,7 +1,7 @@
 import Emitter = require("component-emitter");
-import { Client } from "../client";
-import { ParsedMessage } from "../message/message-parser";
-import { Events } from "../constants/constants";
+import { Client } from "../Client";
+import { ParsedMessage } from "../message/MessageParser";
+import { Events } from "../constants/Constants";
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges

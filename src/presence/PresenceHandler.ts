@@ -1,13 +1,13 @@
-import { Connection } from "../message/connection";
-import { Client } from "../client";
-import { Actions, Topics } from "../constants/constants";
-import { ParsedMessage } from "../message/message-parser";
+import { Connection } from "../message/Connection";
+import { Client } from "../Client";
+import { Actions, Topics } from "../constants/Constants";
+import { ParsedMessage } from "../message/MessageParser";
 var EventEmitter = require( 'component-emitter' ),
-	C = require( '../constants/constants' ),
-	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
-	messageParser = require( '../message/message-parser' ),
-	messageBuilder = require( '../message/message-builder' ),
-	ResubscribeNotifier = require( '../utils/resubscribe-notifier' );
+	C = require( '../constants/Constants' ),
+	AckTimeoutRegistry = require( '../utils/AckTimeoutRegistry' ),
+	messageParser = require( '../message/MessageParser' ),
+	messageBuilder = require( '../message/MessageBuilder' ),
+	ResubscribeNotifier = require( '../utils/ResubscribeNotifier' );
 
 
 /**

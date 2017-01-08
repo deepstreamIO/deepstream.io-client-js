@@ -1,5 +1,5 @@
 /* global describe, it, expect, jasmine */
-var	MERGE_STRATEGIES = require( '../../../src/constants/merge-strategies' );
+var	MERGE_STRATEGIES = require( '../../../src/constants/MergeStrategies' );
 
 describe( 'merge strategies', function() {
 

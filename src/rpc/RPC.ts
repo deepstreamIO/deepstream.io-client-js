@@ -1,6 +1,6 @@
-import { DeepstreamOptions } from "../default-options";
-import { Client } from "../client";
-import { Events } from "../constants/constants";
+import { DeepstreamOptions } from "../DefaultOptions";
+import { Client } from "../Client";
+import { Events } from "../constants/Constants";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function

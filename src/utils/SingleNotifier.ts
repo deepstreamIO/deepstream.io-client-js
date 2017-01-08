@@ -1,6 +1,6 @@
-import { Connection } from "../message/connection";
-import { Client } from "../client";
-import { ResubscribeNotifier } from "./resubscribe-notifier";
+import { Connection } from "../message/Connection";
+import { Client } from "../Client";
+import { ResubscribeNotifier } from "./ResubscribeNotifier";
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT

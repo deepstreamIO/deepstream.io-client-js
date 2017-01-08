@@ -1,4 +1,4 @@
-var messageBuilder = require( '../../../src/message/message-builder' );
+var messageBuilder = require( '../../../src/message/MessageBuilder' );
 
 var ConnectionMock = function() {
 	this.lastSendMessage = null;

@@ -1,5 +1,5 @@
 /* global describe, expect, it, jasmine */
-var RpcHandler = require( '../../../src/rpc/rpc-handler' ),
+var RpcHandler = require( '../../../src/rpc/RPCHandler' ),
 	connectionMock = new (require( '../../mocks/message/connection-mock' ))(),
 	clientMock = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,

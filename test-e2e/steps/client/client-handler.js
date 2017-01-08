@@ -6,7 +6,7 @@ const clients = {};
 
 const utils = require('./utils');
 
-const DeepstreamClient = require( '../../../src/client' );
+const DeepstreamClient = require( '../../../src/Client' );
 
 function createClient( clientName, server ) {
   const gatewayUrl = global.cluster.getUrl( server - 1, clientName );

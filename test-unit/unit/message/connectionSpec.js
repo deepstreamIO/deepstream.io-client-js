@@ -1,7 +1,7 @@
 /* global describe, it, expect, jasmine */
 
 var proxyquire = require( 'proxyquire' ).noCallThru(),
-	C = require( '../../../src/constants/constants' ),
+	C = require( '../../../src/constants/Constants' ),
 	WebsocketMock = require( '../../mocks/transport/websocket-mock' ),
 	Connection = proxyquire( '../../../src/message/connection', { 'ws': WebsocketMock } ),
 	clientMock = new (require( '../../mocks/client-mock' ))(),

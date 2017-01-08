@@ -1,6 +1,6 @@
 import Emitter = require("component-emitter")
-import { Record } from "./record";
-import { RecordHandler } from "./record-handler";
+import { Record } from "./Record";
+import { RecordHandler } from "./RecordHandler";
 
 /**
  * An AnonymousRecord is a record without a predefined name. It

@@ -28,12 +28,12 @@ describe( 'connects', function(){
 	});
 
 	it( 'exposes constants on deepstream', function() {
-		expect( deepstream.CONSTANTS ).toEqual( require( '../../src/constants/constants' ) );
-		expect( client.CONSTANTS ).toEqual( require( '../../src/constants/constants' ) );
+		expect( deepstream.CONSTANTS ).toEqual( require( '../../src/constants/Constants' ) );
+		expect( client.CONSTANTS ).toEqual( require( '../../src/constants/Constants' ) );
 	});
 
 	it( 'exposes merge strategies on deepstream', function(){
-		expect( deepstream.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/merge-strategies' ) );
-		expect( client.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/merge-strategies' ) );
+		expect( deepstream.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/MergeStrategies' ) );
+		expect( client.MERGE_STRATEGIES ).toEqual( require( '../../src/constants/MergeStrategies' ) );
 	});
 });

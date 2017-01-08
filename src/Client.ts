@@ -1,11 +1,11 @@
-import { DeepstreamOptions, DefaultOptions } from "./default-options";
+import { DeepstreamOptions, DefaultOptions } from "./DefaultOptions";
 import Emitter = require("component-emitter");
-import { Connection, AuthParams } from "./message/connection";
-import { EventHandler } from "./event/event-handler";
-import { RecordHandler } from "./record/record-handler";
-import { PresenceHandler } from "./presence/presence-handler";
-import { Topics, Events, ConnectionStates } from "./constants/constants";
-import { ParsedMessage } from "./message/message-parser";
+import { Connection, AuthParams } from "./message/Connection";
+import { EventHandler } from "./event/EventHandler";
+import { RecordHandler } from "./record/RecordHandler";
+import { PresenceHandler } from "./presence/PresenceHandler";
+import { Topics, Events, ConnectionStates } from "./constants/Constants";
+import { ParsedMessage } from "./message/MessageParser";
 /**
  * deepstream.io javascript client
  *

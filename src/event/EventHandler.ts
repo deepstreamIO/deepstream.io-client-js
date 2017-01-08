@@ -1,10 +1,10 @@
-import { ParsedMessage } from "../message/message-parser";
-import { Connection } from "../message/connection";
-import { Client } from "../client";
-import { Listener } from "../utils/listener";
-import { AckTimeoutRegistry } from "../utils/ack-timeout-registry";
+import { ParsedMessage } from "../message/MessageParser";
+import { Connection } from "../message/Connection";
+import { Client } from "../Client";
+import { Listener } from "../utils/Listener";
+import { AckTimeoutRegistry } from "../utils/AckTimeoutRegistry";
 import Emitter = require("component-emitter");
-import { ResubscribeNotifier } from "../utils/resubscribe-notifier";
+import { ResubscribeNotifier } from "../utils/ResubscribeNotifier";
 
 /**
  * This class handles incoming and outgoing messages in relation

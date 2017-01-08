@@ -1,9 +1,9 @@
-import { Client } from "../client";
-import { Connection } from "../message/connection";
-import { MergeStrategy } from "../constants/merge-strategies";
-import { JSONPath } from "./json-path";
-import { ConnectionStates, Events } from "../constants/constants";
-import { ParsedMessage } from "../message/message-parser";
+import { Client } from "../Client";
+import { Connection } from "../message/Connection";
+import { MergeStrategy } from "../constants/MergeStrategies";
+import { JSONPath } from "./JSONPath";
+import { ConnectionStates, Events } from "../constants/Constants";
+import { ParsedMessage } from "../message/MessageParser";
 import Emitter = require("component-emitter");
 
 /**

@@ -1,4 +1,4 @@
-import { Client } from "../client";
+import { Client } from "../Client";
 /**
  * Makes sure that all functionality is resubscribed on reconnect. Subscription is called
  * when the connection drops - which seems counterintuitive, but in fact just means

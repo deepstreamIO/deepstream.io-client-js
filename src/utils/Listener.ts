@@ -1,8 +1,8 @@
-import { Client } from "../client";
-import { Connection } from "../message/connection";
-import { ResubscribeNotifier } from "./resubscribe-notifier";
-import { Actions, Events } from "../constants/constants";
-import { ParsedMessage } from "../message/message-parser";
+import { Client } from "../Client";
+import { Connection } from "../message/Connection";
+import { ResubscribeNotifier } from "./ResubscribeNotifier";
+import { Actions, Events } from "../constants/Constants";
+import { ParsedMessage } from "../message/MessageParser";
 
 /**
  * Creates a listener instance which is usedby deepstream Records and Events.
