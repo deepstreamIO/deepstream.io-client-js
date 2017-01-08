@@ -1,4 +1,4 @@
-export const ConnectionState = {
+export const ConnectionStates = {
     CLOSED: 'CLOSED',
     AWAITING_CONNECTION: 'AWAITING_CONNECTION',
     CHALLENGING: 'CHALLENGING',
@@ -22,7 +22,7 @@ export const Types = {
     UNDEFINED: 'U'
 };
 
-export const Topic = {
+export const Topics = {
     CONNECTION: 'C',
     AUTH: 'A',
     ERROR: 'X',
@@ -33,7 +33,7 @@ export const Topic = {
     PRIVATE: 'PRIVATE/'
 };
 
-export const Event = {
+export const Events = {
     CONNECTION_ERROR: 'connectionError',
     CONNECTION_STATE_CHANGED: 'connectionStateChanged',
     MAX_RECONNECTION_ATTEMPTS_REACHED: 'MAX_RECONNECTION_ATTEMPTS_REACHED',
@@ -93,7 +93,7 @@ export const Actions = {
     WRITE_ACKNOWLEDGEMENT: 'WA'
 };
 
-export const CallState = {
+export const CallStates = {
     INITIAL: 'INITIAL',
     CONNECTING: 'CONNECTING',
     ESTABLISHED: 'ESTABLISHED',

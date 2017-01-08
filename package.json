@@ -32,6 +32,7 @@
     "bufferutil": "^1.2.1"
   },
   "dependencies": {
+    "@types/component-emitter": "^1.2.5",
     "bufferutil": "^1.2.1",
     "component-emitter": "1.1.2",
     "utf-8-validate": "^1.2.1",

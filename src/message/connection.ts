@@ -126,7 +126,7 @@ export class Connection {
 	 * @private
 	 * @returns {void}
 	 */
-	public sendMessage(topic: string, action: string, data: string[]): void {
+	public sendMessage(topic: string, action: string, data: any[]): void {
 		this.send(messageBuilder.getMsg(topic, action, data));
 	}
 

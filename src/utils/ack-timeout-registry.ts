@@ -1,5 +1,7 @@
-var C = require( '../constants/constants' ),
-	EventEmitter = require( 'component-emitter' );
+import Emitter = require("component-emitter");
+import { Client } from "../client";
+import { ParsedMessage } from "../message/message-parser";
+import { Events } from "../constants/constants";
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -14,81 +16,87 @@ var C = require( '../constants/constants' ),
  * @extends {EventEmitter}
  * @constructor
  */
-var AckTimeoutRegistry = function( client, topic, timeoutDuration ) {
-	this._client = client;
-	this._topic = topic;
-	this._timeoutDuration = timeoutDuration;
-	this._register = {};
-};
+export class AckTimeoutRegistry extends Emitter {
+	private _client: Client;
+	private _topic: string;
+	private _timeoutDuration: number;
+	private _register: {[key: string]: number};
 
-EventEmitter( AckTimeoutRegistry.prototype );
+	public constructor(client: Client, topic: string, timeoutDuration: number) {
+		super();
 
-/**
- * Add an entry
- *
- * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
- *
- * @public
- * @returns {void}
- */
-AckTimeoutRegistry.prototype.add = function( name, action ) {
-	var uniqueName = action ? action + name : name;
-
-	this.remove( name, action );
-	this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
-};
-
-/**
- * Remove an entry
- *
- * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
- *
- * @public
- * @returns {void}
- */
-AckTimeoutRegistry.prototype.remove = function( name, action ) {
-	var uniqueName = action ? action + name : name;
-
-	if( this._register[ uniqueName ] ) {
-		this.clear( {
-			data: [ action, name ]
-		} );
+		this._client = client;
+		this._topic = topic;
+		this._timeoutDuration = timeoutDuration;
+		this._register = {};
 	}
-};
 
-/**
- * Processes an incoming ACK-message and removes the corresponding subscription
- *
- * @param   {Object} message A parsed deepstream ACK message
- *
- * @public
- * @returns {void}
- */
-AckTimeoutRegistry.prototype.clear = function( message ) {
-	var name = message.data[ 1 ];
-	var uniqueName = message.data[ 0 ] + name;
-	var timeout =  this._register[ uniqueName ] || this._register[ name ];
+	/**
+	 * Add an entry
+	 *
+	 * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public add(name: string, action: string): void {
+		let uniqueName = action ? action + name : name;
 
-	if( timeout ) {
-		clearTimeout( timeout );
-	} else {
-		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
+		this.remove( name, action );
+
+		this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
 	}
-};
 
-/**
- * Will be invoked if the timeout has occured before the ack message was received
- *
- * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
- *
- * @private
- * @returns {void}
- */
-AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
-	delete this._register[ uniqueName ];
-	var msg = 'No ACK message received in time for ' + name;
-	this._client._$onError( this._topic, C.EVENT.ACK_TIMEOUT, msg );
-	this.emit( 'timeout', name );
-};
+	/**
+	 * Remove an entry
+	 *
+	 * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public remove(name: string, action: string): void {
+		let uniqueName = action ? action + name : name;
 
-module.exports = AckTimeoutRegistry;
+		if( this._register[ uniqueName ] ) {
+			this.clear({ // We can ignore the other parameters and force cast it becuase it doesn't need it.
+				data: [ action, name ]
+			} as ParsedMessage);
+		}
+	}
+
+	/**
+	 * Processes an incoming ACK-message and removes the corresponding subscription
+	 *
+	 * @param   {Object} message A parsed deepstream ACK message
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public clear(message: ParsedMessage) {
+		let name = message.data[ 1 ];
+		let uniqueName = message.data[ 0 ] + name;
+		let timeout =  this._register[ uniqueName ] || this._register[ name ];
+
+		if( timeout ) {
+			clearTimeout( timeout );
+		} else {
+			this._client._$onError( this._topic, Events.UNSOLICITED_MESSAGE, message.raw );
+		}
+	}
+
+	/**
+	 * Will be invoked if the timeout has occured before the ack message was received
+	 *
+	 * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
+	 *
+	 * @private
+	 * @returns {void}
+	 */
+	public _onTimeout(uniqueName: string, name: string): void {
+		delete this._register[ uniqueName ];
+		let msg = 'No ACK message received in time for ' + name;
+		this._client._$onError( this._topic, Events.ACK_TIMEOUT, msg );
+		this.emit( 'timeout', name );
+	}
+}

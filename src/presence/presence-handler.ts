@@ -1,6 +1,6 @@
 import { Connection } from "../message/connection";
 import { Client } from "../client";
-import { Actions, Topic } from "../constants/constants";
+import { Actions, Topics } from "../constants/constants";
 import { ParsedMessage } from "../message/message-parser";
 var EventEmitter = require( 'component-emitter' ),
 	C = require( '../constants/constants' ),
@@ -53,7 +53,7 @@ export class PresenceHandler {
 		let promise = new Promise(r => resolve = r);
 		if( !this._emitter.hasListeners( C.ACTIONS.QUERY ) ) {
 			// At least one argument is required for a message to be permissionable
-			this._connection.sendMessage(Topic.PRESENCE, Actions.QUERY, [ Actions.QUERY ] );
+			this._connection.sendMessage(Topics.PRESENCE, Actions.QUERY, [ Actions.QUERY ] );
 		}
 		if (resolve) {
 			this._emitter.once(Actions.QUERY, resolve);
@@ -77,12 +77,12 @@ export class PresenceHandler {
 			throw new Error( 'invalid argument callback' );
 		}
 
-		if( !this._emitter.hasListeners( Topic.PRESENCE ) ) {
-			this._ackTimeoutRegistry.add( Topic.PRESENCE, Actions.SUBSCRIBE );
-			this._connection.sendMessage( Topic.PRESENCE, Actions.SUBSCRIBE, [ Actions.SUBSCRIBE ] );
+		if( !this._emitter.hasListeners( Topics.PRESENCE ) ) {
+			this._ackTimeoutRegistry.add( Topics.PRESENCE, Actions.SUBSCRIBE );
+			this._connection.sendMessage( Topics.PRESENCE, Actions.SUBSCRIBE, [ Actions.SUBSCRIBE ] );
 		}
 
-		this._emitter.on( Topic.PRESENCE, callback );
+		this._emitter.on( Topics.PRESENCE, callback );
 	}
 
 	/**
@@ -98,11 +98,11 @@ export class PresenceHandler {
 			throw new Error( 'invalid argument callback' );
 		}
 
-		this._emitter.off( Topic.PRESENCE, callback );
+		this._emitter.off( Topics.PRESENCE, callback );
 
-		if( !this._emitter.hasListeners(Topic.PRESENCE)) {
-			this._ackTimeoutRegistry.add(Topic.PRESENCE, Actions.UNSUBSCRIBE);
-			this._connection.sendMessage(Topic.PRESENCE, Actions.UNSUBSCRIBE, [ Actions.UNSUBSCRIBE ]);
+		if( !this._emitter.hasListeners(Topics.PRESENCE)) {
+			this._ackTimeoutRegistry.add(Topics.PRESENCE, Actions.UNSUBSCRIBE);
+			this._connection.sendMessage(Topics.PRESENCE, Actions.UNSUBSCRIBE, [ Actions.UNSUBSCRIBE ]);
 		}
 	}
 

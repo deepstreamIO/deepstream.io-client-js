@@ -1,13 +1,13 @@
-var C = require( './constants/constants' ),
-	MS = require( './constants/merge-strategies' ),
-	Emitter = require( 'component-emitter' ),
-	Connection = require( './message/connection' ),
-	EventHandler = require( './event/event-handler' ),
-	RpcHandler = require( './rpc/rpc-handler' ),
-	RecordHandler = require( './record/record-handler' ),
-	PresenceHandler = require( './presence/presence-handler' ),
-	defaultOptions = require( './default-options' ),
-	messageBuilder = require( './message/message-builder' );
+// var C = require( './constants/constants' ),
+// 	MS = require( './constants/merge-strategies' ),
+// 	Emitter = require( 'component-emitter' ),
+// 	Connection = require( './message/connection' ),
+// 	EventHandler = require( './event/event-handler' ),
+// 	RpcHandler = require( './rpc/rpc-handler' ),
+// 	RecordHandler = require( './record/record-handler' ),
+// 	PresenceHandler = require( './presence/presence-handler' ),
+// 	defaultOptions = require( './default-options' ),
+// 	messageBuilder = require( './message/message-builder' );
 
 export class Client {
 
