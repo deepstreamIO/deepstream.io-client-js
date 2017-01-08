@@ -114,7 +114,7 @@ export class RecordHandler {
      * @public
      * @returns {void}
      */
-    public listen(pattern: string, callback: () => void): void {
+    public listen(pattern: string, callback: Listener.Callback): void {
         if (typeof pattern !== 'string' || pattern.length === 0) {
             throw new Error('invalid argument pattern');
         }

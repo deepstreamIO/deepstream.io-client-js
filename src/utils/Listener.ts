@@ -94,10 +94,7 @@ export class Listener {
      * @private
      * @returns {Object}
      */
-    private _createCallbackResponse(message: ParsedMessage): {
-        accept: (name: string) => void,
-        reject: (name: string) => void
-    } {
+    private _createCallbackResponse(message: ParsedMessage): Listener.CallbackResponse {
         return {
             accept: this.accept.bind(this, message.data[1]),
             reject: this.reject.bind(this, message.data[1])
@@ -144,6 +141,12 @@ export class Listener {
 }
 
 export namespace Listener {
-    export type CallbackResponse = {accept: (name: string) => void, reject: (name: string) => void};
-    export type Callback = (event: string, pattern: boolean, callback?: Listener.CallbackResponse) => void;
+    export interface CallbackResponse {
+        accept: (name: string) => void,
+        reject: (name: string) => void
+    }
+
+    export interface Callback {
+        (event: string, pattern: boolean, callback?: Listener.CallbackResponse): void
+    }
 }

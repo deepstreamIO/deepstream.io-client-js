@@ -44,10 +44,9 @@ export let MessageParser = {
      */
     parse(message: string, client: Client): ParsedMessage[] {
         let parsedMessages: ParsedMessage[] = [],
-            rawMessages = message.split(MessageSeparator),
-            i: number;
+            rawMessages = message.split(MessageSeparator);
 
-        for (i = 0; i < rawMessages.length; i++) {
+        for (let i = 0; i < rawMessages.length; i++) {
             if (rawMessages[i].length > 2) {
                 parsedMessages.push(this._parseMessage(rawMessages[i], client));
             }
@@ -77,6 +76,7 @@ export let MessageParser = {
                 return JSON.parse(value.substr(1));
             } catch (e) {
                 client._$onError(Topics.ERROR, Events.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')');
+                console.log(type, value, e, new Error());
                 return;
             }
         }
@@ -118,13 +118,11 @@ export let MessageParser = {
         let parts = message.split(MessagePartSeparator);
 
         if (parts.length < 2) {
-            // message.processedError = true; // I'm not sure this is correct since it's being set on a primitive
             client._$onError(Topics.ERROR, Events.MESSAGE_PARSE_ERROR, 'Insufficiant message parts');
             return undefined;
         }
 
-        if (this._actions[parts[1]] === undefined) {
-            // message.processedError = true;
+        if (actions[parts[1]] === undefined) {
             client._$onError(Topics.ERROR, Events.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[1]);
             return undefined;
         }

@@ -9,8 +9,9 @@ import {
 } from "../utils/Utils";
 import { MessageBuilder } from "./MessageBuilder";
 import { DeepstreamOptions } from "../DefaultOptions";
+import { isNullOrUndefined } from "util";
 
-let BrowserWebSocket = WebSocket; // TODO: should be global.WebSocket || global.MozWebSocket
+let BrowserWebSocket = (global as any).WebSocket || (global as any).MozWebSocket;
 
 export interface AuthParams {
     username?: string,
@@ -379,17 +380,20 @@ export class Connection {
     /**
      * Callback for messages received on the connection.
      *
-     * @param   {String} message deepstream message
+     * @param   {MessageEvent} message deepstream message
      *
      * @private
      * @returns {void}
      */
-    private _onMessage(message: string): void {
-        let parsedMessages = MessageParser.parse(message, this._client),
+    private _onMessage(message: MessageEvent): void {
+        let parsedMessages = MessageParser.parse(message.data, this._client),
             i: number;
 
         for (i = 0; i < parsedMessages.length; i++) {
-            if (parsedMessages[i].topic === Topics.CONNECTION) {
+            if (isNullOrUndefined(parsedMessages[i])) {
+                // noinspection UnnecessaryContinueJS
+                continue;
+            } else if (parsedMessages[i].topic === Topics.CONNECTION) {
                 this._handleConnectionResponse(parsedMessages[i]);
             } else if (parsedMessages[i].topic === Topics.AUTH) {
                 this._handleAuthResponse(parsedMessages[i]);

@@ -173,7 +173,7 @@ export function timeout(callback: () => void, timeoutDuration: number): Schedule
  * @returns {void}
  */
 export function cancelTimeout(handler: ScheduledEventHandler): void {
-    cancelTimeout(handler as any);
+    clearTimeout(handler as any);
 }
 
 /**
@@ -203,7 +203,7 @@ export function interval(callback: () => void, intervalDuration: number): Schedu
  * @returns {void}
  */
 export function cancelInterval(handler: ScheduledEventHandler): void {
-    cancelInterval(handler as any);
+    clearInterval(handler as any);
 }
 
 /**

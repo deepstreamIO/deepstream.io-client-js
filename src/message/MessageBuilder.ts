@@ -1,4 +1,4 @@
-import { MessageSeparator, Types } from "../constants/Constants";
+import { MessageSeparator, Types, MessagePartSeparator } from "../constants/Constants";
 
 export const MessageBuilder = {
     /**
@@ -15,11 +15,10 @@ export const MessageBuilder = {
         if (data && !(data instanceof Array)) {
             throw new Error('data must be an array');
         }
-        let sendData = [topic, action],
-            i: number;
+        let sendData = [topic, action];
 
         if (data) {
-            for (i = 0; i < data.length; i++) {
+            for (let i = 0; i < data.length; i++) {
                 if (typeof data[i] === 'object') {
                     sendData.push(JSON.stringify(data[i]));
                 } else {
@@ -28,7 +27,7 @@ export const MessageBuilder = {
             }
         }
 
-        return sendData.join(MessageSeparator) + MessageSeparator;
+        return sendData.join(MessagePartSeparator) + MessageSeparator;
     },
 
     /**
