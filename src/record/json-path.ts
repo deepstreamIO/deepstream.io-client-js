@@ -3,6 +3,8 @@ var PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
 
 var cache = Object.create( null );
 
+export type JSONPath = string;
+
 /**
  * Returns the value of the path or
  * undefined if the path can't be resolved
