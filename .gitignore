@@ -30,3 +30,4 @@ node_modules
 test-page-webpack/dist
 
 .idea/
+dist/

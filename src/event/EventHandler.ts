@@ -1,10 +1,13 @@
-import { ParsedMessage } from "../message/MessageParser";
+import Emitter = require("component-emitter");
+import { ParsedMessage, MessageParser } from "../message/MessageParser";
 import { Connection } from "../message/Connection";
 import { Client } from "../Client";
 import { Listener } from "../utils/Listener";
 import { AckTimeoutRegistry } from "../utils/AckTimeoutRegistry";
-import Emitter = require("component-emitter");
 import { ResubscribeNotifier } from "../utils/ResubscribeNotifier";
+import { Topics, Actions, Events } from "../constants/Constants";
+import { MessageBuilder } from "../message/MessageBuilder";
+import { DeepstreamOptions } from "../DefaultOptions";
 
 /**
  * This class handles incoming and outgoing messages in relation
@@ -18,19 +21,19 @@ import { ResubscribeNotifier } from "../utils/ResubscribeNotifier";
  * @constructor
  */
 export class EventHandler {
-	private _options: any; // TODO: Proper type
 	private _connection: Connection;
 	private _client: Client;
 	private _emitter: Emitter;
-	private _listener: Listener;
+	private _listener: {[key: string]: Listener};
 	private _ackTimeoutRegistry: AckTimeoutRegistry;
 	private _resubscribeNotifier: ResubscribeNotifier;
 
-	public constructor(options: any, connection: Connection, client: Client) {
-		this._options = options;
-		this._connection = connection;
+	private get _options(): DeepstreamOptions { return this._client.options; }
+
+	public constructor(client: Client, connection: Connection) {
 		this._client = client;
-		this._emitter = new EventEmitter();
+		this._connection = connection;
+		this._emitter = new Emitter();
 		this._listener = {};
 		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, Topics.EVENT, this._options.subscriptionTimeout );
 		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
@@ -56,7 +59,7 @@ export class EventHandler {
 
 		if( !this._emitter.hasListeners( name ) ) {
 			this._ackTimeoutRegistry.add( name, Actions.SUBSCRIBE );
-			this._connection.sendMsg( Topics.EVENT, Actions.SUBSCRIBE, [ name ] );
+			this._connection.sendMessage( Topics.EVENT, Actions.SUBSCRIBE, [ name ] );
 		}
 
 		this._emitter.on( name, callback );
@@ -84,7 +87,7 @@ export class EventHandler {
 
 		if( !this._emitter.hasListeners( name ) ) {
 			this._ackTimeoutRegistry.add( name, Actions.UNSUBSCRIBE );
-			this._connection.sendMsg( Topics.EVENT, Actions.UNSUBSCRIBE, [ name ] );
+			this._connection.sendMessage( Topics.EVENT, Actions.UNSUBSCRIBE, [ name ] );
 		}
 	}
 
@@ -103,7 +106,7 @@ export class EventHandler {
 			throw new Error( 'invalid argument name' );
 		}
 
-		this._connection.sendMsg( Topics.EVENT, Actions.EVENT, [ name, messageBuilder.typed( data ) ] );
+		this._connection.sendMessage( Topics.EVENT, Actions.EVENT, [ name, MessageBuilder.typed( data ) ] );
 		this._emitter.emit( name, data );
 	}
 
@@ -132,7 +135,7 @@ export class EventHandler {
 			this._listener[ pattern ].destroy();
 		}
 
-		this._listener[ pattern ] = new Listener( Topics.EVENT, pattern, callback, this._options, this._client, this._connection );
+		this._listener[ pattern ] = new Listener( Topics.EVENT, pattern, callback, this._client, this._connection );
 	}
 
 	/**
@@ -154,7 +157,7 @@ export class EventHandler {
 		if( listener && !listener.destroyPending ) {
 			listener.sendDestroy();
 		} else if( this._listener[ pattern ] ) {
-			this._ackTimeoutRegistry.add( pattern, Events.UNLISTEN );
+			this._ackTimeoutRegistry.add( pattern, Events.NOT_LISTENING );
 			this._listener[ pattern ].destroy();
 			delete this._listener[ pattern ];
 		} else {
@@ -174,9 +177,8 @@ export class EventHandler {
 		let name = message.data[ message.action === Actions.ACK ? 1 : 0 ];
 
 		if( message.action === Actions.EVENT ) {
-			processed = true;
 			if( message.data && message.data.length === 2 ) {
-				this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
+				this._emitter.emit( name, MessageParser.convertTyped( message.data[ 1 ], this._client ) );
 			} else {
 				this._emitter.emit( name );
 			}
@@ -190,7 +192,6 @@ export class EventHandler {
 			delete this._listener[ name ];
 			return;
 		} else if( this._listener[ name ] ) {
-			processed = true;
 			this._listener[ name ]._$onMessage( message );
 			return;
 		} else if( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
@@ -230,7 +231,7 @@ export class EventHandler {
 	private _resubscribe(): void {
 		let callbacks = this._emitter._callbacks;
 		for(let eventName in callbacks) {
-			this._connection.sendMsg( Topics.EVENT, Actions.SUBSCRIBE, [ eventName ] );
+			this._connection.sendMessage( Topics.EVENT, Actions.SUBSCRIBE, [ eventName ] );
 		}
 	}
 }

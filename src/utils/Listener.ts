@@ -3,6 +3,7 @@ import { Connection } from "../message/Connection";
 import { ResubscribeNotifier } from "./ResubscribeNotifier";
 import { Actions, Events } from "../constants/Constants";
 import { ParsedMessage } from "../message/MessageParser";
+import { DeepstreamOptions } from "../DefaultOptions";
 
 /**
  * Creates a listener instance which is usedby deepstream Records and Events.
@@ -21,18 +22,18 @@ export class Listener {
 	private _type: string;
 	private _callback: Listener.Callback;
 	private _pattern: string;
-	private _options: any; // TODO: Type
 	private _client: Client;
 	private _connection: Connection;
 	private _ackTimeout: number;
 	private _resubscribeNotifier: ResubscribeNotifier;
-	private destroyPending: boolean;
+	public destroyPending: boolean;
 
-	public constructor(type: string, pattern: string, callback: Listener.Callback, connection: Connection, options: any, client: Client) {
+	private get _options(): DeepstreamOptions { return this._client.options; }
+
+	public constructor(type: string, pattern: string, callback: Listener.Callback, client: Client, connection: Connection) {
 		this._type = type;
 		this._callback = callback;
 		this._pattern = pattern;
-		this._options = options;
 		this._client = client;
 		this._connection = connection;
 		this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
@@ -100,13 +101,13 @@ export class Listener {
 		}
 	}
 
-	/*
+	/**
 	 * Handles the incomming message.
 	 *
 	 * @private
 	 * @returns {void}
 	 */
-	private _$onmessage(message: ParsedMessage): void {
+	public _$onMessage(message: ParsedMessage): void {
 		if( message.action === Actions.ACK ) {
 			clearTimeout( this._ackTimeout );
 		} else if ( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
