@@ -1,5 +1,29 @@
+import { Client } from "../Client";
+import { RPC } from "./RPC";
+import { AckTimeoutRegistry } from "../utils/AckTimeoutRegistry";
+import { ResubscribeNotifier } from "../utils/ResubscribeNotifier";
+import { Topics } from "../constants/Constants";
+import { Connection } from "../message/Connection";
+import { DeepstreamOptions } from "../DefaultOptions";
 export class RPCHandler {
+	private _client: Client;
+	private _rpcs: {[key: string]: RPC};
+	private _providers: {[key: string]: any}; // TODO: Type
+	private _provideAckTimeouts: {[key: string]: any}; // TODO: Type
+	private _ackTimeoutRegistry: AckTimeoutRegistry;
+	private _resubscribeNotifier: ResubscribeNotifier;
 
+	private get _options(): DeepstreamOptions { return this._client.options; }
+	private get _connection(): Connection { return this._client.connection; }
+
+	public constructor(client: Client) {
+		this._client = client;
+		this._rpcs = {};
+		this._providers = {};
+		this._provideAckTimeouts = {};
+		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, Topics.RPC, this._options.subscriptionTimeout );
+		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._reprovide.bind( this ) );
+	}
 }
 
 /**
@@ -16,14 +40,7 @@ export class RPCHandler {
  * @public
  */
 var RpcHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._rpcs = {};
-	this._providers = {};
-	this._provideAckTimeouts = {};
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.RPC, this._options.subscriptionTimeout );
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._reprovide.bind( this ) );
+
 };
 
 /**

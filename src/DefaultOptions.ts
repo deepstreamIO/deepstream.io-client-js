@@ -1,6 +1,28 @@
 import { MergeStrategy, RemoteWins } from "./constants/MergeStrategies";
 
+// All the Deepstream options are here because the user options will be merged with the Deepstream options.
 export interface DeepstreamOptions {
+	heartbeatInterval: number,
+	recordPersistDefault: boolean,
+	reconnectIntervalIncrement: number,
+	maxReconnectInterval: number,
+	maxReconnectAttempts: number,
+	rpcAckTimeout: number,
+	rpcResponseTimeout: number,
+	subscriptionTimeout: number,
+	maxMessagesPerPacket: number,
+	timeBetweenSendingQueuedPackages: number,
+	recordReadAckTimeout: number,
+	recordReadTimeout: number,
+	recordDeleteTimeout: number,
+	path: string,
+	mergeStrategy: MergeStrategy,
+	recordDeepCopy: boolean,
+	nodeSocketOptions: any
+}
+
+// Options that the user passes to Deepstream which has optional parameters
+export interface DeepstreamUserOptions {
 	heartbeatInterval?: number,
 	recordPersistDefault?: boolean,
 	reconnectIntervalIncrement?: number,
@@ -20,7 +42,7 @@ export interface DeepstreamOptions {
 	nodeSocketOptions?: any
 }
 
-export let DefaultOptions: DeepstreamOptions = {
+export const DefaultOptions: DeepstreamOptions = {
 	/**
 	 * @param {Number} heartBeatInterval How often you expect the heartbeat to be sent. If two heatbeats are missed
 	 * in a row the client will consider the server to have disconnected and will close the connection in order to 

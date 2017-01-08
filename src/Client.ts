@@ -1,4 +1,4 @@
-import { DeepstreamOptions, DefaultOptions } from "./DefaultOptions";
+import { DeepstreamOptions, DefaultOptions, DeepstreamUserOptions } from "./DefaultOptions";
 import Emitter = require("component-emitter");
 import { Connection, AuthParams } from "./message/Connection";
 import { EventHandler } from "./event/EventHandler";
@@ -6,6 +6,8 @@ import { RecordHandler } from "./record/RecordHandler";
 import { PresenceHandler } from "./presence/PresenceHandler";
 import { Topics, Events, ConnectionStates } from "./constants/Constants";
 import { ParsedMessage } from "./message/MessageParser";
+import { RPCHandler } from "./rpc/RPCHandler";
+
 /**
  * deepstream.io javascript client
  *
@@ -17,14 +19,14 @@ import { ParsedMessage } from "./message/MessageParser";
  *
  *
  * @param {String} url     URL to connect to. The protocol can be ommited, e.g. <host>:<port>.
- * @param {Object} options A map of options that extend the ones specified in default-options.js
+ * @param {Object} options A map of options that extend the ones specified in DefaultOptions.js
  *
  * @public
  * @constructor
  */
 export class Client extends Emitter {
 	public event: EventHandler;
-	public rpc: RpcHandler;
+	public rpc: RPCHandler;
 	public record: RecordHandler;
 	public presence: PresenceHandler;
 	public _options: DeepstreamOptions;
@@ -32,12 +34,13 @@ export class Client extends Emitter {
 	private _connection: Connection;
 
 	public get options(): DeepstreamOptions { return this.options; }
+	public get connection(): Connection { return this._connection; }
 
-	public constructor(url: string, options: DeepstreamOptions) {
+	public constructor(url: string, options?: DeepstreamUserOptions) {
 		super();
 
 		this._url = url;
-		this._options = this._mergeWithDefaultOptions( options || {} );
+		this._options = this._mergeWithDefaultOptions(options || {});
 
 		this._connection = new Connection( this, this._url, this._options );
 
@@ -215,7 +218,7 @@ export class Client extends Emitter {
 	 * @private
 	 * @returns {Object}	merged options
 	 */
-	private _mergeWithDefaultOptions(options: DeepstreamOptions): DeepstreamOptions {
+	private _mergeWithDefaultOptions(options: DeepstreamUserOptions): DeepstreamOptions {
 		let mergedOptions = {};
 
 		for(let key in DefaultOptions ) {
@@ -225,6 +228,9 @@ export class Client extends Emitter {
 				mergedOptions[ key ] = options[ key ];
 			}
 		}
+
+		// Freeze the options so it can't be mutated
+		Object.freeze(mergedOptions);
 
 		return mergedOptions;
 	}
@@ -240,6 +246,6 @@ export class Client extends Emitter {
  * @public
  * @returns {void}
  */
-export function createDeepstream(url: string, options: DeepstreamOptions): Client {
+export function createDeepstream(url: string, options?: DeepstreamUserOptions): Client {
 	return new Client(url, options);
 }
