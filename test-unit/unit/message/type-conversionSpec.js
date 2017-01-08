@@ -1,5 +1,5 @@
-var messageBuilder = require( '../../../src/message/message-builder' ),
-	messageParser = require( '../../../src/message/message-parser' );
+var messageBuilder = require( '../../../src/message/MessageBuilder' ),
+	messageParser = require( '../../../src/message/MessageParser' );
 
 /* global it, describe, expect */	
 describe( 'variable types are serialized and deserialized correctly', function(){

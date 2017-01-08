@@ -1,5 +1,5 @@
-var jsonPath = require( '../../../src/record/json-path' );
-var utils = require( '../../../src/utils/utils' );
+var jsonPath = require( '../../../src/record/JSONPath' );
+var utils = require( '../../../src/utils/Utils' );
 
 describe('paths are tokenized and retrieved correctly', function(){
 	var testRecord = { _$data: {

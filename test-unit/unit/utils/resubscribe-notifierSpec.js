@@ -1,5 +1,5 @@
-var C = require( '../../../src/constants/constants' ),
-	ResubscribeNotifier = require( '../../../src/utils/resubscribe-notifier' ),
+var C = require( '../../../src/constants/Constants' ),
+	ResubscribeNotifier = require( '../../../src/utils/ResubscribeNotifier' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg;
 

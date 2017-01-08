@@ -1,5 +1,5 @@
 /* global expect, it, describe, jasmine */
-var RecordHandler = require( '../../../src/record/record-handler' ),
+var RecordHandler = require( '../../../src/record/RecordHandler' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	ConnectionMock = require( '../../mocks/message/connection-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg,

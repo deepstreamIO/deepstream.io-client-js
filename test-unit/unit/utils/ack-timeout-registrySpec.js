@@ -1,4 +1,4 @@
-var AckTimeoutRegistry = require( '../../../src/utils/ack-timeout-registry' ),
+var AckTimeoutRegistry = require( '../../../src/utils/AckTimeoutRegistry' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg;
 

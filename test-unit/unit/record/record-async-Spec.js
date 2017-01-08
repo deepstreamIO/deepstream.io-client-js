@@ -1,6 +1,6 @@
 /* global describe, it, expect, jasmine */
 var DeepstreamServer = require( 'deepstream.io' ),
-	deepstreamClient = require( '../../../src/client' );
+	deepstreamClient = require( '../../../src/Client' );
 
 xdescribe( 'record', function() {
 	var deepstreamServer,

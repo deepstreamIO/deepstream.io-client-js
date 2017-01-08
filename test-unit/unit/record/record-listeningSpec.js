@@ -1,8 +1,8 @@
 'use strict'
 
 /* global expect, it, describe, jasmine */
-const RecordHandler = require( '../../../src/record/record-handler' )
-const EventHandler = require( '../../../src/event/event-handler')
+const RecordHandler = require( '../../../src/record/RecordHandler' )
+const EventHandler = require( '../../../src/event/EventHandler')
 const ClientMock = require( '../../mocks/client-mock' )
 const ConnectionMock = require( '../../mocks/message/connection-mock' )
 const msg = require( '../../test-helper/test-helper' ).msg

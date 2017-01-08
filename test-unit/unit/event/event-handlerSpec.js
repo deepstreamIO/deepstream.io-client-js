@@ -1,5 +1,5 @@
 /* global describe, expect, it, jasmine */
-var EventHandler = require( '../../../src/event/event-handler' ),
+var EventHandler = require( '../../../src/event/EventHandler' ),
 	connectionMock = new (require( '../../mocks/message/connection-mock' ))(),
 	mockClient = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,

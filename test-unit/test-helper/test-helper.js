@@ -1,4 +1,4 @@
-var C = require( '../../src/constants/constants' );
+var C = require( '../../src/constants/Constants' );
 
 exports.msg = function( input ) {
 	var result = [], i;

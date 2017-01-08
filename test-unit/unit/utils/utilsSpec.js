@@ -1,4 +1,4 @@
-var utils = require( '../../../src/utils/utils' );
+var utils = require( '../../../src/utils/Utils' );
 
 describe( 'deepEquals', function(){
 

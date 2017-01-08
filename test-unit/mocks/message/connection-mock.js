@@ -1,4 +1,4 @@
-var messageBuilder = require( '../../../src/message/message-builder' );
+var messageBuilder = require( '../../../src/message/MessageBuilder' );
 
 var ConnectionMock = function() {
 	this.lastSendMessage = null;
@@ -6,7 +6,7 @@ var ConnectionMock = function() {
 };
 
 ConnectionMock.prototype.sendMsg = function( topic, action, data ) {
-	this.lastSendMessage = messageBuilder.getMsg( topic, action, data );
+	this.lastSendMessage = messageBuilder.getMessage( topic, action, data );
 };
 
 ConnectionMock.prototype.send = function( message ) {

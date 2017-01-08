@@ -1,5 +1,5 @@
-var AnonymousRecord = require( '../../../src/record/anonymous-record' ),
-	RecordHandler = require( '../../../src/record/record-handler' ),
+var AnonymousRecord = require( '../../../src/record/AnonymousRecord' ),
+	RecordHandler = require( '../../../src/record/RecordHandler' ),
 	ClientMock = require( '../../mocks/client-mock' ),
 	ConnectionMock = require( '../../mocks/message/connection-mock' ),
 	msg = require( '../../test-helper/test-helper' ).msg,

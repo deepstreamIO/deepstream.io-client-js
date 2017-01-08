@@ -1,4 +1,4 @@
-var deepstream = require( '../../../src/client' );
+var deepstream = require( '../../../src/Client' );
 var config = require( '../config' );
 var check = require( '../helper' ).check;
 var lastAuthArgs;

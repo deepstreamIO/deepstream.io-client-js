@@ -1,5 +1,5 @@
 /* global describe, it, expect, jasmine */
-var messageParser = require( '../../../src/message/message-parser' );
+var messageParser = require( '../../../src/message/MessageParser' );
 
 describe( 'message parser processes raw messages correctly', function(){
 	

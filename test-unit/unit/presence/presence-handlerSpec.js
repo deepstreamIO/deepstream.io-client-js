@@ -1,9 +1,9 @@
 /* global describe, expect, it, jasmine */
-var PresenceHandler = require( '../../../src/presence/presence-handler' ),
+var PresenceHandler = require( '../../../src/presence/PresenceHandler' ),
 	connectionMock = new (require( '../../mocks/message/connection-mock' ))(),
 	mockClient = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,
-	C = require( '../../../src/constants/constants' ),
+	C = require( '../../../src/constants/Constants' ),
 	options = { subscriptionTimeout: 5 };
 
 describe( 'presence handler', function(){

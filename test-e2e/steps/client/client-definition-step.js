@@ -2,7 +2,7 @@
 
 const sinon = require( 'sinon' );
 
-const C = require( '../../../src/constants/constants' );
+const C = require( '../../../src/constants/Constants' );
 
 const clientHandler = require('./client-handler');
 
