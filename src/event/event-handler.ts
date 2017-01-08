@@ -1,12 +1,10 @@
 import { ParsedMessage } from "../message/message-parser";
 import { Connection } from "../message/connection";
-var messageBuilder = require( '../message/message-builder' ),
-	messageParser = require( '../message/message-parser' ),
-	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
-	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
-	C = require( '../constants/constants' ),
-	Listener = require( '../utils/listener' ),
-	EventEmitter = require( 'component-emitter' );
+import { Client } from "../client";
+import { Listener } from "../utils/listener";
+import { AckTimeoutRegistry } from "../utils/ack-timeout-registry";
+import Emitter = require("component-emitter");
+import { ResubscribeNotifier } from "../utils/resubscribe-notifier";
 
 /**
  * This class handles incoming and outgoing messages in relation
@@ -23,7 +21,7 @@ export class EventHandler {
 	private _options: any; // TODO: Proper type
 	private _connection: Connection;
 	private _client: Client;
-	private _emitter: EventEmitter;
+	private _emitter: Emitter;
 	private _listener: Listener;
 	private _ackTimeoutRegistry: AckTimeoutRegistry;
 	private _resubscribeNotifier: ResubscribeNotifier;

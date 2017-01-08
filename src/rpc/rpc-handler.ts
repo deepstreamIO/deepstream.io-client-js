@@ -1,10 +1,6 @@
-var C = require( '../constants/constants' ),
-	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
-	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
-	RpcResponse = require( './rpc-response' ),
-	Rpc = require( './rpc' ),
-	messageParser= require( '../message/message-parser' ),
-	messageBuilder = require( '../message/message-builder' );
+export class RPCHandler {
+
+}
 
 /**
  * The main class for remote procedure calls

@@ -1,5 +1,6 @@
-var C = require( '../constants/constants' ),
-	messageParser = require( '../message/message-parser' );
+export class RPC {
+
+}
 
 /**
  * This class represents a single remote procedure

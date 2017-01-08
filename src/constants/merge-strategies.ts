@@ -9,13 +9,13 @@ export interface MergeStrategy {
 /**
  *	Choose the server's state over the client's
  **/
-export function remoteWins(record: Record, remoteValue: any, remoteVersion: number, callback: MergeCallback): void {
+export function RemoteWins(record: Record, remoteValue: any, remoteVersion: number, callback: MergeCallback): void {
 	callback(undefined, remoteValue);
 }
 
 /**
  *	Choose the local state over the server's
  **/
-export function localWins(record: Record, remoteValue: any, remoteVersion: number, callback: MergeCallback): void {
+export function LocalWins(record: Record, remoteValue: any, remoteVersion: number, callback: MergeCallback): void {
 	callback(undefined, record.get());
 }

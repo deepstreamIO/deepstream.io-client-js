@@ -1,6 +1,6 @@
-var C = require( '../constants/constants' ),
-	utils = require( '../utils/utils' ),
-	messageBuilder = require( '../message/message-builder' );
+export class RPCResponse {
+
+}
 
 /**
  * This object provides a number of methods that allow a rpc provider

@@ -93,7 +93,7 @@ export class Connection {
 	 * @public
 	 * @returns {void}
 	 */
-	public authenticate(authParams: AuthParams): Promise<any> { // TODO: Promise type
+	public authenticate(authParams: AuthParams): Promise<any> {
 		this._authParams = authParams;
 		let promise = new Promise(resolve => this._authResolve = resolve);
 

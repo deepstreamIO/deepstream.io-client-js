@@ -1,6 +1,26 @@
-var MERGE_STRATEGIES = require('./constants/merge-strategies');
+import { MergeStrategy, RemoteWins } from "./constants/merge-strategies";
 
-module.exports = {
+export interface DeepstreamOptions {
+	heartbeatInterval?: number,
+	recordPersistDefault?: boolean,
+	reconnectIntervalIncrement?: number,
+	maxReconnectInterval?: number,
+	maxReconnectAttempts?: number,
+	rpcAckTimeout?: number,
+	rpcResponseTimeout?: number,
+	subscriptionTimeout?: number,
+	maxMessagesPerPacket?: number,
+	timeBetweenSendingQueuedPackages?: number,
+	recordReadAckTimeout?: number,
+	recordReadTimeout?: number,
+	recordDeleteTimeout?: number,
+	path?: string,
+	mergeStrategy?: MergeStrategy,
+	recordDeepCopy?: boolean,
+	nodeSocketOptions?: any
+}
+
+export let DefaultOptions: DeepstreamOptions = {
 	/**
 	 * @param {Number} heartBeatInterval How often you expect the heartbeat to be sent. If two heatbeats are missed
 	 * in a row the client will consider the server to have disconnected and will close the connection in order to 
@@ -104,7 +124,7 @@ module.exports = {
 	 *                                  returned data as the latest revision. This can be overriden on a per record
 	 *                                  basis by setting the `setMergeStrategy`.
 	 */
-	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
+	mergeStrategy: RemoteWins,
 
 	/**
 	 * @param {Boolean} recordDeepCopy Setting to false disabled deepcopying of record data
