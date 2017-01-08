@@ -45,7 +45,7 @@ export class Client extends Emitter {
 		this._connection = new Connection( this, this._url, this._options );
 
 		this.event = new EventHandler( this._options, this._connection, this );
-		this.rpc = new RpcHandler( this._options, this._connection, this );
+		this.rpc = new RPCHandler( this._options, this._connection, this );
 		this.record = new RecordHandler( this._options, this._connection, this );
 		this.presence = new PresenceHandler( this._options, this._connection, this );
 

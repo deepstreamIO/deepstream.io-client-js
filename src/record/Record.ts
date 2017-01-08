@@ -335,7 +335,7 @@ export class Record extends Emitter {
      * @package private
      * @returns {void}
      */
-    private _$onMessage(message: ParsedMessage): void {
+    public _$onMessage(message: ParsedMessage): void {
         if (message.action === Actions.READ) {
             if (this.version === null) {
                 cancelTimeout(this._readTimeout);

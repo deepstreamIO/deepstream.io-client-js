@@ -1,4 +1,5 @@
 import { Client } from "../Client";
+import { ConnectionStates } from "../constants/Constants";
 /**
  * Makes sure that all functionality is resubscribed on reconnect. Subscription is called
  * when the connection drops - which seems counterintuitive, but in fact just means
@@ -33,7 +34,7 @@ export class ResubscribeNotifier {
 	 * @returns {void}
 	 */
 	public destroy(): void {
-		this._client.removeListener( 'connectionStateChanged', this._connectionStateChangeHandler );
+		this._client.off( 'connectionStateChanged', this._connectionStateChangeHandler );
 		this._connectionStateChangeHandler = undefined as any;
 		this._client = undefined as any;
 	}
@@ -44,7 +45,7 @@ export class ResubscribeNotifier {
 	 * @returns {void}
 	 */
 	private _handleConnectionStateChanges(): void {
-		var state = this._client.getConnectionState();
+		var state = this._client.connectionState;
 
 		if( state === ConnectionStates.RECONNECTING && this._isReconnecting === false ) {
 			this._isReconnecting = true;

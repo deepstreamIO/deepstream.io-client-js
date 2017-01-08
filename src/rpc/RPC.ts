@@ -2,7 +2,7 @@ import { DeepstreamOptions } from "../DefaultOptions";
 import { Client } from "../Client";
 import { Events } from "../constants/Constants";
 import { MessageParser } from "../message/MessageParser";
-import { timeout, ScheduledEventHandler } from "../utils/Utils";
+import { timeout, ScheduledEventHandler, cancelTimeout } from "../utils/Utils";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -16,74 +16,76 @@ import { timeout, ScheduledEventHandler } from "../utils/Utils";
  * @constructor
  */
 export class RPC {
-	private _client: Client;
-	private _callback: RPC.Callback;
-	private _ackTimeout: ScheduledEventHandler;
-	private _responseTimeout: ScheduledEventHandler;
+    private _client: Client;
+    private _callback: RPC.Callback;
+    private _ackTimeout: ScheduledEventHandler;
+    private _responseTimeout: ScheduledEventHandler;
 
-	private get _options(): DeepstreamOptions { return this._client.options; }
+    private get _options(): DeepstreamOptions {
+        return this._client.options;
+    }
 
-	public constructor(client: Client, callback: RPC.Callback) {
-		this._client = client;
-		this._callback = callback;
-		this._ackTimeout = timeout( this.error.bind( this, Events.ACK_TIMEOUT ), this._options.rpcAckTimeout );
-		this._responseTimeout = timeout( this.error.bind( this, Events.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
-	}
+    public constructor(client: Client, callback: RPC.Callback) {
+        this._client = client;
+        this._callback = callback;
+        this._ackTimeout = timeout(this.error.bind(this, Events.ACK_TIMEOUT), this._options.rpcAckTimeout);
+        this._responseTimeout = timeout(this.error.bind(this, Events.RESPONSE_TIMEOUT), this._options.rpcResponseTimeout);
+    }
 
-	/**
-	 * Called once an ack message is received from the server
-	 *
-	 * @public
-	 * @returns {void}
-	 */
-	public ack(): void {
-		cancelTimeout( this._ackTimeout );
-	}
+    /**
+     * Called once an ack message is received from the server
+     *
+     * @public
+     * @returns {void}
+     */
+    public ack(): void {
+        cancelTimeout(this._ackTimeout);
+    }
 
-	/**
-	 * Called once a response message is received from the server.
-	 * Converts the typed data and completes the request
-	 *
-	 * @param   {String} data typed value
-	 *
-	 * @public
-	 * @returns {void}
-	 */
-	public respond(data: string): void {
-		let convertedData = MessageParser.convertTyped( data, this._client );
-		this._callback( undefined, convertedData );
-		this._complete();
-	}
+    /**
+     * Called once a response message is received from the server.
+     * Converts the typed data and completes the request
+     *
+     * @param   {String} data typed value
+     *
+     * @public
+     * @returns {void}
+     */
+    public respond(data: string): void {
+        let convertedData = MessageParser.convertTyped(data, this._client);
+        this._callback(undefined, convertedData);
+        this._complete();
+    }
 
-	/**
-	 * Callback for error messages received from the server. Once
-	 * an error is received the request is considered completed. Even
-	 * if a response arrives later on it will be ignored / cause an
-	 * UNSOLICITED_MESSAGE error
-	 *
-	 * @param   {String} errorMsg @TODO should be CODE and message
-	 *
-	 * @public
-	 * @returns {void}
-	 */
-	public error(errorMessage: string): void {
-		this._callback( errorMessage );
-		this._complete();
-	}
+    /**
+     * Callback for error messages received from the server. Once
+     * an error is received the request is considered completed. Even
+     * if a response arrives later on it will be ignored / cause an
+     * UNSOLICITED_MESSAGE error
+     *
+     * @param   {String} errorMessage @TODO should be CODE and message
+     *
+     * @public
+     * @returns {void}
+     */
+    public error(errorMessage: string): void {
+        this._callback(errorMessage);
+        this._complete();
+    }
 
-	/**
-	 * Called after either an error or a response
-	 * was received
-	 *
-	 * @private
-	 * @returns {void}
-	 */
-	private _complete(): void {
-		cancelTimeout( this._ackTimeout );
-		cancelTimeout( this._responseTimeout );
-	}
+    /**
+     * Called after either an error or a response
+     * was received
+     *
+     * @private
+     * @returns {void}
+     */
+    private _complete(): void {
+        cancelTimeout(this._ackTimeout);
+        cancelTimeout(this._responseTimeout);
+    }
 }
 
 export namespace RPC {
-	export type Callback = (error?: string, result?: any) => void;
+    export type Callback = (error?: string, result?: any) => void;
 }

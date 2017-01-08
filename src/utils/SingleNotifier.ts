@@ -95,7 +95,7 @@ export class SingleNotifier {
 	 * @public
 	 * @returns {void}
 	 */
-	public receive(name: string, error: string, data: any): void {
+	public receive(name: string, error?: string, data?: any): void {
 		let entries = this._requests[ name ];
 
 		if( !entries ) {
@@ -108,6 +108,8 @@ export class SingleNotifier {
 			cancelTimeout( entry.timeout );
 			if (error) {
 				entry.revoke(error);
+			} else if (!data) {
+				entry.resolve("No data");
 			} else {
 				entry.resolve(data);
 			}
