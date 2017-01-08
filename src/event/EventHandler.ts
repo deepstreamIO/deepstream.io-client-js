@@ -175,7 +175,7 @@ export class EventHandler {
      * @package private
      * @returns {void}
      */
-    private _handle(message: ParsedMessage): void {
+    public _$handle(message: ParsedMessage): void {
         let name = message.data[message.action === Actions.ACK ? 1 : 0];
 
         if (message.action === Actions.EVENT) {

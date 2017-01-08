@@ -111,7 +111,7 @@ export class PresenceHandler {
      * @package private
      * @returns {void}
      */
-    private _$handle(message: ParsedMessage): void {
+    public _$handle(message: ParsedMessage): void {
         if (message.action === Actions.ERROR && message.data[0] === Events.MESSAGE_DENIED) {
             this._ackTimeoutRegistry.remove(Topics.PRESENCE, message.data[1]);
             message.processedError = true;

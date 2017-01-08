@@ -14,45 +14,45 @@ import { ConnectionStates } from "../constants/Constants";
  * @constructor
  */
 export class ResubscribeNotifier {
-	private _client: Client;
-	private _resubscribe: () => void;
-	private _isReconnecting: boolean;
-	private _connectionStateChangeHandler: () => void;
+    private _client: Client;
+    private _resubscribe: () => void;
+    private _isReconnecting: boolean;
+    private _connectionStateChangeHandler: () => void;
 
-	public constructor(client: Client, resubscribe: () => void) {
-		this._client = client;
-		this._resubscribe = resubscribe;
+    public constructor(client: Client, resubscribe: () => void) {
+        this._client = client;
+        this._resubscribe = resubscribe;
 
-		this._isReconnecting = false;
-		this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
-		this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
-	}
+        this._isReconnecting = false;
+        this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind(this);
+        this._client.on('connectionStateChanged', this._connectionStateChangeHandler);
+    }
 
-	/**
-	 * Call this whenever this functionality is no longer needed to remove links
-	 *
-	 * @returns {void}
-	 */
-	public destroy(): void {
-		this._client.off( 'connectionStateChanged', this._connectionStateChangeHandler );
-		this._connectionStateChangeHandler = undefined as any;
-		this._client = undefined as any;
-	}
+    /**
+     * Call this whenever this functionality is no longer needed to remove links
+     *
+     * @returns {void}
+     */
+    public destroy(): void {
+        this._client.off('connectionStateChanged', this._connectionStateChangeHandler);
+        this._connectionStateChangeHandler = undefined as any;
+        this._client = undefined as any;
+    }
 
-	/**
-	 * Check whenever the connection state changes if it is in reconnecting to resubscribe
-	 * @private
-	 * @returns {void}
-	 */
-	private _handleConnectionStateChanges(): void {
-		var state = this._client.connectionState;
+    /**
+     * Check whenever the connection state changes if it is in reconnecting to resubscribe
+     * @private
+     * @returns {void}
+     */
+    private _handleConnectionStateChanges(): void {
+        var state = this._client.connectionState;
 
-		if( state === ConnectionStates.RECONNECTING && this._isReconnecting === false ) {
-			this._isReconnecting = true;
-		}
-		if( state === ConnectionStates.OPEN && this._isReconnecting === true ) {
-			this._isReconnecting = false;
-			this._resubscribe();
-		}
-	}
+        if (state === ConnectionStates.RECONNECTING && this._isReconnecting === false) {
+            this._isReconnecting = true;
+        }
+        if (state === ConnectionStates.OPEN && this._isReconnecting === true) {
+            this._isReconnecting = false;
+            this._resubscribe();
+        }
+    }
 }

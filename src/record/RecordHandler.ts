@@ -219,7 +219,7 @@ export class RecordHandler {
      * @package private
      * @returns {void}
      */
-    private _$handle(message: ParsedMessage): void {
+    public _$handle(message: ParsedMessage): void {
         let name: string;
 
         if (message.action === Actions.ERROR &&

@@ -36,11 +36,11 @@ export const isNode = typeof process !== 'undefined' && process.toString() === '
  * @returns {void}
  */
 export function nextTick(fn: () => void) {
-	if (isNode) {
-		process.nextTick( fn );
-	} else {
-		timeout( fn, 0 );
-	}
+    if (isNode) {
+        process.nextTick(fn);
+    } else {
+        timeout(fn, 0);
+    }
 }
 
 /**
@@ -51,12 +51,12 @@ export function nextTick(fn: () => void) {
  * @public
  * @returns {String} trimmedString
  */
-export function trim (inputString: string): string {
-	if( inputString.trim ) {
-		return inputString.trim();
-	} else {
-		return inputString.replace( TRIM_REGULAR_EXPRESSION, '' );
-	}
+export function trim(inputString: string): string {
+    if (inputString.trim) {
+        return inputString.trim();
+    } else {
+        return inputString.replace(TRIM_REGULAR_EXPRESSION, '');
+    }
 }
 
 /**
@@ -81,15 +81,15 @@ export function trim (inputString: string): string {
  * @returns {Boolean} isEqual
  */
 export function deepEquals(objA: any, objB: any): boolean {
-	if ( objA === objB ) {
-		return true
-	}
-	else if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
-		return false;
-	}
-	else {
-		return JSON.stringify( objA ) === JSON.stringify( objB );
-	}
+    if (objA === objB) {
+        return true
+    }
+    else if (typeof objA !== OBJECT || typeof objB !== OBJECT) {
+        return false;
+    }
+    else {
+        return JSON.stringify(objA) === JSON.stringify(objB);
+    }
 }
 
 /**
@@ -111,11 +111,11 @@ export function deepEquals(objA: any, objB: any): boolean {
  * @returns {Mixed} clone
  */
 export function deepCopy<T>(obj: T): T {
-	if( typeof obj === OBJECT ) {
-		return JSON.parse( JSON.stringify( obj ) );
-	} else {
-		return obj;
-	}
+    if (typeof obj === OBJECT) {
+        return JSON.parse(JSON.stringify(obj));
+    } else {
+        return obj;
+    }
 }
 
 /**
@@ -129,18 +129,18 @@ export function deepCopy<T>(obj: T): T {
  * @returns {Mixed} clone
  */
 export function shallowCopy<T>(obj: T): T {
-	if ( Array.isArray( obj ) ) {
-		return obj.slice( 0 ) as any as T;
-	}
-	else if ( typeof obj === OBJECT ) {
-		let copy = Object.create( null );
-		let props = Object.keys( obj );
-		for (let i = 0; i < props.length; i++) {
-			copy[props[i]] = (obj as any)[props[i]];
-		}
-	  return copy;
-	}
-	return obj;
+    if (Array.isArray(obj)) {
+        return obj.slice(0) as any as T;
+    }
+    else if (typeof obj === OBJECT) {
+        let copy = Object.create(null);
+        let props = Object.keys(obj);
+        for (let i = 0; i < props.length; i++) {
+            copy[props[i]] = (obj as any)[props[i]];
+        }
+        return copy;
+    }
+    return obj;
 }
 
 /// A type that is returned by `timeout` and `interval` that can be used to cancel them.
@@ -157,11 +157,11 @@ export type ScheduledEventHandler = number | Timer;
  * @returns {ScheduledEventHandler} timeoutId
  */
 export function timeout(callback: () => void, timeoutDuration: number): ScheduledEventHandler {
-	if( timeoutDuration !== null ) {
-		return setTimeout( callback, timeoutDuration );
-	} else {
-		return -1;
-	}
+    if (timeoutDuration !== null) {
+        return setTimeout(callback, timeoutDuration);
+    } else {
+        return -1;
+    }
 }
 
 /**
@@ -173,7 +173,7 @@ export function timeout(callback: () => void, timeoutDuration: number): Schedule
  * @returns {void}
  */
 export function cancelTimeout(handler: ScheduledEventHandler): void {
-	cancelTimeout(handler as any);
+    cancelTimeout(handler as any);
 }
 
 /**
@@ -187,11 +187,11 @@ export function cancelTimeout(handler: ScheduledEventHandler): void {
  * @returns {ScheduledEventHandler} intervalId        NodeJS returns a `Timer` object and the browser returns a number
  */
 export function interval(callback: () => void, intervalDuration: number): ScheduledEventHandler {
-	if( intervalDuration !== undefined ) {
-		return setInterval( callback, intervalDuration );
-	} else {
-		return -1;
-	}
+    if (intervalDuration !== undefined) {
+        return setInterval(callback, intervalDuration);
+    } else {
+        return -1;
+    }
 }
 
 /**
@@ -203,7 +203,7 @@ export function interval(callback: () => void, intervalDuration: number): Schedu
  * @returns {void}
  */
 export function cancelInterval(handler: ScheduledEventHandler): void {
-	cancelInterval(handler as any);
+    cancelInterval(handler as any);
 }
 
 /**
@@ -225,19 +225,19 @@ export const unsupportedProtocol = /^http:|^https:/;
  * @return {String} Url with supported protocol
  */
 export function parseUrl(url: string, defaultPath: string): string {
-	if( unsupportedProtocol.test( url ) ) {
-		throw new Error( 'Only ws and wss are supported' );
-	}
-	if( !hasUrlProtocol.test( url ) ) {
-		url = 'ws://' + url;
-	} else if( url.indexOf( '//' ) === 0  ) {
-		url = 'ws:' + url;
-	}
-	let serverUrl = URL.parse( url );
-	if (!serverUrl.host) {
-		throw new Error('invalid url, missing host');
-	}
-	serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
-	serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
-	return URL.format( serverUrl );
+    if (unsupportedProtocol.test(url)) {
+        throw new Error('Only ws and wss are supported');
+    }
+    if (!hasUrlProtocol.test(url)) {
+        url = 'ws://' + url;
+    } else if (url.indexOf('//') === 0) {
+        url = 'ws:' + url;
+    }
+    let serverUrl = URL.parse(url);
+    if (!serverUrl.host) {
+        throw new Error('invalid url, missing host');
+    }
+    serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
+    serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
+    return URL.format(serverUrl);
 }

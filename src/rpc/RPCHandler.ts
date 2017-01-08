@@ -182,7 +182,7 @@ export class RPCHandler {
      * @private
      * @returns {void}
      */
-    private _$handle(message: ParsedMessage): void {
+    public _$handle(message: ParsedMessage): void {
         let rpcName: string, correlationId: string, rpc: RPC | undefined;
 
         // RPC Requests
