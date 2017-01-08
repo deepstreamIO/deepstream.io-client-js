@@ -1,3 +1,5 @@
+import { deepCopy as utilsDeepCopy, shallowCopy, deepEquals } from "../utils/Utils";
+
 let PartsRegularExpression = /([^\.\[\]\s]+)/g;
 let cache = Object.create(null);
 
@@ -9,7 +11,7 @@ export let JSONPath = {
      * @public
      * @returns {Mixed}
      */
-    get(data: any, path?: string, deepCopy: boolean): any {
+    get(data: any, path: string | undefined, deepCopy: boolean): any {
         let tokens = this.tokenize(path);
 
         for (let i = 0; i < tokens.length; i++) {
@@ -22,7 +24,7 @@ export let JSONPath = {
             data = data[tokens[i]];
         }
 
-        return deepCopy !== false ? utils.deepCopy(data) : data;
+        return deepCopy !== false ? utilsDeepCopy(data) : data;
     },
 
     /**
@@ -48,7 +50,7 @@ export let JSONPath = {
             return data;
         }
 
-        let result = utils.shallowCopy(data);
+        let result = shallowCopy(data);
 
         let node = result;
         for (let i = 0; i < tokens.length; i++) {
@@ -56,7 +58,7 @@ export let JSONPath = {
                 node[tokens[i]] = newValue;
             }
             else if (node[tokens[i]] !== undefined) {
-                node = node[tokens[i]] = utils.shallowCopy(node[tokens[i]]);
+                node = node[tokens[i]] = shallowCopy(node[tokens[i]]);
             }
             else if (tokens[i + 1] && !isNaN(tokens[i + 1])) {
                 node = node[tokens[i]] = [];
@@ -76,10 +78,10 @@ export let JSONPath = {
      * @param  {boolean} deepCopy
      * @return {Mixed}
      */
-    patch(oldValue: any, newValue: any, deepCopy: boolean): any {
+        patch(oldValue: any, newValue: any, deepCopy: boolean): any {
         let i: number;
 
-        if (utils.deepEquals(oldValue, newValue)) {
+        if (deepEquals(oldValue, newValue)) {
             return oldValue;
         }
         else if (oldValue === null || newValue === null) {
@@ -101,7 +103,7 @@ export let JSONPath = {
             return obj;
         }
         else {
-            return deepCopy !== false ? utils.deepCopy(newValue) : newValue;
+            return deepCopy !== false ? utilsDeepCopy(newValue) : newValue;
         }
     },
 
@@ -111,7 +113,7 @@ export let JSONPath = {
      *
      * @returns Array of tokens
      */
-    tokenize(path: string) {
+        tokenize(path: string) {
         if (cache[path]) {
             return cache[path];
         }
@@ -122,6 +124,6 @@ export let JSONPath = {
             throw new Error('invalid path ' + path)
         }
 
-        return cache[path] = parts.map(part => !isNaN(parseInt(part)) ? parseInt(part, 10) : part );
+        return cache[path] = parts.map(part => !isNaN(parseInt(part)) ? parseInt(part, 10) : part);
     }
 };

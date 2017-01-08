@@ -117,9 +117,9 @@ export class AnonymousRecord extends Record {
 
         if (this._record && parameters.callback) {
             if (parameters.path) {
-                this._record.subscribe(parameters.path, parameters.callback);
+                this._record.unsubscribe(parameters.path, parameters.callback);
             } else {
-                this._record.subscribe(parameters.callback);
+                this._record.unsubscribe(parameters.callback);
             }
         }
     }

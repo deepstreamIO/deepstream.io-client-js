@@ -482,7 +482,7 @@ export class Record extends Emitter {
      * @private
      * @returns {void}
      */
-    private _applyUpdate(message: ParsedMessage): void {
+    public _applyUpdate(message: ParsedMessage): void {
         let version = parseInt(message.data[1], 10);
         let data;
         if (message.action === Actions.PATCH) {
