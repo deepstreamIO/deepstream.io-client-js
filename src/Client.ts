@@ -7,6 +7,7 @@ import { PresenceHandler } from "./presence/PresenceHandler";
 import { Topics, Events, ConnectionStates } from "./constants/Constants";
 import { ParsedMessage } from "./message/MessageParser";
 import { RPCHandler } from "./rpc/RPCHandler";
+import { timeout } from "./utils/Utils";
 
 /**
  * deepstream.io javascript client
@@ -175,7 +176,7 @@ export class Client extends Emitter {
 		if( event === Events.ACK_TIMEOUT || event === Events.RESPONSE_TIMEOUT ) {
 			if( this.getConnectionState() === ConnectionStates.AWAITING_AUTHENTICATION ) {
 				errorMsg = 'Your message timed out because you\'re not authenticated. Have you called login()?';
-				setTimeout( this._$onError.bind( this, Events.NOT_AUTHENTICATED, Topics.ERROR, errorMsg ), 1 );
+				timeout( this._$onError.bind( this, Events.NOT_AUTHENTICATED, Topics.ERROR, errorMsg ), 1 );
 			}
 		}
 

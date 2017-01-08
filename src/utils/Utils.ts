@@ -1,4 +1,5 @@
 import URL = require('url');
+import Timer = NodeJS.Timer;
 
 /**
  * A regular expression that matches whitespace on either side, but
@@ -38,9 +39,9 @@ export function nextTick(fn: () => void) {
 	if (isNode) {
 		process.nextTick( fn );
 	} else {
-		setTimeout( fn, 0 );
+		timeout( fn, 0 );
 	}
-};
+}
 
 /**
  * Removes whitespace from the beginning and end of a string
@@ -56,7 +57,7 @@ export function trim (inputString: string): string {
 	} else {
 		return inputString.replace( TRIM_REGULAR_EXPRESSION, '' );
 	}
-};
+}
 
 /**
  * Compares two objects for deep (recoursive) equality
@@ -89,7 +90,7 @@ export function deepEquals(objA: any, objB: any): boolean {
 	else {
 		return JSON.stringify( objA ) === JSON.stringify( objB );
 	}
-};
+}
 
 /**
  * Similar to deepEquals above, tests have shown that JSON stringify outperforms any attempt of
@@ -115,7 +116,7 @@ export function deepCopy<T>(obj: T): T {
 	} else {
 		return obj;
 	}
-};
+}
 
 /**
  * Copy the top level of items, but do not copy its items recourisvely. This
@@ -142,6 +143,9 @@ export function shallowCopy<T>(obj: T): T {
 	return obj;
 }
 
+/// A type that is returned by `timeout` and `interval` that can be used to cancel them.
+export type ScheduledEventHandler = number | Timer;
+
 /**
  * Set timeout utility that adds support for disabling a timeout
  * by passing null
@@ -150,14 +154,26 @@ export function shallowCopy<T>(obj: T): T {
  * @param {Number}   timeoutDuration the duration of the timeout in milliseconds
  *
  * @public
- * @returns {Number} timeoutId
+ * @returns {ScheduledEventHandler} timeoutId
  */
-export function timeout(callback: () => void, timeoutDuration: number): number {
+export function timeout(callback: () => void, timeoutDuration: number): ScheduledEventHandler {
 	if( timeoutDuration !== null ) {
 		return setTimeout( callback, timeoutDuration );
 	} else {
 		return -1;
 	}
+}
+
+/**
+ * Cancels a timeout
+ *
+ * @param {ScheduledEventHandler} handler        the handler of the timeout to cancel
+ *
+ * @public
+ * @returns {void}
+ */
+export function cancelTimeout(handler: ScheduledEventHandler): void {
+	cancelTimeout(handler as any);
 }
 
 /**
@@ -168,14 +184,26 @@ export function timeout(callback: () => void, timeoutDuration: number): number {
  * @param {Number}   intervalDuration the duration of the interval in milliseconds
  *
  * @public
- * @returns {Number} intervalId
+ * @returns {ScheduledEventHandler} intervalId        NodeJS returns a `Timer` object and the browser returns a number
  */
-export function setInterval(callback: () => void, intervalDuration: number): number {
-	if( intervalDuration !== null ) {
+export function interval(callback: () => void, intervalDuration: number): ScheduledEventHandler {
+	if( intervalDuration !== undefined ) {
 		return setInterval( callback, intervalDuration );
 	} else {
 		return -1;
 	}
+}
+
+/**
+ * Cancels an interval
+ *
+ * @param {ScheduledEventHandler} handler        the handler of the interval to cancel
+ *
+ * @public
+ * @returns {void}
+ */
+export function cancelInterval(handler: ScheduledEventHandler): void {
+	cancelInterval(handler as any);
 }
 
 /**

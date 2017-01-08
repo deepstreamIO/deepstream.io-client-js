@@ -2,6 +2,7 @@ import Emitter = require("component-emitter");
 import { Client } from "../Client";
 import { ParsedMessage } from "../message/MessageParser";
 import { Events } from "../constants/Constants";
+import { ScheduledEventHandler, timeout } from "./Utils";
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -20,7 +21,7 @@ export class AckTimeoutRegistry extends Emitter {
 	private _client: Client;
 	private _topic: string;
 	private _timeoutDuration: number;
-	private _register: {[key: string]: number};
+	private _register: {[key: string]: ScheduledEventHandler};
 
 	public constructor(client: Client, topic: string, timeoutDuration: number) {
 		super();
@@ -44,7 +45,7 @@ export class AckTimeoutRegistry extends Emitter {
 
 		this.remove( name, action );
 
-		this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
+		this._register[ uniqueName ] = timeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
 	}
 
 	/**
@@ -79,7 +80,7 @@ export class AckTimeoutRegistry extends Emitter {
 		let timeout =  this._register[ uniqueName ] || this._register[ name ];
 
 		if( timeout ) {
-			clearTimeout( timeout );
+			cancelTimeout( timeout );
 		} else {
 			this._client._$onError( this._topic, Events.UNSOLICITED_MESSAGE, message.raw );
 		}

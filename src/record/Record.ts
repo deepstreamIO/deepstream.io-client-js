@@ -2,9 +2,11 @@ import { Client } from "../Client";
 import { Connection } from "../message/Connection";
 import { MergeStrategy } from "../constants/MergeStrategies";
 import { JSONPath } from "./JSONPath";
-import { ConnectionStates, Events } from "../constants/Constants";
-import { ParsedMessage } from "../message/MessageParser";
+import { ConnectionStates, Events, Topics, Actions } from "../constants/Constants";
+import { ParsedMessage, MessageParser } from "../message/MessageParser";
 import Emitter = require("component-emitter");
+import { timeout, cancelTimeout, ScheduledEventHandler } from "../utils/Utils";
+import { ResubscribeNotifier } from "../utils/ResubscribeNotifier";
 
 /**
  * This class represents a single record - an observable
@@ -38,8 +40,10 @@ export class Record extends Emitter {
     private _writeCallbacks: {[key: string]: any}; // TODO: Type
     private _mergeStrategy?: MergeStrategy; // TODO: Type
     private _resubscribeNotifier: any; // TODO: Type
-    private _readAckTimeout: number;
-    private _readTimeout: number;
+    private _readAckTimeout: ScheduledEventHandler;
+    private _readTimeout: ScheduledEventHandler;
+    private _deleteAckTimeout: ScheduledEventHandler;
+    private _discardTimeout: ScheduledEventHandler;
 
     public constructor();
     public constructor(name: string, recordOptions: any, connection: Connection, options: any, client: Client);
@@ -71,8 +75,8 @@ export class Record extends Emitter {
         }
 
         this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this));
-        this._readAckTimeout = setTimeout(this._onTimeout.bind(this, Events.ACK_TIMEOUT), this._options.recordReadAckTimeout);
-        this._readTimeout = setTimeout(this._onTimeout.bind(this, Events.RESPONSE_TIMEOUT), this._options.recordReadTimeout);
+        this._readAckTimeout = timeout(this._onTimeout.bind(this, Events.ACK_TIMEOUT), this._options.recordReadAckTimeout);
+        this._readTimeout = timeout(this._onTimeout.bind(this, Events.RESPONSE_TIMEOUT), this._options.recordReadTimeout);
         this._sendRead();
     }
 
@@ -279,7 +283,7 @@ export class Record extends Emitter {
             this.usages--;
             if (this.usages <= 0) {
                 this.emit('destroyPending');
-                this._discardTimeout = setTimeout(this._onTimeout.bind(this, Events.ACK_TIMEOUT), this._options.subscriptionTimeout);
+                this._discardTimeout = timeout(this._onTimeout.bind(this, Events.ACK_TIMEOUT), this._options.subscriptionTimeout);
                 this._connection.sendMsg(Topics.RECORD, Actions.UNSUBSCRIBE, [this.name]);
             }
         }.bind(this));
@@ -297,7 +301,7 @@ export class Record extends Emitter {
         }
         this.whenReady(function () {
             this.emit('destroyPending');
-            this._deleteAckTimeout = setTimeout(this._onTimeout.bind(this, Events.DELETE_TIMEOUT), this._options.recordDeleteTimeout);
+            this._deleteAckTimeout = timeout(this._onTimeout.bind(this, Events.DELETE_TIMEOUT), this._options.recordDeleteTimeout);
             this._connection.sendMsg(Topics.RECORD, Actions.DELETE, [this.name]);
         }.bind(this));
     }
@@ -330,7 +334,7 @@ export class Record extends Emitter {
     private _$onMessage(message: ParsedMessage): void {
         if (message.action === Actions.READ) {
             if (this.version === null) {
-                clearTimeout(this._readTimeout);
+                cancelTimeout(this._readTimeout);
                 this._onRead(message);
             } else {
                 this._applyUpdate(message, this._client);
@@ -347,7 +351,7 @@ export class Record extends Emitter {
             for (var i = 0; i < versions.length; i++) {
                 var callback = this._writeCallbacks[versions[i]];
                 if (callback !== undefined) {
-                    callback(messageParser.convertTyped(message.data[2], this._client))
+                    callback(MessageParser.convertTyped(message.data[2], this._client))
                     delete this._writeCallbacks[versions[i]];
                 }
             }
@@ -359,7 +363,7 @@ export class Record extends Emitter {
         else if (message.data[0] === Events.MESSAGE_DENIED) {
             this._clearTimeouts();
         } else if (message.action === Actions.SUBSCRIPTION_HAS_PROVIDER) {
-            var hasProvider = messageParser.convertTyped(message.data[1], this._client);
+            var hasProvider = MessageParser.convertTyped(message.data[1], this._client);
             this.hasProvider = hasProvider;
             this.emit('hasProviderChanged', hasProvider);
         }
@@ -452,7 +456,7 @@ export class Record extends Emitter {
         let acknowledgedAction = message.data[0];
 
         if (acknowledgedAction === Actions.SUBSCRIBE) {
-            clearTimeout(this._readAckTimeout);
+            cancelTimeout(this._readAckTimeout);
         }
 
         else if (acknowledgedAction === Actions.DELETE) {
@@ -622,10 +626,10 @@ export class Record extends Emitter {
      * @returns {void}
      */
     private _clearTimeouts() {
-        clearTimeout(this._readAckTimeout);
-        clearTimeout(this._deleteAckTimeout);
-        clearTimeout(this._discardTimeout);
-        clearTimeout(this._deleteAckTimeout);
+        cancelTimeout(this._readAckTimeout);
+        cancelTimeout(this._deleteAckTimeout);
+        cancelTimeout(this._discardTimeout);
+        cancelTimeout(this._deleteAckTimeout);
     }
 
     /**

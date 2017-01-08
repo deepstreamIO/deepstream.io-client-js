@@ -4,6 +4,7 @@ import { ResubscribeNotifier } from "./ResubscribeNotifier";
 import { Actions, Events } from "../constants/Constants";
 import { ParsedMessage } from "../message/MessageParser";
 import { DeepstreamOptions } from "../DefaultOptions";
+import { ScheduledEventHandler, timeout } from "./Utils";
 
 /**
  * Creates a listener instance which is usedby deepstream Records and Events.
@@ -24,7 +25,7 @@ export class Listener {
 	private _pattern: string;
 	private _client: Client;
 	private _connection: Connection;
-	private _ackTimeout: number;
+	private _ackTimeout: ScheduledEventHandler;
 	private _resubscribeNotifier: ResubscribeNotifier;
 	public destroyPending: boolean;
 
@@ -36,7 +37,7 @@ export class Listener {
 		this._pattern = pattern;
 		this._client = client;
 		this._connection = connection;
-		this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
+		this._ackTimeout = timeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
 		this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
 		this._sendListen();
 		this.destroyPending = false;
@@ -109,7 +110,7 @@ export class Listener {
 	 */
 	public _$onMessage(message: ParsedMessage): void {
 		if( message.action === Actions.ACK ) {
-			clearTimeout( this._ackTimeout );
+			cancelTimeout( this._ackTimeout );
 		} else if ( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
 			this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
 		} else if ( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {

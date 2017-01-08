@@ -2,6 +2,7 @@ import { DeepstreamOptions } from "../DefaultOptions";
 import { Client } from "../Client";
 import { Events } from "../constants/Constants";
 import { MessageParser } from "../message/MessageParser";
+import { timeout, ScheduledEventHandler } from "../utils/Utils";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -17,16 +18,16 @@ import { MessageParser } from "../message/MessageParser";
 export class RPC {
 	private _client: Client;
 	private _callback: RPC.Callback;
-	private _ackTimeout: number;
-	private _responseTimeout: number;
+	private _ackTimeout: ScheduledEventHandler;
+	private _responseTimeout: ScheduledEventHandler;
 
 	private get _options(): DeepstreamOptions { return this._client.options; }
 
 	public constructor(client: Client, callback: RPC.Callback) {
 		this._client = client;
 		this._callback = callback;
-		this._ackTimeout = setTimeout( this.error.bind( this, Events.ACK_TIMEOUT ), this._options.rpcAckTimeout );
-		this._responseTimeout = setTimeout( this.error.bind( this, Events.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
+		this._ackTimeout = timeout( this.error.bind( this, Events.ACK_TIMEOUT ), this._options.rpcAckTimeout );
+		this._responseTimeout = timeout( this.error.bind( this, Events.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
 	}
 
 	/**
@@ -36,7 +37,7 @@ export class RPC {
 	 * @returns {void}
 	 */
 	public ack(): void {
-		clearTimeout( this._ackTimeout );
+		cancelTimeout( this._ackTimeout );
 	}
 
 	/**
@@ -78,8 +79,8 @@ export class RPC {
 	 * @returns {void}
 	 */
 	private _complete(): void {
-		clearTimeout( this._ackTimeout );
-		clearTimeout( this._responseTimeout );
+		cancelTimeout( this._ackTimeout );
+		cancelTimeout( this._responseTimeout );
 	}
 }
 

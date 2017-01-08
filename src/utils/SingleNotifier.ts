@@ -1,6 +1,8 @@
 import { Connection } from "../message/Connection";
 import { Client } from "../Client";
 import { ResubscribeNotifier } from "./ResubscribeNotifier";
+import { timeout, ScheduledEventHandler, cancelTimeout } from "./Utils";
+import { Events } from "../constants/Constants";
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
@@ -58,7 +60,7 @@ export class SingleNotifier {
 	 * @returns {void}
 	 */
 	public request(name: string): Promise<any> {
-		let responseTimeout: number;
+		let responseTimeout: ScheduledEventHandler;
 		let resolve: ((value: any) => void) | undefined,
 			revoke: ((error: string) => void) | undefined;
 		let promise = new Promise((res, rev) => { resolve = res; revoke = rev; });
@@ -68,7 +70,7 @@ export class SingleNotifier {
 			this._connection.sendMessage( this._topic, this._action, [ name ] );
 		}
 
-		responseTimeout = setTimeout( this._onResponseTimeout.bind( this, name ), this._timeoutDuration );
+		responseTimeout = timeout( this._onResponseTimeout.bind( this, name ), this._timeoutDuration );
 		if (resolve && revoke) {
 			this._requests[ name ].push({
 				timeout: responseTimeout,
@@ -103,7 +105,7 @@ export class SingleNotifier {
 
 		for(let i = 0; i < entries.length; i++ ) {
 			let entry = entries[ i ];
-			clearTimeout( entry.timeout );
+			cancelTimeout( entry.timeout );
 			if (error) {
 				entry.revoke(error);
 			} else {
@@ -142,7 +144,7 @@ export class SingleNotifier {
 
 export namespace SingleNotifier {
 	export interface Request {
-		timeout: number;
+		timeout: ScheduledEventHandler;
 		resolve: (value: any) => void;
 		revoke: (error: string) => void;
 	}

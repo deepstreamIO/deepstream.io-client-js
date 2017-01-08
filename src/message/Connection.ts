@@ -1,9 +1,15 @@
 import URL = require("url");
 import NodeWebSocket = require('ws')
-import { ParsedMessage } from "./MessageParser";
-import { ConnectionStates, Events, Actions } from "../constants/Constants";
+import { ParsedMessage, MessageParser } from "./MessageParser";
+import { ConnectionStates, Events, Actions, Topics } from "../constants/Constants";
+import { Client } from "../Client";
+import {
+	parseUrl, nextTick, interval, timeout, ScheduledEventHandler, cancelTimeout,
+	cancelInterval
+} from "../utils/Utils";
+import { MessageBuilder } from "./MessageBuilder";
 
-let BrowserWebSocket = WebSocket || MozWebSocket; // TODO: should be global.WebSocket
+let BrowserWebSocket = WebSocket; // TODO: should be global.WebSocket || global.MozWebSocket
 
 export interface AuthParams {
 	username?: string,
@@ -31,16 +37,16 @@ export class Connection {
 	private _connectionAuthenticationTimeout: boolean;
 	private _challengeDenied: boolean;
 	private _queuedMessages: string[]; // TODO: Is this parsed message or string?
-	private _reconnectTimeout: any; // TODO: Timeout callback maybe?
+	private _reconnectTimeout: ScheduledEventHandler;
 	private _reconnectionAttempt: number;
 	private _currentPacketMessageCount: number;
-	private _sendNextPacketTimeout: any; // TODO: Type
+	private _sendNextPacketTimeout: ScheduledEventHandler;
 	private _currentMessageResetTimeout: any; // TODO: type
 	private _endpoint: any; // TODO: Type
 	private _lastHeartBeat: any; // TODO: Type
-	private _heartbeatInterval: any; // TODO: Type
+	private _heartbeatInterval: ScheduledEventHandler;
 	private _originalUrl: string;
-	private _url: URL;
+	private _url: string;
 	private _state: string;
 
 
@@ -56,16 +62,16 @@ export class Connection {
 		this._connectionAuthenticationTimeout = false;
 		this._challengeDenied = false;
 		this._queuedMessages = [];
-		this._reconnectTimeout = null;
+		this._reconnectTimeout = undefined;
 		this._reconnectionAttempt = 0;
 		this._currentPacketMessageCount = 0;
-		this._sendNextPacketTimeout = null;
-		this._currentMessageResetTimeout = null;
-		this._endpoint = null;
-		this._lastHeartBeat = null;
-		this._heartbeatInterval = null;
+		this._sendNextPacketTimeout = undefined;
+		this._currentMessageResetTimeout = undefined;
+		this._endpoint = undefined;
+		this._lastHeartBeat = undefined;
+		this._heartbeatInterval = undefined;
 
-		this._originalUrl = utils.parseUrl( url, this._options.path );
+		this._originalUrl = parseUrl( url, this._options.path );
 		this._url = this._originalUrl;
 
 		this._state = ConnectionStates.CLOSED;
@@ -128,7 +134,7 @@ export class Connection {
 	 * @returns {void}
 	 */
 	public sendMessage(topic: string, action: string, data: any[]): void {
-		this.send(messageBuilder.getMsg(topic, action, data));
+		this.send(MessageBuilder.getMsg(topic, action, data));
 	}
 
 	/**
@@ -146,7 +152,7 @@ export class Connection {
 		this._currentPacketMessageCount++;
 
 		if( this._currentMessageResetTimeout === null ) {
-			this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
+			this._currentMessageResetTimeout = nextTick( this._resetCurrentMessageCount.bind( this ) );
 		}
 
 		if( this._state === ConnectionStates.OPEN &&
@@ -168,7 +174,7 @@ export class Connection {
 	 * @returns {void}
 	 */
 	public close(): void {
-		clearInterval( this._heartbeatInterval );
+		cancelInterval( this._heartbeatInterval );
 		this._deliberateClose = true;
 		this._endpoint.close();
 	}
@@ -207,7 +213,7 @@ export class Connection {
 	 */
 	private _resetCurrentMessageCount(): void {
 		this._currentPacketMessageCount = 0;
-		this._currentMessageResetTimeout = null;
+		this._currentMessageResetTimeout = undefined;
 	}
 
 	/**
@@ -267,7 +273,7 @@ export class Connection {
 		let fn = this._sendQueuedMessages.bind( this );
 		let delay = this._options.timeBetweenSendingQueuedPackages;
 
-		this._sendNextPacketTimeout = setTimeout( fn, delay );
+		this._sendNextPacketTimeout = timeout( fn, delay );
 	}
 
 	/**
@@ -279,7 +285,7 @@ export class Connection {
 	 */
 	private _sendAuthParams(): void {
 		this._setState( ConnectionStates.AUTHENTICATING );
-		let authMessage = messageBuilder.getMsg( Topics.AUTH, Actions.REQUEST, [ this._authParams ] );
+		let authMessage = MessageBuilder.getMsg( Topics.AUTH, Actions.REQUEST, [ this._authParams ] );
 		this._submit( authMessage );
 	}
 
@@ -292,7 +298,7 @@ export class Connection {
 		let heartBeatTolerance = this._options.heartbeatInterval * 2;
 
 		if( Date.now() - this._lastHeartBeat > heartBeatTolerance ) {
-			clearInterval( this._heartbeatInterval );
+			cancelInterval( this._heartbeatInterval );
 			this._endpoint.close();
 			this._onError( 'Two connections heartbeats missed successively' );
 		}
@@ -309,7 +315,7 @@ export class Connection {
 	private _onOpen(): void {
 		this._clearReconnect();
 		this._lastHeartBeat = Date.now();
-		this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
+		this._heartbeatInterval = interval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
 		this._setState( ConnectionStates.AWAITING_CONNECTION );
 	}
 
@@ -326,14 +332,14 @@ export class Connection {
 	 * @returns {void}
 	 */
 	private _onError(error: string | Error): void {
-		clearInterval( this._heartbeatInterval );
+		cancelInterval( this._heartbeatInterval );
 		this._setState( ConnectionStates.ERROR );
 
 		/*
 		 * If the implementation isn't listening on the error event this will throw
 		 * an error. So let's defer it to allow the reconnection to kick in.
 		 */
-		setTimeout(function(){
+		timeout(function(){
 			let msg: string;
 			if((error as any).code === "ECONNRESET" || (error as any).code === "ECONNREFUSED") {
 				msg = 'Can\'t connect! Deepstream server unreachable on ' + this._originalUrl;
@@ -356,7 +362,7 @@ export class Connection {
 	 * @returns {void}
 	 */
 	private _onClose(): void {
-		clearInterval( this._heartbeatInterval );
+		cancelInterval( this._heartbeatInterval );
 
 		if( this._redirecting === true ) {
 			this._redirecting = false;
@@ -379,7 +385,7 @@ export class Connection {
 	 * @returns {void}
 	 */
 	private _onMessage(message: ParsedMessage): void {
-		let parsedMessages = messageParser.parse( message.data, this._client ),
+		let parsedMessages = MessageParser.parse( message.data, this._client ),
 			i: number;
 
 		for (i = 0; i < parsedMessages.length; i++) {
@@ -536,7 +542,7 @@ export class Connection {
 
 		if( this._reconnectionAttempt < this._options.maxReconnectAttempts ) {
 			this._setState( ConnectionStates.RECONNECTING );
-			this._reconnectTimeout = setTimeout(
+			this._reconnectTimeout = timeout(
 				this._tryOpen.bind( this ),
 				Math.min(
 					this._options.maxReconnectInterval,
@@ -575,7 +581,7 @@ export class Connection {
 	 * @returns {void}
 	 */
 	private _clearReconnect() {
-		clearTimeout( this._reconnectTimeout );
+		cancelTimeout( this._reconnectTimeout );
 		this._reconnectTimeout = null;
 		this._reconnectionAttempt = 0;
 	}
