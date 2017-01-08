@@ -1,7 +1,6 @@
-export class RPC {
-
-}
-
+import { DeepstreamOptions } from "../default-options";
+import { Client } from "../client";
+import { Events } from "../constants/constants";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -14,65 +13,75 @@ export class RPC {
  *
  * @constructor
  */
-var Rpc = function( options, callback, client ) {
-	this._options = options;
-	this._callback = callback;
-	this._client = client;
-	this._ackTimeout = setTimeout( this.error.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.rpcAckTimeout );
-	this._responseTimeout = setTimeout( this.error.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
-};
+export class RPC {
+	private _client: Client;
+	private _callback: RPC.Callback;
+	private _ackTimeout: number;
+	private _responseTimeout: number;
 
-/**
- * Called once an ack message is received from the server
- *
- * @public
- * @returns {void}
- */
-Rpc.prototype.ack = function() {
-	clearTimeout( this._ackTimeout );
-};
+	private get _options(): DeepstreamOptions { return this._client.options; }
 
-/**
- * Called once a response message is received from the server.
- * Converts the typed data and completes the request
- *
- * @param   {String} data typed value
- *
- * @public
- * @returns {void}
- */
-Rpc.prototype.respond = function( data ) {
-	var convertedData = messageParser.convertTyped( data, this._client );
-	this._callback( null, convertedData );
-	this._complete();
-};
+	public constructor(client: Client, callback: RPC.Callback) {
+		this._client = client;
+		this._callback = callback;
+		this._ackTimeout = setTimeout( this.error.bind( this, Events.ACK_TIMEOUT ), this._options.rpcAckTimeout );
+		this._responseTimeout = setTimeout( this.error.bind( this, Events.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
+	}
 
-/**
- * Callback for error messages received from the server. Once
- * an error is received the request is considered completed. Even
- * if a response arrives later on it will be ignored / cause an
- * UNSOLICITED_MESSAGE error
- *
- * @param   {String} errorMsg @TODO should be CODE and message
- *
- * @public
- * @returns {void}
- */
-Rpc.prototype.error = function( errorMsg ) {
-	this._callback( errorMsg );
-	this._complete();
-};
+	/**
+	 * Called once an ack message is received from the server
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public ack(): void {
+		clearTimeout( this._ackTimeout );
+	}
 
-/**
- * Called after either an error or a response
- * was received
- *
- * @private
- * @returns {void}
- */
-Rpc.prototype._complete = function() {
-	clearTimeout( this._ackTimeout );
-	clearTimeout( this._responseTimeout );
-};
+	/**
+	 * Called once a response message is received from the server.
+	 * Converts the typed data and completes the request
+	 *
+	 * @param   {String} data typed value
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public respond(data: string): void {
+		let convertedData = messageParser.convertTyped( data, this._client );
+		this._callback( null, convertedData );
+		this._complete();
+	}
 
-module.exports = Rpc;
+	/**
+	 * Callback for error messages received from the server. Once
+	 * an error is received the request is considered completed. Even
+	 * if a response arrives later on it will be ignored / cause an
+	 * UNSOLICITED_MESSAGE error
+	 *
+	 * @param   {String} errorMsg @TODO should be CODE and message
+	 *
+	 * @public
+	 * @returns {void}
+	 */
+	public error(errorMessage: string): void {
+		this._callback( errorMessage );
+		this._complete();
+	}
+
+	/**
+	 * Called after either an error or a response
+	 * was received
+	 *
+	 * @private
+	 * @returns {void}
+	 */
+	private _complete(): void {
+		clearTimeout( this._ackTimeout );
+		clearTimeout( this._responseTimeout );
+	}
+}
+
+export namespace RPC {
+	export type Callback = (error?: string, data?: any) => void;
+}

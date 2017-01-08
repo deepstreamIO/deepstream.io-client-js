@@ -23,13 +23,15 @@ import { ParsedMessage } from "./message/message-parser";
  * @constructor
  */
 export class Client extends Emitter {
-	private _url: string;
-	private _options: DeepstreamOptions;
-	private _connection: Connection;
 	public event: EventHandler;
 	public rpc: RpcHandler;
 	public record: RecordHandler;
 	public presence: PresenceHandler;
+	public _options: DeepstreamOptions;
+	private _url: string;
+	private _connection: Connection;
+
+	public get options(): DeepstreamOptions { return this.options; }
 
 	public constructor(url: string, options: DeepstreamOptions) {
 		super();
