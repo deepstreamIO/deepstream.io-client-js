@@ -9,7 +9,7 @@ export let JSONPath = {
      * @public
      * @returns {Mixed}
      */
-    get(data: any, path: string, deepCopy: boolean): any {
+    get(data: any, path?: string, deepCopy: boolean): any {
         let tokens = this.tokenize(path);
 
         for (let i = 0; i < tokens.length; i++) {
@@ -34,7 +34,7 @@ export let JSONPath = {
      * @public
      * @returns {Mixed} updated value
      */
-    set(data: any, path: string, value: any, deepCopy: boolean): any {
+    set(data: any, path: string | undefined, value: any, deepCopy: boolean = false): any {
         let tokens = this.tokenize(path);
 
         if (tokens.length === 0) {

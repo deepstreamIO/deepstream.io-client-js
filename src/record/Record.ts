@@ -7,6 +7,8 @@ import { ParsedMessage, MessageParser } from "../message/MessageParser";
 import Emitter = require("component-emitter");
 import { timeout, cancelTimeout, ScheduledEventHandler } from "../utils/Utils";
 import { ResubscribeNotifier } from "../utils/ResubscribeNotifier";
+import { DeepstreamOptions } from "../DefaultOptions";
+import { MessageBuilder } from "../message/MessageBuilder";
 
 /**
  * This class represents a single record - an observable
@@ -24,18 +26,17 @@ import { ResubscribeNotifier } from "../utils/ResubscribeNotifier";
  */
 export class Record extends Emitter {
 
-    public name?: string;
+    public name: string;
     public usages: number;
-    private _recordOptions: any; // TODO: Type
-    private _connection?: Connection;
-    private _client?: Client;
-    private _options: any; // TODO: Type
+    private _recordOptions: { persists?: boolean };
+    private _connection: Connection;
+    private _client: Client;
     public isReady: boolean;
     public isDestroyed: boolean;
     public hasProvider: boolean;
     private _$data: any; // TODO: Type
     private version: any; // TODO: Type
-    private _eventEmitter: Emitter;
+    private _eventEmitter: any; // `Emitter` but not exported
     private _queuedMethodCalls: any[]; // TODO: Type
     private _writeCallbacks: {[key: string]: any}; // TODO: Type
     private _mergeStrategy?: MergeStrategy; // TODO: Type
@@ -45,9 +46,11 @@ export class Record extends Emitter {
     private _deleteAckTimeout: ScheduledEventHandler;
     private _discardTimeout: ScheduledEventHandler;
 
+    private get _options(): DeepstreamOptions { return this._client.options; }
+
     public constructor();
-    public constructor(name: string, recordOptions: any, connection: Connection, options: any, client: Client);
-    public constructor(name?: string, recordOptions?: any, connection?: Connection, options?: any, client?: Client) {
+    public constructor(name: string, recordOptions: any, connection: Connection, client: Client);
+    public constructor(name?: string, recordOptions?: any, connection?: Connection, client?: Client) {
         super();
 
         if (typeof name !== 'string' || name.length === 0) {
@@ -57,9 +60,8 @@ export class Record extends Emitter {
         this.name = name;
         this.usages = 0;
         this._recordOptions = recordOptions;
-        this._connection = connection;
-        this._client = client;
-        this._options = options;
+        this._connection = connection as any;
+        this._client = client as any;
         this.isReady = false;
         this.isDestroyed = false;
         this.hasProvider = false;
@@ -69,10 +71,7 @@ export class Record extends Emitter {
         this._queuedMethodCalls = [];
         this._writeCallbacks = {};
 
-        this._mergeStrategy = undefined;
-        if (options.mergeStrategy) {
-            this.setMergeStrategy(options.mergeStrategy);
-        }
+        this._mergeStrategy = this._options.mergeStrategy;
 
         this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this));
         this._readAckTimeout = timeout(this._onTimeout.bind(this, Events.ACK_TIMEOUT), this._options.recordReadAckTimeout);
@@ -114,8 +113,8 @@ export class Record extends Emitter {
      * @public
      * @returns {Mixed} value
      */
-    public get(path?: JSONPath): any {
-        return jsonPath.get(this._$data, path, this._options.recordDeepCopy);
+    public get(path?: string): any {
+        return JSONPath.get(this._$data, path, this._options.recordDeepCopy);
     }
 
     /**
@@ -128,10 +127,10 @@ export class Record extends Emitter {
      * @public
      * @returns {void}
      */
-    public set(path: JSONPath, data: any): void;
+    public set(path: string, data: any): void;
     public set(data: any): void;
-    public set(pathOrData: JSONPath | any, dataOrUndefined?: any): Promise<void> { // TODO: Callback type
-        let path: JSONPath | undefined,
+    public set(pathOrData: string | any, dataOrUndefined?: any): Promise<void> { // TODO: Callback type
+        let path: string | undefined,
             data: any;
 
         if (arguments.length === 1) { // set( object )
@@ -147,7 +146,7 @@ export class Record extends Emitter {
 
         // Create the promise
         let resolve: (() => void) | undefined, revoke: ((error: string) => void) | undefined;
-        let promise = new Promise((res, rev) => {
+        let promise = new Promise<void>((res, rev) => {
             resolve = res;
             revoke = rev;
         });
@@ -164,7 +163,7 @@ export class Record extends Emitter {
         }
 
         let oldValue = this._$data;
-        let newValue = jsonPath.set(oldValue, path, data, this._options.recordDeepCopy);
+        let newValue = JSONPath.set(oldValue, path, data, this._options.recordDeepCopy);
 
         if (oldValue === newValue) {
             if (revoke) revoke('No change.');
@@ -176,9 +175,12 @@ export class Record extends Emitter {
             config = {};
             config.writeSuccess = true;
             this._setUpCallback(this.version, resolve);
-            let connectionState = this._client.getConnectionState();
+            let connectionState = this._client.connectionState;
             if (connectionState === ConnectionStates.CLOSED || connectionState === ConnectionStates.RECONNECTING) {
-                revoke('Connection error: error updating record as connection was closed');
+                if (revoke)
+                    revoke('Connection error: error updating record as connection was closed');
+                else
+                    throw new Error("No revoke");
             }
         } else {
             throw new Error("No resolve.");
@@ -207,16 +209,13 @@ export class Record extends Emitter {
      * @public
      * @returns {void}
      */
-    public subscribe(path: JSONPath, callback: Record.SubscribeCallback): void;
+    public subscribe(path: string, callback: Record.SubscribeCallback): void;
     public subscribe(callback: Record.SubscribeCallback): void;
     public subscribe(...pathAndCallback: any[]): void {
         let args = this._normalizeArguments(pathAndCallback);
 
         if (args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 )) {
             throw new Error('invalid argument path');
-        }
-        if (typeof args.callback !== 'function') {
-            throw new Error('invalid argument callback');
         }
 
         if (this._checkDestroyed('subscribe')) {
@@ -226,7 +225,10 @@ export class Record extends Emitter {
         if (args.triggerNow) {
             this.whenReady(function () {
                 this._eventEmitter.on(args.path, args.callback);
-                args.callback(this.get(args.path));
+                if (args.callback)
+                    args.callback(this.get(args.path));
+                else
+                    throw new Error("No callback");
             }.bind(this));
         } else {
             this._eventEmitter.on(args.path, args.callback);
@@ -250,9 +252,9 @@ export class Record extends Emitter {
      * @public
      * @returns {void}
      */
-    public unsubscribe(path: JSONPath, callback: Record.SubscribeCallback): void;
+    public unsubscribe(path: string, callback: Record.SubscribeCallback): void;
     public unsubscribe(callback: Record.SubscribeCallback): void;
-    public unsubscribe(pathAndCallback: any[]): void {
+    public unsubscribe(...pathAndCallback: any[]): void {
         var args = this._normalizeArguments(pathAndCallback);
 
         if (args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 )) {
@@ -315,7 +317,7 @@ export class Record extends Emitter {
      *
      * @returns {void}
      */
-    public whenReady(callback: () => void): void {
+    public whenReady(callback: (record: Record) => void): void {
         if (this.isReady === true) {
             callback(this);
         } else {
@@ -337,14 +339,14 @@ export class Record extends Emitter {
                 cancelTimeout(this._readTimeout);
                 this._onRead(message);
             } else {
-                this._applyUpdate(message, this._client);
+                this._applyUpdate(message);
             }
         }
         else if (message.action === Actions.ACK) {
             this._processAckMessage(message);
         }
         else if (message.action === Actions.UPDATE || message.action === Actions.PATCH) {
-            this._applyUpdate(message, this._client);
+            this._applyUpdate(message);
         }
         else if (message.action === Actions.WRITE_ACKNOWLEDGEMENT) {
             var versions = JSON.parse(message.data[1]);
@@ -358,7 +360,7 @@ export class Record extends Emitter {
         }
         // Otherwise it should be an error, and dealt with accordingly
         else if (message.data[0] === Events.VERSION_EXISTS) {
-            this._recoverRecord(message.data[2], JSON.parse(message.data[3]), message);
+            this._recoverRecord(parseInt(message.data[2]), JSON.parse(message.data[3]), message);
         }
         else if (message.data[0] === Events.MESSAGE_DENIED) {
             this._clearTimeouts();
@@ -401,8 +403,8 @@ export class Record extends Emitter {
             this._connection.sendMessage(Topics.RECORD, Actions.UPDATE, msgData);
         } else {
             msgData = config === undefined ?
-                [this.name, this.version, path, messageBuilder.typed(data)] :
-                [this.name, this.version, path, messageBuilder.typed(data), config];
+                [this.name, this.version, path, MessageBuilder.typed(data)] :
+                [this.name, this.version, path, MessageBuilder.typed(data), config];
             this._connection.sendMessage(Topics.RECORD, Actions.PATCH, msgData);
         }
     }
@@ -425,7 +427,7 @@ export class Record extends Emitter {
             this.version = remoteVersion;
 
             let oldValue = this._$data;
-            let newValue = jsonPath.set(oldValue, undefined, data, false);
+            let newValue = JSONPath.set(oldValue, undefined, data, false);
             if (oldValue === newValue) {
                 return;
             }
@@ -452,7 +454,7 @@ export class Record extends Emitter {
      * @private
      * @returns {void}
      */
-    private processAckMessage(message: ParsedMessage) {
+    private _processAckMessage(message: ParsedMessage) {
         let acknowledgedAction = message.data[0];
 
         if (acknowledgedAction === Actions.SUBSCRIBE) {
@@ -482,7 +484,7 @@ export class Record extends Emitter {
         let version = parseInt(message.data[1], 10);
         let data;
         if (message.action === Actions.PATCH) {
-            data = messageParser.convertTyped(message.data[3], this._client);
+            data = MessageParser.convertTyped(message.data[3], this._client);
         } else {
             data = JSON.parse(message.data[2]);
         }
@@ -496,7 +498,7 @@ export class Record extends Emitter {
                  * Request a snapshot so that a merge can be done with the read reply which contains
                  * the full state of the record
                  **/
-                this._connection.sendMsg(Topics.RECORD, Actions.SNAPSHOT, [this.name]);
+                this._connection.sendMessage(Topics.RECORD, Actions.SNAPSHOT, [this.name]);
             } else {
                 this._recoverRecord(version, data, message);
             }
@@ -504,7 +506,7 @@ export class Record extends Emitter {
         }
 
         this.version = version;
-        this._applyChange(jsonPath.set(this._$data, message.action === Actions.PATCH ? message.data[2] : undefined, data));
+        this._applyChange(JSONPath.set(this._$data, message.action === Actions.PATCH ? message.data[2] : undefined, data));
     }
 
     /**
@@ -517,7 +519,7 @@ export class Record extends Emitter {
      */
     private _onRead(message: ParsedMessage): void {
         this.version = parseInt(message.data[1], 10);
-        this._applyChange(jsonPath.set(this._$data, undefined, JSON.parse(message.data[2])));
+        this._applyChange(JSONPath.set(this._$data, undefined, JSON.parse(message.data[2])));
         this._setReady();
     }
 
@@ -531,7 +533,7 @@ export class Record extends Emitter {
     private _setReady() {
         this.isReady = true;
         for (let i = 0; i < this._queuedMethodCalls.length; i++) {
-            this[this._queuedMethodCalls[i].method].apply(this, this._queuedMethodCalls[i].args);
+            (this as any)[this._queuedMethodCalls[i].method].apply(this, this._queuedMethodCalls[i].args);
         }
         this._queuedMethodCalls = [];
         this.emit('ready');
@@ -550,7 +552,7 @@ export class Record extends Emitter {
      * @returns {void}
      */
     private _sendRead() {
-        this._connection.sendMsg(Topics.RECORD, Actions.CREATEORREAD, [this.name]);
+        this._connection.sendMessage(Topics.RECORD, Actions.CREATEORREAD, [this.name]);
     }
 
     /**
@@ -575,8 +577,8 @@ export class Record extends Emitter {
         let paths = Object.keys(this._eventEmitter._callbacks);
 
         for (let i = 0; i < paths.length; i++) {
-            let newValue = jsonPath.get(newData, paths[i], false);
-            let oldValue = jsonPath.get(oldData, paths[i], false);
+            let newValue = JSONPath.get(newData, paths[i], false);
+            let oldValue = JSONPath.get(oldData, paths[i], false);
 
             if (newValue !== oldValue) {
                 this._eventEmitter.emit(paths[i], this.get(paths[i]));
@@ -592,7 +594,7 @@ export class Record extends Emitter {
      * @private
      * @returns {Object} arguments map
      */
-    private _normalizeArguments(args: any[]): {path?: string, triggerNow: boolean} {
+    private _normalizeArguments(args: any[]): {path?: string, triggerNow?: boolean, callback?: (data: any) => void} {
         // If arguments is already a map of normalized parameters
         // (e.g. when called by AnonymousRecord), just return it.
         if (args.length === 1 && typeof args[0] === 'object') {
@@ -601,7 +603,8 @@ export class Record extends Emitter {
 
         let result = {
             path: undefined,
-            triggerNow: false
+            triggerNow: undefined,
+            callback: undefined
         };
 
         for (let i = 0; i < args.length; i++) {
@@ -674,9 +677,9 @@ export class Record extends Emitter {
         this._resubscribeNotifier.destroy();
         this.isDestroyed = true;
         this.isReady = false;
-        this._client = undefined;
+        this._client = undefined as any;
         this._eventEmitter = null;
-        this._connection = undefined;
+        this._connection = undefined as any;
     }
 }
 

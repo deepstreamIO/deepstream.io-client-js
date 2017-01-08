@@ -20,15 +20,15 @@ import { RecordHandler } from "./RecordHandler";
  */
 export class AnonymousRecord extends Record {
 	private _recordHandler: RecordHandler;
-	private _record?: Record;
+	private _record: Record;
 	private _subscriptions: any[]; // TODO: Type
 
 	public constructor(recordHandler: RecordHandler) {
 		super();
 
-		this.name = undefined;
+		this.name = undefined as any;
 		this._recordHandler = recordHandler;
-		this._record = undefined;
+		this._record = undefined as any;
 		this._subscriptions = [];
 		this._proxyMethod( 'delete' );
 		this._proxyMethod( 'set' );
