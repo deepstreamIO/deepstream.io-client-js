@@ -32,7 +32,7 @@ export class EventHandler {
 		this._client = client;
 		this._emitter = new EventEmitter();
 		this._listener = {};
-		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
+		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, Topics.EVENT, this._options.subscriptionTimeout );
 		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 	}
 
@@ -55,8 +55,8 @@ export class EventHandler {
 		}
 
 		if( !this._emitter.hasListeners( name ) ) {
-			this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
-			this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
+			this._ackTimeoutRegistry.add( name, Actions.SUBSCRIBE );
+			this._connection.sendMsg( Topics.EVENT, Actions.SUBSCRIBE, [ name ] );
 		}
 
 		this._emitter.on( name, callback );
@@ -83,8 +83,8 @@ export class EventHandler {
 		this._emitter.off( name, callback );
 
 		if( !this._emitter.hasListeners( name ) ) {
-			this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
-			this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
+			this._ackTimeoutRegistry.add( name, Actions.UNSUBSCRIBE );
+			this._connection.sendMsg( Topics.EVENT, Actions.UNSUBSCRIBE, [ name ] );
 		}
 	}
 
@@ -103,7 +103,7 @@ export class EventHandler {
 			throw new Error( 'invalid argument name' );
 		}
 
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
+		this._connection.sendMsg( Topics.EVENT, Actions.EVENT, [ name, messageBuilder.typed( data ) ] );
 		this._emitter.emit( name, data );
 	}
 
@@ -127,12 +127,12 @@ export class EventHandler {
 		}
 
 		if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
-			return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
+			return this._client._$onError( Topics.EVENT, Events.LISTENER_EXISTS, pattern );
 		} else if( this._listener[ pattern ] ) {
 			this._listener[ pattern ].destroy();
 		}
 
-		this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
+		this._listener[ pattern ] = new Listener( Topics.EVENT, pattern, callback, this._options, this._client, this._connection );
 	}
 
 	/**
@@ -154,11 +154,11 @@ export class EventHandler {
 		if( listener && !listener.destroyPending ) {
 			listener.sendDestroy();
 		} else if( this._listener[ pattern ] ) {
-			this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
+			this._ackTimeoutRegistry.add( pattern, Events.UNLISTEN );
 			this._listener[ pattern ].destroy();
 			delete this._listener[ pattern ];
 		} else {
-			this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
+			this._client._$onError( Topics.RECORD, Events.NOT_LISTENING, pattern );
 		}
 	}
 
@@ -171,9 +171,9 @@ export class EventHandler {
 	 * @returns {void}
 	 */
 	private _handle(message: ParsedMessage): void {
-		let name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
+		let name = message.data[ message.action === Actions.ACK ? 1 : 0 ];
 
-		if( message.action === C.ACTIONS.EVENT ) {
+		if( message.action === Actions.EVENT ) {
 			processed = true;
 			if( message.data && message.data.length === 2 ) {
 				this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
@@ -183,7 +183,7 @@ export class EventHandler {
 			return;
 		}
 
-		if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		if( message.action === Actions.ACK && message.data[ 0 ] === Actions.UNLISTEN &&
 			this._listener[ name ] && this._listener[ name ].destroyPending
 		) {
 			this._listener[ name ].destroy();
@@ -193,32 +193,32 @@ export class EventHandler {
 			processed = true;
 			this._listener[ name ]._$onMessage( message );
 			return;
-		} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		} else if( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 			// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
 			return;
-		}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		}  else if( message.action === Actions.SUBSCRIPTION_HAS_PROVIDER ) {
 			// record can receive a HAS_PROVIDER after discarding the record
 			return;
 		}
 
-		if( message.action === C.ACTIONS.ACK ) {
+		if( message.action === Actions.ACK ) {
 			this._ackTimeoutRegistry.clear( message );
 			return;
 		}
 
-		if( message.action === C.ACTIONS.ERROR ) {
-			if (message.data[0] === C.EVENT.MESSAGE_DENIED){
+		if( message.action === Actions.ERROR ) {
+			if (message.data[0] === Events.MESSAGE_DENIED){
 				this._ackTimeoutRegistry.remove( message.data[1], message.data[2] );
 			}
-			else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
-				this._ackTimeoutRegistry.remove( message.data[1], C.ACTIONS.UNSUBSCRIBE );
+			else if ( message.data[0] === Events.NOT_SUBSCRIBED ){
+				this._ackTimeoutRegistry.remove( message.data[1], Actions.UNSUBSCRIBE );
 			}
 			message.processedError = true;
-			this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
+			this._client._$onError( Topics.EVENT, message.data[ 0 ], message.data[ 1 ] );
 			return;
 		}
 
-		this._client._$onError( C.TOPIC.EVENT, C.EVENT.UNSOLICITED_MESSAGE, name );
+		this._client._$onError( Topics.EVENT, Events.UNSOLICITED_MESSAGE, name );
 	}
 
 	/**
@@ -230,7 +230,7 @@ export class EventHandler {
 	private _resubscribe(): void {
 		let callbacks = this._emitter._callbacks;
 		for(let eventName in callbacks) {
-			this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
+			this._connection.sendMsg( Topics.EVENT, Actions.SUBSCRIBE, [ eventName ] );
 		}
 	}
 }

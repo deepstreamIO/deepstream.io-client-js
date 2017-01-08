@@ -272,7 +272,7 @@ export class List extends Emitter {
 	 * @returns {void}
 	 */
 	private _applyUpdate(message: string): void {
-		if( message.action === C.ACTIONS.PATCH ) {
+		if( message.action === Actions.PATCH ) {
 			throw new Error( 'PATCH is not supported for Lists' );
 		}
 

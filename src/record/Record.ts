@@ -71,8 +71,8 @@ export class Record extends Emitter {
         }
 
         this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this));
-        this._readAckTimeout = setTimeout(this._onTimeout.bind(this, C.EVENT.ACK_TIMEOUT), this._options.recordReadAckTimeout);
-        this._readTimeout = setTimeout(this._onTimeout.bind(this, C.EVENT.RESPONSE_TIMEOUT), this._options.recordReadTimeout);
+        this._readAckTimeout = setTimeout(this._onTimeout.bind(this, Events.ACK_TIMEOUT), this._options.recordReadAckTimeout);
+        this._readTimeout = setTimeout(this._onTimeout.bind(this, Events.RESPONSE_TIMEOUT), this._options.recordReadTimeout);
         this._sendRead();
     }
 
@@ -279,8 +279,8 @@ export class Record extends Emitter {
             this.usages--;
             if (this.usages <= 0) {
                 this.emit('destroyPending');
-                this._discardTimeout = setTimeout(this._onTimeout.bind(this, C.EVENT.ACK_TIMEOUT), this._options.subscriptionTimeout);
-                this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name]);
+                this._discardTimeout = setTimeout(this._onTimeout.bind(this, Events.ACK_TIMEOUT), this._options.subscriptionTimeout);
+                this._connection.sendMsg(Topics.RECORD, Actions.UNSUBSCRIBE, [this.name]);
             }
         }.bind(this));
     }
@@ -297,8 +297,8 @@ export class Record extends Emitter {
         }
         this.whenReady(function () {
             this.emit('destroyPending');
-            this._deleteAckTimeout = setTimeout(this._onTimeout.bind(this, C.EVENT.DELETE_TIMEOUT), this._options.recordDeleteTimeout);
-            this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.DELETE, [this.name]);
+            this._deleteAckTimeout = setTimeout(this._onTimeout.bind(this, Events.DELETE_TIMEOUT), this._options.recordDeleteTimeout);
+            this._connection.sendMsg(Topics.RECORD, Actions.DELETE, [this.name]);
         }.bind(this));
     }
 
@@ -328,7 +328,7 @@ export class Record extends Emitter {
      * @returns {void}
      */
     private _$onMessage(message: ParsedMessage): void {
-        if (message.action === C.ACTIONS.READ) {
+        if (message.action === Actions.READ) {
             if (this.version === null) {
                 clearTimeout(this._readTimeout);
                 this._onRead(message);
@@ -336,13 +336,13 @@ export class Record extends Emitter {
                 this._applyUpdate(message, this._client);
             }
         }
-        else if (message.action === C.ACTIONS.ACK) {
+        else if (message.action === Actions.ACK) {
             this._processAckMessage(message);
         }
-        else if (message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH) {
+        else if (message.action === Actions.UPDATE || message.action === Actions.PATCH) {
             this._applyUpdate(message, this._client);
         }
-        else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
+        else if (message.action === Actions.WRITE_ACKNOWLEDGEMENT) {
             var versions = JSON.parse(message.data[1]);
             for (var i = 0; i < versions.length; i++) {
                 var callback = this._writeCallbacks[versions[i]];
@@ -353,12 +353,12 @@ export class Record extends Emitter {
             }
         }
         // Otherwise it should be an error, and dealt with accordingly
-        else if (message.data[0] === C.EVENT.VERSION_EXISTS) {
+        else if (message.data[0] === Events.VERSION_EXISTS) {
             this._recoverRecord(message.data[2], JSON.parse(message.data[3]), message);
         }
-        else if (message.data[0] === C.EVENT.MESSAGE_DENIED) {
+        else if (message.data[0] === Events.MESSAGE_DENIED) {
             this._clearTimeouts();
-        } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
+        } else if (message.action === Actions.SUBSCRIPTION_HAS_PROVIDER) {
             var hasProvider = messageParser.convertTyped(message.data[1], this._client);
             this.hasProvider = hasProvider;
             this.emit('hasProviderChanged', hasProvider);
@@ -383,7 +383,7 @@ export class Record extends Emitter {
             this._mergeStrategy(this, remoteData, remoteVersion, this._onRecordRecovered.bind(this, remoteVersion, remoteData, message));
         }
         else {
-            this.emit('error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version);
+            this.emit('error', Events.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version);
         }
     }
 
@@ -394,12 +394,12 @@ export class Record extends Emitter {
             msgData = config === undefined ?
                 [this.name, this.version, data] :
                 [this.name, this.version, data, config];
-            this._connection.sendMessage(C.TOPIC.RECORD, C.ACTIONS.UPDATE, msgData);
+            this._connection.sendMessage(Topics.RECORD, Actions.UPDATE, msgData);
         } else {
             msgData = config === undefined ?
                 [this.name, this.version, path, messageBuilder.typed(data)] :
                 [this.name, this.version, path, messageBuilder.typed(data), config];
-            this._connection.sendMessage(C.TOPIC.RECORD, C.ACTIONS.PATCH, msgData);
+            this._connection.sendMessage(Topics.RECORD, Actions.PATCH, msgData);
         }
     }
 
@@ -451,16 +451,16 @@ export class Record extends Emitter {
     private processAckMessage(message: ParsedMessage) {
         let acknowledgedAction = message.data[0];
 
-        if (acknowledgedAction === C.ACTIONS.SUBSCRIBE) {
+        if (acknowledgedAction === Actions.SUBSCRIBE) {
             clearTimeout(this._readAckTimeout);
         }
 
-        else if (acknowledgedAction === C.ACTIONS.DELETE) {
+        else if (acknowledgedAction === Actions.DELETE) {
             this.emit('delete');
             this._destroy();
         }
 
-        else if (acknowledgedAction === C.ACTIONS.UNSUBSCRIBE) {
+        else if (acknowledgedAction === Actions.UNSUBSCRIBE) {
             this.emit('discard');
             this._destroy();
         }
@@ -477,7 +477,7 @@ export class Record extends Emitter {
     private _applyUpdate(message: ParsedMessage): void {
         let version = parseInt(message.data[1], 10);
         let data;
-        if (message.action === C.ACTIONS.PATCH) {
+        if (message.action === Actions.PATCH) {
             data = messageParser.convertTyped(message.data[3], this._client);
         } else {
             data = JSON.parse(message.data[2]);
@@ -487,12 +487,12 @@ export class Record extends Emitter {
             this.version = version;
         }
         else if (this.version + 1 !== version) {
-            if (message.action === C.ACTIONS.PATCH) {
+            if (message.action === Actions.PATCH) {
                 /**
                  * Request a snapshot so that a merge can be done with the read reply which contains
                  * the full state of the record
                  **/
-                this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [this.name]);
+                this._connection.sendMsg(Topics.RECORD, Actions.SNAPSHOT, [this.name]);
             } else {
                 this._recoverRecord(version, data, message);
             }
@@ -500,7 +500,7 @@ export class Record extends Emitter {
         }
 
         this.version = version;
-        this._applyChange(jsonPath.set(this._$data, message.action === C.ACTIONS.PATCH ? message.data[2] : undefined, data));
+        this._applyChange(jsonPath.set(this._$data, message.action === Actions.PATCH ? message.data[2] : undefined, data));
     }
 
     /**
@@ -546,7 +546,7 @@ export class Record extends Emitter {
      * @returns {void}
      */
     private _sendRead() {
-        this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [this.name]);
+        this._connection.sendMsg(Topics.RECORD, Actions.CREATEORREAD, [this.name]);
     }
 
     /**

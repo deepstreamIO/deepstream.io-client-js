@@ -34,7 +34,6 @@ export class Client extends Emitter {
 	private _connection: Connection;
 
 	public get options(): DeepstreamOptions { return this.options; }
-	public get connection(): Connection { return this._connection; }
 
 	public constructor(url: string, options?: DeepstreamUserOptions) {
 		super();
@@ -138,10 +137,10 @@ export class Client extends Emitter {
 			this._messageCallbacks[ message.topic ]( message );
 		} else {
 			message.processedError = true;
-			this._$onError( message.topic, C.EVENT.MESSAGE_PARSE_ERROR, 'Received message for unknown topic ' + message.topic );
+			this._$onError( message.topic, Events.MESSAGE_PARSE_ERROR, 'Received message for unknown topic ' + message.topic );
 		}
 
-		if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
+		if( message.action === Actions.ERROR && !message.processedError ) {
 			this._$onError( message.topic, message.data[ 0 ],  message.data.slice( 0 ) );
 		}
 	}
@@ -166,7 +165,7 @@ export class Client extends Emitter {
 	 * @package private
 	 * @returns {void}
 	 */
-	private _$onError(topic: string, event: string, message: string): void {
+	public _$onError(topic: string, event: string, message: string): void {
 		let errorMsg: string;
 
 		/*

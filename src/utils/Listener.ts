@@ -68,7 +68,7 @@ export class Listener {
 	 * @returns {void}
 	 */
 	public accept(name: string): void {
-		this._connection.sendMessage( this._type, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
+		this._connection.sendMessage( this._type, Actions.LISTEN_ACCEPT, [ this._pattern, name ] );
 	}
 
 	/**
@@ -81,7 +81,7 @@ export class Listener {
 	 * @returns {void}
 	 */
 	public reject(name: string): void {
-		this._connection.sendMessage( this._type, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
+		this._connection.sendMessage( this._type, Actions.LISTEN_REJECT, [ this._pattern, name ] );
 	}
 
 	/**
@@ -111,15 +111,15 @@ export class Listener {
 			clearTimeout( this._ackTimeout );
 		} else if ( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
 			this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
-		} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		} else if ( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 			this._callback( message.data[ 1 ], false );
 		} else {
-			this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
+			this._client._$onError( this._type, Events.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
 		}
 	}
 
 	/**
-	 * Sends a C.ACTIONS.LISTEN to deepstream.
+	 * Sends a Actions.LISTEN to deepstream.
 	 *
 	 * @private
 	 * @returns {void}
@@ -129,7 +129,7 @@ export class Listener {
 	}
 
 	/**
-	 * Sends a C.EVENT.ACK_TIMEOUT to deepstream.
+	 * Sends a Events.ACK_TIMEOUT to deepstream.
 	 *
 	 * @private
 	 * @returns {void}

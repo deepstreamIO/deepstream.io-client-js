@@ -46,10 +46,10 @@ export class ResubscribeNotifier {
 	private _handleConnectionStateChanges(): void {
 		var state = this._client.getConnectionState();
 
-		if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
+		if( state === ConnectionStates.RECONNECTING && this._isReconnecting === false ) {
 			this._isReconnecting = true;
 		}
-		if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
+		if( state === ConnectionStates.OPEN && this._isReconnecting === true ) {
 			this._isReconnecting = false;
 			this._resubscribe();
 		}

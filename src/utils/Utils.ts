@@ -1,3 +1,5 @@
+import URL = require('url');
+
 /**
  * A regular expression that matches whitespace on either side, but
  * not in the center of a string
@@ -187,8 +189,6 @@ export const hasUrlProtocol = /^wss:|^ws:|^\/\//;
  * @type {RegExp}
  */
 export const unsupportedProtocol = /^http:|^https:/;
-
-import URL = require( 'url' );
 
 /**
  * Take the url passed when creating the client and ensure the correct

@@ -1,6 +1,7 @@
 import URL = require("url");
 import NodeWebSocket = require('ws')
 import { ParsedMessage } from "./MessageParser";
+import { ConnectionStates, Events, Actions } from "../constants/Constants";
 
 let BrowserWebSocket = WebSocket || MozWebSocket; // TODO: should be global.WebSocket
 
@@ -67,7 +68,7 @@ export class Connection {
 		this._originalUrl = utils.parseUrl( url, this._options.path );
 		this._url = this._originalUrl;
 
-		this._state = C.CONNECTION_STATE.CLOSED;
+		this._state = ConnectionStates.CLOSED;
 
 		this._createEndpoint();
 	}
@@ -98,16 +99,16 @@ export class Connection {
 		let promise = new Promise(resolve => this._authResolve = resolve);
 
 		if( this._tooManyAuthAttempts || this._challengeDenied || this._connectionAuthenticationTimeout ) {
-			this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
+			this._client._$onError( Topics.ERROR, Events.IS_CLOSED, 'this client\'s connection was closed' );
 			return promise;
 		}
-		else if( this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED ) {
+		else if( this._deliberateClose === true && this._state === ConnectionStates.CLOSED ) {
 			this._createEndpoint();
 			this._deliberateClose = false;
 			return promise;
 		}
 
-		if( this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
+		if( this._state === ConnectionStates.AWAITING_AUTHENTICATION ) {
 			this._sendAuthParams();
 		}
 
@@ -118,8 +119,8 @@ export class Connection {
 	 * High level send message method. Creates a deepstream message
 	 * string and invokes the actual send method.
 	 *
-	 * @param   {String} topic  One of C.TOPIC
-	 * @param   {String} action One of C.ACTIONS
+	 * @param   {String} topic  One of Topics
+	 * @param   {String} action One of Actions
 	 * @param   {[Mixed]} data 	Date that will be added to the message. Primitive values will
 	 *                          be appended directly, objects and arrays will be serialized as JSON
 	 *
@@ -148,7 +149,7 @@ export class Connection {
 			this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
 		}
 
-		if( this._state === C.CONNECTION_STATE.OPEN &&
+		if( this._state === ConnectionStates.OPEN &&
 			this._queuedMessages.length < this._options.maxMessagesPerPacket &&
 			this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
 			this._sendQueuedMessages();
@@ -218,7 +219,7 @@ export class Connection {
 	 * @returns {void}
 	 */
 	private _sendQueuedMessages(): void {
-		if( this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN ) {
+		if( this._state !== ConnectionStates.OPEN || this._endpoint.readyState !== this._endpoint.OPEN ) {
 			return;
 		}
 
@@ -277,8 +278,8 @@ export class Connection {
 	 * @returns {void}
 	 */
 	private _sendAuthParams(): void {
-		this._setState( C.CONNECTION_STATE.AUTHENTICATING );
-		let authMessage = messageBuilder.getMsg( C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ] );
+		this._setState( ConnectionStates.AUTHENTICATING );
+		let authMessage = messageBuilder.getMsg( Topics.AUTH, Actions.REQUEST, [ this._authParams ] );
 		this._submit( authMessage );
 	}
 
@@ -309,7 +310,7 @@ export class Connection {
 		this._clearReconnect();
 		this._lastHeartBeat = Date.now();
 		this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
-		this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
+		this._setState( ConnectionStates.AWAITING_CONNECTION );
 	}
 
 	/**
@@ -326,7 +327,7 @@ export class Connection {
 	 */
 	private _onError(error: string | Error): void {
 		clearInterval( this._heartbeatInterval );
-		this._setState( C.CONNECTION_STATE.ERROR );
+		this._setState( ConnectionStates.ERROR );
 
 		/*
 		 * If the implementation isn't listening on the error event this will throw
@@ -339,7 +340,7 @@ export class Connection {
 			} else {
 				msg = error.toString();
 			}
-			this._client._$onError( C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg );
+			this._client._$onError( Topics.CONNECTION, Events.CONNECTION_ERROR, msg );
 		}.bind( this ), 1);
 	}
 
@@ -362,7 +363,7 @@ export class Connection {
 			this._createEndpoint();
 		}
 		else if( this._deliberateClose === true ) {
-			this._setState( C.CONNECTION_STATE.CLOSED );
+			this._setState( ConnectionStates.CLOSED );
 		}
 		else {
 			this._tryReconnect();
@@ -385,10 +386,10 @@ export class Connection {
 			if (parsedMessages[i] === null) {
 				continue;
 			}
-			else if( parsedMessages[ i ].topic === C.TOPIC.CONNECTION ) {
+			else if( parsedMessages[ i ].topic === Topics.CONNECTION ) {
 				this._handleConnectionResponse( parsedMessages[ i ] );
 			}
-			else if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
+			else if( parsedMessages[ i ].topic === Topics.AUTH ) {
 				this._handleAuthResponse( parsedMessages[ i ] );
 			} else {
 				this._client._$onMessage( parsedMessages[ i ] );
@@ -421,34 +422,34 @@ export class Connection {
 	private _handleConnectionResponse(message: ParsedMessage): void {
 		let data: string;
 
-		if( message.action === C.ACTIONS.PING ) {
+		if( message.action === Actions.PING ) {
 			this._lastHeartBeat = Date.now();
-			this._submit( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.PONG ) );
+			this._submit( MessageBuilder.getMessage( Topics.CONNECTION, Actions.PONG ) );
 		}
-		else if( message.action === C.ACTIONS.ACK ) {
-			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
+		else if( message.action === Actions.ACK ) {
+			this._setState( ConnectionStates.AWAITING_AUTHENTICATION );
 			if( this._authParams ) {
 				this._sendAuthParams();
 			}
 		}
-		else if( message.action === C.ACTIONS.CHALLENGE ) {
-			this._setState( C.CONNECTION_STATE.CHALLENGING );
-			this._submit( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );
+		else if( message.action === Actions.CHALLENGE ) {
+			this._setState( ConnectionStates.CHALLENGING );
+			this._submit( messageBuilder.getMsg( Topics.CONNECTION, Actions.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );
 		}
-		else if( message.action === C.ACTIONS.REJECTION ) {
+		else if( message.action === Actions.REJECTION ) {
 			this._challengeDenied = true;
 			this.close();
 		}
-		else if( message.action === C.ACTIONS.REDIRECT ) {
+		else if( message.action === Actions.REDIRECT ) {
 			this._url = message.data[ 0 ];
 			this._redirecting = true;
 			this._endpoint.close();
 		}
-		else if( message.action === C.ACTIONS.ERROR ) {
-			if( message.data[ 0 ] === C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT ) {
+		else if( message.action === Actions.ERROR ) {
+			if( message.data[ 0 ] === Events.CONNECTION_AUTHENTICATION_TIMEOUT ) {
 				this._deliberateClose = true;
 				this._connectionAuthenticationTimeout = true;
-				this._client._$onError( C.TOPIC.CONNECTION, message.data[ 0 ], message.data[ 1 ] );
+				this._client._$onError( Topics.CONNECTION, message.data[ 0 ], message.data[ 1 ] );
 			}
 		}
 	}
@@ -465,21 +466,21 @@ export class Connection {
 	 * @returns {void}
 	 */
 	private _handleAuthResponse(message: ParsedMessage): void {
-		if (message.action === C.ACTIONS.ERROR) {
+		if (message.action === Actions.ERROR) {
 
-			if (message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS) {
+			if (message.data[ 0 ] === Events.TOO_MANY_AUTH_ATTEMPTS) {
 				this._deliberateClose = true;
 				this._tooManyAuthAttempts = true;
 			} else {
-				this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION);
+				this._setState(ConnectionStates.AWAITING_AUTHENTICATION);
 			}
 
 			if (this._authReject) {
 				this._authReject(this._getAuthData(message.data[1]));
 			}
 
-		} else if (message.action === C.ACTIONS.ACK) {
-			this._setState( C.CONNECTION_STATE.OPEN );
+		} else if (message.action === Actions.ACK) {
+			this._setState( ConnectionStates.OPEN );
 
 			if (this._authResolve) {
 				this._authResolve(this._getAuthData(message.data[0]));
@@ -515,7 +516,7 @@ export class Connection {
 	 */
 	private _setState(state: string): void {
 		this._state = state;
-		this._client.emit( C.EVENT.CONNECTION_STATE_CHANGED, state );
+		this._client.emit( Events.CONNECTION_STATE_CHANGED, state );
 	}
 
 	/**
@@ -534,7 +535,7 @@ export class Connection {
 		}
 
 		if( this._reconnectionAttempt < this._options.maxReconnectAttempts ) {
-			this._setState( C.CONNECTION_STATE.RECONNECTING );
+			this._setState( ConnectionStates.RECONNECTING );
 			this._reconnectTimeout = setTimeout(
 				this._tryOpen.bind( this ),
 				Math.min(
@@ -546,7 +547,7 @@ export class Connection {
 		} else {
 			this._clearReconnect();
 			this.close();
-			this._client.emit( C.MAX_RECONNECTION_ATTEMPTS_REACHED, this._reconnectionAttempt );
+			this._client.emit( Events.MAX_RECONNECTION_ATTEMPTS_REACHED, this._reconnectionAttempt );
 		}
 	}
 

@@ -10,8 +10,8 @@ import { ResubscribeNotifier } from "./ResubscribeNotifier";
  *
  * @param {Client} client          The deepstream client
  * @param {Connection} connection  The deepstream connection
- * @param {String} topic           Constant. One of C.TOPIC
- * @param {String} action          Constant. One of C.ACTIONS
+ * @param {String} topic           Constant. One of Topics
+ * @param {String} action          Constant. One of Actions
  * @param {Number} timeoutDuration The duration of the timeout in milliseconds
  *
  * @constructor
@@ -97,7 +97,7 @@ export class SingleNotifier {
 		let entries = this._requests[ name ];
 
 		if( !entries ) {
-			this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, 'no entry for ' + name );
+			this._client._$onError( this._topic, Events.UNSOLICITED_MESSAGE, 'no entry for ' + name );
 			return;
 		}
 
@@ -124,7 +124,7 @@ export class SingleNotifier {
 	 */
 	private _onResponseTimeout(name: string): void {
 		let msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + name;
-		this._client._$onError( this._topic, C.EVENT.RESPONSE_TIMEOUT, msg );
+		this._client._$onError( this._topic, Events.RESPONSE_TIMEOUT, msg );
 	}
 
 	/**

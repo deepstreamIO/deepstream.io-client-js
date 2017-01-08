@@ -1,6 +1,7 @@
 import { DeepstreamOptions } from "../DefaultOptions";
 import { Client } from "../Client";
 import { Events } from "../constants/Constants";
+import { MessageParser } from "../message/MessageParser";
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -48,8 +49,8 @@ export class RPC {
 	 * @returns {void}
 	 */
 	public respond(data: string): void {
-		let convertedData = messageParser.convertTyped( data, this._client );
-		this._callback( null, convertedData );
+		let convertedData = MessageParser.convertTyped( data, this._client );
+		this._callback( undefined, convertedData );
 		this._complete();
 	}
 
@@ -83,5 +84,5 @@ export class RPC {
 }
 
 export namespace RPC {
-	export type Callback = (error?: string, data?: any) => void;
+	export type Callback = (error?: string, result?: any) => void;
 }

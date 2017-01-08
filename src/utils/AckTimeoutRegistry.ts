@@ -10,7 +10,7 @@ import { Events } from "../constants/Constants";
  * their respective timeouts.
  *
  * @param {Client} client          The deepstream client
- * @param {String} topic           Constant. One of C.TOPIC
+ * @param {String} topic           Constant. One of Topics
  * @param {Number} timeoutDuration The duration of the timeout in milliseconds
  *
  * @extends {EventEmitter}

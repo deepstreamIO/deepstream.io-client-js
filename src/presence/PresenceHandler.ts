@@ -36,7 +36,7 @@ export class PresenceHandler {
 		this._connection = connection;
 		this._client = client;
 		this._emitter = new EventEmitter();
-		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.PRESENCE, this._options.subscriptionTimeout );
+		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, Topics.PRESENCE, this._options.subscriptionTimeout );
 		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 	}
 
@@ -51,7 +51,7 @@ export class PresenceHandler {
 	public getAll(): Promise<Client[]> {
 		let resolve: (() => void) | undefined;
 		let promise = new Promise(r => resolve = r);
-		if( !this._emitter.hasListeners( C.ACTIONS.QUERY ) ) {
+		if( !this._emitter.hasListeners( Actions.QUERY ) ) {
 			// At least one argument is required for a message to be permissionable
 			this._connection.sendMessage(Topics.PRESENCE, Actions.QUERY, [ Actions.QUERY ] );
 		}
@@ -115,25 +115,25 @@ export class PresenceHandler {
 	 * @returns {void}
 	 */
 	private _$handle(message: ParsedMessage): void {
-		if( message.action === C.ACTIONS.ERROR && message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
-			this._ackTimeoutRegistry.remove( C.TOPIC.PRESENCE, message.data[ 1 ] );
+		if( message.action === Actions.ERROR && message.data[ 0 ] === Events.MESSAGE_DENIED ) {
+			this._ackTimeoutRegistry.remove( Topics.PRESENCE, message.data[ 1 ] );
 			message.processedError = true;
-			this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.MESSAGE_DENIED, message.data[ 1 ] );
+			this._client._$onError( Topics.PRESENCE, Events.MESSAGE_DENIED, message.data[ 1 ] );
 		}
-		else if( message.action === C.ACTIONS.ACK ) {
+		else if( message.action === Actions.ACK ) {
 			this._ackTimeoutRegistry.clear( message );
 		}
-		else if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
-			this._emitter.emit( C.TOPIC.PRESENCE, message.data[ 0 ], true );
+		else if( message.action === Actions.PRESENCE_JOIN ) {
+			this._emitter.emit( Topics.PRESENCE, message.data[ 0 ], true );
 		}
-		else if( message.action === C.ACTIONS.PRESENCE_LEAVE ) {
-			this._emitter.emit( C.TOPIC.PRESENCE, message.data[ 0 ], false );
+		else if( message.action === Actions.PRESENCE_LEAVE ) {
+			this._emitter.emit( Topics.PRESENCE, message.data[ 0 ], false );
 		}
-		else if( message.action === C.ACTIONS.QUERY ) {
-			this._emitter.emit( C.ACTIONS.QUERY, message.data );
+		else if( message.action === Actions.QUERY ) {
+			this._emitter.emit( Actions.QUERY, message.data );
 		}
 		else {
-			this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action );
+			this._client._$onError( Topics.PRESENCE, Events.UNSOLICITED_MESSAGE, message.action );
 		}
 	}
 
@@ -145,8 +145,8 @@ export class PresenceHandler {
 	 */
 	private _resubscribe(): void {
 		let callbacks = this._emitter._callbacks;
-		if( callbacks && callbacks[ C.TOPIC.PRESENCE ] ) {
-			this._connection.sendMessage( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.SUBSCRIBE ] );
+		if( callbacks && callbacks[ Topics.PRESENCE ] ) {
+			this._connection.sendMessage( Topics.PRESENCE, Actions.SUBSCRIBE, [ Actions.SUBSCRIBE ] );
 		}
 	}
 }

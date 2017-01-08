@@ -122,13 +122,13 @@ export class RecordHandler {
 		}
 
 		if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
-			return this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
+			return this._client._$onError( Topics.RECORD, Events.LISTENER_EXISTS, pattern );
 		}
 
 		if( this._listener[ pattern ] ) {
 			this._listener[ pattern ].destroy();
 		}
-		this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
+		this._listener[ pattern ] = new Listener( Topics.RECORD, pattern, callback, this._options, this._client, this._connection );
 	}
 
 	/**
@@ -152,7 +152,7 @@ export class RecordHandler {
 			this._listener[ pattern ].destroy();
 			delete this._listener[ pattern ];
 		} else {
-			this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
+			this._client._$onError( Topics.RECORD, Events.NOT_LISTENING, pattern );
 		}
 	}
 
@@ -207,19 +207,19 @@ export class RecordHandler {
 	private _$handle(message: ParsedMessage): void {
 		let name: string;
 
-		if( message.action === C.ACTIONS.ERROR &&
-			( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
-				message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
-				message.data[ 0 ] !== C.ACTIONS.HAS  &&
-				message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
+		if( message.action === Actions.ERROR &&
+			( message.data[ 0 ] !== Events.VERSION_EXISTS &&
+				message.data[ 0 ] !== Actions.SNAPSHOT &&
+				message.data[ 0 ] !== Actions.HAS  &&
+				message.data[ 0 ] !== Events.MESSAGE_DENIED
 			)
 		) {
 			message.processedError = true;
-			this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
+			this._client._$onError( Topics.RECORD, message.data[ 0 ], message.data[ 1 ] );
 			return;
 		}
 
-		if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
+		if( message.action === Actions.ACK || message.action === Actions.ERROR ) {
 			name = message.data[ 1 ];
 
 			/*
@@ -229,26 +229,26 @@ export class RecordHandler {
 			 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
 			 * between another clients creation and read message for the same record
 			 */
-			if( message.data[ 0 ] === C.ACTIONS.DELETE ||
-				message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ||
-				( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE  )
+			if( message.data[ 0 ] === Actions.DELETE ||
+				message.data[ 0 ] === Actions.UNSUBSCRIBE ||
+				( message.data[ 0 ] === Events.MESSAGE_DENIED && message.data[ 2 ] === Actions.DELETE  )
 			) {
 				this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
 
-				if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
+				if( message.data[ 0 ] === Actions.DELETE && this._records[ name ] ) {
 					this._records[ name ]._$onMessage( message );
 				}
 
 				return;
 			}
 
-			if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
+			if( message.data[ 0 ] === Actions.SNAPSHOT ) {
 				message.processedError = true;
 				this._snapshotRegistry.recieve( name, message.data[ 2 ] );
 				return;
 			}
 
-			if( message.data[ 0 ] === C.ACTIONS.HAS ) {
+			if( message.data[ 0 ] === Actions.HAS ) {
 				message.processedError = true;
 				this._snapshotRegistry.recieve( name, message.data[ 2 ] );
 				return;
@@ -265,17 +265,17 @@ export class RecordHandler {
 			this._records[ name ]._$onMessage( message );
 		}
 
-		if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
+		if( message.action === Actions.READ && this._snapshotRegistry.hasRequest( name ) ) {
 			processed = true;
 			this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
 		}
 
-		if( message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest( name ) ) {
+		if( message.action === Actions.HAS && this._hasRegistry.hasRequest( name ) ) {
 			processed = true;
 			this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
 		}
 
-		if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
+		if( message.action === Actions.ACK && message.data[ 0 ] === Actions.UNLISTEN &&
 			this._listener[ name ] && this._listener[ name ].destroyPending
 		) {
 			processed = true;
@@ -284,17 +284,17 @@ export class RecordHandler {
 		} else if( this._listener[ name ] ) {
 			processed = true;
 			this._listener[ name ]._$onMessage( message );
-		} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
+		} else if( message.action === Actions.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 			// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
 			processed = true;
-		}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
+		}  else if( message.action === Actions.SUBSCRIPTION_HAS_PROVIDER ) {
 			// record can receive a HAS_PROVIDER after discarding the record
 			processed = true;
 		}
 
 		if( !processed ) {
 			message.processedError = true;
-			this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
+			this._client._$onError( Topics.RECORD, Events.UNSOLICITED_MESSAGE, name );
 		}
 	}
 
@@ -308,7 +308,7 @@ export class RecordHandler {
 	 * @returns {void}
 	 */
 	private _onRecordError(recordName: string, error: string): void {
-		this._client._$onError( C.TOPIC.RECORD, error, recordName );
+		this._client._$onError( Topics.RECORD, error, recordName );
 	}
 
 	/**

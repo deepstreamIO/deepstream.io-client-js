@@ -1,4 +1,4 @@
-import { Actions, MessagePartSeparator } from "../constants/Constants";
+import { Actions, MessagePartSeparator, MessageSeparator, Types, Topics, Events } from "../constants/Constants";
 import { Client } from "../Client";
 
 export interface ParsedMessage {
@@ -9,6 +9,11 @@ export interface ParsedMessage {
     processedError?: boolean
 }
 
+// Get the actions from `Actions`
+let actions: {[key: string]: string} = {};
+for (let key in Actions) {
+    actions[(Actions as any)[key]] = key;
+}
 
 /**
  * Parses ASCII control character seperated
@@ -16,12 +21,7 @@ export interface ParsedMessage {
  *
  * @constructor
  */
-export class MessageParser {
-    private _actions: {[key: string]: string};
-
-    public constructor() {
-        this._actions = this._getActions();
-    }
+export let MessageParser = {
 
     /**
      * Main interface method. Receives a raw message
@@ -42,9 +42,9 @@ export class MessageParser {
 	 *                  	data: <array of strings>
 	 *                  }
      */
-    public parse(message: string, client: Client): ParsedMessage[] {
+    parse(message: string, client: Client): ParsedMessage[] {
         let parsedMessages: ParsedMessage[] = [],
-            rawMessages = message.split(C.MESSAGE_SEPERATOR),
+            rawMessages = message.split(MessageSeparator),
             i: number;
 
         for (i = 0; i < rawMessages.length; i++) {
@@ -54,7 +54,7 @@ export class MessageParser {
         }
 
         return parsedMessages;
-    }
+    },
 
     /**
      * Deserializes values created by MessageBuilder.typed to
@@ -65,63 +65,44 @@ export class MessageParser {
      * @public
      * @returns {Mixed} original value
      */
-    public convertedType(value: string, client: Client): any {
+    convertTyped(value: string, client: Client): any {
         let type = value.charAt(0);
 
-        if (type === C.TYPES.STRING) {
+        if (type === Types.STRING) {
             return value.substr(1);
         }
 
-        if (type === C.TYPES.OBJECT) {
+        if (type === Types.OBJECT) {
             try {
                 return JSON.parse(value.substr(1));
             } catch (e) {
-                client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')');
+                client._$onError(Topics.ERROR, Events.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')');
                 return;
             }
         }
 
-        if (type === C.TYPES.NUMBER) {
+        if (type === Types.NUMBER) {
             return parseFloat(value.substr(1));
         }
 
-        if (type === C.TYPES.NULL) {
+        if (type === Types.NULL) {
             return null;
         }
 
-        if (type === C.TYPES.TRUE) {
+        if (type === Types.TRUE) {
             return true;
         }
 
-        if (type === C.TYPES.FALSE) {
+        if (type === Types.FALSE) {
             return false;
         }
 
-        if (type === C.TYPES.UNDEFINED) {
+        if (type === Types.UNDEFINED) {
             return undefined;
         }
 
-        client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')');
-    }
-
-    /**
-     * Turns the ACTION:SHORTCODE constants map
-     * around to facilitate shortcode lookup
-     *
-     * @private
-     *
-     * @returns {Object} actions
-     */
-    private _getActions(): {[key: string]: string} {
-        let actions: {[key: string]: string} = {},
-            key: string;
-
-        for (key in Actions) {
-            actions[(Actions as any)[key]] = key;
-        }
-
-        return actions;
-    }
+        client._$onError(Topics.ERROR, Events.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')');
+    },
 
     /**
      * Parses an individual message (as oposed to a
@@ -133,18 +114,18 @@ export class MessageParser {
      *
      * @returns {Object} parsedMessage
      */
-    private _parseMessage(message: string, client: Client): ParsedMessage | undefined {
+    _parseMessage(message: string, client: Client): ParsedMessage | undefined {
         let parts = message.split(MessagePartSeparator);
 
         if (parts.length < 2) {
             // message.processedError = true; // I'm not sure this is correct since it's being set on a primitive
-            client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts');
+            client._$onError(Topics.ERROR, Events.MESSAGE_PARSE_ERROR, 'Insufficiant message parts');
             return undefined;
         }
 
         if (this._actions[parts[1]] === undefined) {
             // message.processedError = true;
-            client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[1]);
+            client._$onError(Topics.ERROR, Events.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[1]);
             return undefined;
         }
         return {
