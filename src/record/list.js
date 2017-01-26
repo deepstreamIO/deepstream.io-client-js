@@ -227,6 +227,7 @@ List.prototype._onReady = function() {
 		this._queuedMethods[ i ]();
 	}
 
+	this._queuedMethods = [];
 	this.emit( 'ready' );
 };
 
