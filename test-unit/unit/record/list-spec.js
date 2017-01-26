@@ -103,4 +103,26 @@ describe( 'lists contain arrays of record names', function(){
 		list.setEntries([ 'q' ]);
 		expect( changeCallback.calls.count() ).toBe( 10 );
 	});
+
+	it( 'adding entries, methods are queued when record is not ready, correct indexes', function(){
+		list._record.isReady = false;
+		list.setEntries([ 'a','c','e' ]);
+		list.addEntry('b', 1);
+		list.addEntry('d', 3);
+		expect( list._queuedMethods.length ).toEqual(3);
+		list._record.isReady = true;
+		list._onReady();
+		expect( list.getEntries() ).toEqual([ 'a','b','c','d','e' ]);
+	});
+
+	it( 'removing entries, methods are queued when record is not ready, correct indexes', function(){
+		list._record.isReady = false;
+		list.setEntries([ 'b','a','b','c','b' ]);
+		list.removeEntry('b', 0);
+		list.removeEntry('b', 3);
+		expect( list._queuedMethods.length ).toEqual(3);
+		list._record.isReady = true;
+		list._onReady();
+		expect( list.getEntries() ).toEqual([ 'a','b','c' ]);
+	});
 });
