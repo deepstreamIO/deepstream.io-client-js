@@ -3,26 +3,6 @@
   "version": "2.1.1",
   "description": "the javascript client for deepstream.io",
   "main": "src/client.js",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "all": "npm t && npm run e2e && npm run specs",
-    "test": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
-    "reporter": "istanbul cover jasmine-runner.js",
-    "coverage": "istanbul cover node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=jasmine.json",
-    "watch": "watch \"npm test\" ./src ./test-unit",
-    "unit": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
-    "unit::watch": "watch \"npm run unit\" ./src ./test-unit",
-    "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js",
-    "e2e": "node ./node_modules/cucumber/bin/cucumber.js test-e2e --require ./test-e2e/steps --fail-fast",
-    "rpc-e2e": "npm run e2e -- --tags @rpcs",
-    "event-e2e": "npm run e2e -- --tags @events",
-    "record-e2e": "npm run e2e -- --tags @records",
-    "login-e2e": "npm run e2e -- --tags @login",
-    "presence-e2e": "npm run e2e -- --tags @presence",
-    "specs": " node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps --fail-fast"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
@@ -43,26 +23,6 @@
   "browser": {
     "net": false,
     "ws": false
-  },
-  "devDependencies": {
-    "browserify": "^13.1.0",
-    "coveralls": "^2.11.14",
-    "cucumber": "^1.3.1",
-    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
-    "derequire": "2.0.3",
-    "grunt": "~0.4.5",
-    "grunt-browserify": "4.0.1",
-    "grunt-cli": "^1.2.0",
-    "grunt-contrib-uglify": "0.11.1",
-    "grunt-exec": "1.0.1",
-    "grunt-release": "0.13.0",
-    "istanbul": "^0.4.5",
-    "jasmine": "^2.5.2",
-    "jasmine-spec-reporter": "^2.7.0",
-    "proxyquire": "1.7.10",
-    "sinon": "^1.17.6",
-    "uws": "^0.10.12",
-    "watch": "^1.0.1"
   },
   "author": "deepstreamHub GmbH",
   "license": "Apache-2.0",
