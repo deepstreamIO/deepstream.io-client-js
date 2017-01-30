@@ -42,12 +42,8 @@ RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
     this._records[recordName] = record
   }
 
-  if (!this._cache.get(record.name)) {
-    record.usages++
-    this._cache.set(record.name, record)
-  }
-
-  record.usages++
+  record.usages += 2
+  this._cache.set(record.name, record)
   return record
 }
 
