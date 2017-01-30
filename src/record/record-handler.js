@@ -117,16 +117,12 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
   }
 
   const record = this.getRecord(recordName)
-
-  if (arguments.length === 2) {
-    record.set(pathOrData)
-  } else {
-    record.set(pathOrData, dataOrNil)
-  }
-
+  const promise = arguments.length === 2
+    ? record.set(pathOrData)
+    : record.set(pathOrData, dataOrNil)
   this._hit(record, true)
 
-  return Promise.resolve()
+  return promise
 }
 
 RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrNil) {

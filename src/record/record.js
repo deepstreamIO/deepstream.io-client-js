@@ -58,7 +58,7 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
   const newValue = jsonPath.set(oldValue, path, data)
 
   if (oldValue === newValue) {
-    return this
+    return Promise.resolve()
   }
 
   this._applyChange(newValue)
@@ -67,7 +67,7 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
     this._dispatchUpdate()
   }
 
-  return this
+  return Promise.resolve()
 }
 
 Record.prototype.subscribe = function (path, callback, triggerNow) {
