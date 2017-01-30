@@ -24,7 +24,7 @@ const Record = function (name, recordOptions, connection, options, client) {
 
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
   this._reset()
-  this._sendRead()
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
 }
 
 EventEmitter(Record.prototype)
@@ -109,6 +109,9 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
 }
 
 Record.prototype.whenReady = function () {
+  if (this._checkDestroyed('discard')) {
+    return
+  }
   return new Promise((resolve) => {
     if (this.isReady) {
       resolve(this)
@@ -129,7 +132,6 @@ Record.prototype.discard = function () {
       if (this.usages === 0 && !this.isDestroying) {
         this.isDestroying = true
         this._reset()
-        this._discardTimeout = setTimeout(this._onTimeout.bind(this, C.EVENT.ACK_TIMEOUT), this._options.subscriptionTimeout)
         this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
       }
     })
@@ -137,18 +139,11 @@ Record.prototype.discard = function () {
 
 Record.prototype._$onMessage = function (message) {
   if (message.action === C.ACTIONS.READ) {
-    if (this._readTimeout) {
-      clearTimeout(this._readTimeout)
-      this._readTimeout = undefined
-    }
-
     if (!this.isReady) {
       this._onRead(message)
     } else {
       this._applyUpdate(message)
     }
-  } else if (message.action === C.ACTIONS.ACK) {
-    this._processAckMessage(message)
   } else if (message.action === C.ACTIONS.UPDATE) {
     this._applyUpdate(message)
   } else if (message.data[0] === C.EVENT.MESSAGE_DENIED) {
@@ -165,17 +160,6 @@ Record.prototype._reset = function () {
   this._patchQueue = []
   this.usages = 0
   this.isReady = false
-}
-
-Record.prototype._processAckMessage = function (message) {
-  const acknowledgedAction = message.data[0]
-
-  if (acknowledgedAction === C.ACTIONS.SUBSCRIBE) {
-    clearTimeout(this._readAckTimeout)
-  } else if (acknowledgedAction === C.ACTIONS.UNSUBSCRIBE) {
-    this.emit('discard')
-    this._destroy()
-  }
 }
 
 Record.prototype._dispatchUpdate = function () {
@@ -202,7 +186,7 @@ Record.prototype._applyUpdate = function (message) {
 }
 
 Record.prototype._onRead = function (message) {
-  const oldValue = JSON.parse(message.data[2])
+  let oldValue = JSON.parse(message.data[2])
   let newValue = this._data || oldValue
 
   if (this._patchQueue) {
@@ -222,12 +206,6 @@ Record.prototype._onRead = function (message) {
   }
 
   this.emit('ready')
-}
-
-Record.prototype._sendRead = function () {
-  this._readAckTimeout = setTimeout(this._onTimeout.bind(this, C.EVENT.ACK_TIMEOUT), this._options.recordReadAckTimeout)
-  this._readTimeout = setTimeout(this._onTimeout.bind(this, C.EVENT.RESPONSE_TIMEOUT), this._options.recordReadTimeout)
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
 }
 
 Record.prototype._applyChange = function (newData) {
@@ -270,11 +248,6 @@ Record.prototype._normalizeArguments = function (args) {
   return result
 }
 
-Record.prototype._clearTimeouts = function () {
-  clearTimeout(this._readAckTimeout)
-  clearTimeout(this._discardTimeout)
-}
-
 Record.prototype._checkDestroyed = function (methodName) {
   if (this.isDestroyed) {
     this.emit('error', 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed')
@@ -284,20 +257,14 @@ Record.prototype._checkDestroyed = function (methodName) {
   return false
 }
 
-Record.prototype._onTimeout = function (timeoutType) {
-  this._clearTimeouts()
-  this.emit('error', timeoutType)
-}
-
 Record.prototype._destroy = function () {
   this.isDestroying = false
-  this._clearTimeouts()
   if (this.usages > 0) {
-    this._sendRead()
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
   } else {
+    this.isDestroyed = true
     this._eventEmitter.off()
     this._resubscribeNotifier.destroy()
-    this.isDestroyed = true
     this._client = null
     this._eventEmitter = null
     this._connection = null

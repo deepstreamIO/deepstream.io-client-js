@@ -66,33 +66,15 @@ module.exports = {
 	 */
 	maxMessagesPerPacket: 100,
 
-
 	/**
 	 * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
 	 */
 	timeBetweenSendingQueuedPackages: 16,
 
 	/**
-	 * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
-	 *                                       	until an error is thrown since no ack message has been received.
+	 * @param {Number} recordTTL Minium elapsed duration before record is unsubscribed.
 	 */
-	recordReadAckTimeout: 1000,
-
 	recordTTL: 10000,
-
-	/**
-	 * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
-	 *                                       	until an error is thrown since no data has been received.
-	 */
-	recordReadTimeout: 3000,
-
-	/**
-	 * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
-	 *                                       	until an error is thrown since no delete ack message had been received. Please
-	 *                                       	take into account that the deletion is only complete after the record has been
-	 *                                       	deleted from both cache and storage
-	 */
-	recordDeleteTimeout: 3000,
 
 	/**
 	 * @param {String} path path to connect to
