@@ -22,16 +22,6 @@ const RecordHandler = function (options, connection, client) {
   this._prune()
 }
 
-RecordHandler.prototype._hit = function (record, discard) {
-  if (!this._cache.get(record.name)) {
-    record.usages++
-    this._cache.set(record.name, record)
-  }
-  if (discard) {
-    record.discard()
-  }
-}
-
 RecordHandler.prototype._prune = function () {
   utils.requestIdleCallback(() => {
     this._cache.prune()
@@ -52,7 +42,10 @@ RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
     this._records[recordName] = record
   }
 
-  this._hit(record)
+  if (!this._cache.get(record.name)) {
+    record.usages++
+    this._cache.set(record.name, record)
+  }
 
   record.usages++
   return record
@@ -102,11 +95,11 @@ RecordHandler.prototype.get = function (recordName, pathOrNil) {
     .whenReady()
     .then(() => record.get(pathOrNil))
     .then(val => {
-      this._hit(record, true)
+      record.discard()
       return val
     })
     .catch(err => {
-      this._hit(record, true)
+      record.discard()
       throw err
     })
 }
@@ -120,7 +113,7 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
   const promise = arguments.length === 2
     ? record.set(pathOrData)
     : record.set(pathOrData, dataOrNil)
-  this._hit(record, true)
+  record.discard()
 
   return promise
 }
@@ -143,11 +136,11 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
       } else {
         record.set(path, val)
       }
-      this._hit(record, true)
+      record.discard()
       return val
     })
     .catch(err => {
-      this._hit(record, true)
+      record.discard()
       throw err
     })
 }
@@ -166,7 +159,7 @@ RecordHandler.prototype.observe = function (recordName) {
         return () => {
           record.unsubscribe(onValue)
           record.off('error', onError)
-          this._hit(record, true)
+          record.discard()
         }
       }
     })
