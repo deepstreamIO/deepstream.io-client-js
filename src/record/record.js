@@ -24,7 +24,7 @@ const Record = function (name, recordOptions, connection, options, client) {
 
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
   this._reset()
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+  this._sendRead()
 }
 
 EventEmitter(Record.prototype)
@@ -135,6 +135,10 @@ Record.prototype.discard = function () {
         this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
       }
     })
+}
+
+Record.prototype._sendRead = function () {
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
 }
 
 Record.prototype._$onMessage = function (message) {
@@ -260,7 +264,7 @@ Record.prototype._checkDestroyed = function (methodName) {
 Record.prototype._destroy = function () {
   this.isDestroying = false
   if (this.usages > 0) {
-    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+    this._sendRead()
   } else {
     this.isDestroyed = true
     this._eventEmitter.off()
