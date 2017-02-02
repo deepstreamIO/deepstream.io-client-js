@@ -136,6 +136,7 @@ Record.prototype.discard = function () {
   this.isDestroyed = true
   this.emit('destroy', this.name)
 
+  this._resubscribeNotifier.destroy()
   this._eventEmitter.off()
 }
 
