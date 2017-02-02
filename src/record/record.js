@@ -6,7 +6,7 @@ const C = require('../constants/constants')
 const messageParser = require('../message/message-parser')
 const xuid = require('xuid')
 
-const Record = function (name, recordOptions, connection, options, client) {
+const Record = function (name, connection, client) {
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error('invalid argument name')
   }
@@ -18,10 +18,8 @@ const Record = function (name, recordOptions, connection, options, client) {
   this.hasProvider = false
   this.version = null
 
-  this._recordOptions = recordOptions
   this._connection = connection
   this._client = client
-  this._options = options
   this._eventEmitter = new EventEmitter()
 
   this._data = undefined
@@ -136,7 +134,7 @@ Record.prototype.discard = function () {
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
 
   this.isDestroyed = true
-  this.emit('destroy')
+  this.emit('destroy', this.name)
 
   this._eventEmitter.off()
 }
@@ -257,7 +255,9 @@ Record.prototype._normalizeArguments = function (args) {
 
 Record.prototype._checkDestroyed = function (methodName) {
   if (this.isDestroyed) {
-    this.emit('error', 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed')
+    const message = 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed'
+    this.emit('error', message)
+    this._client._$onError(C.TOPIC.RECORD, message, this.name)
     return true
   }
 

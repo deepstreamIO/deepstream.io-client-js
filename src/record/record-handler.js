@@ -27,12 +27,11 @@ RecordHandler.prototype._prune = function () {
   })
 }
 
-RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
+RecordHandler.prototype.getRecord = function (recordName) {
   let record = this._records.get(recordName)
   if (!record) {
-    record = new Record(recordName, recordOptions || {}, this._connection, this._options, this._client)
-    record.on('error', error => this._client._$onError(C.TOPIC.RECORD, error, recordName))
-    record.on('destroy', () => this._records.delete(recordName))
+    record = new Record(recordName, this._connection, this._client)
+    record.on('destroy', recordName => this._records.delete(recordName))
     this._records.set(recordName, record)
   }
 
