@@ -2,7 +2,6 @@ const Record = require('./record')
 const Listener = require('../utils/listener')
 const utils = require('../utils/utils')
 const C = require('../constants/constants')
-const EventEmitter = require('component-emitter')
 const Rx = require('rxjs')
 const LRU = require('lru-cache')
 
@@ -12,7 +11,6 @@ const RecordHandler = function (options, connection, client) {
   this._client = client
   this._records = {}
   this._listener = {}
-  this._destroyEventEmitter = new EventEmitter()
   this._cache = LRU({
     maxAge: options.recordTTL,
     dispose (recordName, record) {

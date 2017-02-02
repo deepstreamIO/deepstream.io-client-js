@@ -12,8 +12,9 @@ const Record = function (name, recordOptions, connection, options, client) {
   }
 
   this.name = name
+  this.usages = 0
   this.isDestroyed = false
-  this.isDestroying = false
+  this.isReady = false
   this.hasProvider = false
   this.version = null
 
@@ -23,20 +24,24 @@ const Record = function (name, recordOptions, connection, options, client) {
   this._options = options
   this._eventEmitter = new EventEmitter()
 
+  this._data = undefined
+  this._patchQueue = []
+
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
-  this._reset()
   this._sendRead()
 }
 
 EventEmitter(Record.prototype)
 
 Record.prototype.get = function (path) {
+  this._checkDestroyed('get')
+
   return jsonPath.get(this._data, path)
 }
 
 Record.prototype.set = function (pathOrData, dataOrNil) {
   if (this._checkDestroyed('set')) {
-    return this
+    return Promise.resolve()
   }
 
   const path = arguments.length === 1 ? undefined : pathOrData
@@ -72,6 +77,8 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
 }
 
 Record.prototype.subscribe = function (path, callback, triggerNow) {
+  this._checkDestroyed('subscribe')
+
   const args = this._normalizeArguments(arguments)
 
   if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
@@ -79,10 +86,6 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
   }
   if (typeof args.callback !== 'function') {
     throw new Error('invalid argument callback')
-  }
-
-  if (this._checkDestroyed('subscribe')) {
-    return
   }
 
   this._eventEmitter.on(args.path, args.callback)
@@ -102,22 +105,19 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
     throw new Error('invalid argument callback')
   }
 
-  if (this._checkDestroyed('unsubscribe')) {
-    return
-  }
-
   this._eventEmitter.off(args.path, args.callback)
 }
 
 Record.prototype.whenReady = function () {
-  if (this._checkDestroyed('discard')) {
+  if (this._checkDestroyed('whenReady')) {
     return
   }
-  return new Promise((resolve) => {
+
+  return new Promise(resolve => {
     if (this.isReady) {
       resolve(this)
     } else {
-      this.once('ready', () => resolve(this))
+      this.once('ready', resolve)
     }
   })
 }
@@ -126,45 +126,47 @@ Record.prototype.discard = function () {
   if (this._checkDestroyed('discard')) {
     return
   }
-  this.usages--
-  this
-    .whenReady()
-    .then(() => {
-      if (this.usages === 0 && !this.isDestroying) {
-        this.isDestroying = true
-        this._reset()
-        this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
-      }
-    })
+
+  this.usages -= 1
+
+  if (this.usages <= 0) {
+    return
+  }
+
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
+
+  this.isDestroyed = true
+  this.emit('destroy')
+
+  this._eventEmitter.off()
 }
 
 Record.prototype._sendRead = function () {
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+  if (!this.isDestroyed) {
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+  }
 }
 
 Record.prototype._$onMessage = function (message) {
-  if (message.action === C.ACTIONS.READ) {
+  if (this._checkDestroyed('_$onMessage')) {
+    return
+  }
+
+  if (message.action === C.ACTIONS.UPDATE) {
     if (!this.isReady) {
       this._onRead(message)
     } else {
       this._applyUpdate(message)
     }
-  } else if (message.action === C.ACTIONS.UPDATE) {
-    this._applyUpdate(message)
-  } else if (message.data[0] === C.EVENT.MESSAGE_DENIED) {
-    this._clearTimeouts()
-  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
+    return
+  }
+
+  if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
     var hasProvider = messageParser.convertTyped(message.data[1], this._client)
     this.hasProvider = hasProvider
     this.emit('hasProviderChanged', hasProvider)
+    return
   }
-}
-
-Record.prototype._reset = function () {
-  this._data = undefined
-  this._patchQueue = []
-  this.usages = 0
-  this.isReady = false
 }
 
 Record.prototype._dispatchUpdate = function () {
@@ -260,21 +262,6 @@ Record.prototype._checkDestroyed = function (methodName) {
   }
 
   return false
-}
-
-Record.prototype._destroy = function () {
-  this.isDestroying = false
-  if (this.usages > 0) {
-    this._sendRead()
-  } else {
-    this.isDestroyed = true
-    this._eventEmitter.off()
-    this._resubscribeNotifier.destroy()
-    this._client = null
-    this._eventEmitter = null
-    this._connection = null
-    this.emit('destroy')
-  }
 }
 
 module.exports = Record
