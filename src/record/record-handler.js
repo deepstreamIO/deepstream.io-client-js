@@ -173,16 +173,14 @@ RecordHandler.prototype._$handle = function (message) {
 
   let processed = false
 
-  let record = this._records.get(recordName)
+  const record = this._records.get(recordName)
   if (record) {
     processed = true
     record._$onMessage(message)
   }
 
-  let listener = this._listeners.get(recordName)
-  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN &&
-    listener && listener.destroyPending
-  ) {
+  const listener = this._listeners.get(recordName)
+  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && listener && listener.destroyPending) {
     processed = true
     listener.destroy()
     this._listeners.delete(recordName)
