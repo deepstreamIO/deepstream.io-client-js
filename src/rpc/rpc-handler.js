@@ -1,7 +1,7 @@
 const C = require('../constants/constants')
 const AckTimeoutRegistry = require('../utils/ack-timeout-registry')
 const ResubscribeNotifier = require('../utils/resubscribe-notifier')
-const utils = require('../utils/utils')
+const xuid = require('xuid')
 const RpcResponse = require('./rpc-response')
 const Rpc = require('./rpc')
 const messageParser = require('../message/message-parser')
@@ -105,7 +105,7 @@ RpcHandler.prototype.make = function (name, data, callback) {
     throw new Error('invalid argument callback')
   }
 
-  const uid = utils.nuid()
+  const uid = xuid()
   const typedData = messageBuilder.typed(data)
 
   this._rpcs[uid] = new Rpc(this._options, callback, this._client)

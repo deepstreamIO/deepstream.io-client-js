@@ -4,6 +4,7 @@ const ResubscribeNotifier = require('../utils/resubscribe-notifier')
 const EventEmitter = require('component-emitter')
 const C = require('../constants/constants')
 const messageParser = require('../message/message-parser')
+const xuid = require('xuid')
 
 const Record = function (name, recordOptions, connection, options, client) {
   if (typeof name !== 'string' || name.length === 0) {
@@ -168,7 +169,7 @@ Record.prototype._reset = function () {
 
 Record.prototype._dispatchUpdate = function () {
   const start = this.version ? parseInt(this.version.split('-')[0], 10) : 0
-  const version = `${start + 1}-${utils.nuid()}`
+  const version = `${start + 1}-${xuid()}`
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
     this.name,
     version,

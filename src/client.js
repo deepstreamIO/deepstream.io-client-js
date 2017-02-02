@@ -7,7 +7,8 @@ var C = require( './constants/constants' ),
 	utils = require( './utils/utils' ),
 	PresenceHandler = require( './presence/presence-handler' ),
 	defaultOptions = require( './default-options' ),
-	messageBuilder = require( './message/message-builder' );
+	messageBuilder = require( './message/message-builder' ),
+	xuid = require('xuid');
 
 /**
  * deepstream.io javascript client
@@ -31,7 +32,7 @@ var Client = function( url, options ) {
 
 	this._connection = new Connection( this, this._url, this._options );
 
-	this.nuid = utils.nuid;
+	this.nuid = xuid;
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
 	this.record = new RecordHandler( this._options, this._connection, this );

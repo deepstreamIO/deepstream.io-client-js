@@ -1,35 +1,11 @@
 const URL = require('url')
-const randomBytes = require('randombytes')
 
-const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ~abcdefghijklmnopqrstuvwxyz_'
 const OBJECT = 'object'
 
 const hasUrlProtocol = /^wss:|^ws:|^\/\//
 const unsupportedProtocol = /^http:|^https:/
 
 exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]'
-
-exports.encode = function encode (number) {
-  let str = ''
-
-  for (let n = 0; number > 0; ++n) {
-    str = ALPHABET[number & 0x3F] + str
-    number = Math.floor(number / 64)
-  }
-
-  return str
-}
-
-exports.nuid = function () {
-  let str = exports.encode(Date.now()) +
-            exports.encode(parseInt(randomBytes(6).toString('hex'), 16))
-
-  while (str.length < 14) {
-    str = str + '0'
-  }
-
-  return str.substr(0, 14)
-}
 
 exports.compareVersions = function (a, b) {
   if (!a) {
