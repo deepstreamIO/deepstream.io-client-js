@@ -127,7 +127,7 @@ Record.prototype.discard = function () {
 
   this.usages -= 1
 
-  if (this.usages <= 0) {
+  if (this.usages > 0) {
     return
   }
 
