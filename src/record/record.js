@@ -75,7 +75,9 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
 }
 
 Record.prototype.subscribe = function (path, callback, triggerNow) {
-  this._checkDestroyed('subscribe')
+  if (this._checkDestroyed('subscribe')) {
+    return
+  }
 
   const args = this._normalizeArguments(arguments)
 
@@ -85,7 +87,6 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
   if (typeof args.callback !== 'function') {
     throw new Error('invalid argument callback')
   }
-
   this._eventEmitter.on(args.path, args.callback)
 
   if (args.triggerNow && this._data) {
@@ -94,6 +95,10 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
 }
 
 Record.prototype.unsubscribe = function (pathOrCallback, callback) {
+  if (this._checkDestroyed('unsubscribe')) {
+    return
+  }
+
   const args = this._normalizeArguments(arguments)
 
   if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
@@ -111,13 +116,7 @@ Record.prototype.whenReady = function () {
     return
   }
 
-  return new Promise(resolve => {
-    if (this.isReady) {
-      resolve(this)
-    } else {
-      this.once('ready', resolve)
-    }
-  })
+  return new Promise(resolve => this.isReady ? resolve() : this.once('ready', resolve))
 }
 
 Record.prototype.discard = function () {
