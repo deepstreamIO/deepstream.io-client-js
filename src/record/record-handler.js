@@ -9,8 +9,8 @@ const RecordHandler = function (options, connection, client) {
   this._options = options
   this._connection = connection
   this._client = client
-  this._records = {}
-  this._listener = {}
+  this._records = new Map()
+  this._listeners = new Map()
   this._cache = LRU({
     maxAge: options.recordTTL,
     dispose (recordName, record) {
@@ -28,16 +28,12 @@ RecordHandler.prototype._prune = function () {
 }
 
 RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
-  let record = this._records[recordName]
+  let record = this._records.get(recordName)
   if (!record) {
     record = new Record(recordName, recordOptions || {}, this._connection, this._options, this._client)
-    record.on('error', error => {
-      this._client._$onError(C.TOPIC.RECORD, error, recordName)
-    })
-    record.on('destroy', () => {
-      delete this._records[recordName]
-    })
-    this._records[recordName] = record
+    record.on('error', error => this._client._$onError(C.TOPIC.RECORD, error, recordName))
+    record.on('destroy', () => this._records.delete(recordName))
+    this._records.set(recordName, record)
   }
 
   record.usages += 2
@@ -53,14 +49,17 @@ RecordHandler.prototype.listen = function (pattern, callback) {
     throw new Error('invalid argument callback')
   }
 
-  if (this._listener[pattern] && !this._listener[pattern].destroyPending) {
+  const listener = this._listeners.get(pattern)
+
+  if (listener && !listener.destroyPending) {
     return this._client._$onError(C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern)
   }
 
-  if (this._listener[pattern]) {
-    this._listener[pattern].destroy()
+  if (listener) {
+    listener.destroy()
   }
-  this._listener[pattern] = new Listener(C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection)
+
+  this._listeners.set(pattern, new Listener(C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection))
 }
 
 RecordHandler.prototype.unlisten = function (pattern) {
@@ -68,12 +67,12 @@ RecordHandler.prototype.unlisten = function (pattern) {
     throw new Error('invalid argument pattern')
   }
 
-  const listener = this._listener[pattern]
+  const listener = this._listeners.get(pattern)
   if (listener && !listener.destroyPending) {
     listener.sendDestroy()
-  } else if (this._listener[pattern]) {
-    this._listener[pattern].destroy()
-    delete this._listener[pattern]
+  } else if (listener) {
+    listener.destroy()
+    this._listeners.delete(pattern)
   } else {
     this._client._$onError(C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern)
   }
@@ -175,20 +174,22 @@ RecordHandler.prototype._$handle = function (message) {
 
   let processed = false
 
-  if (this._records[recordName]) {
+  let record = this._records.get(recordName)
+  if (record) {
     processed = true
-    this._records[recordName]._$onMessage(message)
+    record._$onMessage(message)
   }
 
+  let listener = this._listeners.get(recordName)
   if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN &&
-    this._listener[recordName] && this._listener[recordName].destroyPending
+    listener && listener.destroyPending
   ) {
     processed = true
-    this._listener[recordName].destroy()
-    delete this._listener[recordName]
-  } else if (this._listener[recordName]) {
+    listener.destroy()
+    this._listeners.delete(recordName)
+  } else if (listener) {
     processed = true
-    this._listener[recordName]._$onMessage(message)
+    listener._$onMessage(message)
   } else if (message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
     // An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
     processed = true
