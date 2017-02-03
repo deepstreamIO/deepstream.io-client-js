@@ -1,49 +1,46 @@
 const Record = require('./record')
 const Listener = require('../utils/listener')
-const utils = require('../utils/utils')
 const C = require('../constants/constants')
-const EventEmitter = require('component-emitter')
 const Rx = require('rxjs')
 const LRU = require('lru-cache')
+const utils = require('../utils/utils')
+const invariant = require('invariant')
 
 const RecordHandler = function (options, connection, client) {
   this._options = options
   this._connection = connection
   this._client = client
-  this._records = {}
-  this._listener = {}
-  this._destroyEventEmitter = new EventEmitter()
+  this._records = new Map()
+  this._listeners = new Map()
   this._cache = LRU({
     maxAge: options.recordTTL,
-    dispose (recordName, record) {
-      record.discard()
-    }
+    dispose: (recordName, record) => record.discard(true)
   })
+  this._prune = this._prune.bind(this)
   this._prune()
 }
 
 RecordHandler.prototype._prune = function () {
   utils.requestIdleCallback(() => {
     this._cache.prune()
-    setTimeout(this._prune.bind(this), this._options.recordTTL)
+    setTimeout(this._prune, this._options.recordTTL)
   })
 }
 
-RecordHandler.prototype.getRecord = function (recordName, recordOptions) {
-  let record = this._records[recordName]
+RecordHandler.prototype.getRecord = function (recordName) {
+  let record = this._records.get(recordName)
+
   if (!record) {
-    record = new Record(recordName, recordOptions || {}, this._connection, this._options, this._client)
-    record.on('error', error => {
-      this._client._$onError(C.TOPIC.RECORD, error, recordName)
-    })
-    record.on('destroy', () => {
-      delete this._records[recordName]
-    })
-    this._records[recordName] = record
+    record = new Record(recordName, this._connection, this._client)
+    record.on('destroying', recordName => this._records.delete(recordName))
+    this._records.set(recordName, record)
   }
 
-  record.usages += 2
+  invariant(!record.isDestroyed, `unexpected destroyed record ${recordName}`)
+
+  record.usages++
   this._cache.set(record.name, record)
+
   return record
 }
 
@@ -55,14 +52,17 @@ RecordHandler.prototype.listen = function (pattern, callback) {
     throw new Error('invalid argument callback')
   }
 
-  if (this._listener[pattern] && !this._listener[pattern].destroyPending) {
+  const listener = this._listeners.get(pattern)
+
+  if (listener && !listener.destroyPending) {
     return this._client._$onError(C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern)
   }
 
-  if (this._listener[pattern]) {
-    this._listener[pattern].destroy()
+  if (listener) {
+    listener.destroy()
   }
-  this._listener[pattern] = new Listener(C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection)
+
+  this._listeners.set(pattern, new Listener(C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection))
 }
 
 RecordHandler.prototype.unlisten = function (pattern) {
@@ -70,12 +70,12 @@ RecordHandler.prototype.unlisten = function (pattern) {
     throw new Error('invalid argument pattern')
   }
 
-  const listener = this._listener[pattern]
+  const listener = this._listeners.get(pattern)
   if (listener && !listener.destroyPending) {
     listener.sendDestroy()
-  } else if (this._listener[pattern]) {
-    this._listener[pattern].destroy()
-    delete this._listener[pattern]
+  } else if (listener) {
+    listener.destroy()
+    this._listeners.delete(pattern)
   } else {
     this._client._$onError(C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern)
   }
@@ -127,10 +127,10 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
     .whenReady()
     .then(() => updater(record.get(path)))
     .then(val => {
-      if (arguments.length === 2) {
-        record.set(val)
-      } else {
+      if (path) {
         record.set(path, val)
+      } else {
+        record.set(val)
       }
       record.discard()
       return val
@@ -148,13 +148,16 @@ RecordHandler.prototype.observe = function (recordName) {
         o.error(new Error('invalid argument recordName'))
       } else {
         const record = this.getRecord(recordName)
-        const onValue = function (value) { o.next(value) }
-        const onError = function (error) { o.error(error) }
+        const onValue = value => o.next(value)
+        const onError = error => o.error(error)
+        const onDestroy = () => o.complete()
         record.subscribe(onValue, true)
         record.on('error', onError)
+        record.on('destroy', onDestroy)
         return () => {
           record.unsubscribe(onValue)
           record.off('error', onError)
+          record.off('destroy', onDestroy)
           record.discard()
         }
       }
@@ -175,33 +178,19 @@ RecordHandler.prototype._$handle = function (message) {
     recordName = message.data[0]
   }
 
-  let processed = false
-
-  if (this._records[recordName]) {
-    processed = true
-    this._records[recordName]._$onMessage(message)
+  const record = this._records.get(recordName)
+  if (record) {
+    record._$onMessage(message)
   }
 
-  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN &&
-    this._listener[recordName] && this._listener[recordName].destroyPending
-  ) {
-    processed = true
-    this._listener[recordName].destroy()
-    delete this._listener[recordName]
-  } else if (this._listener[recordName]) {
-    processed = true
-    this._listener[recordName]._$onMessage(message)
-  } else if (message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
-    // An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
-    processed = true
-  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
-    // record can receive a HAS_PROVIDER after discarding the record
-    processed = true
-  }
-
-  if (!processed) {
-    message.processedError = true
-    this._client._$onError(C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, recordName)
+  const listener = this._listeners.get(recordName)
+  if (listener) {
+    if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && listener.destroyPending) {
+      listener.destroy()
+      this._listeners.delete(recordName)
+    } else {
+      listener._$onMessage(message)
+    }
   }
 }
 

@@ -1,42 +1,50 @@
 const jsonPath = require('./json-path')
 const utils = require('../utils/utils')
-const ResubscribeNotifier = require('../utils/resubscribe-notifier')
 const EventEmitter = require('component-emitter')
 const C = require('../constants/constants')
 const messageParser = require('../message/message-parser')
 const xuid = require('xuid')
+const invariant = require('invariant')
 
-const Record = function (name, recordOptions, connection, options, client) {
+const Record = function (name, connection, client) {
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error('invalid argument name')
   }
 
   this.name = name
+  this.usages = 1
   this.isDestroyed = false
-  this.isDestroying = false
+  this.isReady = false
+  this.isSubscribed = true
   this.hasProvider = false
   this.version = null
 
-  this._recordOptions = recordOptions
   this._connection = connection
   this._client = client
-  this._options = options
   this._eventEmitter = new EventEmitter()
 
-  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
-  this._reset()
-  this._sendRead()
+  this._data = undefined
+  this._patchQueue = []
+
+  this._handleConnectionStateChange = this._handleConnectionStateChange.bind(this)
+  this._client.on('connectionStateChanged', this._handleConnectionStateChange)
+
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
 }
 
 EventEmitter(Record.prototype)
 
 Record.prototype.get = function (path) {
+  invariant(!this.isDestroyed, `"get" cannot use destroyed record ${this.name}`)
+
   return jsonPath.get(this._data, path)
 }
 
 Record.prototype.set = function (pathOrData, dataOrNil) {
-  if (this._checkDestroyed('set')) {
-    return this
+  invariant(!this.isDestroyed, `"set" cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
+    return
   }
 
   const path = arguments.length === 1 ? undefined : pathOrData
@@ -72,6 +80,12 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
 }
 
 Record.prototype.subscribe = function (path, callback, triggerNow) {
+  invariant(!this.isDestroyed, `"subscribe" cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
+    return
+  }
+
   const args = this._normalizeArguments(arguments)
 
   if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
@@ -79,10 +93,6 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
   }
   if (typeof args.callback !== 'function') {
     throw new Error('invalid argument callback')
-  }
-
-  if (this._checkDestroyed('subscribe')) {
-    return
   }
 
   this._eventEmitter.on(args.path, args.callback)
@@ -93,6 +103,12 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
 }
 
 Record.prototype.unsubscribe = function (pathOrCallback, callback) {
+  invariant(!this.isDestroyed, `"unsubscribe" cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
+    return
+  }
+
   const args = this._normalizeArguments(arguments)
 
   if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
@@ -102,69 +118,81 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
     throw new Error('invalid argument callback')
   }
 
-  if (this._checkDestroyed('unsubscribe')) {
-    return
-  }
-
   this._eventEmitter.off(args.path, args.callback)
 }
 
 Record.prototype.whenReady = function () {
-  if (this._checkDestroyed('discard')) {
-    return
+  invariant(!this.isDestroyed, `"whenReady" cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
+    return Promise.reject(new Error('destroyed'))
   }
-  return new Promise((resolve) => {
+
+  return new Promise((resolve, reject) => {
     if (this.isReady) {
-      resolve(this)
+      resolve()
     } else {
-      this.once('ready', () => resolve(this))
+      this.once('ready', resolve)
+      this.once('destroy', () => reject(new Error('destroyed')))
     }
   })
 }
+Record.prototype.discard = function (silent) {
+  invariant(silent || !this.isDestroyed, `"discard" cannot use destroyed record ${this.name}`)
 
-Record.prototype.discard = function () {
-  if (this._checkDestroyed('discard')) {
+  if (this.isDestroyed) {
     return
   }
-  this.usages--
-  this
-    .whenReady()
-    .then(() => {
-      if (this.usages === 0 && !this.isDestroying) {
-        this.isDestroying = true
-        this._reset()
-        this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
-      }
-    })
+
+  this.usages -= 1
+
+  if (this.usages > 0) {
+    return
+  }
+
+  if (this.isSubscribed) {
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
+  }
+
+  this._destroy()
 }
 
-Record.prototype._sendRead = function () {
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+Record.prototype._destroy = function () {
+  this.emit('destroying', this.name)
+
+  this.isDestroyed = true
+  this.isSubscribed = false
+  this._data = undefined
+  this._patchQueue = []
+  this._client.off('connectionStateChanged', this._handleConnectionStateChange)
+  this._eventEmitter.off()
+  this.off()
+
+  this.emit('destroy', this.name)
 }
 
 Record.prototype._$onMessage = function (message) {
-  if (message.action === C.ACTIONS.READ) {
+  invariant(!this.isDestroyed, `"_$onMessage" cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
+    return
+  }
+
+  if (message.action === C.ACTIONS.UPDATE) {
     if (!this.isReady) {
       this._onRead(message)
     } else {
       this._applyUpdate(message)
     }
-  } else if (message.action === C.ACTIONS.UPDATE) {
-    this._applyUpdate(message)
-  } else if (message.data[0] === C.EVENT.MESSAGE_DENIED) {
-    this._clearTimeouts()
-  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
+    return
+  }
+
+  if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
     var hasProvider = messageParser.convertTyped(message.data[1], this._client)
     this.hasProvider = hasProvider
     this.emit('hasProviderChanged', hasProvider)
+    return
   }
-}
-
-Record.prototype._reset = function () {
-  this._data = undefined
-  this._patchQueue = []
-  this.usages = 0
-  this.isReady = false
 }
 
 Record.prototype._dispatchUpdate = function () {
@@ -253,27 +281,22 @@ Record.prototype._normalizeArguments = function (args) {
   return result
 }
 
-Record.prototype._checkDestroyed = function (methodName) {
+Record.prototype._handleConnectionStateChange = function () {
   if (this.isDestroyed) {
-    this.emit('error', 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed')
-    return true
+    return
   }
 
-  return false
-}
+  const state = this._client.getConnectionState()
 
-Record.prototype._destroy = function () {
-  this.isDestroying = false
-  if (this.usages > 0) {
-    this._sendRead()
-  } else {
-    this.isDestroyed = true
-    this._eventEmitter.off()
-    this._resubscribeNotifier.destroy()
-    this._client = null
-    this._eventEmitter = null
-    this._connection = null
-    this.emit('destroy')
+  if (state === C.CONNECTION_STATE.OPEN) {
+    if (!this.isSubscribed) {
+      this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+      this.isSubscribed = true
+    }
+  } else if (state === C.CONNECTION_STATE.RECONNECTING) {
+    this.isSubscribed = false
+  } else if (state === C.CONNECTION_STATE.CLOSED) {
+    this._destroy()
   }
 }
 
