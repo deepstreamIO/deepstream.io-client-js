@@ -4,6 +4,7 @@ const C = require('../constants/constants')
 const Rx = require('rxjs')
 const LRU = require('lru-cache')
 const utils = require('../utils/utils')
+const invariant = require('invariant')
 
 const RecordHandler = function (options, connection, client) {
   this._options = options
@@ -34,6 +35,8 @@ RecordHandler.prototype.getRecord = function (recordName) {
     record.on('destroying', recordName => this._records.delete(recordName))
     this._records.set(recordName, record)
   }
+
+  invariant(!record.isDestroyed, `unexpected destroyed record ${recordName}`)
 
   record.usages++
   this._cache.set(record.name, record)
