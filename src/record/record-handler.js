@@ -3,7 +3,6 @@ const Listener = require('../utils/listener')
 const C = require('../constants/constants')
 const Rx = require('rxjs')
 const utils = require('../utils/utils')
-const invariant = require('invariant')
 
 const RecordHandler = function (options, connection, client) {
   this._options = options
@@ -42,8 +41,6 @@ RecordHandler.prototype.getRecord = function (recordName) {
     this._records.set(recordName, record)
     this._gc.push(record)
   }
-
-  invariant(!record.isDestroyed, `unexpected destroyed record ${recordName}`)
 
   record.usages += 1
 
@@ -88,10 +85,6 @@ RecordHandler.prototype.unlisten = function (pattern) {
 }
 
 RecordHandler.prototype.get = function (recordName, pathOrNil) {
-  if (typeof recordName !== 'string' || recordName.length === 0) {
-    throw new Error('invalid argument recordName')
-  }
-
   const record = this.getRecord(recordName)
   return record
     .whenReady()
@@ -107,10 +100,6 @@ RecordHandler.prototype.get = function (recordName, pathOrNil) {
 }
 
 RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
-  if (typeof recordName !== 'string' || recordName.length === 0) {
-    throw new Error('invalid argument recordName')
-  }
-
   const record = this.getRecord(recordName)
   const promise = arguments.length === 2
     ? record.set(pathOrData)
@@ -121,10 +110,6 @@ RecordHandler.prototype.set = function (recordName, pathOrData, dataOrNil) {
 }
 
 RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrNil) {
-  if (typeof recordName !== 'string' || recordName.length === 0) {
-    throw new Error('invalid argument recordName')
-  }
-
   const path = arguments.length === 2 ? undefined : pathOrUpdater
   const updater = arguments.length === 2 ? pathOrUpdater : updaterOrNil
 
@@ -149,10 +134,8 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
 
 RecordHandler.prototype.observe = function (recordName) {
   return Rx.Observable
-    .create((o) => {
-      if (typeof recordName !== 'string' || recordName.length === 0) {
-        o.error(new Error('invalid argument recordName'))
-      } else {
+    .create(o => {
+      try {
         const record = this.getRecord(recordName)
         const onValue = value => o.next(value)
         const onError = error => o.error(error)
@@ -166,6 +149,8 @@ RecordHandler.prototype.observe = function (recordName) {
           record.off('destroy', onDestroy)
           record.discard()
         }
+      } catch (err) {
+        o.next(err)
       }
     })
 }
