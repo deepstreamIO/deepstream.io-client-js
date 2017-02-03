@@ -12,7 +12,7 @@ const Record = function (name, connection, client) {
   }
 
   this.name = name
-  this.usages = 0
+  this.usages = 1
   this.isDestroyed = false
   this.isReady = false
   this.isSubscribed = true

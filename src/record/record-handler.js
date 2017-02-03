@@ -3,7 +3,6 @@ const Listener = require('../utils/listener')
 const utils = require('../utils/utils')
 const C = require('../constants/constants')
 const Rx = require('rxjs')
-const LRU = require('lru-cache')
 const invariant = require('invariant')
 
 const RecordHandler = function (options, connection, client) {
@@ -12,11 +11,6 @@ const RecordHandler = function (options, connection, client) {
   this._client = client
   this._records = new Map()
   this._listeners = new Map()
-  this._cache = LRU({
-    maxAge: options.recordTTL,
-    dispose: (recordName, record) => record.discard()
-  })
-  this._prune()
 }
 
 RecordHandler.prototype._prune = function () {
@@ -31,18 +25,11 @@ RecordHandler.prototype.getRecord = function (recordName) {
 
   if (!record) {
     record = new Record(recordName, this._connection, this._client)
-    record.on('destroy', recordName => {
-      this._records.delete(recordName)
-      this._cache.del(recordName)
-    })
+    record.on('destroy', recordName => this._records.delete(recordName))
     this._records.set(recordName, record)
   }
 
   invariant(!record.isDestroyed, `unexpected destroyed record`)
-
-  record.usages += 2
-
-  this._cache.set(record.name, record)
 
   return record
 }
