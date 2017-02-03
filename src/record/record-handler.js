@@ -36,7 +36,9 @@ RecordHandler.prototype.getRecord = function (recordName) {
   }
 
   record.usages += 2
+
   this._cache.set(record.name, record)
+
   return record
 }
 
@@ -123,10 +125,10 @@ RecordHandler.prototype.update = function (recordName, pathOrUpdater, updaterOrN
     .whenReady()
     .then(() => updater(record.get(path)))
     .then(val => {
-      if (arguments.length === 2) {
-        record.set(val)
-      } else {
+      if (path) {
         record.set(path, val)
+      } else {
+        record.set(val)
       }
       record.discard()
       return val
@@ -171,33 +173,19 @@ RecordHandler.prototype._$handle = function (message) {
     recordName = message.data[0]
   }
 
-  let processed = false
-
   const record = this._records.get(recordName)
   if (record) {
-    processed = true
     record._$onMessage(message)
   }
 
   const listener = this._listeners.get(recordName)
-  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && listener && listener.destroyPending) {
-    processed = true
-    listener.destroy()
-    this._listeners.delete(recordName)
-  } else if (listener) {
-    processed = true
-    listener._$onMessage(message)
-  } else if (message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
-    // An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
-    processed = true
-  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
-    // record can receive a HAS_PROVIDER after discarding the record
-    processed = true
-  }
-
-  if (!processed) {
-    message.processedError = true
-    this._client._$onError(C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, recordName)
+  if (listener) {
+    if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && listener.destroyPending) {
+      listener.destroy()
+      this._listeners.delete(recordName)
+    } else {
+      listener._$onMessage(message)
+    }
   }
 }
 

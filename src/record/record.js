@@ -87,6 +87,7 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
   if (typeof args.callback !== 'function') {
     throw new Error('invalid argument callback')
   }
+
   this._eventEmitter.on(args.path, args.callback)
 
   if (args.triggerNow && this._data) {
