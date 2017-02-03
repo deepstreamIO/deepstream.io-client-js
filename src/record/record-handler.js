@@ -29,7 +29,7 @@ RecordHandler.prototype._prune = function () {
 RecordHandler.prototype.getRecord = function (recordName) {
   let record = this._records.get(recordName)
 
-  if (!record || record.isDestroyed) {
+  if (!record) {
     record = new Record(recordName, this._connection, this._client)
     record.on('destroying', recordName => this._records.delete(recordName))
     this._records.set(recordName, record)
