@@ -30,7 +30,7 @@ RecordHandler.prototype._prune = function () {
       }
     }
 
-    setTimeout(this._prune, this._options.recordTTL || 10000)
+    setTimeout(this._prune, 10000)
   })
 }
 

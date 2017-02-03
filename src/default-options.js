@@ -67,11 +67,6 @@ module.exports = {
 	maxMessagesPerPacket: 100,
 
 	/**
-	 * @param {Number} recordTTL Minium elapsed duration before record is unsubscribed.
-	 */
-	recordTTL: 10000,
-
-	/**
 	 * @param {String} path path to connect to
 	 */
 	path: '/deepstream'

@@ -15,7 +15,6 @@ const Record = function (name, connection, client) {
   this.usages = 0
   this.isDestroyed = false
   this.isReady = false
-  this.isSubscribed = true
   this.hasProvider = false
   this.version = null
 
@@ -29,7 +28,7 @@ const Record = function (name, connection, client) {
   this._handleConnectionStateChange = this._handleConnectionStateChange.bind(this)
   this._client.on('connectionStateChanged', this._handleConnectionStateChange)
 
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+  this._sendRead()
 }
 
 EventEmitter(Record.prototype)
@@ -98,7 +97,7 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
   this._eventEmitter.on(args.path, args.callback)
 
   if (args.triggerNow && this._data) {
-    args.callback(this.get(args.path))
+    args.callback(jsonPath.get(this._data, args.path))
   }
 }
 
@@ -194,7 +193,7 @@ Record.prototype._$onMessage = function (message) {
 }
 
 Record.prototype._dispatchUpdate = function () {
-  const start = this.version ? parseInt(this.version.split('-')[0], 10) : 0
+  const start = this.version ? parseInt(this.version.split('-')[0]) : 0
   const version = `${start + 1}-${xuid()}`
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
     this.name,
@@ -258,8 +257,29 @@ Record.prototype._applyChange = function (newData) {
     const oldValue = jsonPath.get(oldData, paths[i])
 
     if (newValue !== oldValue) {
-      this._eventEmitter.emit(paths[i], this.get(paths[i]))
+      this._eventEmitter.emit(paths[i], newValue)
     }
+  }
+}
+
+Record.prototype._sendRead = function () {
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+  this.isSubscribed = true
+}
+
+Record.prototype._handleConnectionStateChange = function () {
+  if (this.isDestroyed) {
+    return
+  }
+
+  const state = this._client.getConnectionState()
+
+  if (state === C.CONNECTION_STATE.OPEN) {
+    this._sendRead()
+  } else if (state === C.CONNECTION_STATE.RECONNECTING) {
+    this.isSubscribed = false
+  } else if (state === C.CONNECTION_STATE.CLOSED) {
+    this._$destroy()
   }
 }
 
@@ -277,26 +297,6 @@ Record.prototype._normalizeArguments = function (args) {
   }
 
   return result
-}
-
-Record.prototype._handleConnectionStateChange = function () {
-  if (this.isDestroyed) {
-    return
-  }
-
-  const state = this._client.getConnectionState()
-
-  if (state === C.CONNECTION_STATE.OPEN) {
-    if (!this.isSubscribed) {
-      this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
-      this.isSubscribed = true
-    }
-  } else if (state === C.CONNECTION_STATE.RECONNECTING) {
-    this.isSubscribed = false
-  } else if (state === C.CONNECTION_STATE.CLOSED) {
-    this.isSubscribed = false
-    this._$destroy()
-  }
 }
 
 module.exports = Record
