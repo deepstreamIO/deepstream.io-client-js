@@ -4,6 +4,7 @@ const utils = require('../utils/utils')
 const C = require('../constants/constants')
 const Rx = require('rxjs')
 const LRU = require('lru-cache')
+const invariant = require('invariant')
 
 const RecordHandler = function (options, connection, client) {
   this._options = options
@@ -13,9 +14,7 @@ const RecordHandler = function (options, connection, client) {
   this._listeners = new Map()
   this._cache = LRU({
     maxAge: options.recordTTL,
-    dispose (recordName, record) {
-      record.discard()
-    }
+    dispose: (recordName, record) => record.discard()
   })
   this._prune()
 }
@@ -29,11 +28,17 @@ RecordHandler.prototype._prune = function () {
 
 RecordHandler.prototype.getRecord = function (recordName) {
   let record = this._records.get(recordName)
+
   if (!record) {
     record = new Record(recordName, this._connection, this._client)
-    record.on('destroy', recordName => this._records.delete(recordName))
+    record.on('destroy', recordName => {
+      this._records.delete(recordName)
+      this._cache.del(recordName)
+    })
     this._records.set(recordName, record)
   }
+
+  invariant(!record.isDestroyed, `unexpected destroyed record`)
 
   record.usages += 2
 
@@ -146,13 +151,16 @@ RecordHandler.prototype.observe = function (recordName) {
         o.error(new Error('invalid argument recordName'))
       } else {
         const record = this.getRecord(recordName)
-        const onValue = function (value) { o.next(value) }
-        const onError = function (error) { o.error(error) }
+        const onValue = value => o.next(value)
+        const onError = error => o.error(error)
+        const onDestroy = () => o.complete()
         record.subscribe(onValue, true)
         record.on('error', onError)
+        record.on('destroy', onDestroy)
         return () => {
           record.unsubscribe(onValue)
           record.off('error', onError)
+          record.off('destroy', onDestroy)
           record.discard()
         }
       }

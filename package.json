@@ -8,12 +8,13 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "optionalDependencies": {
-    "utf-8-validate": "^1.2.1",
-    "bufferutil": "^1.2.1"
+    "bufferutil": "^1.2.1",
+    "utf-8-validate": "^1.2.1"
   },
   "dependencies": {
     "bufferutil": "^1.2.1",
     "component-emitter": "1.1.2",
+    "invariant": "^2.2.2",
     "lru-cache": "4.0.1",
     "rxjs": "^5.0.2",
     "utf-8-validate": "^1.2.1",

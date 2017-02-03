@@ -1,10 +1,10 @@
 const jsonPath = require('./json-path')
 const utils = require('../utils/utils')
-const ResubscribeNotifier = require('../utils/resubscribe-notifier')
 const EventEmitter = require('component-emitter')
 const C = require('../constants/constants')
 const messageParser = require('../message/message-parser')
 const xuid = require('xuid')
+const invariant = require('invariant')
 
 const Record = function (name, connection, client) {
   if (typeof name !== 'string' || name.length === 0) {
@@ -15,6 +15,7 @@ const Record = function (name, connection, client) {
   this.usages = 0
   this.isDestroyed = false
   this.isReady = false
+  this.isSubscribed = true
   this.hasProvider = false
   this.version = null
 
@@ -25,21 +26,25 @@ const Record = function (name, connection, client) {
   this._data = undefined
   this._patchQueue = []
 
-  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this))
-  this._sendRead()
+  this._handleConnectionStateChange = this._handleConnectionStateChange.bind(this)
+  this._client.on('connectionStateChanged', this._handleConnectionStateChange)
+
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
 }
 
 EventEmitter(Record.prototype)
 
 Record.prototype.get = function (path) {
-  this._checkDestroyed('get')
+  invariant(!this.isDestroyed, `cannot use destroyed record ${this.name}`)
 
   return jsonPath.get(this._data, path)
 }
 
 Record.prototype.set = function (pathOrData, dataOrNil) {
-  if (this._checkDestroyed('set')) {
-    return Promise.resolve()
+  invariant(!this.isDestroyed, `cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
+    return
   }
 
   const path = arguments.length === 1 ? undefined : pathOrData
@@ -75,7 +80,9 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
 }
 
 Record.prototype.subscribe = function (path, callback, triggerNow) {
-  if (this._checkDestroyed('subscribe')) {
+  invariant(!this.isDestroyed, `cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
     return
   }
 
@@ -96,7 +103,9 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
 }
 
 Record.prototype.unsubscribe = function (pathOrCallback, callback) {
-  if (this._checkDestroyed('unsubscribe')) {
+  invariant(!this.isDestroyed, `cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
     return
   }
 
@@ -113,15 +122,23 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
 }
 
 Record.prototype.whenReady = function () {
-  if (this._checkDestroyed('whenReady')) {
-    return
+  invariant(!this.isDestroyed, `cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
+    return Promise.reject(new Error('destroyed'))
   }
 
-  return new Promise(resolve => this.isReady ? resolve() : this.once('ready', resolve))
+  return new Promise((resolve, reject) => {
+    if (this.isReady) {
+      resolve()
+    } else {
+      this.once('ready', resolve)
+      this.once('destroy', () => reject(new Error('destroyed')))
+    }
+  })
 }
-
 Record.prototype.discard = function () {
-  if (this._checkDestroyed('discard')) {
+  if (this.isDestroyed) {
     return
   }
 
@@ -131,23 +148,29 @@ Record.prototype.discard = function () {
     return
   }
 
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
+  if (this.isSubscribed) {
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
+  }
 
+  this._destroy()
+}
+
+Record.prototype._destroy = function () {
   this.isDestroyed = true
   this.emit('destroy', this.name)
 
-  this._resubscribeNotifier.destroy()
+  this.isSubscribed = false
+  this._data = undefined
+  this._patchQueue = []
+  this._client.off('connectionStateChanged', this._handleConnectionStateChange)
   this._eventEmitter.off()
-}
-
-Record.prototype._sendRead = function () {
-  if (!this.isDestroyed) {
-    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
-  }
+  this.off()
 }
 
 Record.prototype._$onMessage = function (message) {
-  if (this._checkDestroyed('_$onMessage')) {
+  invariant(!this.isDestroyed, `cannot use destroyed record ${this.name}`)
+
+  if (this.isDestroyed) {
     return
   }
 
@@ -254,15 +277,25 @@ Record.prototype._normalizeArguments = function (args) {
   return result
 }
 
-Record.prototype._checkDestroyed = function (methodName) {
+Record.prototype._handleConnectionStateChange = function () {
+  invariant(!this.isDestroyed, `cannot use destroyed record ${this.name}`)
+
   if (this.isDestroyed) {
-    const message = 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed'
-    this.emit('error', message)
-    this._client._$onError(C.TOPIC.RECORD, message, this.name)
-    return true
+    return
   }
 
-  return false
+  const state = this._client.getConnectionState()
+
+  if (state === C.CONNECTION_STATE.OPEN) {
+    if (!this.isSubscribed) {
+      this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+      this.isSubscribed = true
+    }
+  } else if (state === C.CONNECTION_STATE.RECONNECTING) {
+    this.isSubscribed = false
+  } else if (state === C.CONNECTION_STATE.CLOSED) {
+    this._destroy()
+  }
 }
 
 module.exports = Record
