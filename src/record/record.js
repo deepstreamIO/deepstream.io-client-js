@@ -35,15 +35,15 @@ const Record = function (name, connection, client) {
 EventEmitter(Record.prototype)
 
 Record.prototype.get = function (path) {
-  invariant(!this.isDestroyed, `"get" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"get" cannot use destroyed record ${this.name}`)
 
   return jsonPath.get(this._data, path)
 }
 
 Record.prototype.set = function (pathOrData, dataOrNil) {
-  invariant(!this.isDestroyed, `"set" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"set" cannot use destroyed record ${this.name}`)
 
-  if (this.isDestroyed) {
+  if (this.usages === 0) {
     return
   }
 
@@ -80,9 +80,9 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
 }
 
 Record.prototype.subscribe = function (path, callback, triggerNow) {
-  invariant(!this.isDestroyed, `"subscribe" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"subscribe" cannot use destroyed record ${this.name}`)
 
-  if (this.isDestroyed) {
+  if (this.usages === 0) {
     return
   }
 
@@ -103,9 +103,9 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
 }
 
 Record.prototype.unsubscribe = function (pathOrCallback, callback) {
-  invariant(!this.isDestroyed, `"unsubscribe" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"unsubscribe" cannot use destroyed record ${this.name}`)
 
-  if (this.isDestroyed) {
+  if (this.usages === 0) {
     return
   }
 
@@ -122,9 +122,9 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
 }
 
 Record.prototype.whenReady = function () {
-  invariant(!this.isDestroyed, `"whenReady" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"whenReady" cannot use destroyed record ${this.name}`)
 
-  if (this.isDestroyed) {
+  if (this.usages === 0) {
     return Promise.reject(new Error('destroyed'))
   }
 
@@ -138,21 +138,26 @@ Record.prototype.whenReady = function () {
   })
 }
 
-Record.prototype.discard = function (silent) {
-  invariant(silent || !this.isDestroyed, `"discard" cannot use destroyed record ${this.name}`)
+Record.prototype.discard = function () {
+  invariant(this.usages !== 0, `"discard" cannot use destroyed record ${this.name}`)
+
+  if (this.usages > 0) {
+    this.usages -= 1
+  }
+}
+
+Record.prototype._$destroy = function () {
+  invariant(this.usages === 0, `cannot destroy used record ${this.name}`)
 
   if (this.isDestroyed) {
     return
   }
 
-  this.usages -= 1
-}
-
-Record.prototype.destroy = function () {
   if (this.isSubscribed) {
     this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
   }
 
+  this.usages = 0
   this.isDestroyed = true
   this.isSubscribed = false
   this._data = undefined
@@ -290,7 +295,7 @@ Record.prototype._handleConnectionStateChange = function () {
     this.isSubscribed = false
   } else if (state === C.CONNECTION_STATE.CLOSED) {
     this.isSubscribed = false
-    this._destroy(true)
+    this._$destroy()
   }
 }
 
