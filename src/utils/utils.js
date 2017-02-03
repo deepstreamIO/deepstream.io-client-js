@@ -97,13 +97,14 @@ exports.parseUrl = function (url, defaultPath) {
 }
 
 exports.requestIdleCallback = !exports.isNode && window.requestIdleCallback && window.requestIdleCallback.bind(window) ||
-  function (cb) {
+  function (cb, options) {
     const start = Date.now()
+    const timeout = options && options.timeout || 50
     return setTimeout(function () {
       cb({
         didTimeout: false,
         timeRemaining: function () {
-          return Math.max(0, 50 - (Date.now() - start))
+          return Math.max(0, timeout - (Date.now() - start))
         }
       })
     }, 1)

@@ -29,12 +29,13 @@ const Connection = function (client, url, options) {
   this._rawMessages = []
   this._reconnectTimeout = null
   this._reconnectionAttempt = 0
-  this._currentPacketMessageCount = 0
-  this._sendNextPacketTimeout = null
-  this._currentMessageResetTimeout = null
+  this._messageSender = null
   this._endpoint = null
   this._lastHeartBeat = null
   this._heartbeatInterval = null
+
+  this._handleMessages = this._handleMessages.bind(this)
+  this._sendQueuedMessages = this._sendQueuedMessages.bind(this)
 
   this._originalUrl = utils.parseUrl(url, this._options.path)
   this._url = this._originalUrl
@@ -121,19 +122,7 @@ Connection.prototype.sendMsg = function (topic, action, data) {
  */
 Connection.prototype.send = function (message) {
   this._queuedMessages.push(message)
-  this._currentPacketMessageCount++
-
-  if (this._currentMessageResetTimeout === null) {
-    this._currentMessageResetTimeout = utils.nextTick(this._resetCurrentMessageCount.bind(this))
-  }
-
-  if (this._state === C.CONNECTION_STATE.OPEN &&
-    this._queuedMessages.length < this._options.maxMessagesPerPacket &&
-    this._currentPacketMessageCount < this._options.maxMessagesPerPacket) {
-    this._sendQueuedMessages()
-  } else if (this._sendNextPacketTimeout === null) {
-    this._queueNextPacket()
-  }
+  this._queueNextPacket()
 }
 
 /**
@@ -170,24 +159,6 @@ Connection.prototype._createEndpoint = function () {
 }
 
 /**
- * When the implementation tries to send a large
- * number of messages in one execution thread, the first
- * <maxMessagesPerPacket> are send straight away.
- *
- * _currentPacketMessageCount keeps track of how many messages
- * went into that first packet. Once this number has been exceeded
- * the remaining messages are written to a queue and this message
- * is invoked on a timeout to reset the count.
- *
- * @private
- * @returns {void}
- */
-Connection.prototype._resetCurrentMessageCount = function () {
-  this._currentPacketMessageCount = 0
-  this._currentMessageResetTimeout = null
-}
-
-/**
  * Concatenates the messages in the current message queue
  * and sends them as a single package. This will also
  * empty the message queue and conclude the send process.
@@ -195,25 +166,20 @@ Connection.prototype._resetCurrentMessageCount = function () {
  * @private
  * @returns {void}
  */
-Connection.prototype._sendQueuedMessages = function () {
+Connection.prototype._sendQueuedMessages = function (deadline) {
   if (this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN) {
     return
   }
 
-  if (this._queuedMessages.length === 0) {
-    this._sendNextPacketTimeout = null
-    return
+  while (this._queuedMessages.length > 0) {
+    this._submit(this._queuedMessages.splice(0, this._options.maxMessagesPerPacket).join(''))
+
+    if (!deadline || deadline.timeRemaining() <= 4) {
+      break
+    }
   }
 
-  const message = this._queuedMessages.splice(0, this._options.maxMessagesPerPacket).join('')
-
-  if (this._queuedMessages.length !== 0) {
-    this._queueNextPacket()
-  } else {
-    this._sendNextPacketTimeout = null
-  }
-
-  this._submit(message)
+  this._queueNextPacket()
 }
 
 /**
@@ -241,10 +207,13 @@ Connection.prototype._submit = function (message) {
  * @returns {void}
  */
 Connection.prototype._queueNextPacket = function () {
-  const fn = this._sendQueuedMessages.bind(this)
-  const delay = this._options.timeBetweenSendingQueuedPackages
-
-  this._sendNextPacketTimeout = setTimeout(fn, delay)
+  if (this._queuedMessages.length === 0) {
+    this._messageSender = null
+  } else if (!this._messageSender) {
+    this._messageSender = utils.requestIdleCallback(this._sendQueuedMessages, {
+      timeout: this._queuedMessages.length < this._options.maxMessagesPerPacket ? 1000 : 20
+    })
+  }
 }
 
 /**
@@ -356,7 +325,7 @@ Connection.prototype._onClose = function () {
 Connection.prototype._onMessage = function (message) {
   this._rawMessages.push(message)
   if (!this._messageHandler) {
-    this._messageHandler = utils.requestIdleCallback(this._handleMessages.bind(this), { timeout: this._idleTimeout })
+    this._messageHandler = utils.requestIdleCallback(this._handleMessages, { timeout: this._idleTimeout })
   }
 }
 
@@ -513,7 +482,7 @@ Connection.prototype._setState = function (state) {
  * @returns {void}
  */
 Connection.prototype._tryReconnect = function () {
-  if (this._reconnectTimeout !== null) {
+  if (this._reconnectTimeout) {
     return
   }
 

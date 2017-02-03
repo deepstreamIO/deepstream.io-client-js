@@ -67,11 +67,6 @@ module.exports = {
 	maxMessagesPerPacket: 100,
 
 	/**
-	 * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
-	 */
-	timeBetweenSendingQueuedPackages: 16,
-
-	/**
 	 * @param {Number} recordTTL Minium elapsed duration before record is unsubscribed.
 	 */
 	recordTTL: 10000,
