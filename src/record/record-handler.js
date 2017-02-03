@@ -11,18 +11,18 @@ const RecordHandler = function (options, connection, client) {
   this._client = client
   this._records = new Map()
   this._listeners = new Map()
-
   this._cache = LRU({
     maxAge: options.recordTTL,
     dispose: (recordName, record) => record.discard(true)
   })
+  this._prune = this._prune.bind(this)
   this._prune()
 }
 
 RecordHandler.prototype._prune = function () {
   utils.requestIdleCallback(() => {
     this._cache.prune()
-    setTimeout(this._prune.bind(this), this._options.recordTTL)
+    setTimeout(this._prune, this._options.recordTTL)
   })
 }
 
