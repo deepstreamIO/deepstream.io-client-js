@@ -12,7 +12,7 @@ const Record = function (name, connection, client) {
   }
 
   this.name = name
-  this.usages = 1
+  this.usages = 0
   this.isDestroyed = false
   this.isReady = false
   this.isSubscribed = true
@@ -137,6 +137,7 @@ Record.prototype.whenReady = function () {
     }
   })
 }
+
 Record.prototype.discard = function (silent) {
   invariant(silent || !this.isDestroyed, `"discard" cannot use destroyed record ${this.name}`)
 
@@ -145,20 +146,12 @@ Record.prototype.discard = function (silent) {
   }
 
   this.usages -= 1
+}
 
-  if (this.usages > 0) {
-    return
-  }
-
+Record.prototype.destroy = function () {
   if (this.isSubscribed) {
     this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
   }
-
-  this._destroy()
-}
-
-Record.prototype._destroy = function () {
-  this.emit('destroying', this.name)
 
   this.isDestroyed = true
   this.isSubscribed = false
@@ -296,7 +289,8 @@ Record.prototype._handleConnectionStateChange = function () {
   } else if (state === C.CONNECTION_STATE.RECONNECTING) {
     this.isSubscribed = false
   } else if (state === C.CONNECTION_STATE.CLOSED) {
-    this._destroy()
+    this.isSubscribed = false
+    this._destroy(true)
   }
 }
 

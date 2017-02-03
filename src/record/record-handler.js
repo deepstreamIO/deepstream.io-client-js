@@ -2,7 +2,6 @@ const Record = require('./record')
 const Listener = require('../utils/listener')
 const C = require('../constants/constants')
 const Rx = require('rxjs')
-const LRU = require('lru-cache')
 const utils = require('../utils/utils')
 const invariant = require('invariant')
 
@@ -12,17 +11,25 @@ const RecordHandler = function (options, connection, client) {
   this._client = client
   this._records = new Map()
   this._listeners = new Map()
-  this._cache = LRU({
-    maxAge: options.recordTTL,
-    dispose: (recordName, record) => record.discard(true)
-  })
-  this._prune = this._prune.bind(this)
-  this._prune()
+  this._gc = []
 }
 
 RecordHandler.prototype._prune = function () {
-  utils.requestIdleCallback(() => {
-    this._cache.prune()
+  utils.requestIdleCallback((deadline) => {
+    if (this._gc.length === 0) {
+      this._gc = Array.from(this._records.values())
+    }
+    while (this._gc.length) {
+      for (let n = 0; n < 64 && this._gc.length; ++n) {
+        const record = this._gc.pop()
+        if (record.usages === 0) {
+          this._records.delete(record.name)
+        }
+      }
+      if (deadline.timeRemaining() < 10) {
+        break
+      }
+    }
     setTimeout(this._prune, this._options.recordTTL)
   })
 }
@@ -32,14 +39,12 @@ RecordHandler.prototype.getRecord = function (recordName) {
 
   if (!record) {
     record = new Record(recordName, this._connection, this._client)
-    record.on('destroying', recordName => this._records.delete(recordName))
     this._records.set(recordName, record)
   }
 
   invariant(!record.isDestroyed, `unexpected destroyed record ${recordName}`)
 
-  record.usages++
-  this._cache.set(record.name, record)
+  record.usages += 1
 
   return record
 }
