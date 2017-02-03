@@ -145,6 +145,9 @@ RecordHandler.prototype.observe = function (recordName) {
         record.on('error', onError)
         record.on('destroy', onDestroy)
         return () => {
+          if (record.isDestroyed) {
+            return
+          }
           record.unsubscribe(onValue)
           record.off('error', onError)
           record.off('destroy', onDestroy)
