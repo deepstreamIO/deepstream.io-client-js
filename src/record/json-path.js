@@ -2,11 +2,12 @@ const utils = require('../utils/utils')
 const PARTS_REG_EXP = /([^.[]\s]+)/g
 
 const cache = Object.create(null)
+const EMPTY = Object.create(null)
 
 module.exports.get = function (data, path) {
   const tokens = module.exports.tokenize(path)
 
-  data = data || Object.create(null)
+  data = data || EMPTY
 
   for (let i = 0; i < tokens.length; i++) {
     if (data === undefined) {
@@ -35,7 +36,7 @@ module.exports.set = function (data, path, value) {
     return data
   }
 
-  const result = utils.shallowCopy(data || Object.create(null))
+  const result = data ? utils.shallowCopy(data) : Object.create(null)
 
   let node = result
   for (let i = 0; i < tokens.length; i++) {
