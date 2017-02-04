@@ -66,10 +66,9 @@ module.exports.patch = function (oldValue, newValue) {
     }
     return arr
   } else if (!Array.isArray(newValue) && typeof oldValue === 'object' && typeof newValue === 'object') {
-    const props = Object.keys(newValue)
     const obj = Object.create(null)
-    for (let i = 0; i < props.length; i++) {
-      obj[props[i]] = module.exports.patch(oldValue[props[i]], newValue[props[i]])
+    for (const prop of Object.keys(newValue)) {
+      obj[prop] = module.exports.patch(oldValue[prop], newValue[prop])
     }
     return obj
   } else {
