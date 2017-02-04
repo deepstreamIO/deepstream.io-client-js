@@ -43,7 +43,7 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
   invariant(this.usages !== 0, `"set" cannot use destroyed record ${this.name}`)
 
   if (this.usages === 0) {
-    return
+    return Promise.resolve()
   }
 
   const path = arguments.length === 1 ? undefined : pathOrData
@@ -163,9 +163,10 @@ Record.prototype._$destroy = function () {
   this._patchQueue = []
   this._client.off('connectionStateChanged', this._handleConnectionStateChange)
   this._eventEmitter.off()
-  this.off()
 
   this.emit('destroy', this.name)
+
+  this.off()
 }
 
 Record.prototype._$onMessage = function (message) {
