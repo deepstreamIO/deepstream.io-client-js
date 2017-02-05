@@ -181,7 +181,7 @@ Record.prototype._$onMessage = function (message) {
     if (!this.isReady) {
       this._onRead(message)
     } else {
-      this._applyUpdate(message)
+      this._onUpdate(message)
     }
     return
   }
@@ -206,7 +206,7 @@ Record.prototype._dispatchUpdate = function () {
   this.version = version
 }
 
-Record.prototype._applyUpdate = function (message) {
+Record.prototype._onUpdate = function (message) {
   const version = message.data[1]
 
   if (utils.compareVersions(this.version, version)) {
