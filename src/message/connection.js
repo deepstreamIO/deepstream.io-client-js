@@ -122,7 +122,9 @@ Connection.prototype.sendMsg = function (topic, action, data) {
  */
 Connection.prototype.send = function (message) {
   this._queuedMessages.push(message)
-  this._queueNextPacket()
+  if (!this._messageSender) {
+    this._queueNextPacket()
+  }
 }
 
 /**
@@ -175,11 +177,24 @@ Connection.prototype._sendQueuedMessages = function (deadline) {
     this._submit(this._queuedMessages.splice(0, this._options.maxMessagesPerPacket).join(''))
 
     if (!deadline || deadline.timeRemaining() <= 4) {
-      break
+      return this._queueNextPacket()
     }
   }
 
-  this._queueNextPacket()
+  this._messageSender = null
+}
+
+/**
+ * Schedules the next packet whilst the connection is under
+ * heavy load.
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._queueNextPacket = function () {
+  this._messageSender = utils.requestIdleCallback(this._sendQueuedMessages, {
+    timeout: this._queuedMessages.length < this._options.maxMessagesPerPacket ? 1000 : 20
+  })
 }
 
 /**
@@ -196,23 +211,6 @@ Connection.prototype._submit = function (message) {
     this._endpoint.send(message)
   } else {
     this._onError('Tried to send message on a closed websocket connection')
-  }
-}
-
-/**
- * Schedules the next packet whilst the connection is under
- * heavy load.
- *
- * @private
- * @returns {void}
- */
-Connection.prototype._queueNextPacket = function () {
-  if (this._queuedMessages.length === 0) {
-    this._messageSender = null
-  } else if (!this._messageSender) {
-    this._messageSender = utils.requestIdleCallback(this._sendQueuedMessages, {
-      timeout: this._queuedMessages.length < this._options.maxMessagesPerPacket ? 1000 : 20
-    })
   }
 }
 
