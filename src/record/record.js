@@ -27,7 +27,8 @@ const Record = function (name, connection, client) {
 
   this._client.on('connectionStateChanged', () => this._handleConnectionStateChange())
 
-  this._handleConnectionStateChange()
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+  this.isSubscribed = true
 }
 
 EventEmitter(Record.prototype)
@@ -55,10 +56,10 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
     throw new Error('invalid argument path')
   }
 
-  if (path && this._patchQueue) {
+  if (path && this._patchQueue !== null) {
     this._patchQueue.push({ path, data })
   } else {
-    this._patchQueue = undefined
+    this._patchQueue = null
   }
 
   const oldValue = this._data
@@ -224,7 +225,7 @@ Record.prototype._onRead = function (message) {
     for (let i = 0; i < this._patchQueue.length; i++) {
       newValue = jsonPath.set(newValue, this._patchQueue[i].path, this._patchQueue[i].data)
     }
-    this._patchQueue = undefined
+    this._patchQueue = null
   }
 
   this.isReady = true
@@ -262,7 +263,7 @@ Record.prototype._applyChange = function (newData) {
   }
 }
 
-Record.prototype._handleConnectionStateChange = function () {
+Record.prototype._handleConnectionStateChange = function (init) {
   if (this.isDestroyed) {
     return
   }
@@ -270,8 +271,10 @@ Record.prototype._handleConnectionStateChange = function () {
   const state = this._client.getConnectionState()
 
   if (state === C.CONNECTION_STATE.OPEN) {
-    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
-    this.isSubscribed = true
+    if (!this.isSubscribed) {
+      this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+      this.isSubscribed = true
+    }
   } else if (state === C.CONNECTION_STATE.RECONNECTING) {
     this.isSubscribed = false
   } else if (state === C.CONNECTION_STATE.CLOSED) {

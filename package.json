@@ -7,10 +7,6 @@
     "type": "git",
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
-  "optionalDependencies": {
-    "bufferutil": "^1.2.1",
-    "utf-8-validate": "^1.2.1"
-  },
   "dependencies": {
     "bufferutil": "^1.2.1",
     "component-emitter": "1.1.2",
