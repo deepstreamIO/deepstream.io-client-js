@@ -25,10 +25,9 @@ const Record = function (name, connection, client) {
   this._data = undefined
   this._patchQueue = []
 
-  this._handleConnectionStateChange = this._handleConnectionStateChange.bind(this)
-  this._client.on('connectionStateChanged', this._handleConnectionStateChange)
+  this._client.on('connectionStateChanged', () => this._handleConnectionStateChange())
 
-  this._sendRead()
+  this._handleConnectionStateChange()
 }
 
 EventEmitter(Record.prototype)
@@ -161,7 +160,7 @@ Record.prototype._$destroy = function () {
   this.isSubscribed = false
   this._data = undefined
   this._patchQueue = []
-  this._client.off('connectionStateChanged', this._handleConnectionStateChange)
+  this._client.off('connectionStateChanged', this._connectionStateChangeHandler)
   this._eventEmitter.off()
 
   this.emit('destroy', this.name)
@@ -263,11 +262,6 @@ Record.prototype._applyChange = function (newData) {
   }
 }
 
-Record.prototype._sendRead = function () {
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
-  this.isSubscribed = true
-}
-
 Record.prototype._handleConnectionStateChange = function () {
   if (this.isDestroyed) {
     return
@@ -276,7 +270,8 @@ Record.prototype._handleConnectionStateChange = function () {
   const state = this._client.getConnectionState()
 
   if (state === C.CONNECTION_STATE.OPEN) {
-    this._sendRead()
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.READ, [this.name])
+    this.isSubscribed = true
   } else if (state === C.CONNECTION_STATE.RECONNECTING) {
     this.isSubscribed = false
   } else if (state === C.CONNECTION_STATE.CLOSED) {
