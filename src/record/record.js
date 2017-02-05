@@ -5,6 +5,7 @@ const C = require('../constants/constants')
 const messageParser = require('../message/message-parser')
 const xuid = require('xuid')
 const invariant = require('invariant')
+const lz = require('lz-string')
 
 const Record = function (name, connection, client) {
   if (typeof name !== 'string' || name.length === 0) {
@@ -199,7 +200,7 @@ Record.prototype._dispatchUpdate = function () {
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
     this.name,
     version,
-    this._data,
+    lz.compress(JSON.stringify(this._data)),
     this.version
   ])
   this.version = version
@@ -213,11 +214,11 @@ Record.prototype._applyUpdate = function (message) {
   }
 
   this.version = version
-  this._applyChange(jsonPath.set(this._data, undefined, JSON.parse(message.data[2])))
+  this._applyChange(jsonPath.set(this._data, undefined, JSON.parse(lz.decompress(message.data[2]))))
 }
 
 Record.prototype._onRead = function (message) {
-  let oldValue = JSON.parse(message.data[2])
+  let oldValue = JSON.parse(lz.decompress(message.data[2]))
   let newValue = this._data || oldValue
 
   if (this._patchQueue) {
