@@ -265,7 +265,7 @@ Record.prototype._applyChange = function (newData) {
   }
 }
 
-Record.prototype._handleConnectionStateChange = function (init) {
+Record.prototype._handleConnectionStateChange = function () {
   const state = this._client.getConnectionState()
 
   if (state === C.CONNECTION_STATE.OPEN) {
