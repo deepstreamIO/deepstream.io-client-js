@@ -27,7 +27,9 @@ const Record = function (name, connection, client) {
   this._data = undefined
   this._patchQueue = []
 
-  this._client.on('connectionStateChanged', () => this._handleConnectionStateChange())
+  this._handleConnectionStateChange = this._handleConnectionStateChange.bind(this)
+
+  this._client.on('connectionStateChanged', this._handleConnectionStateChange)
 
   this._sendRead()
 }
