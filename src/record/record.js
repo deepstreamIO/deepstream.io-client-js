@@ -128,13 +128,16 @@ Record.prototype.whenReady = function () {
     return Promise.reject(new Error('destroyed'))
   }
 
+  this.usages += 1
+
   return new Promise((resolve, reject) => {
     if (this.isReady) {
       resolve()
     } else {
       this.once('ready', resolve)
-      this.once('destroy', () => reject(new Error('destroyed')))
     }
+  }).then(() => {
+    this.usages -= 1
   })
 }
 
@@ -162,8 +165,6 @@ Record.prototype._$destroy = function () {
   this._patchQueue = []
   this._client.off('connectionStateChanged', this._handleConnectionStateChange)
   this._eventEmitter.off()
-
-  this.emit('destroy', this.name)
 
   this.off()
 }

@@ -139,14 +139,11 @@ RecordHandler.prototype.observe = function (recordName) {
         const record = this.getRecord(recordName)
         const onValue = value => o.next(value)
         const onError = error => o.error(error)
-        const onDestroy = () => o.complete()
         record.subscribe(onValue, true)
         record.on('error', onError)
-        record.on('destroy', onDestroy)
         return () => {
           record.unsubscribe(onValue)
           record.off('error', onError)
-          record.off('destroy', onDestroy)
           record.discard()
         }
       } catch (err) {
