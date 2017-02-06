@@ -22,6 +22,9 @@ RecordHandler.prototype._prune = function () {
         this._records.delete(record.name)
         record._$destroy()
       }
+      if (deadline.timeRemaining() <= 0) {
+        break
+      }
     }
     setTimeout(this._prune, 10000)
   })
