@@ -1,5 +1,5 @@
 const utils = require('../utils/utils')
-const PARTS_REG_EXP = /([^.[]\s]+)/g
+const PARTS_REG_EXP = /([^\.\[\]\s]+)/g
 
 const cache = Object.create(null)
 const EMPTY = Object.create(null)
