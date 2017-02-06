@@ -139,16 +139,14 @@ Record.prototype.whenReady = function () {
       this.once('ready', resolve)
     }
   }).then(() => {
-    this.usages -= 1
+    this.usages = Math.max(0, this.usages - 1)
   })
 }
 
 Record.prototype.discard = function () {
   invariant(this.usages !== 0, `"discard" cannot use destroyed record ${this.name}`)
 
-  if (this.usages > 0) {
-    this.usages -= 1
-  }
+  this.usages = Math.max(0, this.usages - 1)
 }
 
 Record.prototype._$destroy = function () {
