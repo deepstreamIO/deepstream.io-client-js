@@ -273,8 +273,6 @@ Record.prototype._handleConnectionStateChange = function (init) {
     this._sendRead()
   } else if (state === C.CONNECTION_STATE.RECONNECTING) {
     this.isSubscribed = false
-  } else if (state === C.CONNECTION_STATE.CLOSED) {
-    this._$destroy()
   }
 }
 

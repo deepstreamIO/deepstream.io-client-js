@@ -81,16 +81,6 @@ Client.prototype.login = function( authParams, callback ) {
 };
 
 /**
- * Closes the connection to the server.
- *
- * @public
- * @returns {void}
- */
-Client.prototype.close = function() {
-	this._connection.close();
-};
-
-/**
  * Returns the current state of the connection.
  *
  * connectionState is one of CONSTANTS.CONNECTION_STATE
