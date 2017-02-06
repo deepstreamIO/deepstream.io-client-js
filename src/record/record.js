@@ -147,8 +147,6 @@ Record.prototype.discard = function () {
 }
 
 Record.prototype._$destroy = function () {
-  invariant(this.usages === 0, `cannot destroy used record ${this.name}`)
-
   if (this.isDestroyed) {
     return
   }
