@@ -247,10 +247,6 @@ Record.prototype._onRead = function (message) {
 }
 
 Record.prototype._applyChange = function (newData) {
-  if (this.isDestroyed) {
-    return
-  }
-
   const oldData = this._data
   this._data = newData
 
@@ -271,10 +267,6 @@ Record.prototype._applyChange = function (newData) {
 }
 
 Record.prototype._handleConnectionStateChange = function (init) {
-  if (this.isDestroyed) {
-    return
-  }
-
   const state = this._client.getConnectionState()
 
   if (state === C.CONNECTION_STATE.OPEN) {
