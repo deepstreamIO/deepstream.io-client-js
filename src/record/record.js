@@ -73,7 +73,7 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
   this._applyChange(newValue)
 
   if (this.isReady) {
-    this._dispatchUpdate()
+    this._sendUpdate()
   }
 
   return Promise.resolve()
@@ -200,7 +200,7 @@ Record.prototype._sendRead = function () {
   this.isSubscribed = true
 }
 
-Record.prototype._dispatchUpdate = function () {
+Record.prototype._sendUpdate = function () {
   const start = this.version ? parseInt(this.version.split('-')[0]) : 0
   const version = `${start + 1}-${xuid()}`
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
@@ -240,7 +240,7 @@ Record.prototype._onRead = function (message) {
   this._applyChange(newValue)
 
   if (newValue !== oldValue) {
-    this._dispatchUpdate()
+    this._sendUpdate()
   }
 
   this.emit('ready')
