@@ -3,6 +3,16 @@ const PARTS_REG_EXP = /([^\.\[\]\s]+)/g
 
 const cache = Object.create(null)
 const EMPTY = Object.create(null)
+const stringifyCache = new WeakMap()
+
+function stringify (obj) {
+  let str = stringifyCache.get(obj)
+  if (!str) {
+    str = JSON.stringify(obj)
+    stringifyCache.set(obj, str)
+  }
+  return str
+}
 
 module.exports.get = function (data, path) {
   const tokens = module.exports.tokenize(path)
@@ -55,7 +65,7 @@ module.exports.set = function (data, path, value) {
 }
 
 module.exports.patch = function (oldValue, newValue) {
-  if (utils.deepEquals(oldValue, newValue)) {
+  if (stringify(oldValue) === stringify(newValue)) {
     return oldValue
   } else if (oldValue === null || newValue === null) {
     return newValue
