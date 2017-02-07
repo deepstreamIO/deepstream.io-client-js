@@ -1,11 +1,35 @@
 const URL = require('url')
 
 const OBJECT = 'object'
+const FUNCTION = 'function'
 
 const hasUrlProtocol = /^wss:|^ws:|^\/\//
 const unsupportedProtocol = /^http:|^https:/
 
+const NODE_ENV = process.env.NODE_ENV
+
 exports.isNode = typeof process !== 'undefined' && process.toString() === '[object process]'
+
+exports.deepFreeze = function (o) {
+  if (NODE_ENV === 'production') {
+    return o
+  }
+
+  Object.freeze(o)
+
+  Object
+    .getOwnPropertyNames(o)
+    .forEach(function (prop) {
+      if (o.hasOwnProperty(prop) &&
+          o[prop] !== null &&
+          (typeof o[prop] === OBJECT || typeof o[prop] === FUNCTION) &&
+          !Object.isFrozen(o[prop])) {
+        exports.deepFreeze(o[prop])
+      }
+    })
+
+  return o
+}
 
 exports.compareVersions = function (a, b) {
   if (!a) {

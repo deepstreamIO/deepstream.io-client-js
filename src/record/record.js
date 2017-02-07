@@ -247,7 +247,7 @@ Record.prototype._onRead = function (message) {
 
 Record.prototype._applyChange = function (newData) {
   const oldData = this._data
-  this._data = newData
+  this._data = utils.deepFreeze(newData)
 
   if (!this._eventEmitter._callbacks) {
     return
