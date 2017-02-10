@@ -200,7 +200,7 @@ Record.prototype._sendRead = function () {
 }
 
 Record.prototype._sendUpdate = function () {
-  const start = this.version ? parseInt(this.version.split('-')[0]) : 0
+  const start = this.version ? parseInt(this.version.split('-', 1)[0]) : 0
   const version = `${start + 1}-${xuid()}`
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UPDATE, [
     this.name,
