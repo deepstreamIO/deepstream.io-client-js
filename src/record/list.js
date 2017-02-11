@@ -103,7 +103,7 @@ List.prototype.setEntries = function( entries ) {
 /**
  * Removes an entry from the list
  *
- * @param   {String} entry
+ * @param {String} entry
  * @param {Number} [index]
  *
  * @public
@@ -111,7 +111,7 @@ List.prototype.setEntries = function( entries ) {
  */
 List.prototype.removeEntry = function( entry, index ) {
 	if( this._record.isReady === false ) {
-		this._queuedMethods.push( this.removeEntry.bind( this, entry ) );
+		this._queuedMethods.push( this.removeEntry.bind( this, entry, index ) );
 		return;
 	}
 
@@ -145,7 +145,7 @@ List.prototype.addEntry = function( entry, index ) {
 	}
 
 	if( this._record.isReady === false ) {
-		this._queuedMethods.push( this.addEntry.bind( this, entry ) );
+		this._queuedMethods.push( this.addEntry.bind( this, entry, index ) );
 		return;
 	}
 
