@@ -174,21 +174,15 @@ Record.prototype._$onMessage = function (message) {
 
   if (this.isDestroyed) {
     return
-  }
-
-  if (message.action === C.ACTIONS.UPDATE) {
+  } else if (message.action === C.ACTIONS.UPDATE) {
     if (!this.isReady) {
       this._onRead(message)
     } else {
       this._onUpdate(message)
     }
-    return
-  }
-
-  if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
-    var hasProvider = messageParser.convertTyped(message.data[1], this._client)
-    this.hasProvider = hasProvider
-    this.emit('hasProviderChanged', hasProvider)
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
+    this.hasProvider = messageParser.convertTyped(message.data[1], this._client)
+    this.emit('hasProviderChanged', this.hasProvider)
     return
   }
 }
