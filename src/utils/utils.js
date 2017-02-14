@@ -15,13 +15,16 @@ exports.deepFreeze = function (o) {
     return o
   }
 
+  if (typeof o !== OBJECT) {
+    return o
+  }
+
   Object.freeze(o)
 
   Object
     .getOwnPropertyNames(o)
-    .forEach(function (prop) {
-      if (o.hasOwnProperty(prop) &&
-          o[prop] !== null &&
+    .forEach(prop => {
+      if (o[prop] !== null &&
           (typeof o[prop] === OBJECT || typeof o[prop] === FUNCTION) &&
           !Object.isFrozen(o[prop])) {
         exports.deepFreeze(o[prop])
