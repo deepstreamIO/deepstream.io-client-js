@@ -34,7 +34,8 @@ RecordHandler.prototype._prune = function () {
       }
     }
 
-    prev.push(...next.splice(0))
+    this._gc.prev = prev.slice(0, n).concat(next)
+    this._gc.next = []
 
     setTimeout(this._prune, 10000)
   })
