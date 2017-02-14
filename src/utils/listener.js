@@ -92,8 +92,7 @@ Listener.prototype._createCallbackResponse = function(message) {
 Listener.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.ACK ) {
 		clearTimeout( this._ackTimeout );
-	} else if ( message.action === C
-		.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
+	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
 		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
 	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		this._callback( message.data[ 1 ], false );
