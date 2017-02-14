@@ -233,12 +233,15 @@ Connection.prototype._sendAuthParams = function () {
  * @return {void}
  */
 Connection.prototype._checkHeartBeat = function () {
-  var heartBeatTolerance = this._options.heartbeatInterval * 2
+  const heartBeatTolerance = this._options.heartbeatInterval * 2
 
   if (Date.now() - this._lastHeartBeat > heartBeatTolerance) {
     clearInterval(this._heartbeatInterval)
+    this._client._$onError(
+      C.TOPIC.CONNECTION,
+      C.EVENT.CONNECTION_ERROR,
+			'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds')
     this._endpoint.close()
-    this._onError('Two connections heartbeats missed successively')
   }
 }
 

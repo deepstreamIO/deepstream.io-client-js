@@ -1,9 +1,9 @@
-var C = require( '../constants/constants' ),
-	ResubscribeNotifier = require( './resubscribe-notifier' );
+var C = require('../constants/constants'),
+  ResubscribeNotifier = require('./resubscribe-notifier')
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
- * functionality. The SingleNotifier multiplexes all the client requests so 
+ * functionality. The SingleNotifier multiplexes all the client requests so
  * that they can can be notified at once, and also includes reconnection funcionality
  * incase the connection drops.
  *
@@ -15,15 +15,15 @@ var C = require( '../constants/constants' ),
  *
  * @constructor
  */
-var SingleNotifier = function( client, connection, topic, action, timeoutDuration ) {
-	this._client = client;
-	this._connection = connection;
-	this._topic = topic;
-	this._action = action;
-	this._timeoutDuration = timeoutDuration;
-	this._requests = {};
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resendRequests.bind( this ) );
-};
+var SingleNotifier = function (client, connection, topic, action, timeoutDuration) {
+  this._client = client
+  this._connection = connection
+  this._topic = topic
+  this._action = action
+  this._timeoutDuration = timeoutDuration
+  this._requests = {}
+  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resendRequests.bind(this))
+}
 
 /**
  * Check if there is a request pending with a specified name
@@ -33,9 +33,9 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.hasRequest = function( name ) {
-	return !!this._requests[ name ];
-};
+SingleNotifier.prototype.hasRequest = function (name) {
+  return !!this._requests[ name ]
+}
 
 /**
  * Add a request. If one has already been made it will skip the server request
@@ -47,17 +47,17 @@ SingleNotifier.prototype.hasRequest = function( name ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.request = function( name, callback ) {
-	var responseTimeout;
+SingleNotifier.prototype.request = function (name, callback) {
+  var responseTimeout
 
-	if( !this._requests[ name ] ) {
-		this._requests[ name ] = [];
-		this._connection.sendMsg( this._topic, this._action, [ name ] );
-	}
+  if (!this._requests[ name ]) {
+    this._requests[ name ] = []
+    this._connection.sendMsg(this._topic, this._action, [ name ])
+  }
 
-	responseTimeout = setTimeout( this._onResponseTimeout.bind( this, name ), this._timeoutDuration );
-	this._requests[ name ].push( { timeout: responseTimeout, callback: callback } );
-};
+  responseTimeout = setTimeout(this._onResponseTimeout.bind(this, name), this._timeoutDuration)
+  this._requests[ name ].push({ timeout: responseTimeout, callback: callback })
+}
 
 /**
  * Process a response for a request. This has quite a flexible API since callback functions
@@ -70,21 +70,21 @@ SingleNotifier.prototype.request = function( name, callback ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.receive = function( name, error, data ) {
-	var entries = this._requests[ name ];
+SingleNotifier.prototype.receive = function (name, error, data) {
+  var entries = this._requests[ name ]
 
-	if( !entries ) {
-		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, 'no entry for ' + name );
-		return;
-	}
+  if (!entries) {
+    this._client._$onError(this._topic, C.EVENT.UNSOLICITED_MESSAGE, 'no entry for ' + name)
+    return
+  }
 
-	for( i=0; i < entries.length; i++ ) {
-		entry = entries[ i ];
-		clearTimeout( entry.timeout );
-		entry.callback( error, data );
-	}
-	delete this._requests[ name ];
-};
+  for (i = 0; i < entries.length; i++) {
+    entry = entries[ i ]
+    clearTimeout(entry.timeout)
+    entry.callback(error, data)
+  }
+  delete this._requests[ name ]
+}
 
 /**
  * Will be invoked if a timeout occurs before a response arrives from the server
@@ -94,10 +94,10 @@ SingleNotifier.prototype.receive = function( name, error, data ) {
  * @private
  * @returns {void}
  */
-SingleNotifier.prototype._onResponseTimeout = function( name ) {
-	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + name;
-	this._client._$onError( this._topic, C.EVENT.RESPONSE_TIMEOUT, msg );
-};
+SingleNotifier.prototype._onResponseTimeout = function (name) {
+  var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + name
+  this._client._$onError(this._topic, C.EVENT.RESPONSE_TIMEOUT, msg)
+}
 
 /**
  * Resends all the requests once the connection is back up
@@ -105,10 +105,10 @@ SingleNotifier.prototype._onResponseTimeout = function( name ) {
  * @private
  * @returns {void}
  */
-SingleNotifier.prototype._resendRequests = function() {
-	for( var request in this._requests ) {
-		this._connection.sendMsg( this._topic, this._action, [ this._requests[ request ] ] );
-	}
-};
+SingleNotifier.prototype._resendRequests = function () {
+  for (var request in this._requests) {
+    this._connection.sendMsg(this._topic, this._action, [ this._requests[ request ] ])
+  }
+}
 
-module.exports = SingleNotifier;
+module.exports = SingleNotifier

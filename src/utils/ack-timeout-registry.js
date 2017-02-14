@@ -1,5 +1,5 @@
-var C = require( '../constants/constants' ),
-	EventEmitter = require( 'component-emitter' );
+var C = require('../constants/constants'),
+  EventEmitter = require('component-emitter')
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -14,14 +14,14 @@ var C = require( '../constants/constants' ),
  * @extends {EventEmitter}
  * @constructor
  */
-var AckTimeoutRegistry = function( client, topic, timeoutDuration ) {
-	this._client = client;
-	this._topic = topic;
-	this._timeoutDuration = timeoutDuration;
-	this._register = {};
-};
+var AckTimeoutRegistry = function (client, topic, timeoutDuration) {
+  this._client = client
+  this._topic = topic
+  this._timeoutDuration = timeoutDuration
+  this._register = {}
+}
 
-EventEmitter( AckTimeoutRegistry.prototype );
+EventEmitter(AckTimeoutRegistry.prototype)
 
 /**
  * Add an entry
@@ -31,12 +31,12 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.add = function( name, action ) {
-	var uniqueName = action ? action + name : name;
+AckTimeoutRegistry.prototype.add = function (name, action) {
+  var uniqueName = action ? action + name : name
 
-	this.remove( name, action );
-	this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
-};
+  this.remove(name, action)
+  this._register[ uniqueName ] = setTimeout(this._onTimeout.bind(this, uniqueName, name), this._timeoutDuration)
+}
 
 /**
  * Remove an entry
@@ -46,15 +46,15 @@ AckTimeoutRegistry.prototype.add = function( name, action ) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.remove = function( name, action ) {
-	var uniqueName = action ? action + name : name;
+AckTimeoutRegistry.prototype.remove = function (name, action) {
+  var uniqueName = action ? action + name : name
 
-	if( this._register[ uniqueName ] ) {
-		this.clear( {
-			data: [ action, name ]
-		} );
-	}
-};
+  if (this._register[ uniqueName ]) {
+    this.clear({
+      data: [ action, name ]
+    })
+  }
+}
 
 /**
  * Processes an incoming ACK-message and removes the corresponding subscription
@@ -64,17 +64,17 @@ AckTimeoutRegistry.prototype.remove = function( name, action ) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.clear = function( message ) {
-	var name = message.data[ 1 ];
-	var uniqueName = message.data[ 0 ] + name;
-	var timeout =  this._register[ uniqueName ] || this._register[ name ];
+AckTimeoutRegistry.prototype.clear = function (message) {
+  var name = message.data[ 1 ]
+  var uniqueName = message.data[ 0 ] + name
+  var timeout = this._register[ uniqueName ] || this._register[ name ]
 
-	if( timeout ) {
-		clearTimeout( timeout );
-	} else {
-		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
-	}
-};
+  if (timeout) {
+    clearTimeout(timeout)
+  } else {
+    this._client._$onError(this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw)
+  }
+}
 
 /**
  * Will be invoked if the timeout has occured before the ack message was received
@@ -84,11 +84,11 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
-	delete this._register[ uniqueName ];
-	var msg = 'No ACK message received in time for ' + name;
-	this._client._$onError( this._topic, C.EVENT.ACK_TIMEOUT, msg );
-	this.emit( 'timeout', name );
-};
+AckTimeoutRegistry.prototype._onTimeout = function (uniqueName, name) {
+  delete this._register[ uniqueName ]
+  var msg = 'No ACK message received in time for ' + name
+  this._client._$onError(this._topic, C.EVENT.ACK_TIMEOUT, msg)
+  this.emit('timeout', name)
+}
 
-module.exports = AckTimeoutRegistry;
+module.exports = AckTimeoutRegistry

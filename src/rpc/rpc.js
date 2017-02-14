@@ -1,5 +1,5 @@
-var C = require( '../constants/constants' ),
-	messageParser = require( '../message/message-parser' );
+var C = require('../constants/constants'),
+  messageParser = require('../message/message-parser')
 
 /**
  * This class represents a single remote procedure
@@ -13,13 +13,13 @@ var C = require( '../constants/constants' ),
  *
  * @constructor
  */
-var Rpc = function( options, callback, client ) {
-	this._options = options;
-	this._callback = callback;
-	this._client = client;
-	this._ackTimeout = setTimeout( this.error.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.rpcAckTimeout );
-	this._responseTimeout = setTimeout( this.error.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
-};
+var Rpc = function (options, callback, client) {
+  this._options = options
+  this._callback = callback
+  this._client = client
+  this._ackTimeout = setTimeout(this.error.bind(this, C.EVENT.ACK_TIMEOUT), this._options.rpcAckTimeout)
+  this._responseTimeout = setTimeout(this.error.bind(this, C.EVENT.RESPONSE_TIMEOUT), this._options.rpcResponseTimeout)
+}
 
 /**
  * Called once an ack message is received from the server
@@ -27,9 +27,9 @@ var Rpc = function( options, callback, client ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.ack = function() {
-	clearTimeout( this._ackTimeout );
-};
+Rpc.prototype.ack = function () {
+  clearTimeout(this._ackTimeout)
+}
 
 /**
  * Called once a response message is received from the server.
@@ -40,11 +40,11 @@ Rpc.prototype.ack = function() {
  * @public
  * @returns {void}
  */
-Rpc.prototype.respond = function( data ) {
-	var convertedData = messageParser.convertTyped( data, this._client );
-	this._callback( null, convertedData );
-	this._complete();
-};
+Rpc.prototype.respond = function (data) {
+  var convertedData = messageParser.convertTyped(data, this._client)
+  this._callback(null, convertedData)
+  this._complete()
+}
 
 /**
  * Callback for error messages received from the server. Once
@@ -57,10 +57,10 @@ Rpc.prototype.respond = function( data ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.error = function( errorMsg ) {
-	this._callback( errorMsg );
-	this._complete();
-};
+Rpc.prototype.error = function (errorMsg) {
+  this._callback(errorMsg)
+  this._complete()
+}
 
 /**
  * Called after either an error or a response
@@ -69,9 +69,9 @@ Rpc.prototype.error = function( errorMsg ) {
  * @private
  * @returns {void}
  */
-Rpc.prototype._complete = function() {
-	clearTimeout( this._ackTimeout );
-	clearTimeout( this._responseTimeout );
-};
+Rpc.prototype._complete = function () {
+  clearTimeout(this._ackTimeout)
+  clearTimeout(this._responseTimeout)
+}
 
-module.exports = Rpc;
+module.exports = Rpc
