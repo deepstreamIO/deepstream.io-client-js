@@ -6,7 +6,7 @@ const EMPTY = Object.create(null)
 const stringifyCache = new WeakMap()
 
 function stringify (obj) {
-  if (typeof obj !== 'object') {
+  if (!obj || typeof obj !== 'object') {
     return JSON.stringify(obj)
   }
   let str = stringifyCache.get(obj)
