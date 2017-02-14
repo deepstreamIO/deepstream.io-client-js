@@ -1,7 +1,6 @@
 const URL = require('url')
 
 const OBJECT = 'object'
-const FUNCTION = 'function'
 
 const hasUrlProtocol = /^wss:|^ws:|^\/\//
 const unsupportedProtocol = /^http:|^https:/
@@ -25,7 +24,7 @@ exports.deepFreeze = function (o) {
     .getOwnPropertyNames(o)
     .forEach(prop => {
       if (o[prop] !== null &&
-          (typeof o[prop] === OBJECT || typeof o[prop] === FUNCTION) &&
+          typeof o[prop] === OBJECT &&
           !Object.isFrozen(o[prop])) {
         exports.deepFreeze(o[prop])
       }
