@@ -9,6 +9,7 @@ const RecordHandler = function (options, connection, client) {
   this._connection = connection
   this._client = client
   this._records = new Map()
+  this._gc = { prev: [], next: [] }
   this._listeners = new Map()
 
   this._prune = this._prune.bind(this)
@@ -17,15 +18,24 @@ const RecordHandler = function (options, connection, client) {
 
 RecordHandler.prototype._prune = function () {
   utils.requestIdleCallback(deadline => {
-    for (const record of this._records.values()) {
-      if (record.usages === 0) {
-        this._records.delete(record.name)
-        record._$destroy()
+    const { prev, next } = this._gc
+    let n = 0
+    let k = prev.length
+    while (n < k) {
+      if (prev[n].usages === 0) {
+        this._records.delete(prev[n].name)
+        prev[n]._$destroy()
+        prev[n] = prev[--k]
+      } else {
+        ++n
       }
       if (deadline.timeRemaining() <= 0) {
         break
       }
     }
+
+    prev.push(...next.splice(0))
+
     setTimeout(this._prune, 10000)
   })
 }
@@ -36,6 +46,7 @@ RecordHandler.prototype.getRecord = function (recordName) {
   if (!record) {
     record = new Record(recordName, this._connection, this._client)
     this._records.set(recordName, record)
+    this._gc.next.push(record)
   }
 
   record.usages += 1

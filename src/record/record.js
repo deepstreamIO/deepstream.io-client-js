@@ -37,13 +37,13 @@ const Record = function (name, connection, client) {
 EventEmitter(Record.prototype)
 
 Record.prototype.get = function (path) {
-  invariant(this.usages !== 0, `"get" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"get" cannot use discarded record ${this.name}`)
 
   return jsonPath.get(this._data, path)
 }
 
 Record.prototype.set = function (pathOrData, dataOrNil) {
-  invariant(this.usages !== 0, `"set" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"set" cannot use discarded record ${this.name}`)
 
   if (this.usages === 0) {
     return Promise.resolve()
@@ -82,7 +82,7 @@ Record.prototype.set = function (pathOrData, dataOrNil) {
 }
 
 Record.prototype.subscribe = function (path, callback, triggerNow) {
-  invariant(this.usages !== 0, `"subscribe" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"subscribe" cannot use discarded record ${this.name}`)
 
   if (this.usages === 0) {
     return
@@ -107,7 +107,7 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
 }
 
 Record.prototype.unsubscribe = function (pathOrCallback, callback) {
-  invariant(this.usages !== 0, `"unsubscribe" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"unsubscribe" cannot use discarded record ${this.name}`)
 
   if (this.usages === 0) {
     return
@@ -126,10 +126,10 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
 }
 
 Record.prototype.whenReady = function () {
-  invariant(this.usages !== 0, `"whenReady" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"whenReady" cannot use discarded record ${this.name}`)
 
   if (this.usages === 0) {
-    return Promise.reject(new Error('destroyed'))
+    return Promise.reject(new Error('discarded'))
   }
 
   this.usages += 1
@@ -146,12 +146,14 @@ Record.prototype.whenReady = function () {
 }
 
 Record.prototype.discard = function () {
-  invariant(this.usages !== 0, `"discard" cannot use destroyed record ${this.name}`)
+  invariant(this.usages !== 0, `"discard" cannot use discarded record ${this.name}`)
 
   this.usages = Math.max(0, this.usages - 1)
 }
 
 Record.prototype._$destroy = function () {
+  invariant(this.isDestroyed, `"destroy" cannot use destroyed record ${this.name}`)
+
   if (this.isSubscribed) {
     this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
     this.isSubscribed = false
