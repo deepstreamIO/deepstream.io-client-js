@@ -152,7 +152,7 @@ Record.prototype.discard = function () {
 }
 
 Record.prototype._$destroy = function () {
-  invariant(this.isDestroyed, `"destroy" cannot use destroyed record ${this.name}`)
+  invariant(!this.isDestroyed, `"destroy" cannot use destroyed record ${this.name}`)
 
   if (this.isSubscribed) {
     this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [this.name])
