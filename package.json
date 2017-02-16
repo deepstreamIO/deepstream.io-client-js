@@ -3,6 +3,7 @@
   "version": "2.1.1",
   "description": "the javascript client for deepstream.io",
   "main": "src/client.js",
+  "types": "src/client.d.ts",
   "directories": {
     "test": "test"
   },
