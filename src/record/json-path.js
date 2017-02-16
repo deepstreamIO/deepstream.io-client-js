@@ -124,6 +124,6 @@ function tokenize( path ) {
 	}
 
 	return cache[ path ] = parts.map( function( part ) {
-		return !isNaN( part ) ? parseInt( part, 10 ) : part;
+		return part;
 	} );
 };
