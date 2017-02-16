@@ -123,7 +123,5 @@ function tokenize( path ) {
 		throw new Error('invalid path ' + path)
 	}
 
-	return cache[ path ] = parts.map( function( part ) {
-		return part;
-	} );
+	return cache[ path ] = parts;
 };
