@@ -139,7 +139,7 @@ describe( 'objects are created from paths and their value is set correctly', fun
 
 	it( 'even when the path is not NaNish and could be interpreted as a base 16 number', function() {
 		var record = {};
-		let pathName = '0x02335';
+		var pathName = '0x02335';
 		record = jsonPath.set( record, pathName, 'value' );
 		expect( record[ 0 ] ).toBe( undefined );
 		expect( record[ pathName ] ).toBe( 'value' );
