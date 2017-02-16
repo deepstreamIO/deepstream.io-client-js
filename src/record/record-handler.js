@@ -29,9 +29,6 @@ RecordHandler.prototype._prune = function () {
       } else {
         ++n
       }
-      if (deadline.timeRemaining() <= 0) {
-        break
-      }
     }
 
     this._gc.prev = prev.slice(0, n).concat(next)
