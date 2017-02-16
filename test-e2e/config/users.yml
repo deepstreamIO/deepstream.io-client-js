@@ -5,6 +5,7 @@ userB:
   password: "123456789"
   clientData:
     favorite color: orange
+    id: userB
   serverData:
     invalid: invalid
 
