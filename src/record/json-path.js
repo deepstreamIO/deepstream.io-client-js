@@ -3,19 +3,6 @@ const PARTS_REG_EXP = /([^\.\[\]\s]+)/g
 
 const cache = Object.create(null)
 const EMPTY = Object.create(null)
-const stringifyCache = new WeakMap()
-
-function stringify (obj) {
-  if (!obj || typeof obj !== 'object') {
-    return JSON.stringify(obj)
-  }
-  let str = stringifyCache.get(obj)
-  if (!str) {
-    str = JSON.stringify(obj)
-    stringifyCache.set(obj, str)
-  }
-  return str
-}
 
 module.exports.get = function (data, path) {
   const tokens = module.exports.tokenize(path)
@@ -68,22 +55,41 @@ module.exports.set = function (data, path, value) {
 }
 
 module.exports.patch = function (oldValue, newValue) {
-  if (stringify(oldValue) === stringify(newValue)) {
-    return oldValue
-  } else if (oldValue === null || newValue === null) {
+  if (oldValue === null || newValue === null) {
     return newValue
   } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
-    const arr = []
+    let arr
     for (let i = 0; i < newValue.length; i++) {
-      arr[i] = module.exports.patch(oldValue[i], newValue[i])
+      const value = module.exports.patch(oldValue[i], newValue[i])
+      if (!arr) {
+        if (value === oldValue[i]) {
+          continue
+        }
+        arr = []
+        for (let j = 0; j < i; ++j) {
+          arr[j] = oldValue[j]
+        }
+      }
+      arr[i] = value
     }
-    return arr
+    return arr || (oldValue.length === newValue.length ? oldValue : newValue)
   } else if (!Array.isArray(newValue) && typeof oldValue === 'object' && typeof newValue === 'object') {
-    const obj = Object.create(null)
-    for (const prop of Object.keys(newValue)) {
-      obj[prop] = module.exports.patch(oldValue[prop], newValue[prop])
+    let obj
+    let props = Object.keys(newValue)
+    for (let i = 0; i < props.length; i++) {
+      const value = module.exports.patch(oldValue[props[i]], newValue[props[i]])
+      if (!obj) {
+        if (value === oldValue[props[i]]) {
+          continue
+        }
+        obj = Object.create(null)
+        for (let j = 0; j < i; ++j) {
+          obj[props[j]] = oldValue[props[j]]
+        }
+      }
+      obj[props[i]] = newValue[props[i]]
     }
-    return obj
+    return obj || (Object.keys(oldValue).length === props.length ? oldValue : newValue)
   } else {
     return newValue
   }
