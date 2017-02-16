@@ -22,7 +22,7 @@ RecordHandler.prototype._prune = function () {
     let n = 0
     let k = prev.length
     while (n < k) {
-      if (prev[n].usages === 0) {
+      if (prev[n].usages === 0 && prev[n].isReady) {
         this._records.delete(prev[n].name)
         prev[n]._$destroy()
         prev[n] = prev[--k]
