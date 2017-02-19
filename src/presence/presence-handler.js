@@ -1,4 +1,4 @@
-var EventEmitter = require( 'component-emitter' ),
+var EventEmitter = require( 'component-emitter2' ),
 	C = require( '../constants/constants' ),
 	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
 	messageParser = require( '../message/message-parser' ),

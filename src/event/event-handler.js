@@ -4,7 +4,7 @@ var messageBuilder = require( '../message/message-builder' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	C = require( '../constants/constants' ),
 	Listener = require( '../utils/listener' ),
-	EventEmitter = require( 'component-emitter' );
+	EventEmitter = require( 'component-emitter2' );
 
 /**
  * This class handles incoming and outgoing messages in relation

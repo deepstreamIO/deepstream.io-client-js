@@ -1,6 +1,6 @@
 var C = require( './constants/constants' ),
 	MS = require( './constants/merge-strategies' ),
-	Emitter = require( 'component-emitter' ),
+	Emitter = require( 'component-emitter2' ),
 	Connection = require( './message/connection' ),
 	EventHandler = require( './event/event-handler' ),
 	RpcHandler = require( './rpc/rpc-handler' ),

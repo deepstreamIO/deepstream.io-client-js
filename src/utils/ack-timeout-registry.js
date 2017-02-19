@@ -1,5 +1,5 @@
 var C = require( '../constants/constants' ),
-	EventEmitter = require( 'component-emitter' );
+	EventEmitter = require( 'component-emitter2' );
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges

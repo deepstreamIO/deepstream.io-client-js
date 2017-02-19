@@ -1,5 +1,5 @@
 var Record = require( './record' ),
-	EventEmitter = require( 'component-emitter' );
+	EventEmitter = require( 'component-emitter2' );
 
 /**
  * An AnonymousRecord is a record without a predefined name. It

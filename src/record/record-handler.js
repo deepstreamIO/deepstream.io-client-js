@@ -5,7 +5,7 @@ var Record = require( './record' ),
 	SingleNotifier = require( '../utils/single-notifier' ),
 	C = require( '../constants/constants' ),
 	messageParser = require( '../message/message-parser' ),
-	EventEmitter = require( 'component-emitter' );
+	EventEmitter = require( 'component-emitter2' );
 
 /**
  * A collection of factories for records. This class
