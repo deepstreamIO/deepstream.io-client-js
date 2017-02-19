@@ -79,31 +79,55 @@ module.exports.set = function( data, path, value, deepCopy ) {
  */
 function patch( oldValue, newValue, deepCopy ) {
 	var i;
-
-	if ( utils.deepEquals( oldValue, newValue ) ) {
-		return oldValue;
-	}
-	else if ( oldValue === null || newValue === null ) {
+	var j;
+	if ( oldValue === null || newValue === null ) {
 		return newValue;
 	}
 	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
-		var arr = [];
+		var arr;
 		for ( i = 0; i < newValue.length; i++ ) {
-			arr[ i ] = patch( oldValue[ i ], newValue[ i ], deepCopy );
+			var value = patch( oldValue[ i ], newValue[ i ], false );
+			if ( !arr ) {
+				if ( value === oldValue[ i ] ) {
+					continue
+				}
+				arr = [];
+				for (	j = 0; j < i; ++j) {
+					arr[ j ] = oldValue[ j ];
+				}
+			}
+			arr[ i ] = value;
 		}
+		arr = arr && deepCopy !== false ? utils.deepCopy( arr ) : arr;
+		arr = arr || (oldValue.length === newValue.length ? oldValue : newValue);
 		return arr;
 	}
 	else if ( !Array.isArray( newValue ) && typeof oldValue === 'object' && typeof newValue === 'object' ) {
+		var obj;
 		var props = Object.keys( newValue );
-		var obj = Object.create( null );
 		for ( i = 0; i < props.length; i++ ) {
-			obj[ props[ i ] ] = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], deepCopy );
+			var value = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], false );
+			if ( !obj ) {
+				if ( value === oldValue[ props[ i ] ]) {
+					continue;
+				}
+				obj = Object.create( null );
+				for ( j = 0; j < i; ++j) {
+					obj[ props[ j ] ] = oldValue[ props[ j ] ];
+				}
+			}
+			obj[ props[ i ] ] = newValue[ props[ i ] ];
 		}
+		obj = obj && deepCopy !== false ? utils.deepCopy( obj ) : obj;
+		obj = obj || (Object.keys(oldValue).length === props.length ? oldValue : newValue);
 		return obj;
 	}
-	else {
+	else if (newValue !== oldValue) {
 		return deepCopy !== false ? utils.deepCopy( newValue ) : newValue;
 	}
+  else {
+    return oldValue;
+  }
 }
 
 /**
