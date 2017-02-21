@@ -119,7 +119,7 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
 			path = pathOrData;
 			data = dataOrCallback
-		} 
+		}
 		// set( data, callback )
 		else if( typeof pathOrData === 'object' && typeof dataOrCallback === 'function' ) {
 			data = pathOrData;
@@ -150,7 +150,8 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 	var oldValue = this._$data;
 	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
 
-	if ( oldValue === newValue ) {
+	if( oldValue === newValue ) {
+		if( callback !== undefined ) callback( null );
 		return this;
 	}
 
@@ -369,7 +370,7 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 };
 
 Record.prototype._sendUpdate = function ( path, data, config ) {
-	this.version++; 
+	this.version++;
 	var msgData;
 	if( !path ) {
 		msgData = config === undefined ?
@@ -409,7 +410,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, messa
 
 		var config = message.data[ 4 ];
 		if( config && JSON.parse( config ).writeSuccess ) {
-			var callback = this._writeCallbacks[ oldVersion ]; 
+			var callback = this._writeCallbacks[ oldVersion ];
 			delete this._writeCallbacks[ oldVersion ];
 			this._setUpCallback( this.version, callback )
 		}
