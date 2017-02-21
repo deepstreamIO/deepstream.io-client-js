@@ -147,7 +147,5 @@ function tokenize( path ) {
 		throw new Error('invalid path ' + path)
 	}
 
-	return cache[ path ] = parts.map( function( part ) {
-		return !isNaN( part ) ? parseInt( part, 10 ) : part;
-	} );
+	return cache[ path ] = parts;
 };
