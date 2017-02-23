@@ -119,7 +119,7 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
 			path = pathOrData;
 			data = dataOrCallback
-		} 
+		}
 		// set( data, callback )
 		else if( typeof pathOrData === 'object' && typeof dataOrCallback === 'function' ) {
 			data = pathOrData;
@@ -151,17 +151,18 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
 
 	if ( oldValue === newValue ) {
+		if ( typeof callback === 'function' ) utils.setImmediate( callback, null );
 		return this;
 	}
 
 	var config;
-	if( callback !== undefined ) {
+	if( typeof callback === 'function' ) {
 		config = {};
 		config.writeSuccess = true;
 		this._setUpCallback(this.version, callback)
 		var connectionState = this._client.getConnectionState();
 		if( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING ) {
-			callback( 'Connection error: error updating record as connection was closed' );
+			utils.setImmediate( callback, new Error( 'Connection error: error updating record as connection was closed' ) );
 		}
 	}
 	this._sendUpdate( path, data, config );
@@ -369,7 +370,7 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 };
 
 Record.prototype._sendUpdate = function ( path, data, config ) {
-	this.version++; 
+	this.version++;
 	var msgData;
 	if( !path ) {
 		msgData = config === undefined ?
@@ -409,7 +410,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, messa
 
 		var config = message.data[ 4 ];
 		if( config && JSON.parse( config ).writeSuccess ) {
-			var callback = this._writeCallbacks[ oldVersion ]; 
+			var callback = this._writeCallbacks[ oldVersion ];
 			delete this._writeCallbacks[ oldVersion ];
 			this._setUpCallback( this.version, callback )
 		}
