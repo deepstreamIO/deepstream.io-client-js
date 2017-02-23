@@ -175,6 +175,22 @@ exports.setInterval = function (callback, intervalDuration) {
 
 }
 
+
+/**
+ * This method is used to break up long running operations and run a callback function immediately
+ * after the browser has completed other operations such as events and display updates.
+ *
+ * @param {Function} callback        the function that will be called after the given time
+ * @param {...*}   param1, ..., paramN additional parameters which are passed through to the callback
+ *
+ * @public
+ */
+exports.setImmediate = typeof setImmediate === 'function' ? setImmediate : function() {
+	var args = Array.prototype.slice.call( arguments );
+	args.splice( 1, 0, 0 );
+	setTimeout.apply( this, args );
+};
+
 /**
  * Used to see if a protocol is specified within the url
  * @type {RegExp}
