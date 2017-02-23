@@ -185,11 +185,11 @@ exports.setInterval = function (callback, intervalDuration) {
  *
  * @public
  */
-exports.setImmediate = typeof setImmediate === 'function' ? setImmediate : function() {
-	var args = Array.prototype.slice.call( arguments );
-	args.splice( 1, 0, 0 );
-	setTimeout.apply( this, args );
-};
+exports.setImmediate = typeof setImmediate === 'function' ? setImmediate : function () {
+  const args = Array.prototype.slice.call(arguments)
+  args.splice(1, 0, 0)
+  setTimeout.apply(this, args)
+}
 
 /**
  * Used to see if a protocol is specified within the url
