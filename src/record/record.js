@@ -125,9 +125,8 @@ Record.prototype.get = function (path) {
 Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
   let path
   let data
-
-  // set( object )
   if (arguments.length === 1) {
+    // set( object )
     if (typeof pathOrData !== 'object') { throw new Error('invalid argument data') }
     data = pathOrData
   } else if (arguments.length === 2) {
@@ -168,20 +167,21 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
   const newValue = jsonPath.set(oldValue, path, data, this._options.recordDeepCopy)
 
   if (oldValue === newValue) {
+    if (typeof callback === 'function') utils.setImmediate(callback, null)
     return this
   }
 
   let config
-  if (callback !== undefined) {
+  if (typeof callback === 'function') {
     config = {}
     config.writeSuccess = true
     this._setUpCallback(this.version, callback)
     const connectionState = this._client.getConnectionState()
     if (
-        connectionState === C.CONNECTION_STATE.CLOSED ||
-        connectionState === C.CONNECTION_STATE.RECONNECTING
-      ) {
-      callback('Connection error: error updating record as connection was closed')
+      connectionState === C.CONNECTION_STATE.CLOSED ||
+      connectionState === C.CONNECTION_STATE.RECONNECTING
+    ) {
+      utils.setImmediate(callback, new Error('Connection error: error updating record as connection was closed'))
     }
   }
   this._sendUpdate(path, data, config)
