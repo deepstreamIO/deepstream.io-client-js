@@ -189,3 +189,26 @@ describe('utils.parseUrl adds all missing parts of the url', () => {
 			.toBe('ws://localhost/deepstream?query=value#login')
   })
 })
+
+describe( 'utils.setImmediate', function(){
+	it( 'callbacks asynchronously as soon as possible', function( done ) {
+		var syncronous = false;
+
+		utils.setImmediate( function() {
+			expect( syncronous ).toBe( true );
+			done();
+		})
+
+		syncronous = true;
+	}, 100 );
+
+	it( 'callbacks with arguments', function( done ) {
+		utils.setImmediate( function( a, b, c, d ) {
+			expect( a ).toBe( 1 );
+			expect( b ).toBe( 2 );
+			expect( c ).toBe( 3 );
+			expect( d ).toBe( 4 );
+			done();
+		}, 1, 2, 3, 4 );
+	}, 100 );
+})
