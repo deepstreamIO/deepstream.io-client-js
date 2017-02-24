@@ -181,7 +181,7 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
       connectionState === C.CONNECTION_STATE.CLOSED ||
       connectionState === C.CONNECTION_STATE.RECONNECTING
     ) {
-      utils.setImmediate(callback, new Error('Connection error: error updating record as connection was closed'))
+      utils.setImmediate(callback, 'Connection error: error updating record as connection was closed')
     }
   }
   this._sendUpdate(path, data, config)
