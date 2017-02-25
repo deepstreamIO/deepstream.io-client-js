@@ -1,7 +1,7 @@
 var jsonPath = require( './json-path' ),
 	utils = require( '../utils/utils' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
-	EventEmitter = require( 'component-emitter' ),
+	EventEmitter = require( 'component-emitter2' ),
 	C = require( '../constants/constants' ),
 	messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' );
@@ -119,7 +119,7 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
 			path = pathOrData;
 			data = dataOrCallback
-		} 
+		}
 		// set( data, callback )
 		else if( typeof pathOrData === 'object' && typeof dataOrCallback === 'function' ) {
 			data = pathOrData;
@@ -369,7 +369,7 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 };
 
 Record.prototype._sendUpdate = function ( path, data, config ) {
-	this.version++; 
+	this.version++;
 	var msgData;
 	if( !path ) {
 		msgData = config === undefined ?
@@ -409,7 +409,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, messa
 
 		var config = message.data[ 4 ];
 		if( config && JSON.parse( config ).writeSuccess ) {
-			var callback = this._writeCallbacks[ oldVersion ]; 
+			var callback = this._writeCallbacks[ oldVersion ];
 			delete this._writeCallbacks[ oldVersion ];
 			this._setUpCallback( this.version, callback )
 		}
@@ -545,12 +545,7 @@ Record.prototype._applyChange = function( newData ) {
 	var oldData = this._$data;
 	this._$data = newData;
 
-	if ( !this._eventEmitter._callbacks ) {
-		return;
-	}
-
-	var paths = Object.keys( this._eventEmitter._callbacks );
-
+	var paths = this._eventEmitter.eventNames();
 	for ( var i = 0; i < paths.length; i++ ) {
 		var newValue = jsonPath.get( newData, paths[ i ], false );
 		var oldValue = jsonPath.get( oldData, paths[ i ], false );

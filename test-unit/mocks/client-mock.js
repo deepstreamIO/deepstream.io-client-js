@@ -1,4 +1,4 @@
-var Emitter = require( 'component-emitter' );
+var Emitter = require( 'component-emitter2' );
 
 var ClientMock = function() {
 	this.uid = 1;

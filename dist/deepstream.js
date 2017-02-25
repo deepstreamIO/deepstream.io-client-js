@@ -1819,7 +1819,7 @@ module.exports = {
 },{}],10:[function(_dereq_,module,exports){
 var C = _dereq_( './constants/constants' ),
 	MS = _dereq_( './constants/merge-strategies' ),
-	Emitter = _dereq_( 'component-emitter' ),
+	Emitter = _dereq_( 'component-emitter2' ),
 	Connection = _dereq_( './message/connection' ),
 	EventHandler = _dereq_( './event/event-handler' ),
 	RpcHandler = _dereq_( './rpc/rpc-handler' ),
@@ -2319,7 +2319,7 @@ var messageBuilder = _dereq_( '../message/message-builder' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
 	C = _dereq_( '../constants/constants' ),
 	Listener = _dereq_( '../utils/listener' ),
-	EventEmitter = _dereq_( 'component-emitter' );
+	EventEmitter = _dereq_( 'component-emitter2' );
 
 /**
  * This class handles incoming and outgoing messages in relation
@@ -3326,7 +3326,7 @@ MessageParser.prototype._parseMessage = function( message, client ) {
 
 module.exports = new MessageParser();
 },{"../constants/constants":11}],18:[function(_dereq_,module,exports){
-var EventEmitter = _dereq_( 'component-emitter' ),
+var EventEmitter = _dereq_( 'component-emitter2' ),
 	C = _dereq_( '../constants/constants' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	messageParser = _dereq_( '../message/message-parser' ),
@@ -3461,7 +3461,7 @@ PresenceHandler.prototype._resubscribe = function() {
 module.exports = PresenceHandler;
 },{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/resubscribe-notifier":29,"component-emitter":2}],19:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
-	EventEmitter = _dereq_( 'component-emitter' );
+	EventEmitter = _dereq_( 'component-emitter2' );
 
 /**
  * An AnonymousRecord is a record without a predefined name. It
@@ -3769,7 +3769,7 @@ function tokenize( path ) {
 };
 
 },{"../utils/utils":31}],21:[function(_dereq_,module,exports){
-var EventEmitter = _dereq_( 'component-emitter' ),
+var EventEmitter = _dereq_( 'component-emitter2' ),
 	Record = _dereq_( './record' ),
 	C = _dereq_( '../constants/constants' ),
 	ENTRY_ADDED_EVENT = 'entry-added',
@@ -4168,7 +4168,7 @@ var Record = _dereq_( './record' ),
 	SingleNotifier = _dereq_( '../utils/single-notifier' ),
 	C = _dereq_( '../constants/constants' ),
 	messageParser = _dereq_( '../message/message-parser' ),
-	EventEmitter = _dereq_( 'component-emitter' );
+	EventEmitter = _dereq_( 'component-emitter2' );
 
 /**
  * A collection of factories for records. This class
@@ -4502,7 +4502,7 @@ module.exports = RecordHandler;
 var jsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
-	EventEmitter = _dereq_( 'component-emitter' ),
+	EventEmitter = _dereq_( 'component-emitter2' ),
 	C = _dereq_( '../constants/constants' ),
 	messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' );
@@ -5599,7 +5599,7 @@ Rpc.prototype._complete = function() {
 module.exports = Rpc;
 },{"../constants/constants":11,"../message/message-parser":17}],27:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
-	EventEmitter = _dereq_( 'component-emitter' );
+	EventEmitter = _dereq_( 'component-emitter2' );
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges

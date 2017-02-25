@@ -1,4 +1,4 @@
-var EventEmitter = require( 'component-emitter' ),
+var EventEmitter = require( 'component-emitter2' ),
 	Record = require( './record' ),
 	C = require( '../constants/constants' ),
 	ENTRY_ADDED_EVENT = 'entry-added',
