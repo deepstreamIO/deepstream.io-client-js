@@ -25,17 +25,30 @@ const Connection = function (client, url, options) {
   this._connectionAuthenticationTimeout = false
   this._challengeDenied = false
   this._queuedMessages = []
+  this._parsedMessages = []
+  this._rawMessages = []
   this._reconnectTimeout = null
   this._reconnectionAttempt = 0
-  this._currentPacketMessageCount = 0
-  this._sendNextPacketTimeout = null
-  this._currentMessageResetTimeout = null
+  this._messageSender = null
   this._endpoint = null
   this._lastHeartBeat = null
   this._heartbeatInterval = null
 
+  this._handleMessages = this._handleMessages.bind(this)
+  this._sendQueuedMessages = this._sendQueuedMessages.bind(this)
+
   this._originalUrl = utils.parseUrl(url, this._options.path)
   this._url = this._originalUrl
+  this._idleTimeout = (Math.min(
+    options.rpcAckTimeout,
+    options.rpcResponseTimeout,
+    options.subscriptionTimeout,
+    options.recordReadAckTimeout,
+    options.recordReadTimeout,
+    options.recordDeleteTimeout,
+    options.heartbeatInterval - 2000,
+    10000
+  ) || 1000) - 200
 
   this._state = C.CONNECTION_STATE.CLOSED
   this._createEndpoint()
@@ -109,17 +122,7 @@ Connection.prototype.sendMsg = function (topic, action, data) {
  */
 Connection.prototype.send = function (message) {
   this._queuedMessages.push(message)
-  this._currentPacketMessageCount++
-
-  if (this._currentMessageResetTimeout === null) {
-    this._currentMessageResetTimeout = utils.nextTick(this._resetCurrentMessageCount.bind(this))
-  }
-
-  if (this._state === C.CONNECTION_STATE.OPEN &&
-    this._queuedMessages.length < this._options.maxMessagesPerPacket &&
-    this._currentPacketMessageCount < this._options.maxMessagesPerPacket) {
-    this._sendQueuedMessages()
-  } else if (this._sendNextPacketTimeout === null) {
+  if (!this._messageSender) {
     this._queueNextPacket()
   }
 }
@@ -136,6 +139,9 @@ Connection.prototype.close = function () {
   clearInterval(this._heartbeatInterval)
   this._deliberateClose = true
   this._endpoint.close()
+  if (this._messageHandler) {
+    utils.cancelIdleCallback(this._messageHandler)
+  }
 }
 
 /**
@@ -146,32 +152,12 @@ Connection.prototype.close = function () {
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function () {
-  this._endpoint = BrowserWebSocket
-    ? new BrowserWebSocket(this._url)
-    : new NodeWebSocket(this._url, this._options.nodeSocketOptions)
+  this._endpoint = BrowserWebSocket ? new BrowserWebSocket(this._url) : new NodeWebSocket(this._url)
 
   this._endpoint.onopen = this._onOpen.bind(this)
   this._endpoint.onerror = this._onError.bind(this)
   this._endpoint.onclose = this._onClose.bind(this)
   this._endpoint.onmessage = this._onMessage.bind(this)
-}
-
-/**
- * When the implementation tries to send a large
- * number of messages in one execution thread, the first
- * <maxMessagesPerPacket> are send straight away.
- *
- * _currentPacketMessageCount keeps track of how many messages
- * went into that first packet. Once this number has been exceeded
- * the remaining messages are written to a queue and this message
- * is invoked on a timeout to reset the count.
- *
- * @private
- * @returns {void}
- */
-Connection.prototype._resetCurrentMessageCount = function () {
-  this._currentPacketMessageCount = 0
-  this._currentMessageResetTimeout = null
 }
 
 /**
@@ -182,25 +168,33 @@ Connection.prototype._resetCurrentMessageCount = function () {
  * @private
  * @returns {void}
  */
-Connection.prototype._sendQueuedMessages = function () {
+Connection.prototype._sendQueuedMessages = function (deadline) {
   if (this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN) {
     return
   }
 
-  if (this._queuedMessages.length === 0) {
-    this._sendNextPacketTimeout = null
-    return
+  while (this._queuedMessages.length > 0) {
+    this._submit(this._queuedMessages.splice(0, this._options.maxMessagesPerPacket).join(''))
+
+    if (!deadline || deadline.timeRemaining() <= 4) {
+      return this._queueNextPacket()
+    }
   }
 
-  const message = this._queuedMessages.splice(0, this._options.maxMessagesPerPacket).join('')
+  this._messageSender = null
+}
 
-  if (this._queuedMessages.length !== 0) {
-    this._queueNextPacket()
-  } else {
-    this._sendNextPacketTimeout = null
-  }
-
-  this._submit(message)
+/**
+ * Schedules the next packet whilst the connection is under
+ * heavy load.
+ *
+ * @private
+ * @returns {void}
+ */
+Connection.prototype._queueNextPacket = function () {
+  this._messageSender = utils.requestIdleCallback(this._sendQueuedMessages, {
+    timeout: this._queuedMessages.length < this._options.maxMessagesPerPacket ? 1000 : 20
+  })
 }
 
 /**
@@ -218,20 +212,6 @@ Connection.prototype._submit = function (message) {
   } else {
     this._onError('Tried to send message on a closed websocket connection')
   }
-}
-
-/**
- * Schedules the next packet whilst the connection is under
- * heavy load.
- *
- * @private
- * @returns {void}
- */
-Connection.prototype._queueNextPacket = function () {
-  const fn = this._sendQueuedMessages.bind(this)
-  const delay = this._options.timeBetweenSendingQueuedPackages
-
-  this._sendNextPacketTimeout = setTimeout(fn, delay)
 }
 
 /**
@@ -300,7 +280,7 @@ Connection.prototype._onError = function (error) {
    * If the implementation isn't listening on the error event this will throw
    * an error. So let's defer it to allow the reconnection to kick in.
    */
-  setTimeout(function () {
+  setTimeout(() => {
     let msg
     if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
       msg = 'Can\'t connect! Deepstream server unreachable on ' + this._originalUrl
@@ -308,7 +288,7 @@ Connection.prototype._onError = function (error) {
       msg = error.toString()
     }
     this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg)
-  }.bind(this), 1)
+  }, 1)
 }
 
 /**
@@ -344,18 +324,38 @@ Connection.prototype._onClose = function () {
  * @returns {void}
  */
 Connection.prototype._onMessage = function (message) {
-  const parsedMessages = messageParser.parse(message.data, this._client)
+  this._rawMessages.push(message)
+  if (!this._messageHandler) {
+    this._messageHandler = utils.requestIdleCallback(this._handleMessages, { timeout: this._idleTimeout })
+  }
+}
 
-  for (let i = 0; i < parsedMessages.length; i++) {
-    if (parsedMessages[i] === null) {
-      continue
-    } else if (parsedMessages[i].topic === C.TOPIC.CONNECTION) {
-      this._handleConnectionResponse(parsedMessages[i])
-    } else if (parsedMessages[i].topic === C.TOPIC.AUTH) {
-      this._handleAuthResponse(parsedMessages[i])
+Connection.prototype._handleMessages = function (deadline) {
+  do {
+    if (this._parsedMessages.length === 0) {
+      var message = this._rawMessages.shift()
+      if (!message) {
+        break
+      }
+      this._parsedMessages = messageParser.parse(message.data, this._client)
     } else {
-      this._client._$onMessage(parsedMessages[i])
+      var parsedMessage = this._parsedMessages.shift()
+      if (!parsedMessage) {
+        continue
+      } else if (parsedMessage.topic === C.TOPIC.CONNECTION) {
+        this._handleConnectionResponse(parsedMessage)
+      } else if (parsedMessage.topic === C.TOPIC.AUTH) {
+        this._handleAuthResponse(parsedMessage)
+      } else {
+        this._client._$onMessage(parsedMessage)
+      }
     }
+  } while (deadline.timeRemaining() > 4)
+
+  if ((this._parsedMessages.length > 0 || this._rawMessages.length > 0) && !this._deliberateClose) {
+    this._messageHandler = utils.requestIdleCallback(this._handleMessages.bind(this), { timeout: this._idleTimeout })
+  } else {
+    this._messageHandler = null
   }
 }
 
@@ -368,12 +368,12 @@ Connection.prototype._onMessage = function (message) {
  * authentication immediately. The actual 'open' event won't be emitted
  * by the client until the authentication is successful.
  *
- * If a challenge is recieved, the user will send the url to the server
+ * If a challenge is received, the user will send the url to the server
  * in response to get the appropriate redirect. If the URL is invalid the
  * server will respond with a REJECTION resulting in the client connection
  * being permanently closed.
  *
- * If a redirect is recieved, this connection is closed and updated with
+ * If a redirect is received, this connection is closed and updated with
  * a connection to the url supplied in the message.
  *
  * @param   {Object} message parsed connection message
