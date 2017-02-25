@@ -234,6 +234,15 @@ declare namespace deepstreamIO {
                 make(name: string, data: any, callback: Function): void;
         }
 
+        interface Presence {
+                /**Subscribes to presence events. Callback will receive the username of the newly added client*/
+                subscribe(callback: Function): void;
+                /**Removes a previously registered presence callback*/
+                unsubscribe(callback: Function): void;
+                /**Queries for currently connected clients*/
+                getAll(callback: Function): void;
+        }
+        
         interface EventEmitter {
                 /**Subscribe to an event. */
                 on(type: string, callback: Function): void;
@@ -271,6 +280,8 @@ declare namespace deepstreamIO {
                 record: RecordStatic;
 
                 event: EventStatic;
+                
+                presence: Presence;
 
                 rpc: RPCStatic;
         }
