@@ -2,11 +2,11 @@
 var proxyquire = require( 'proxyquire' ),
 	ConnectionMock = require( '../mocks/message/connection-mock' ),
 	deepstream = proxyquire( '../../src/client', { './message/connection': ConnectionMock } );
-	
+
 describe( 'connects', function(){
 	var client,
 		stateChangeCallback = jasmine.createSpy( 'stateChangeCallback' );
-	
+
 	it( 'creates the client', function() {
 		client = deepstream( 'someUrl' );
 		expect( client.getConnectionState() ).toBe( 'CLOSED' );
@@ -23,7 +23,7 @@ describe( 'connects', function(){
 			recordDeleteTimeout: 34852
 		});
 		expect( client._options.recordPersistDefault ).toBe( false );
-		expect( client._options.recordReadTimeout ).toBe( 3000 );
+		expect( client._options.recordReadTimeout ).toBe( 15000 );
 		expect( client._options.recordDeleteTimeout ).toBe( 34852 );
 	});
 
