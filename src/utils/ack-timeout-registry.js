@@ -18,6 +18,7 @@ var AckTimeoutRegistry = function( client, options ) {
 	this._options = options;
 	this._client = client;
 	this._register = {};
+	this._counter = 0;
 };
 
 EventEmitter( AckTimeoutRegistry.prototype );
@@ -28,14 +29,16 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @public
- * @returns {void}
+ * @returns {Number} The timeout identifier
  */
 AckTimeoutRegistry.prototype.add = function(timeout) {
 	this.remove(timeout);
+	timeout.ackId = this._counter++;
 	this._register[ this._getUniqueName(timeout) ] = setTimeout(
 		this._onTimeout.bind(this, timeout),
 		timeout.timeout || this._options.subscriptionTimeout
 	);
+	return timeout.ackId;
 };
 
 /**
@@ -47,6 +50,17 @@ AckTimeoutRegistry.prototype.add = function(timeout) {
  * @returns {void}
  */
 AckTimeoutRegistry.prototype.remove = function(timeout) {
+	if( timeout.ackId ) {
+		for(var uniqueName in this._register) {
+			if(timeout.ackId === this._register[uniqueName].ackId) {
+				this.clear( {
+					topic: timeout.topic,
+					data: [ timeout.action, timeout.name ]
+				} );
+			}
+		}
+	}
+
 	if( this._register[ this._getUniqueName(timeout) ] ) {
 		this.clear( {
 			topic: timeout.topic,

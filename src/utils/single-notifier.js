@@ -22,6 +22,7 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
 	this._action = action;
 	this._timeoutDuration = timeoutDuration;
 	this._requests = {};
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resendRequests.bind( this ) );
 };
 
@@ -55,8 +56,14 @@ SingleNotifier.prototype.request = function( name, callback ) {
 		this._connection.sendMsg( this._topic, this._action, [ name ] );
 	}
 
-	responseTimeout = setTimeout( this._onResponseTimeout.bind( this, name ), this._timeoutDuration );
-	this._requests[ name ].push( { timeout: responseTimeout, callback: callback } );
+	var ackId = this._ackTimeoutRegistry.add({
+		topic: this._topic,
+		event: C.EVENT.RESPONSE_TIMEOUT,
+		action: this._action,
+		timeout: this._timeoutDuration,
+		callback: this._onResponseTimeout.bind(this)
+	});
+	this._requests[ name ].push({ callback: callback, ackId: ackId });
 };
 
 /**
@@ -80,7 +87,12 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
 
 	for( i=0; i < entries.length; i++ ) {
 		entry = entries[ i ];
-		clearTimeout( entry.timeout );
+		this._ackTimeoutRegistry.remove({
+			topic: this._topic,
+			event: C.EVENT.RESPONSE_TIMEOUT,
+			action: this._action,
+			ackId: entry.ackId
+		});
 		entry.callback( error, data );
 	}
 	delete this._requests[ name ];
@@ -107,7 +119,7 @@ SingleNotifier.prototype._onResponseTimeout = function( name ) {
  */
 SingleNotifier.prototype._resendRequests = function() {
 	for( var request in this._requests ) {
-		this._connection.sendMsg( this._topic, this._action, [ this._requests[ request ] ] );
+		this._connection.sendMsg( this._topic, this._action, [ request ] );
 	}
 };
 
