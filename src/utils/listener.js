@@ -20,7 +20,12 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
 	this._options = options;
 	this._client = client;
 	this._connection = connection;
-	this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+	this._ackTimeoutRegistry.add({
+		name: pattern,
+		action: C.ACTIONS.LISTEN
+	});
+
 	this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
 	this._sendListen();
 	this.destroyPending = false;
@@ -91,9 +96,8 @@ Listener.prototype._createCallbackResponse = function(message) {
  */
 Listener.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.ACK ) {
-		clearTimeout( this._ackTimeout );
-	} else if ( message.action === C
-		.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
+		this._ackTimeoutRegistry.clear(message);
+	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
 		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
 	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		this._callback( message.data[ 1 ], false );
@@ -110,16 +114,6 @@ Listener.prototype._$onMessage = function( message ) {
  */
 Listener.prototype._sendListen = function() {
 	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
-};
-
-/*
- * Sends a C.EVENT.ACK_TIMEOUT to deepstream.
- *
- * @private
- * @returns {void}
- */
-Listener.prototype._onAckTimeout = function() {
-	this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
 };
 
 module.exports = Listener;
