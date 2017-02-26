@@ -18,7 +18,7 @@ var AckTimeoutRegistry = function( client, options ) {
 	this._options = options;
 	this._client = client;
 	this._register = {};
-	this._counter = 0;
+	this._counter = 1;
 };
 
 EventEmitter( AckTimeoutRegistry.prototype );
@@ -34,10 +34,12 @@ EventEmitter( AckTimeoutRegistry.prototype );
 AckTimeoutRegistry.prototype.add = function(timeout) {
 	this.remove(timeout);
 	timeout.ackId = this._counter++;
-	this._register[ this._getUniqueName(timeout) ] = setTimeout(
+	timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
+	timeout.__timeout = setTimeout(
 		this._onTimeout.bind(this, timeout),
 		timeout.timeout || this._options.subscriptionTimeout
 	);
+	this._register[ this._getUniqueName(timeout) ] = timeout;
 	return timeout.ackId;
 };
 
@@ -54,8 +56,8 @@ AckTimeoutRegistry.prototype.remove = function(timeout) {
 		for(var uniqueName in this._register) {
 			if(timeout.ackId === this._register[uniqueName].ackId) {
 				this.clear( {
-					topic: timeout.topic,
-					data: [ timeout.action, timeout.name ]
+					topic: this._register[uniqueName].topic,
+					data: [ this._register[uniqueName].action, this._register[uniqueName].name ]
 				} );
 			}
 		}
@@ -81,7 +83,7 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
 	var uniqueName = message.topic + message.data[ 0 ] + (message.data[ 1 ] ? message.data[ 1 ] : '');
 
 	if( this._register[ uniqueName ] ) {
-		clearTimeout( this._register[ uniqueName ] );
+		clearTimeout( this._register[ uniqueName ].__timeout );
 	} else {
 		this._client._$onError( message.topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
 	}
@@ -97,9 +99,16 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
  */
 AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
 	delete this._register[ this._getUniqueName(timeout) ];
-	var msg = 'No ACK message received in time' + ( timeout.name ? ' for ' + timeout.name : '');
-	this._client._$onError( timeout.topic, C.EVENT.ACK_TIMEOUT, msg );
-	this.emit( 'timeout', timeout.name );
+
+	if (timeout.callback) {
+		delete timeout.__timeout
+		delete timeout.timeout
+		timeout.callback(timeout);
+	} else {
+		var msg = 'No ACK message received in time' + ( timeout.name ? ' for ' + timeout.name : '');
+		this._client._$onError( timeout.topic, timeout.event, msg );
+		this.emit( 'timeout', timeout.name );
+	}
 };
 
 /**

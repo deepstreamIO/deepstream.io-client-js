@@ -110,7 +110,7 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
 
-	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
+	this._rpcs[ uid ] = new Rpc( name, callback, this._options, this._client );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
 };
 
