@@ -57,7 +57,8 @@ AckTimeoutRegistry.prototype.remove = function(timeout) {
 			if(timeout.ackId === this._register[uniqueName].ackId) {
 				this.clear( {
 					topic: this._register[uniqueName].topic,
-					data: [ this._register[uniqueName].action, this._register[uniqueName].name ]
+					action: this._register[uniqueName].action,
+					data: [ this._register[uniqueName].name ]
 				} );
 			}
 		}
@@ -66,7 +67,8 @@ AckTimeoutRegistry.prototype.remove = function(timeout) {
 	if( this._register[ this._getUniqueName(timeout) ] ) {
 		this.clear( {
 			topic: timeout.topic,
-			data: [ timeout.action, timeout.name ]
+			action: timeout.action,
+			data: [ timeout.name ]
 		} );
 	}
 };
@@ -80,13 +82,18 @@ AckTimeoutRegistry.prototype.remove = function(timeout) {
  * @returns {void}
  */
 AckTimeoutRegistry.prototype.clear = function( message ) {
-	var uniqueName = message.topic + message.data[ 0 ] + (message.data[ 1 ] ? message.data[ 1 ] : '');
+	var uniqueName;
+	if (message.action === C.ACTIONS.ACK && message.data.length > 1) {
+		uniqueName = message.topic + message.data[ 0 ] + (message.data[ 1 ] ? message.data[ 1 ] : '');
+	} else {
+		uniqueName = message.topic + message.action + message.data[ 0 ];
+	}
 
 	if( this._register[ uniqueName ] ) {
 		clearTimeout( this._register[ uniqueName ].__timeout );
-	} else {
-		this._client._$onError( message.topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
 	}
+
+	delete this._register[ uniqueName ];
 };
 
 /**

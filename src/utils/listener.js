@@ -4,7 +4,7 @@ var ResubscribeNotifier = require( './resubscribe-notifier' );
 /*
  * Creates a listener instance which is usedby deepstream Records and Events.
  *
- * @param {String} type                 One of CONSTANTS.TOPIC
+ * @param {String} topic                 One of CONSTANTS.TOPIC
  * @param {String} pattern              A pattern that can be compiled via new RegExp(pattern)
  * @param {Function} callback           The function which is called when pattern was found and removed
  * @param {Connection} Connection       The instance of the server connection
@@ -13,8 +13,8 @@ var ResubscribeNotifier = require( './resubscribe-notifier' );
  *
  * @constructor
  */
-var Listener = function( type, pattern, callback, options, client, connection ) {
-	this._type = type;
+var Listener = function( topic, pattern, callback, options, client, connection ) {
+	this._topic = topic;
 	this._callback = callback;
 	this._pattern = pattern;
 	this._options = options;
@@ -22,6 +22,7 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
 	this._connection = connection;
 	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._ackTimeoutRegistry.add({
+		topic: this._topic,
 		name: pattern,
 		action: C.ACTIONS.LISTEN
 	});
@@ -33,7 +34,7 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
 
 Listener.prototype.sendDestroy = function() {
 	this.destroyPending = true;
-	this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
+	this._connection.sendMsg( this._topic, C.ACTIONS.UNLISTEN, [ this._pattern ] );
 	this._resubscribeNotifier.destroy();
 
 };
@@ -59,7 +60,7 @@ Listener.prototype.destroy = function() {
  * @returns {void}
  */
 Listener.prototype.accept = function( name ) {
-	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
+	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
 }
 
 /*
@@ -72,7 +73,7 @@ Listener.prototype.accept = function( name ) {
  * @returns {void}
  */
 Listener.prototype.reject = function( name ) {
-	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
+	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
 }
 
 /*
@@ -102,7 +103,7 @@ Listener.prototype._$onMessage = function( message ) {
 	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		this._callback( message.data[ 1 ], false );
 	} else {
-		this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
+		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
 	}
 };
 
@@ -113,7 +114,7 @@ Listener.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Listener.prototype._sendListen = function() {
-	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
+	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN, [ this._pattern ] );
 };
 
 module.exports = Listener;

@@ -61,16 +61,4 @@ describe( 'ack timeout', function(){
 		}, 10 );
 	});
 
-	it( 'receives an ack message for an unregistered timeout', function(){
-		mockClient.lastError = null;
-
-		registry.clear({
-			raw: 'raw message placeholder',
-			topic: 'X',
-			action: 'A',
-			data: [ 'S', 'testB' ]
-		});
-
-		expect( mockClient.lastError ).toEqual([ 'X', 'UNSOLICITED_MESSAGE', 'raw message placeholder' ]);
-	});
 });
