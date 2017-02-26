@@ -19,6 +19,7 @@ var AckTimeoutRegistry = function( client, options ) {
 	this._client = client;
 	this._register = {};
 	this._counter = 1;
+	client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this));
 };
 
 EventEmitter( AckTimeoutRegistry.prototype );
@@ -32,6 +33,10 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @returns {Number} The timeout identifier
  */
 AckTimeoutRegistry.prototype.add = function(timeout) {
+	if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN) {
+		return -1;
+	}
+
 	this.remove(timeout);
 	timeout.ackId = this._counter++;
 	timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
@@ -127,5 +132,19 @@ AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
 AckTimeoutRegistry.prototype._getUniqueName = function(timeout) {
 	return timeout.topic + timeout.action + (timeout.name ? timeout.name : '');
 };
+
+/**
+ * Remote all timeouts when connection disconnects
+ *
+ * @private
+ * @returns {void}
+ */
+AckTimeoutRegistry.prototype._onConnectionStateChanged = function(connectionState) {
+	if (connectionState !== C.CONNECTION_STATE.OPEN) {
+		for (var uniqueName in this._register) {
+			clearTimeout( this._register[ uniqueName ].__timeout );
+		}
+	}
+}
 
 module.exports = AckTimeoutRegistry;

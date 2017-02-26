@@ -24,6 +24,7 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
 	this._requests = {};
 	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resendRequests.bind( this ) );
+	this._onResponseTimeout = this._onResponseTimeout.bind(this);
 };
 
 /**
@@ -59,9 +60,10 @@ SingleNotifier.prototype.request = function( name, callback ) {
 	var ackId = this._ackTimeoutRegistry.add({
 		topic: this._topic,
 		event: C.EVENT.RESPONSE_TIMEOUT,
+		name: name,
 		action: this._action,
 		timeout: this._timeoutDuration,
-		callback: this._onResponseTimeout.bind(this)
+		callback: this._onResponseTimeout
 	});
 	this._requests[ name ].push({ callback: callback, ackId: ackId });
 };
@@ -106,8 +108,8 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
  * @private
  * @returns {void}
  */
-SingleNotifier.prototype._onResponseTimeout = function( name ) {
-	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + name;
+SingleNotifier.prototype._onResponseTimeout = function( timeout ) {
+	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + timeout.name;
 	this._client._$onError( this._topic, C.EVENT.RESPONSE_TIMEOUT, msg );
 };
 

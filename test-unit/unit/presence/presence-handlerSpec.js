@@ -27,7 +27,7 @@ describe( 'presence handler', function(){
 	it( 'emits an error if no ack message is received for presence subscription', function( done ){
 		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
-			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time' ];
+			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time for U' ];
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();
@@ -84,7 +84,7 @@ describe( 'presence handler', function(){
 	it( 'emits an error if no ack message is received for presence unsubscribes', function( done ){
 		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
-			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time' ];
+			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time for U' ];
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();
