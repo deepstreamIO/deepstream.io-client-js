@@ -26,9 +26,9 @@ module.exports = function() {
 		global.dsClient = deepstream( config.testServerHost + ':' + config.testServerPort, {
 			subscriptionTimeout: 100,
 			recordReadAckTimeout: 200,
-			recordReadTimeout: 260,
+			recordReadTimeout: 400,
 			recordDeleteTimeout: 100,
-			rpcResponseTimeout: 200	
+			rpcResponseTimeout: 200
 		});
 		global.dsClient.on( 'error', function(){
 			errors.push( arguments );

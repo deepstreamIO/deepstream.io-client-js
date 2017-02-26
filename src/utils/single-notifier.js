@@ -90,9 +90,6 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
 	for( i=0; i < entries.length; i++ ) {
 		entry = entries[ i ];
 		this._ackTimeoutRegistry.remove({
-			topic: this._topic,
-			event: C.EVENT.RESPONSE_TIMEOUT,
-			action: this._action,
 			ackId: entry.ackId
 		});
 		entry.callback( error, data );
