@@ -1,6 +1,5 @@
 var EventEmitter = require( 'component-emitter2' ),
 	C = require( '../constants/constants' ),
-	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
 	messageParser = require( '../message/message-parser' ),
 	messageBuilder = require( '../message/message-builder' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' );
@@ -23,7 +22,7 @@ var PresenceHandler = function( options, connection, client ) {
 		this._connection = connection;
 		this._client = client;
 		this._emitter = new EventEmitter();
-		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.PRESENCE, this._options.subscriptionTimeout );
+		this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
@@ -58,7 +57,10 @@ PresenceHandler.prototype.subscribe = function( callback ) {
 	}
 
 	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
-		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.PRESENCE,
+			action: C.ACTIONS.SUBSCRIBE
+		});
 		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.SUBSCRIBE ] );
 	}
 
@@ -81,7 +83,10 @@ PresenceHandler.prototype.unsubscribe = function( callback ) {
 	this._emitter.off( C.TOPIC.PRESENCE, callback );
 
 	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
-		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.PRESENCE,
+			action: C.ACTIONS.UNSUBSCRIBE
+		});
 		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [ C.ACTIONS.UNSUBSCRIBE ] );
 	}
 };

@@ -4,7 +4,7 @@ var PresenceHandler = require( '../../../src/presence/presence-handler' ),
 	mockClient = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,
 	C = require( '../../../src/constants/constants' ),
-	options = { subscriptionTimeout: 5 };
+	options = {};
 
 describe( 'presence handler', function(){
 	var presenceHandler,
@@ -27,7 +27,7 @@ describe( 'presence handler', function(){
 	it( 'emits an error if no ack message is received for presence subscription', function( done ){
 		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
-			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time for U' ];
+			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time' ];
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();
@@ -84,7 +84,7 @@ describe( 'presence handler', function(){
 	it( 'emits an error if no ack message is received for presence unsubscribes', function( done ){
 		expect( mockClient.lastError ).toBe( null );
 		setTimeout(function(){
-			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time for U' ];
+			var errorParams = [ 'U', 'ACK_TIMEOUT', 'No ACK message received in time' ];
 			expect( mockClient.lastError ).toEqual( errorParams );
 			mockClient.lastError = null;
 			done();

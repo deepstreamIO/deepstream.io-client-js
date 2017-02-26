@@ -1,5 +1,4 @@
 var C = require( '../constants/constants' ),
-	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	RpcResponse = require( './rpc-response' ),
 	Rpc = require( './rpc' ),
@@ -25,8 +24,7 @@ var RpcHandler = function( options, connection, client ) {
 	this._client = client;
 	this._rpcs = {};
 	this._providers = {};
-	this._provideAckTimeouts = {};
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.RPC, this._options.subscriptionTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._reprovide.bind( this ) );
 };
 
@@ -57,7 +55,11 @@ RpcHandler.prototype.provide = function( name, callback ) {
 		throw new Error( 'invalid argument callback' );
 	}
 
-	this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
+	this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RPC,
+		name: name,
+		action: C.ACTIONS.SUBSCRIBE,
+	});
 	this._providers[ name ] = callback;
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ name ] );
 };
@@ -77,7 +79,11 @@ RpcHandler.prototype.unprovide = function( name ) {
 
 	if( this._providers[ name ] ) {
 		delete this._providers[ name ];
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.RPC,
+			name: name,
+			action: C.ACTIONS.UNSUBSCRIBE,
+		});
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
@@ -189,7 +195,11 @@ RpcHandler.prototype._$handle = function( message ) {
 			return;
 		}
 		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
-			this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
+			this._ackTimeoutRegistry.remove({
+				topic: C.TOPIC.RPC,
+				action: C.ACTIONS.SUBSCRIBE,
+				name: message.data[ 1 ]
+			} );
 			return;
 		}
 	}
