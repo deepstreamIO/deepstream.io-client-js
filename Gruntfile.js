@@ -12,6 +12,7 @@ module.exports = function( grunt ) {
 
 	grunt.initConfig( {
 
+
 		pkg: grunt.file.readJSON( 'package.json' ),
 
 		browserify: {
@@ -20,6 +21,7 @@ module.exports = function( grunt ) {
 					'dist/deepstream.js': [ 'src/client.js' ]
 				},
 				options: {
+					transform: [['babelify', {presets: ['es2015']}]],
 					postBundleCB: dereqCallback,
 					ignore: [ 'ws' ],
 					browserifyOptions: {

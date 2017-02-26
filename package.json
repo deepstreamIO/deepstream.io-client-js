@@ -43,6 +43,10 @@
     "ws": false
   },
   "devDependencies": {
+    "babel-cli": "^6.23.0",
+    "babel-preset-es2015": "^6.22.0",
+    "babel-preset-es2016": "^6.22.0",
+    "babelify": "^7.3.0",
     "browserify": "^14.1.0",
     "coveralls": "^2.11.16",
     "cucumber": "^1.3.1",
@@ -51,6 +55,7 @@
     "deepstream.io-msg-redis": "latest",
     "derequire": "2.0.6",
     "grunt": "~1.0.1",
+    "grunt-babel": "^6.0.0",
     "grunt-browserify": "5.0.0",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-uglify": "2.1.0",
