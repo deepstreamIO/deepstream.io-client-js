@@ -5,7 +5,7 @@ var C = require( '../constants/constants' );
  * when the connection drops - which seems counterintuitive, but in fact just means
  * that the re-subscription message will be added to the queue of messages that
  * need re-sending as soon as the connection is re-established.
- * 
+ *
  * Resubscribe logic should only occur once per connection loss
  *
  * @param {Client} client          The deepstream client
@@ -24,7 +24,7 @@ var ResubscribeNotifier = function( client, resubscribe ) {
 
 /**
  * Call this whenever this functionality is no longer needed to remove links
- * 
+ *
  * @returns {void}
  */
 ResubscribeNotifier.prototype.destroy = function() {
@@ -40,7 +40,7 @@ ResubscribeNotifier.prototype.destroy = function() {
  */
  ResubscribeNotifier.prototype._handleConnectionStateChanges = function() {
 	var state = this._client.getConnectionState();
-		
+
 	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
 		this._isReconnecting = true;
 	}

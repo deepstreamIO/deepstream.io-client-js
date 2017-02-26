@@ -33,7 +33,9 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @returns {Number} The timeout identifier
  */
 AckTimeoutRegistry.prototype.add = function(timeout) {
-	if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN) {
+	var timeoutDuration = timeout.timeout || this._options.subscriptionTimeout;
+
+	if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN || timeoutDuration < 1) {
 		return -1;
 	}
 
@@ -42,7 +44,7 @@ AckTimeoutRegistry.prototype.add = function(timeout) {
 	timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
 	timeout.__timeout = setTimeout(
 		this._onTimeout.bind(this, timeout),
-		timeout.timeout || this._options.subscriptionTimeout
+		timeoutDuration
 	);
 	this._register[ this._getUniqueName(timeout) ] = timeout;
 	return timeout.ackId;
@@ -119,7 +121,6 @@ AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
 	} else {
 		var msg = 'No ACK message received in time' + ( timeout.name ? ' for ' + timeout.name : '');
 		this._client._$onError( timeout.topic, timeout.event, msg );
-		this.emit( 'timeout', timeout.name );
 	}
 };
 
