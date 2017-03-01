@@ -4,7 +4,7 @@ var PresenceHandler = require( '../../../src/presence/presence-handler' ),
 	mockClient = new (require( '../../mocks/client-mock' ))(),
 	msg = require( '../../test-helper/test-helper' ).msg,
 	C = require( '../../../src/constants/constants' ),
-	options = { subscriptionTimeout: 5 };
+	options = {};
 
 describe( 'presence handler', function(){
 	var presenceHandler,

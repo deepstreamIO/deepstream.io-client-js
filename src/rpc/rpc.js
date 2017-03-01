@@ -13,12 +13,26 @@ var C = require( '../constants/constants' ),
  *
  * @constructor
  */
-var Rpc = function( options, callback, client ) {
+var Rpc = function( name, callback, options, client ) {
 	this._options = options;
 	this._callback = callback;
 	this._client = client;
-	this._ackTimeout = setTimeout( this.error.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.rpcAckTimeout );
-	this._responseTimeout = setTimeout( this.error.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+	this._ackTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RPC,
+		action: C.ACTIONS.ACK,
+		name: name,
+		timeout: this._options.rpcAckTimeout,
+		callback: this.error.bind( this )
+	});
+	this._responseTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RPC,
+		action: C.ACTIONS.REQUEST,
+		name: name,
+		event: C.EVENT.RESPONSE_TIMEOUT,
+		timeout: this._options.rpcResponseTimeout,
+		callback: this.error.bind( this )
+	});
 };
 
 /**
@@ -28,7 +42,9 @@ var Rpc = function( options, callback, client ) {
  * @returns {void}
  */
 Rpc.prototype.ack = function() {
-	clearTimeout( this._ackTimeout );
+	this._ackTimeoutRegistry.remove({
+		ackId: this._ackTimeout
+	});
 };
 
 /**
@@ -57,8 +73,8 @@ Rpc.prototype.respond = function( data ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.error = function( errorMsg ) {
-	this._callback( errorMsg );
+Rpc.prototype.error = function(timeout) {
+	this._callback( timeout.event || timeout );
 	this._complete();
 };
 
@@ -70,8 +86,12 @@ Rpc.prototype.error = function( errorMsg ) {
  * @returns {void}
  */
 Rpc.prototype._complete = function() {
-	clearTimeout( this._ackTimeout );
-	clearTimeout( this._responseTimeout );
+	this._ackTimeoutRegistry.remove({
+		ackId: this._ackTimeout
+	});
+	this._ackTimeoutRegistry.remove({
+		ackId: this._responseTimeout
+	});
 };
 
 module.exports = Rpc;

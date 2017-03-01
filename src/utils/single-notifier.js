@@ -2,9 +2,9 @@ var C = require( '../constants/constants' ),
 	ResubscribeNotifier = require( './resubscribe-notifier' );
 
 /**
- * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT 
- * and HAS functionality. The SingleNotifier multiplexes all the client requests so 
- * that they can can be notified at once, and also includes reconnection funcionality 
+ * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
+ * and HAS functionality. The SingleNotifier multiplexes all the client requests so
+ * that they can can be notified at once, and also includes reconnection funcionality
  * incase the connection drops.
  *
  * @param {Client} client          The deepstream client
@@ -22,7 +22,9 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
 	this._action = action;
 	this._timeoutDuration = timeoutDuration;
 	this._requests = {};
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resendRequests.bind( this ) );
+	this._onResponseTimeout = this._onResponseTimeout.bind(this);
 };
 
 /**
@@ -33,8 +35,8 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.hasRequest = function( name ) {		
-	return !!this._requests[ name ]; 
+SingleNotifier.prototype.hasRequest = function( name ) {
+	return !!this._requests[ name ];
 };
 
 /**
@@ -47,7 +49,7 @@ SingleNotifier.prototype.hasRequest = function( name ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.request = function( name, callback ) {	
+SingleNotifier.prototype.request = function( name, callback ) {
 	var responseTimeout;
 
 	if( !this._requests[ name ] ) {
@@ -55,8 +57,15 @@ SingleNotifier.prototype.request = function( name, callback ) {
 		this._connection.sendMsg( this._topic, this._action, [ name ] );
 	}
 
-	responseTimeout = setTimeout( this._onResponseTimeout.bind( this, name ), this._timeoutDuration );
-	this._requests[ name ].push( { timeout: responseTimeout, callback: callback } );
+	var ackId = this._ackTimeoutRegistry.add({
+		topic: this._topic,
+		event: C.EVENT.RESPONSE_TIMEOUT,
+		name: name,
+		action: this._action,
+		timeout: this._timeoutDuration,
+		callback: this._onResponseTimeout
+	});
+	this._requests[ name ].push({ callback: callback, ackId: ackId });
 };
 
 /**
@@ -80,7 +89,9 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
 
 	for( i=0; i < entries.length; i++ ) {
 		entry = entries[ i ];
-		clearTimeout( entry.timeout );
+		this._ackTimeoutRegistry.remove({
+			ackId: entry.ackId
+		});
 		entry.callback( error, data );
 	}
 	delete this._requests[ name ];
@@ -94,8 +105,8 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
  * @private
  * @returns {void}
  */
-SingleNotifier.prototype._onResponseTimeout = function( name ) {
-	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + name;
+SingleNotifier.prototype._onResponseTimeout = function( timeout ) {
+	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + timeout.name;
 	this._client._$onError( this._topic, C.EVENT.RESPONSE_TIMEOUT, msg );
 };
 
@@ -107,7 +118,7 @@ SingleNotifier.prototype._onResponseTimeout = function( name ) {
  */
 SingleNotifier.prototype._resendRequests = function() {
 	for( var request in this._requests ) {
-		this._connection.sendMsg( this._topic, this._action, [ this._requests[ request ] ] );
+		this._connection.sendMsg( this._topic, this._action, [ request ] );
 	}
 };
 
