@@ -16,7 +16,7 @@ describe( 'supscriptions to local record changes', function(){
 		record.subscribe( anotherGeneralCallback );
 		expect( generalCallback ).not.toHaveBeenCalled();
 		record._$onMessage({ topic: 'RECORD', action: 'R', data: [ 'testRecord', 0, '{}' ]} );
-		expect( generalCallback ).not.toHaveBeenCalled();
+		expect( generalCallback ).toHaveBeenCalled();
 		expect( record.get() ).toEqual( {} );
 	});
 
@@ -54,9 +54,9 @@ describe( 'supscriptions to local record changes', function(){
 	it( 'unsubscribes general callback', function(){
 		record.set( 'firstname', 'Egon' );
 		expect( generalCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
-		expect( generalCallback.calls.count() ).toEqual( 5 );
+		expect( generalCallback.calls.count() ).toEqual( 6 );
 		expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Egon', lastname: 'Hempel' });
-		expect( anotherGeneralCallback.calls.count() ).toEqual( 5 );
+		expect( anotherGeneralCallback.calls.count() ).toEqual( 6 );
 
 		record.unsubscribe( generalCallback );
 
@@ -65,9 +65,9 @@ describe( 'supscriptions to local record changes', function(){
 		record.unsubscribe( function() {} );
 
 		record.set( 'firstname', 'Ray' );
-		expect( generalCallback.calls.count() ).toEqual( 5 );
+		expect( generalCallback.calls.count() ).toEqual( 6 );
 		expect( anotherGeneralCallback ).toHaveBeenCalledWith({ firstname: 'Ray', lastname: 'Hempel' });
-		expect( anotherGeneralCallback.calls.count() ).toEqual( 6 );
+		expect( anotherGeneralCallback.calls.count() ).toEqual( 7 );
 	});
 
 	it( 'subscribes to a deep path', function(){
