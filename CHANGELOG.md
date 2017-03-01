@@ -6,6 +6,7 @@
 - optimized json-path patch [#329](https://github.com/deepstreamIO/deepstream.io-client-js/pull/329)
 - TypeScript typings [#283](https://github.com/deepstreamIO/deepstream.io-client-js/pull/283) and [#338](https://github.com/deepstreamIO/deepstream.io-client-js/pull/338)
 - Added support for non-NaNish base 16 numbers in jsonpath [#328](https://github.com/deepstreamIO/deepstream.io-client-js/pull/328)
+- There is now a single ack timeout registry for the client, shared between all handlers [#342](https://github.com/deepstreamIO/deepstream.io-client-js/pull/342)
 
 ### Bug Fixes
 

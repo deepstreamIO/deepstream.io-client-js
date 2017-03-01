@@ -1847,7 +1847,8 @@ var C = _dereq_( './constants/constants' ),
 	RecordHandler = _dereq_( './record/record-handler' ),
 	PresenceHandler = _dereq_( './presence/presence-handler' ),
 	defaultOptions = _dereq_( './default-options' ),
-	messageBuilder = _dereq_( './message/message-builder' );
+	messageBuilder = _dereq_( './message/message-builder' ),
+	AckTimeoutRegistry = _dereq_( './utils/ack-timeout-registry' );
 
 /**
  * deepstream.io javascript client
@@ -1870,6 +1871,7 @@ var Client = function( url, options ) {
 	this._options = this._getOptions( options || {} );
 
 	this._connection = new Connection( this, this._url, this._options );
+	this._ackTimeoutRegistry = new AckTimeoutRegistry(this, this._options);
 
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
@@ -1952,6 +1954,17 @@ Client.prototype.getUid = function() {
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 
 	return timestamp + '-' + randomString;
+};
+
+/**
+ * Package private ack timeout registry. This is how all classes can get access to register timeouts.
+ * (Well... that's the intention anyways)
+ *
+ * @package private
+ * @returns {AckTimeoutRegistry}
+ */
+Client.prototype._$getAckTimeoutRegistry = function() {
+	return this._ackTimeoutRegistry;
 };
 
 /**
@@ -2091,7 +2104,7 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./message/message-builder":16,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"component-emitter2":1}],11:[function(_dereq_,module,exports){
+},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./message/message-builder":16,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"./utils/ack-timeout-registry":27,"component-emitter2":1}],11:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -2253,19 +2266,19 @@ module.exports = {
 	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
 	 * 											no Ack-message has been received
 	 */
-	rpcAckTimeout: 6000,
+	rpcAckTimeout: 15000,
 
 	/**
 	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
 	 * 											no response-message has been received
 	 */
-	rpcResponseTimeout: 10000,
+	rpcResponseTimeout: 15000,
 
 	/**
 	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/
 	 * 											listening to a record before an error is thrown
 	 */
-	subscriptionTimeout: 2000,
+	subscriptionTimeout: 15000,
 
 	/**
 	 * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
@@ -2288,13 +2301,13 @@ module.exports = {
 	 * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
 	 *                                       	until an error is thrown since no ack message has been received.
 	 */
-	recordReadAckTimeout: 1000,
+	recordReadAckTimeout: 15000,
 
 	/**
 	 * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
 	 *                                       	until an error is thrown since no data has been received.
 	 */
-	recordReadTimeout: 3000,
+	recordReadTimeout: 15000,
 
 	/**
 	 * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
@@ -2302,7 +2315,7 @@ module.exports = {
 	 *                                       	take into account that the deletion is only complete after the record has been
 	 *                                       	deleted from both cache and storage
 	 */
-	recordDeleteTimeout: 3000,
+	recordDeleteTimeout: 15000,
 
 	/**
 	 * @param {String} path path to connect to
@@ -2336,7 +2349,6 @@ module.exports = {
 },{"./constants/merge-strategies":12}],14:[function(_dereq_,module,exports){
 var messageBuilder = _dereq_( '../message/message-builder' ),
 	messageParser = _dereq_( '../message/message-parser' ),
-	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
 	C = _dereq_( '../constants/constants' ),
 	Listener = _dereq_( '../utils/listener' ),
@@ -2359,7 +2371,7 @@ var EventHandler = function( options, connection, client ) {
 	this._client = client;
 	this._emitter = new EventEmitter();
 	this._listener = {};
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
@@ -2382,7 +2394,11 @@ EventHandler.prototype.subscribe = function( name, callback ) {
 	}
 
 	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.EVENT,
+			action: C.ACTIONS.SUBSCRIBE,
+			name: name
+		});
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
 	}
 
@@ -2410,7 +2426,11 @@ EventHandler.prototype.unsubscribe = function( name, callback ) {
 	this._emitter.off( name, callback );
 
 	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.EVENT,
+			action: C.ACTIONS.UNSUBSCRIBE,
+			name: name
+		});
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
@@ -2481,7 +2501,11 @@ EventHandler.prototype.unlisten = function( pattern ) {
 	if( listener && !listener.destroyPending ) {
 		listener.sendDestroy();
 	} else if( this._listener[ pattern ] ) {
-		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.EVENT,
+			action: C.EVENT.UNLISTEN,
+			name: pattern
+		});
 		this._listener[ pattern ].destroy();
 		delete this._listener[ pattern ];
 	} else {
@@ -2534,12 +2558,20 @@ EventHandler.prototype._$handle = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ERROR ) {
-    if (message.data[0] === C.EVENT.MESSAGE_DENIED){
-      this._ackTimeoutRegistry.remove( message.data[1], message.data[2] );
-    }
-    else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
-      this._ackTimeoutRegistry.remove( message.data[1], C.ACTIONS.UNSUBSCRIBE );
-    }
+	    if (message.data[0] === C.EVENT.MESSAGE_DENIED){
+	      this._ackTimeoutRegistry.remove({
+	      	topic: C.TOPIC.EVENT,
+	      	name: message.data[1],
+	      	action: message.data[2]
+	      });
+	    }
+	    else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
+	      this._ackTimeoutRegistry.remove({
+	      	topic: C.TOPIC.EVENT,
+	      	name: message.data[1],
+	      	action: C.ACTIONS.UNSUBSCRIBE
+	      });
+	    }
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
 		return;
@@ -2564,7 +2596,7 @@ EventHandler.prototype._resubscribe = function() {
 
 module.exports = EventHandler;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":1}],15:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":1}],15:[function(_dereq_,module,exports){
 (function (global){
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
 	NodeWebSocket =  _dereq_( 'ws' ),
@@ -2831,7 +2863,7 @@ Connection.prototype._checkHeartBeat = function() {
 		this._client._$onError(
 			C.TOPIC.CONNECTION,
 			C.EVENT.CONNECTION_ERROR,
-			'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds' );
+			'Two connections heartbeats missed successively' );
 		this._endpoint.close();
 	}
 };
@@ -3352,7 +3384,6 @@ module.exports = new MessageParser();
 },{"../constants/constants":11}],18:[function(_dereq_,module,exports){
 var EventEmitter = _dereq_( 'component-emitter2' ),
 	C = _dereq_( '../constants/constants' ),
-	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	messageParser = _dereq_( '../message/message-parser' ),
 	messageBuilder = _dereq_( '../message/message-builder' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' );
@@ -3371,12 +3402,12 @@ var EventEmitter = _dereq_( 'component-emitter2' ),
  * @public
  */
 var PresenceHandler = function( options, connection, client ) {
-		this._options = options;
-		this._connection = connection;
-		this._client = client;
-		this._emitter = new EventEmitter();
-		this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.PRESENCE, this._options.subscriptionTimeout );
-		this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
+	this._options = options;
+	this._connection = connection;
+	this._client = client;
+	this._emitter = new EventEmitter();
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
 /**
@@ -3410,7 +3441,11 @@ PresenceHandler.prototype.subscribe = function( callback ) {
 	}
 
 	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
-		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.PRESENCE,
+			action: C.ACTIONS.SUBSCRIBE,
+			name: C.TOPIC.PRESENCE
+		});
 		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.SUBSCRIBE ] );
 	}
 
@@ -3433,7 +3468,11 @@ PresenceHandler.prototype.unsubscribe = function( callback ) {
 	this._emitter.off( C.TOPIC.PRESENCE, callback );
 
 	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
-		this._ackTimeoutRegistry.add( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.PRESENCE,
+			action: C.ACTIONS.UNSUBSCRIBE,
+			name: C.TOPIC.PRESENCE
+		});
 		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [ C.ACTIONS.UNSUBSCRIBE ] );
 	}
 };
@@ -3483,7 +3522,7 @@ PresenceHandler.prototype._resubscribe = function() {
 };
 
 module.exports = PresenceHandler;
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	EventEmitter = _dereq_( 'component-emitter2' );
 
@@ -4593,9 +4632,22 @@ var Record = function( name, recordOptions, connection, options, client ) {
 		this.setMergeStrategy( options.mergeStrategy );
 	}
 
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
-	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
-	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
+
+	this._readAckTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RECORD,
+		name: name,
+		action: C.ACTIONS.SUBSCRIBE,
+		timeout: this._options.recordReadAckTimeout
+	});
+	this._responseTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RECORD,
+		name: name,
+		action: C.ACTIONS.READ,
+		event: C.EVENT.RESPONSE_TIMEOUT,
+		timeout: this._options.recordReadTimeout
+	});
 	this._sendRead();
 };
 
@@ -4808,7 +4860,11 @@ Record.prototype.discard = function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
 				this.emit( 'destroyPending' );
-				this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+				this._discardTimeout = this._ackTimeoutRegistry.add({
+					topic: C.TOPIC.RECORD,
+					name: this.name,
+					action: C.ACTIONS.UNSUBSCRIBE
+				});
 				this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 		}
 	}.bind( this ) );
@@ -4826,7 +4882,13 @@ Record.prototype.delete = function() {
 	}
 	this.whenReady( function() {
 		this.emit( 'destroyPending' );
-		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
+		this._deleteAckTimeout = this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.RECORD,
+			name: this.name,
+			action: C.ACTIONS.DELETE,
+			event: C.EVENT.DELETE_TIMEOUT,
+			timeout: this._options.recordDeleteTimeout
+		});
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 	}.bind( this ) );
 };
@@ -4859,7 +4921,7 @@ Record.prototype.whenReady = function( callback ) {
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
 		if( this.version === null ) {
-			clearTimeout( this._readTimeout );
+			this._ackTimeoutRegistry.clear(message);
 			this._onRead( message );
 		} else {
 			this._applyUpdate( message, this._client );
@@ -4981,7 +5043,7 @@ Record.prototype._processAckMessage = function( message ) {
 	var acknowledgedAction = message.data[ 0 ];
 
 	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
-		clearTimeout( this._readAckTimeout );
+		this._ackTimeoutRegistry.clear(message);
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
@@ -5143,10 +5205,10 @@ Record.prototype._normalizeArguments = function( args ) {
  * @returns {void}
  */
 Record.prototype._clearTimeouts = function() {
-	clearTimeout( this._readAckTimeout );
-	clearTimeout( this._deleteAckTimeout );
-	clearTimeout( this._discardTimeout );
-	clearTimeout( this._deleteAckTimeout );
+	this._ackTimeoutRegistry.remove({ ackId: this._readAckTimeout, silent: true });
+	this._ackTimeoutRegistry.remove({ ackId: this._responseTimeout, silent: true });
+	this._ackTimeoutRegistry.remove({ ackId: this._deleteAckTimeout, silent: true });
+	this._ackTimeoutRegistry.remove({ ackId: this._discardTimeout, silent: true });
 };
 
 /**
@@ -5165,16 +5227,6 @@ Record.prototype._checkDestroyed = function( methodName ) {
 	}
 
 	return false;
-};
-/**
- * Generic handler for ack, read and delete timeouts
- *
- * @private
- * @returns {void}
- */
-Record.prototype._onTimeout = function( timeoutType ) {
-	this._clearTimeouts();
-	this.emit( 'error', timeoutType );
 };
 
 /**
@@ -5199,7 +5251,6 @@ module.exports = Record;
 
 },{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
-	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
 	RpcResponse = _dereq_( './rpc-response' ),
 	Rpc = _dereq_( './rpc' ),
@@ -5225,8 +5276,7 @@ var RpcHandler = function( options, connection, client ) {
 	this._client = client;
 	this._rpcs = {};
 	this._providers = {};
-	this._provideAckTimeouts = {};
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.RPC, this._options.subscriptionTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._reprovide.bind( this ) );
 };
 
@@ -5257,7 +5307,11 @@ RpcHandler.prototype.provide = function( name, callback ) {
 		throw new Error( 'invalid argument callback' );
 	}
 
-	this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
+	this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RPC,
+		name: name,
+		action: C.ACTIONS.SUBSCRIBE,
+	});
 	this._providers[ name ] = callback;
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ name ] );
 };
@@ -5277,7 +5331,11 @@ RpcHandler.prototype.unprovide = function( name ) {
 
 	if( this._providers[ name ] ) {
 		delete this._providers[ name ];
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.RPC,
+			name: name,
+			action: C.ACTIONS.UNSUBSCRIBE,
+		});
 		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
@@ -5304,7 +5362,7 @@ RpcHandler.prototype.make = function( name, data, callback ) {
 	var uid = this._client.getUid(),
 		typedData = messageBuilder.typed( data );
 
-	this._rpcs[ uid ] = new Rpc( this._options, callback, this._client );
+	this._rpcs[ uid ] = new Rpc( name, callback, this._options, this._client );
 	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
 };
 
@@ -5389,7 +5447,11 @@ RpcHandler.prototype._$handle = function( message ) {
 			return;
 		}
 		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
-			this._ackTimeoutRegistry.remove( message.data[ 1 ], C.ACTIONS.SUBSCRIBE );
+			this._ackTimeoutRegistry.remove({
+				topic: C.TOPIC.RPC,
+				action: C.ACTIONS.SUBSCRIBE,
+				name: message.data[ 1 ]
+			} );
 			return;
 		}
 	}
@@ -5448,7 +5510,7 @@ RpcHandler.prototype._reprovide = function() {
 
 module.exports = RpcHandler;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/resubscribe-notifier":29,"./rpc":26,"./rpc-response":25}],25:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"./rpc":26,"./rpc-response":25}],25:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	utils = _dereq_( '../utils/utils' ),
 	messageBuilder = _dereq_( '../message/message-builder' );
@@ -5577,12 +5639,26 @@ var C = _dereq_( '../constants/constants' ),
  *
  * @constructor
  */
-var Rpc = function( options, callback, client ) {
+var Rpc = function( name, callback, options, client ) {
 	this._options = options;
 	this._callback = callback;
 	this._client = client;
-	this._ackTimeout = setTimeout( this.error.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.rpcAckTimeout );
-	this._responseTimeout = setTimeout( this.error.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.rpcResponseTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+	this._ackTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RPC,
+		action: C.ACTIONS.ACK,
+		name: name,
+		timeout: this._options.rpcAckTimeout,
+		callback: this.error.bind( this )
+	});
+	this._responseTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RPC,
+		action: C.ACTIONS.REQUEST,
+		name: name,
+		event: C.EVENT.RESPONSE_TIMEOUT,
+		timeout: this._options.rpcResponseTimeout,
+		callback: this.error.bind( this )
+	});
 };
 
 /**
@@ -5592,7 +5668,9 @@ var Rpc = function( options, callback, client ) {
  * @returns {void}
  */
 Rpc.prototype.ack = function() {
-	clearTimeout( this._ackTimeout );
+	this._ackTimeoutRegistry.remove({
+		ackId: this._ackTimeout
+	});
 };
 
 /**
@@ -5621,8 +5699,8 @@ Rpc.prototype.respond = function( data ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.error = function( errorMsg ) {
-	this._callback( errorMsg );
+Rpc.prototype.error = function(timeout) {
+	this._callback( timeout.event || timeout );
 	this._complete();
 };
 
@@ -5634,8 +5712,12 @@ Rpc.prototype.error = function( errorMsg ) {
  * @returns {void}
  */
 Rpc.prototype._complete = function() {
-	clearTimeout( this._ackTimeout );
-	clearTimeout( this._responseTimeout );
+	this._ackTimeoutRegistry.remove({
+		ackId: this._ackTimeout
+	});
+	this._ackTimeoutRegistry.remove({
+		ackId: this._responseTimeout
+	});
 };
 
 module.exports = Rpc;
@@ -5656,11 +5738,12 @@ var C = _dereq_( '../constants/constants' ),
  * @extends {EventEmitter}
  * @constructor
  */
-var AckTimeoutRegistry = function( client, topic, timeoutDuration ) {
+var AckTimeoutRegistry = function( client, options ) {
+	this._options = options;
 	this._client = client;
-	this._topic = topic;
-	this._timeoutDuration = timeoutDuration;
 	this._register = {};
+	this._counter = 1;
+	client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this));
 };
 
 EventEmitter( AckTimeoutRegistry.prototype );
@@ -5671,13 +5754,24 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @public
- * @returns {void}
+ * @returns {Number} The timeout identifier
  */
-AckTimeoutRegistry.prototype.add = function( name, action ) {
-	var uniqueName = action ? action + name : name;
+AckTimeoutRegistry.prototype.add = function(timeout) {
+	var timeoutDuration = timeout.timeout || this._options.subscriptionTimeout;
 
-	this.remove( name, action );
-	this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
+	if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN || timeoutDuration < 1) {
+		return -1;
+	}
+
+	this.remove(timeout);
+	timeout.ackId = this._counter++;
+	timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
+	timeout.__timeout = setTimeout(
+		this._onTimeout.bind(this, timeout),
+		timeoutDuration
+	);
+	this._register[ this._getUniqueName(timeout) ] = timeout;
+	return timeout.ackId;
 };
 
 /**
@@ -5688,12 +5782,24 @@ AckTimeoutRegistry.prototype.add = function( name, action ) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.remove = function( name, action ) {
-	var uniqueName = action ? action + name : name;
+AckTimeoutRegistry.prototype.remove = function(timeout) {
+	if( timeout.ackId ) {
+		for(var uniqueName in this._register) {
+			if(timeout.ackId === this._register[uniqueName].ackId) {
+				this.clear( {
+					topic: this._register[uniqueName].topic,
+					action: this._register[uniqueName].action,
+					data: [ this._register[uniqueName].name ]
+				} );
+			}
+		}
+	}
 
-	if( this._register[ uniqueName ] ) {
+	if( this._register[ this._getUniqueName(timeout) ] ) {
 		this.clear( {
-			data: [ action, name ]
+			topic: timeout.topic,
+			action: timeout.action,
+			data: [ timeout.name ]
 		} );
 	}
 };
@@ -5707,31 +5813,64 @@ AckTimeoutRegistry.prototype.remove = function( name, action ) {
  * @returns {void}
  */
 AckTimeoutRegistry.prototype.clear = function( message ) {
-	var name = message.data[ 1 ];
-	var uniqueName = message.data[ 0 ] + name;
-	var timeout =  this._register[ uniqueName ] || this._register[ name ];
-
-	if( timeout ) {
-		clearTimeout( timeout );
+	var uniqueName;
+	if (message.action === C.ACTIONS.ACK && message.data.length > 1) {
+		uniqueName = message.topic + message.data[ 0 ] + (message.data[ 1 ] ? message.data[ 1 ] : '');
 	} else {
-		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
+		uniqueName = message.topic + message.action + message.data[ 0 ];
 	}
+
+	if( this._register[ uniqueName ] ) {
+		clearTimeout( this._register[ uniqueName ].__timeout );
+	}
+
+	delete this._register[ uniqueName ];
 };
 
 /**
  * Will be invoked if the timeout has occured before the ack message was received
  *
- * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
+ * @param {Object} name The timeout object registered
  *
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
-	delete this._register[ uniqueName ];
-	var msg = 'No ACK message received in time for ' + name;
-	this._client._$onError( this._topic, C.EVENT.ACK_TIMEOUT, msg );
-	this.emit( 'timeout', name );
+AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
+	delete this._register[ this._getUniqueName(timeout) ];
+
+	if (timeout.callback) {
+		delete timeout.__timeout
+		delete timeout.timeout
+		timeout.callback(timeout);
+	} else {
+		var msg = 'No ACK message received in time' + ( timeout.name ? ' for ' + timeout.name : '');
+		this._client._$onError( timeout.topic, timeout.event, msg );
+	}
 };
+
+/**
+ * Returns a unique name from the timeout
+ *
+ * @private
+ * @returns {void}
+ */
+AckTimeoutRegistry.prototype._getUniqueName = function(timeout) {
+	return timeout.topic + timeout.action + (timeout.name ? timeout.name : '');
+};
+
+/**
+ * Remote all timeouts when connection disconnects
+ *
+ * @private
+ * @returns {void}
+ */
+AckTimeoutRegistry.prototype._onConnectionStateChanged = function(connectionState) {
+	if (connectionState !== C.CONNECTION_STATE.OPEN) {
+		for (var uniqueName in this._register) {
+			clearTimeout( this._register[ uniqueName ].__timeout );
+		}
+	}
+}
 
 module.exports = AckTimeoutRegistry;
 
@@ -5742,7 +5881,7 @@ var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 /*
  * Creates a listener instance which is usedby deepstream Records and Events.
  *
- * @param {String} type                 One of CONSTANTS.TOPIC
+ * @param {String} topic                 One of CONSTANTS.TOPIC
  * @param {String} pattern              A pattern that can be compiled via new RegExp(pattern)
  * @param {Function} callback           The function which is called when pattern was found and removed
  * @param {Connection} Connection       The instance of the server connection
@@ -5751,14 +5890,20 @@ var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
  *
  * @constructor
  */
-var Listener = function( type, pattern, callback, options, client, connection ) {
-	this._type = type;
+var Listener = function( topic, pattern, callback, options, client, connection ) {
+	this._topic = topic;
 	this._callback = callback;
 	this._pattern = pattern;
 	this._options = options;
 	this._client = client;
 	this._connection = connection;
-	this._ackTimeout = setTimeout( this._onAckTimeout.bind( this ), this._options.subscriptionTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+	this._ackTimeoutRegistry.add({
+		topic: this._topic,
+		name: pattern,
+		action: C.ACTIONS.LISTEN
+	});
+
 	this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
 	this._sendListen();
 	this.destroyPending = false;
@@ -5766,7 +5911,7 @@ var Listener = function( type, pattern, callback, options, client, connection ) 
 
 Listener.prototype.sendDestroy = function() {
 	this.destroyPending = true;
-	this._connection.sendMsg( this._type, C.ACTIONS.UNLISTEN, [ this._pattern ] );
+	this._connection.sendMsg( this._topic, C.ACTIONS.UNLISTEN, [ this._pattern ] );
 	this._resubscribeNotifier.destroy();
 
 };
@@ -5792,7 +5937,7 @@ Listener.prototype.destroy = function() {
  * @returns {void}
  */
 Listener.prototype.accept = function( name ) {
-	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
+	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
 }
 
 /*
@@ -5805,7 +5950,7 @@ Listener.prototype.accept = function( name ) {
  * @returns {void}
  */
 Listener.prototype.reject = function( name ) {
-	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
+	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
 }
 
 /*
@@ -5829,14 +5974,13 @@ Listener.prototype._createCallbackResponse = function(message) {
  */
 Listener.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.ACK ) {
-		clearTimeout( this._ackTimeout );
-	} else if ( message.action === C
-		.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
+		this._ackTimeoutRegistry.clear(message);
+	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
 		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
 	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
 		this._callback( message.data[ 1 ], false );
 	} else {
-		this._client._$onError( this._type, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
+		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
 	}
 };
 
@@ -5847,17 +5991,7 @@ Listener.prototype._$onMessage = function( message ) {
  * @returns {void}
  */
 Listener.prototype._sendListen = function() {
-	this._connection.sendMsg( this._type, C.ACTIONS.LISTEN, [ this._pattern ] );
-};
-
-/*
- * Sends a C.EVENT.ACK_TIMEOUT to deepstream.
- *
- * @private
- * @returns {void}
- */
-Listener.prototype._onAckTimeout = function() {
-	this._client._$onError( this._type, C.EVENT.ACK_TIMEOUT, 'No ACK message received in time for ' + this._pattern );
+	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN, [ this._pattern ] );
 };
 
 module.exports = Listener;
@@ -5870,7 +6004,7 @@ var C = _dereq_( '../constants/constants' );
  * when the connection drops - which seems counterintuitive, but in fact just means
  * that the re-subscription message will be added to the queue of messages that
  * need re-sending as soon as the connection is re-established.
- * 
+ *
  * Resubscribe logic should only occur once per connection loss
  *
  * @param {Client} client          The deepstream client
@@ -5889,7 +6023,7 @@ var ResubscribeNotifier = function( client, resubscribe ) {
 
 /**
  * Call this whenever this functionality is no longer needed to remove links
- * 
+ *
  * @returns {void}
  */
 ResubscribeNotifier.prototype.destroy = function() {
@@ -5905,7 +6039,7 @@ ResubscribeNotifier.prototype.destroy = function() {
  */
  ResubscribeNotifier.prototype._handleConnectionStateChanges = function() {
 	var state = this._client.getConnectionState();
-		
+
 	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
 		this._isReconnecting = true;
 	}
@@ -5921,9 +6055,9 @@ var C = _dereq_( '../constants/constants' ),
 	ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
 /**
- * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT 
- * and HAS functionality. The SingleNotifier multiplexes all the client requests so 
- * that they can can be notified at once, and also includes reconnection funcionality 
+ * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
+ * and HAS functionality. The SingleNotifier multiplexes all the client requests so
+ * that they can can be notified at once, and also includes reconnection funcionality
  * incase the connection drops.
  *
  * @param {Client} client          The deepstream client
@@ -5941,7 +6075,9 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
 	this._action = action;
 	this._timeoutDuration = timeoutDuration;
 	this._requests = {};
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resendRequests.bind( this ) );
+	this._onResponseTimeout = this._onResponseTimeout.bind(this);
 };
 
 /**
@@ -5952,8 +6088,8 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.hasRequest = function( name ) {		
-	return !!this._requests[ name ]; 
+SingleNotifier.prototype.hasRequest = function( name ) {
+	return !!this._requests[ name ];
 };
 
 /**
@@ -5966,7 +6102,7 @@ SingleNotifier.prototype.hasRequest = function( name ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.request = function( name, callback ) {	
+SingleNotifier.prototype.request = function( name, callback ) {
 	var responseTimeout;
 
 	if( !this._requests[ name ] ) {
@@ -5974,8 +6110,15 @@ SingleNotifier.prototype.request = function( name, callback ) {
 		this._connection.sendMsg( this._topic, this._action, [ name ] );
 	}
 
-	responseTimeout = setTimeout( this._onResponseTimeout.bind( this, name ), this._timeoutDuration );
-	this._requests[ name ].push( { timeout: responseTimeout, callback: callback } );
+	var ackId = this._ackTimeoutRegistry.add({
+		topic: this._topic,
+		event: C.EVENT.RESPONSE_TIMEOUT,
+		name: name,
+		action: this._action,
+		timeout: this._timeoutDuration,
+		callback: this._onResponseTimeout
+	});
+	this._requests[ name ].push({ callback: callback, ackId: ackId });
 };
 
 /**
@@ -5999,7 +6142,9 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
 
 	for( i=0; i < entries.length; i++ ) {
 		entry = entries[ i ];
-		clearTimeout( entry.timeout );
+		this._ackTimeoutRegistry.remove({
+			ackId: entry.ackId
+		});
 		entry.callback( error, data );
 	}
 	delete this._requests[ name ];
@@ -6013,8 +6158,8 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
  * @private
  * @returns {void}
  */
-SingleNotifier.prototype._onResponseTimeout = function( name ) {
-	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + name;
+SingleNotifier.prototype._onResponseTimeout = function( timeout ) {
+	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + timeout.name;
 	this._client._$onError( this._topic, C.EVENT.RESPONSE_TIMEOUT, msg );
 };
 
@@ -6026,7 +6171,7 @@ SingleNotifier.prototype._onResponseTimeout = function( name ) {
  */
 SingleNotifier.prototype._resendRequests = function() {
 	for( var request in this._requests ) {
-		this._connection.sendMsg( this._topic, this._action, [ this._requests[ request ] ] );
+		this._connection.sendMsg( this._topic, this._action, [ request ] );
 	}
 };
 
