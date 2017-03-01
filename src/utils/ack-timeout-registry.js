@@ -14,11 +14,12 @@ var C = require( '../constants/constants' ),
  * @extends {EventEmitter}
  * @constructor
  */
-var AckTimeoutRegistry = function( client, topic, timeoutDuration ) {
+var AckTimeoutRegistry = function( client, options ) {
+	this._options = options;
 	this._client = client;
-	this._topic = topic;
-	this._timeoutDuration = timeoutDuration;
 	this._register = {};
+	this._counter = 1;
+	client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this));
 };
 
 EventEmitter( AckTimeoutRegistry.prototype );
@@ -29,13 +30,24 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
  *
  * @public
- * @returns {void}
+ * @returns {Number} The timeout identifier
  */
-AckTimeoutRegistry.prototype.add = function( name, action ) {
-	var uniqueName = action ? action + name : name;
+AckTimeoutRegistry.prototype.add = function(timeout) {
+	var timeoutDuration = timeout.timeout || this._options.subscriptionTimeout;
 
-	this.remove( name, action );
-	this._register[ uniqueName ] = setTimeout( this._onTimeout.bind( this, uniqueName, name ), this._timeoutDuration );
+	if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN || timeoutDuration < 1) {
+		return -1;
+	}
+
+	this.remove(timeout);
+	timeout.ackId = this._counter++;
+	timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
+	timeout.__timeout = setTimeout(
+		this._onTimeout.bind(this, timeout),
+		timeoutDuration
+	);
+	this._register[ this._getUniqueName(timeout) ] = timeout;
+	return timeout.ackId;
 };
 
 /**
@@ -46,12 +58,24 @@ AckTimeoutRegistry.prototype.add = function( name, action ) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.remove = function( name, action ) {
-	var uniqueName = action ? action + name : name;
+AckTimeoutRegistry.prototype.remove = function(timeout) {
+	if( timeout.ackId ) {
+		for(var uniqueName in this._register) {
+			if(timeout.ackId === this._register[uniqueName].ackId) {
+				this.clear( {
+					topic: this._register[uniqueName].topic,
+					action: this._register[uniqueName].action,
+					data: [ this._register[uniqueName].name ]
+				} );
+			}
+		}
+	}
 
-	if( this._register[ uniqueName ] ) {
+	if( this._register[ this._getUniqueName(timeout) ] ) {
 		this.clear( {
-			data: [ action, name ]
+			topic: timeout.topic,
+			action: timeout.action,
+			data: [ timeout.name ]
 		} );
 	}
 };
@@ -65,30 +89,63 @@ AckTimeoutRegistry.prototype.remove = function( name, action ) {
  * @returns {void}
  */
 AckTimeoutRegistry.prototype.clear = function( message ) {
-	var name = message.data[ 1 ];
-	var uniqueName = message.data[ 0 ] + name;
-	var timeout =  this._register[ uniqueName ] || this._register[ name ];
-
-	if( timeout ) {
-		clearTimeout( timeout );
+	var uniqueName;
+	if (message.action === C.ACTIONS.ACK && message.data.length > 1) {
+		uniqueName = message.topic + message.data[ 0 ] + (message.data[ 1 ] ? message.data[ 1 ] : '');
 	} else {
-		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.raw );
+		uniqueName = message.topic + message.action + message.data[ 0 ];
 	}
+
+	if( this._register[ uniqueName ] ) {
+		clearTimeout( this._register[ uniqueName ].__timeout );
+	}
+
+	delete this._register[ uniqueName ];
 };
 
 /**
  * Will be invoked if the timeout has occured before the ack message was received
  *
- * @param {String} name An identifier for the subscription, e.g. a record name or an event name.
+ * @param {Object} name The timeout object registered
  *
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
-	delete this._register[ uniqueName ];
-	var msg = 'No ACK message received in time for ' + name;
-	this._client._$onError( this._topic, C.EVENT.ACK_TIMEOUT, msg );
-	this.emit( 'timeout', name );
+AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
+	delete this._register[ this._getUniqueName(timeout) ];
+
+	if (timeout.callback) {
+		delete timeout.__timeout
+		delete timeout.timeout
+		timeout.callback(timeout);
+	} else {
+		var msg = 'No ACK message received in time' + ( timeout.name ? ' for ' + timeout.name : '');
+		this._client._$onError( timeout.topic, timeout.event, msg );
+	}
 };
+
+/**
+ * Returns a unique name from the timeout
+ *
+ * @private
+ * @returns {void}
+ */
+AckTimeoutRegistry.prototype._getUniqueName = function(timeout) {
+	return timeout.topic + timeout.action + (timeout.name ? timeout.name : '');
+};
+
+/**
+ * Remote all timeouts when connection disconnects
+ *
+ * @private
+ * @returns {void}
+ */
+AckTimeoutRegistry.prototype._onConnectionStateChanged = function(connectionState) {
+	if (connectionState !== C.CONNECTION_STATE.OPEN) {
+		for (var uniqueName in this._register) {
+			clearTimeout( this._register[ uniqueName ].__timeout );
+		}
+	}
+}
 
 module.exports = AckTimeoutRegistry;

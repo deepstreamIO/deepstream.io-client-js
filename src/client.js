@@ -7,7 +7,8 @@ var C = require( './constants/constants' ),
 	RecordHandler = require( './record/record-handler' ),
 	PresenceHandler = require( './presence/presence-handler' ),
 	defaultOptions = require( './default-options' ),
-	messageBuilder = require( './message/message-builder' );
+	messageBuilder = require( './message/message-builder' ),
+	AckTimeoutRegistry = require( './utils/ack-timeout-registry' );
 
 /**
  * deepstream.io javascript client
@@ -30,6 +31,7 @@ var Client = function( url, options ) {
 	this._options = this._getOptions( options || {} );
 
 	this._connection = new Connection( this, this._url, this._options );
+	this._ackTimeoutRegistry = new AckTimeoutRegistry(this, this._options);
 
 	this.event = new EventHandler( this._options, this._connection, this );
 	this.rpc = new RpcHandler( this._options, this._connection, this );
@@ -112,6 +114,17 @@ Client.prototype.getUid = function() {
 		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
 
 	return timestamp + '-' + randomString;
+};
+
+/**
+ * Package private ack timeout registry. This is how all classes can get access to register timeouts.
+ * (Well... that's the intention anyways)
+ *
+ * @package private
+ * @returns {AckTimeoutRegistry}
+ */
+Client.prototype._$getAckTimeoutRegistry = function() {
+	return this._ackTimeoutRegistry;
 };
 
 /**

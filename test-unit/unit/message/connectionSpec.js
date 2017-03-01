@@ -114,7 +114,7 @@ describe('connects - heartbeats', function(){
 		setTimeout( function() {
 			expect( connection._endpoint.lastSendMessage ).toBe( null );
 			expect( connection.getState() ).toBe( 'CLOSED' );
-			expect( clientMock.lastError ).toEqual( [ 'C', 'connectionError', 'heartbeat not received in the last 100 milliseconds' ] );
+			expect( clientMock.lastError ).toEqual( [ 'C', 'connectionError', 'Two connections heartbeats missed successively' ] );
 			done();
 		}, 200 );
 	});

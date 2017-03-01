@@ -45,9 +45,22 @@ var Record = function( name, recordOptions, connection, options, client ) {
 		this.setMergeStrategy( options.mergeStrategy );
 	}
 
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
-	this._readAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.recordReadAckTimeout );
-	this._readTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.RESPONSE_TIMEOUT ), this._options.recordReadTimeout );
+
+	this._readAckTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RECORD,
+		name: name,
+		action: C.ACTIONS.SUBSCRIBE,
+		timeout: this._options.recordReadAckTimeout
+	});
+	this._responseTimeout = this._ackTimeoutRegistry.add({
+		topic: C.TOPIC.RECORD,
+		name: name,
+		action: C.ACTIONS.READ,
+		event: C.EVENT.RESPONSE_TIMEOUT,
+		timeout: this._options.recordReadTimeout
+	});
 	this._sendRead();
 };
 
@@ -260,7 +273,11 @@ Record.prototype.discard = function() {
 		this.usages--;
 		if( this.usages <= 0 ) {
 				this.emit( 'destroyPending' );
-				this._discardTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.ACK_TIMEOUT ), this._options.subscriptionTimeout );
+				this._discardTimeout = this._ackTimeoutRegistry.add({
+					topic: C.TOPIC.RECORD,
+					name: this.name,
+					action: C.ACTIONS.UNSUBSCRIBE
+				});
 				this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
 		}
 	}.bind( this ) );
@@ -278,7 +295,13 @@ Record.prototype.delete = function() {
 	}
 	this.whenReady( function() {
 		this.emit( 'destroyPending' );
-		this._deleteAckTimeout = setTimeout( this._onTimeout.bind( this, C.EVENT.DELETE_TIMEOUT ), this._options.recordDeleteTimeout );
+		this._deleteAckTimeout = this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.RECORD,
+			name: this.name,
+			action: C.ACTIONS.DELETE,
+			event: C.EVENT.DELETE_TIMEOUT,
+			timeout: this._options.recordDeleteTimeout
+		});
 		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
 	}.bind( this ) );
 };
@@ -311,7 +334,7 @@ Record.prototype.whenReady = function( callback ) {
 Record.prototype._$onMessage = function( message ) {
 	if( message.action === C.ACTIONS.READ ) {
 		if( this.version === null ) {
-			clearTimeout( this._readTimeout );
+			this._ackTimeoutRegistry.clear(message);
 			this._onRead( message );
 		} else {
 			this._applyUpdate( message, this._client );
@@ -433,7 +456,7 @@ Record.prototype._processAckMessage = function( message ) {
 	var acknowledgedAction = message.data[ 0 ];
 
 	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
-		clearTimeout( this._readAckTimeout );
+		this._ackTimeoutRegistry.clear(message);
 	}
 
 	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
@@ -595,10 +618,10 @@ Record.prototype._normalizeArguments = function( args ) {
  * @returns {void}
  */
 Record.prototype._clearTimeouts = function() {
-	clearTimeout( this._readAckTimeout );
-	clearTimeout( this._deleteAckTimeout );
-	clearTimeout( this._discardTimeout );
-	clearTimeout( this._deleteAckTimeout );
+	this._ackTimeoutRegistry.remove({ ackId: this._readAckTimeout, silent: true });
+	this._ackTimeoutRegistry.remove({ ackId: this._responseTimeout, silent: true });
+	this._ackTimeoutRegistry.remove({ ackId: this._deleteAckTimeout, silent: true });
+	this._ackTimeoutRegistry.remove({ ackId: this._discardTimeout, silent: true });
 };
 
 /**
@@ -617,16 +640,6 @@ Record.prototype._checkDestroyed = function( methodName ) {
 	}
 
 	return false;
-};
-/**
- * Generic handler for ack, read and delete timeouts
- *
- * @private
- * @returns {void}
- */
-Record.prototype._onTimeout = function( timeoutType ) {
-	this._clearTimeouts();
-	this.emit( 'error', timeoutType );
 };
 
 /**

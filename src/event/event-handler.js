@@ -1,6 +1,5 @@
 var messageBuilder = require( '../message/message-builder' ),
 	messageParser = require( '../message/message-parser' ),
-	AckTimeoutRegistry = require( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = require( '../utils/resubscribe-notifier' ),
 	C = require( '../constants/constants' ),
 	Listener = require( '../utils/listener' ),
@@ -23,7 +22,7 @@ var EventHandler = function( options, connection, client ) {
 	this._client = client;
 	this._emitter = new EventEmitter();
 	this._listener = {};
-	this._ackTimeoutRegistry = new AckTimeoutRegistry( client, C.TOPIC.EVENT, this._options.subscriptionTimeout );
+	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
 	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
 };
 
@@ -46,7 +45,11 @@ EventHandler.prototype.subscribe = function( name, callback ) {
 	}
 
 	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.SUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.EVENT,
+			action: C.ACTIONS.SUBSCRIBE,
+			name: name
+		});
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
 	}
 
@@ -74,7 +77,11 @@ EventHandler.prototype.unsubscribe = function( name, callback ) {
 	this._emitter.off( name, callback );
 
 	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add( name, C.ACTIONS.UNSUBSCRIBE );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.EVENT,
+			action: C.ACTIONS.UNSUBSCRIBE,
+			name: name
+		});
 		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
 	}
 };
@@ -145,7 +152,11 @@ EventHandler.prototype.unlisten = function( pattern ) {
 	if( listener && !listener.destroyPending ) {
 		listener.sendDestroy();
 	} else if( this._listener[ pattern ] ) {
-		this._ackTimeoutRegistry.add( pattern, C.EVENT.UNLISTEN );
+		this._ackTimeoutRegistry.add({
+			topic: C.TOPIC.EVENT,
+			action: C.EVENT.UNLISTEN,
+			name: pattern
+		});
 		this._listener[ pattern ].destroy();
 		delete this._listener[ pattern ];
 	} else {
@@ -198,12 +209,20 @@ EventHandler.prototype._$handle = function( message ) {
 	}
 
 	if( message.action === C.ACTIONS.ERROR ) {
-    if (message.data[0] === C.EVENT.MESSAGE_DENIED){
-      this._ackTimeoutRegistry.remove( message.data[1], message.data[2] );
-    }
-    else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
-      this._ackTimeoutRegistry.remove( message.data[1], C.ACTIONS.UNSUBSCRIBE );
-    }
+	    if (message.data[0] === C.EVENT.MESSAGE_DENIED){
+	      this._ackTimeoutRegistry.remove({
+	      	topic: C.TOPIC.EVENT,
+	      	name: message.data[1],
+	      	action: message.data[2]
+	      });
+	    }
+	    else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
+	      this._ackTimeoutRegistry.remove({
+	      	topic: C.TOPIC.EVENT,
+	      	name: message.data[1],
+	      	action: C.ACTIONS.UNSUBSCRIBE
+	      });
+	    }
 		message.processedError = true;
 		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
 		return;

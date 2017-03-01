@@ -42,19 +42,19 @@ module.exports = {
 	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
 	 * 											no Ack-message has been received
 	 */
-	rpcAckTimeout: 6000,
+	rpcAckTimeout: 15000,
 
 	/**
 	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
 	 * 											no response-message has been received
 	 */
-	rpcResponseTimeout: 10000,
+	rpcResponseTimeout: 15000,
 
 	/**
 	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/
 	 * 											listening to a record before an error is thrown
 	 */
-	subscriptionTimeout: 2000,
+	subscriptionTimeout: 15000,
 
 	/**
 	 * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
@@ -77,13 +77,13 @@ module.exports = {
 	 * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
 	 *                                       	until an error is thrown since no ack message has been received.
 	 */
-	recordReadAckTimeout: 1000,
+	recordReadAckTimeout: 15000,
 
 	/**
 	 * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
 	 *                                       	until an error is thrown since no data has been received.
 	 */
-	recordReadTimeout: 3000,
+	recordReadTimeout: 15000,
 
 	/**
 	 * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
@@ -91,7 +91,7 @@ module.exports = {
 	 *                                       	take into account that the deletion is only complete after the record has been
 	 *                                       	deleted from both cache and storage
 	 */
-	recordDeleteTimeout: 3000,
+	recordDeleteTimeout: 15000,
 
 	/**
 	 * @param {String} path path to connect to
