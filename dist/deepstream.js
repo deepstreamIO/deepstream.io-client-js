@@ -1,12 +1,12 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.deepstream = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
-},{}],2:[function(_dereq_,module,exports){
-
 /**
  * Expose `Emitter`.
  */
 
-module.exports = Emitter;
+if (typeof module !== 'undefined') {
+  module.exports = Emitter;
+}
 
 /**
  * Initialize a new `Emitter`.
@@ -44,7 +44,7 @@ function mixin(obj) {
 
 Emitter.prototype.on =
 Emitter.prototype.addEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
+  this._callbacks = this._callbacks || Object.create(null);
   (this._callbacks[event] = this._callbacks[event] || [])
     .push(fn);
   return this;
@@ -61,11 +61,8 @@ Emitter.prototype.addEventListener = function(event, fn){
  */
 
 Emitter.prototype.once = function(event, fn){
-  var self = this;
-  this._callbacks = this._callbacks || {};
-
   function on() {
-    self.off(event, on);
+    this.off(event, on);
     fn.apply(this, arguments);
   }
 
@@ -88,11 +85,11 @@ Emitter.prototype.off =
 Emitter.prototype.removeListener =
 Emitter.prototype.removeAllListeners =
 Emitter.prototype.removeEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
+  this._callbacks = this._callbacks || Object.create(null);
 
   // all
   if (0 == arguments.length) {
-    this._callbacks = {};
+    this._callbacks = Object.create(null);
     return this;
   }
 
@@ -115,6 +112,13 @@ Emitter.prototype.removeEventListener = function(event, fn){
       break;
     }
   }
+
+  // Remove event specific arrays for event types that no
+  // one is subscribed for to avoid memory leak.
+  if (callbacks.length === 0) {
+    delete this._callbacks[event];
+  }
+
   return this;
 };
 
@@ -127,9 +131,14 @@ Emitter.prototype.removeEventListener = function(event, fn){
  */
 
 Emitter.prototype.emit = function(event){
-  this._callbacks = this._callbacks || {};
-  var args = [].slice.call(arguments, 1)
+  this._callbacks = this._callbacks || Object.create(null);
+
+  var args = new Array(arguments.length - 1)
     , callbacks = this._callbacks[event];
+
+  for (var i = 1; i < arguments.length; i++) {
+    args[i - 1] = arguments[i];
+  }
 
   if (callbacks) {
     callbacks = callbacks.slice(0);
@@ -150,7 +159,7 @@ Emitter.prototype.emit = function(event){
  */
 
 Emitter.prototype.listeners = function(event){
-  this._callbacks = this._callbacks || {};
+  this._callbacks = this._callbacks || Object.create(null);
   return this._callbacks[event] || [];
 };
 
@@ -165,6 +174,18 @@ Emitter.prototype.listeners = function(event){
 Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
+
+/**
+ * Returns an array listing the events for which the emitter has registered listeners.
+ *
+ * @return {Array}
+ * @api public
+ */
+Emitter.prototype.eventNames = function(){
+  return this._callbacks ? Object.keys(this._callbacks) : [];
+}
+
+},{}],2:[function(_dereq_,module,exports){
 
 },{}],3:[function(_dereq_,module,exports){
 // shim for using process in browser
@@ -2070,7 +2091,7 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./message/message-builder":16,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"component-emitter":2}],11:[function(_dereq_,module,exports){
+},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./message/message-builder":16,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"component-emitter2":1}],11:[function(_dereq_,module,exports){
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -2543,7 +2564,7 @@ EventHandler.prototype._resubscribe = function() {
 
 module.exports = EventHandler;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter":2}],15:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":1}],15:[function(_dereq_,module,exports){
 (function (global){
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
 	NodeWebSocket =  _dereq_( 'ws' ),
@@ -2807,8 +2828,11 @@ Connection.prototype._checkHeartBeat = function() {
 
 	if( Date.now() - this._lastHeartBeat > heartBeatTolerance ) {
 		clearInterval( this._heartbeatInterval );
+		this._client._$onError(
+			C.TOPIC.CONNECTION,
+			C.EVENT.CONNECTION_ERROR,
+			'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds' );
 		this._endpoint.close();
-		this._onError( 'Two connections heartbeats missed successively' );
 	}
 };
 
@@ -3099,7 +3123,7 @@ Connection.prototype._clearReconnect = function() {
 module.exports = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":1}],16:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":2}],16:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	SEP = C.MESSAGE_PART_SEPERATOR;
 
@@ -3459,7 +3483,7 @@ PresenceHandler.prototype._resubscribe = function() {
 };
 
 module.exports = PresenceHandler;
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/resubscribe-notifier":29,"component-emitter":2}],19:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/ack-timeout-registry":27,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	EventEmitter = _dereq_( 'component-emitter2' );
 
@@ -3637,7 +3661,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
 };
 
 module.exports = AnonymousRecord;
-},{"./record":23,"component-emitter":2}],20:[function(_dereq_,module,exports){
+},{"./record":23,"component-emitter2":1}],20:[function(_dereq_,module,exports){
 var utils = _dereq_( '../utils/utils' );
 var PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
 
@@ -3719,31 +3743,55 @@ module.exports.set = function( data, path, value, deepCopy ) {
  */
 function patch( oldValue, newValue, deepCopy ) {
 	var i;
-
-	if ( utils.deepEquals( oldValue, newValue ) ) {
-		return oldValue;
-	}
-	else if ( oldValue === null || newValue === null ) {
+	var j;
+	if ( oldValue === null || newValue === null ) {
 		return newValue;
 	}
 	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
-		var arr = [];
+		var arr;
 		for ( i = 0; i < newValue.length; i++ ) {
-			arr[ i ] = patch( oldValue[ i ], newValue[ i ], deepCopy );
+			var value = patch( oldValue[ i ], newValue[ i ], false );
+			if ( !arr ) {
+				if ( value === oldValue[ i ] ) {
+					continue
+				}
+				arr = [];
+				for (	j = 0; j < i; ++j) {
+					arr[ j ] = oldValue[ j ];
+				}
+			}
+			arr[ i ] = value;
 		}
+		arr = arr && deepCopy !== false ? utils.deepCopy( arr ) : arr;
+		arr = arr || (oldValue.length === newValue.length ? oldValue : newValue);
 		return arr;
 	}
 	else if ( !Array.isArray( newValue ) && typeof oldValue === 'object' && typeof newValue === 'object' ) {
+		var obj;
 		var props = Object.keys( newValue );
-		var obj = Object.create( null );
 		for ( i = 0; i < props.length; i++ ) {
-			obj[ props[ i ] ] = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], deepCopy );
+			var value = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], false );
+			if ( !obj ) {
+				if ( value === oldValue[ props[ i ] ]) {
+					continue;
+				}
+				obj = Object.create( null );
+				for ( j = 0; j < i; ++j) {
+					obj[ props[ j ] ] = oldValue[ props[ j ] ];
+				}
+			}
+			obj[ props[ i ] ] = newValue[ props[ i ] ];
 		}
+		obj = obj && deepCopy !== false ? utils.deepCopy( obj ) : obj;
+		obj = obj || (Object.keys(oldValue).length === props.length ? oldValue : newValue);
 		return obj;
 	}
-	else {
+	else if (newValue !== oldValue) {
 		return deepCopy !== false ? utils.deepCopy( newValue ) : newValue;
 	}
+  else {
+    return oldValue;
+  }
 }
 
 /**
@@ -3763,9 +3811,7 @@ function tokenize( path ) {
 		throw new Error('invalid path ' + path)
 	}
 
-	return cache[ path ] = parts.map( function( part ) {
-		return !isNaN( part ) ? parseInt( part, 10 ) : part;
-	} );
+	return cache[ path ] = parts;
 };
 
 },{"../utils/utils":31}],21:[function(_dereq_,module,exports){
@@ -3874,7 +3920,7 @@ List.prototype.setEntries = function( entries ) {
 /**
  * Removes an entry from the list
  *
- * @param   {String} entry
+ * @param {String} entry
  * @param {Number} [index]
  *
  * @public
@@ -3882,7 +3928,7 @@ List.prototype.setEntries = function( entries ) {
  */
 List.prototype.removeEntry = function( entry, index ) {
 	if( this._record.isReady === false ) {
-		this._queuedMethods.push( this.removeEntry.bind( this, entry ) );
+		this._queuedMethods.push( this.removeEntry.bind( this, entry, index ) );
 		return;
 	}
 
@@ -3916,7 +3962,7 @@ List.prototype.addEntry = function( entry, index ) {
 	}
 
 	if( this._record.isReady === false ) {
-		this._queuedMethods.push( this.addEntry.bind( this, entry ) );
+		this._queuedMethods.push( this.addEntry.bind( this, entry, index ) );
 		return;
 	}
 
@@ -3998,6 +4044,7 @@ List.prototype._onReady = function() {
 		this._queuedMethods[ i ]();
 	}
 
+	this._queuedMethods = [];
 	this.emit( 'ready' );
 };
 
@@ -4160,7 +4207,7 @@ List.prototype._getStructure = function() {
 
 module.exports = List;
 
-},{"../constants/constants":11,"./record":23,"component-emitter":2}],22:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"./record":23,"component-emitter2":1}],22:[function(_dereq_,module,exports){
 var Record = _dereq_( './record' ),
 	AnonymousRecord = _dereq_( './anonymous-record' ),
 	List = _dereq_( './list' ),
@@ -4498,7 +4545,7 @@ RecordHandler.prototype._removeRecord = function( recordName ) {
 
 module.exports = RecordHandler;
 
-},{"../constants/constants":11,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter":2}],23:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter2":1}],23:[function(_dereq_,module,exports){
 var jsonPath = _dereq_( './json-path' ),
 	utils = _dereq_( '../utils/utils' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -4620,7 +4667,7 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
 			path = pathOrData;
 			data = dataOrCallback
-		} 
+		}
 		// set( data, callback )
 		else if( typeof pathOrData === 'object' && typeof dataOrCallback === 'function' ) {
 			data = pathOrData;
@@ -4870,7 +4917,7 @@ Record.prototype._recoverRecord = function( remoteVersion, remoteData, message )
 };
 
 Record.prototype._sendUpdate = function ( path, data, config ) {
-	this.version++; 
+	this.version++;
 	var msgData;
 	if( !path ) {
 		msgData = config === undefined ?
@@ -4910,7 +4957,7 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, messa
 
 		var config = message.data[ 4 ];
 		if( config && JSON.parse( config ).writeSuccess ) {
-			var callback = this._writeCallbacks[ oldVersion ]; 
+			var callback = this._writeCallbacks[ oldVersion ];
 			delete this._writeCallbacks[ oldVersion ];
 			this._setUpCallback( this.version, callback )
 		}
@@ -5046,12 +5093,7 @@ Record.prototype._applyChange = function( newData ) {
 	var oldData = this._$data;
 	this._$data = newData;
 
-	if ( !this._eventEmitter._callbacks ) {
-		return;
-	}
-
-	var paths = Object.keys( this._eventEmitter._callbacks );
-
+	var paths = this._eventEmitter.eventNames();
 	for ( var i = 0; i < paths.length; i++ ) {
 		var newValue = jsonPath.get( newData, paths[ i ], false );
 		var oldValue = jsonPath.get( oldData, paths[ i ], false );
@@ -5155,7 +5197,7 @@ Record.prototype._onTimeout = function( timeoutType ) {
 
 module.exports = Record;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter":2}],24:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' ),
 	AckTimeoutRegistry = _dereq_( '../utils/ack-timeout-registry' ),
 	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
@@ -5693,7 +5735,7 @@ AckTimeoutRegistry.prototype._onTimeout = function( uniqueName, name ) {
 
 module.exports = AckTimeoutRegistry;
 
-},{"../constants/constants":11,"component-emitter":2}],28:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"component-emitter2":1}],28:[function(_dereq_,module,exports){
 var C = _dereq_( '../constants/constants' );
 var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
 
