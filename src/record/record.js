@@ -163,7 +163,8 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 	var oldValue = this._$data;
 	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
 
-	if ( oldValue === newValue ) {
+	if( oldValue === newValue ) {
+		if( callback !== undefined ) callback( null );
 		return this;
 	}
 
