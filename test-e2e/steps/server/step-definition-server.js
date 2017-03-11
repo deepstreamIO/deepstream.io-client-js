@@ -1,32 +1,34 @@
-const Cluster = require( '../../tools/cluster' );
-const Deepstream = require( 'deepstream.io' );
+'use strict'
 
-module.exports = function() {
+const Cluster = require('../../tools/cluster')
+const Deepstream = require('deepstream.io')
 
-  this.Given(/"([^"]*)" permissions are used$/, function ( permissionType ) {
-    global.cluster.updatePermissions( permissionType );
-  });
+module.exports = function () {
 
-  this.When(/^server (\S)* goes down$/, function ( server, done) {
-    global.cluster.stopServer( server - 1, done );
-  });
+  this.Given(/"([^"]*)" permissions are used$/, (permissionType) => {
+    global.cluster.updatePermissions(permissionType)
+  })
 
-  this.When(/^server (\S)* comes back up$/, function ( server, done ) {
-    global.cluster.startServer( server - 1, done );
-  });
+  this.When(/^server (\S)* goes down$/, (server, done) => {
+    global.cluster.stopServer(server - 1, done)
+  })
 
-  this.registerHandler('BeforeFeature', function (features, callback) {
-    global.cluster = new Cluster( [ 6001, 6002, 6003 ], false );
-    global.cluster.on( 'ready', callback );
-  });
+  this.When(/^server (\S)* comes back up$/, (server, done) => {
+    global.cluster.startServer(server - 1, done)
+  })
 
-  this.registerHandler('AfterFeature', function (features, callback) {
-    setTimeout( () => {
+  this.registerHandler('BeforeFeature', (features, callback) => {
+    global.cluster = new Cluster([6001, 6002, 6003], false)
+    global.cluster.on('ready', callback)
+  })
+
+  this.registerHandler('AfterFeature', (features, callback) => {
+    setTimeout(() => {
       global.cluster.on('stopped', () => {
         callback()
-      } );
-      global.cluster.stop();
-    }, 100 );
-  });
+      })
+      global.cluster.stop()
+    }, 100)
+  })
 
-};
+}

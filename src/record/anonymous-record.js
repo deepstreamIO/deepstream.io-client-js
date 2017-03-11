@@ -1,5 +1,7 @@
-var Record = require( './record' ),
-	EventEmitter = require( 'component-emitter2' );
+'use strict'
+
+const Record = require('./record')
+const EventEmitter = require('component-emitter2')
 
 /**
  * An AnonymousRecord is a record without a predefined name. It
@@ -14,20 +16,20 @@ var Record = require( './record' ),
  * show the selected user's details
  *
  * @param {RecordHandler} recordHandler
- * 
+ *
  * @constructor
  */
-var AnonymousRecord = function( recordHandler ) {
-	this.name = null;
-	this._recordHandler = recordHandler;
-	this._record = null;
-	this._subscriptions = [];
-	this._proxyMethod( 'delete' );
-	this._proxyMethod( 'set' );
-	this._proxyMethod( 'discard' );
-};
+const AnonymousRecord = function (recordHandler) {
+  this.name = null
+  this._recordHandler = recordHandler
+  this._record = null
+  this._subscriptions = []
+  this._proxyMethod('delete')
+  this._proxyMethod('set')
+  this._proxyMethod('discard')
+}
 
-EventEmitter( AnonymousRecord.prototype );
+EventEmitter(AnonymousRecord.prototype)
 
 /**
  * Proxies the actual record's get method. It is valid
@@ -40,71 +42,71 @@ EventEmitter( AnonymousRecord.prototype );
  * @public
  * @returns {mixed}    the value of path or the entire object
  */
-AnonymousRecord.prototype.get = function( path ) {
-	if( this._record === null ) {
-		return undefined;
-	}
+AnonymousRecord.prototype.get = function (path) {
+  if (this._record === null) {
+    return undefined
+  }
 
-	return this._record.get( path );
-};
+  return this._record.get(path)
+}
 
 /**
  * Proxies the actual record's subscribe method. The same parameters
  * can be used. Can be called prior to setName(). Please note, triggerIfReady
  * will always be set to true to reflect changes in the underlying record.
  *
- * @param   {[String]} path 	A json path. If non is provided,
- *	                          	it subscribes to changes for the entire record.
+ * @param   {[String]} path   A json path. If non is provided,
+ *                              it subscribes to changes for the entire record.
  *
- * @param 	{Function} callback A callback function that will be invoked whenever
+ * @param   {Function} callback A callback function that will be invoked whenever
  *                              the subscribed path or record updates
  *
  * @public
  * @returns {void}
  */
-AnonymousRecord.prototype.subscribe = function() {
-	var parameters = Record.prototype._normalizeArguments( arguments );
-	parameters.triggerNow = true;
-	this._subscriptions.push( parameters );
+AnonymousRecord.prototype.subscribe = function () {
+  const parameters = Record.prototype._normalizeArguments(arguments)
+  parameters.triggerNow = true
+  this._subscriptions.push(parameters)
 
-	if( this._record !== null ) {
-		this._record.subscribe( parameters );
-	}
-};
+  if (this._record !== null) {
+    this._record.subscribe(parameters)
+  }
+}
 
 /**
  * Proxies the actual record's unsubscribe method. The same parameters
  * can be used. Can be called prior to setName()
  *
- * @param   {[String]} path 	A json path. If non is provided,
- *	                          	it subscribes to changes for the entire record.
+ * @param   {[String]} path   A json path. If non is provided,
+ *                              it subscribes to changes for the entire record.
  *
- * @param 	{Function} callback A callback function that will be invoked whenever
+ * @param   {Function} callback A callback function that will be invoked whenever
  *                              the subscribed path or record updates
  *
  * @public
  * @returns {void}
  */
-AnonymousRecord.prototype.unsubscribe = function() {
-	var parameters = Record.prototype._normalizeArguments( arguments ),
-		subscriptions = [],
-		i;
+AnonymousRecord.prototype.unsubscribe = function () {
+  const parameters = Record.prototype._normalizeArguments(arguments)
+  const subscriptions = []
+  let i
 
-	for( i = 0; i < this._subscriptions.length; i++ ) {
-		if(
-			this._subscriptions[ i ].path !== parameters.path ||
-			this._subscriptions[ i ].callback !== parameters.callback
-		) {
-			subscriptions.push( this._subscriptions[ i ] );
-		}
-	}
+  for (i = 0; i < this._subscriptions.length; i++) {
+    if (
+      this._subscriptions[i].path !== parameters.path ||
+      this._subscriptions[i].callback !== parameters.callback
+    ) {
+      subscriptions.push(this._subscriptions[i])
+    }
+  }
 
-	this._subscriptions = subscriptions;
+  this._subscriptions = subscriptions
 
-	if( this._record !== null ) {
-		this._record.unsubscribe( parameters );
-	}
-};
+  if (this._record !== null) {
+    this._record.unsubscribe(parameters)
+  }
+}
 
 /**
  * Sets the underlying record the anonymous record is bound
@@ -115,27 +117,27 @@ AnonymousRecord.prototype.unsubscribe = function() {
  * @public
  * @returns {void}
  */
-AnonymousRecord.prototype.setName = function( recordName ) {
-	this.name = recordName;
-	
-	var i;
+AnonymousRecord.prototype.setName = function (recordName) {
+  this.name = recordName
 
-	if( this._record !== null && !this._record.isDestroyed) {
-		for( i = 0; i < this._subscriptions.length; i++ ) {
-			this._record.unsubscribe( this._subscriptions[ i ] );
-		}
-		this._record.discard();
-	}
+  let i
 
-	this._record = this._recordHandler.getRecord( recordName );
+  if (this._record !== null && !this._record.isDestroyed) {
+    for (i = 0; i < this._subscriptions.length; i++) {
+      this._record.unsubscribe(this._subscriptions[i])
+    }
+    this._record.discard()
+  }
 
-	for( i = 0; i < this._subscriptions.length; i++ ) {
-		this._record.subscribe( this._subscriptions[ i ] );
-	}
+  this._record = this._recordHandler.getRecord(recordName)
 
-	this._record.whenReady( this.emit.bind( this, 'ready' ) );
-	this.emit( 'nameChanged', recordName );
-};
+  for (i = 0; i < this._subscriptions.length; i++) {
+    this._record.subscribe(this._subscriptions[i])
+  }
+
+  this._record.whenReady(this.emit.bind(this, 'ready'))
+  this.emit('nameChanged', recordName)
+}
 
 /**
  * Adds the specified method to this method and forwards it
@@ -146,9 +148,9 @@ AnonymousRecord.prototype.setName = function( recordName ) {
  * @private
  * @returns {void}
  */
-AnonymousRecord.prototype._proxyMethod = function( methodName ) {
-	this[ methodName ] = this._callMethodOnRecord.bind( this, methodName );
-};
+AnonymousRecord.prototype._proxyMethod = function (methodName) {
+  this[methodName] = this._callMethodOnRecord.bind(this, methodName)
+}
 
 /**
  * Invokes the specified method with the provided parameters on
@@ -160,18 +162,18 @@ AnonymousRecord.prototype._proxyMethod = function( methodName ) {
  * @private
  * @returns {Mixed} the return value of the actual method
  */
-AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
-	if( this._record === null ) {
-		throw new Error( 'Can`t invoke ' + methodName + '. AnonymousRecord not initialised. Call setName first' );
-	}
+AnonymousRecord.prototype._callMethodOnRecord = function (methodName) {
+  if (this._record === null) {
+    throw new Error(`Can\`t invoke ${methodName}. AnonymousRecord not initialised. Call setName first`)
+  }
 
-	if( typeof this._record[ methodName ] !== 'function' ) {
-		throw new Error( methodName + ' is not a method on the record' );
-	}
+  if (typeof this._record[methodName] !== 'function') {
+    throw new Error(`${methodName} is not a method on the record`)
+  }
 
-	var args = Array.prototype.slice.call( arguments, 1 );
+  const args = Array.prototype.slice.call(arguments, 1)
 
-	return this._record[ methodName ].apply( this._record, args );
-};
+  return this._record[methodName].apply(this._record, args)
+}
 
-module.exports = AnonymousRecord;
+module.exports = AnonymousRecord

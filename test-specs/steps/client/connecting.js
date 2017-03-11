@@ -1,107 +1,109 @@
-var deepstream = require( '../../../src/client' );
-var config = require( '../config' );
-var check = require( '../helper' ).check;
-var lastAuthArgs;
+'use strict'
 
-var errors;
-var catchError;
+const deepstream = require('../../../src/client')
+const config = require('../config')
+const check = require('../helper').check
+let lastAuthArgs
 
-module.exports = function() {
-	this.Before( function( scenario ) {
-		errors = [];
-		catchError = false;
-	});
+let errors
+let catchError
 
-	this.After( function( scenario ) {
-		if( !catchError && errors.length > 0 ) {
-			throw 'Unexpected error occured during scenario. Errors: ' + JSON.stringify( errors );
-		}
-	});
+module.exports = function () {
+  this.Before((scenario) => {
+    errors = []
+    catchError = false
+  })
 
-	this.Given( /^the client is initialised$/, function( callback ){
-		if( global.dsClient ) {
-			global.dsClient.close();
-			global.dsClient.removeListener( 'error' );
-		}
-		global.dsClient = deepstream( config.testServerHost + ':' + config.testServerPort, {
-			subscriptionTimeout: 100,
-			recordReadAckTimeout: 200,
-			recordReadTimeout: 400,
-			recordDeleteTimeout: 100,
-			rpcResponseTimeout: 200
-		});
-		global.dsClient.on( 'error', function(){
-			errors.push( arguments );
-		});
-		setTimeout( callback, config.messageWaitTime );
-	});
+  this.After((scenario) => {
+    if (!catchError && errors.length > 0) {
+      throw `Unexpected error occured during scenario. Errors: ${JSON.stringify(errors)}`
+    }
+  })
 
-	this.Given( /^the client is initialised with a small heartbeat interval$/, function( callback ){
-		if( global.dsClient ) {
-			global.dsClient.close();
-			global.dsClient.removeListener( 'error' );
-		}
-		global.dsClient = deepstream( config.testServerHost + ':' + config.testServerPort, {
-			subscriptionTimeout: 100,
-			recordReadAckTimeout: 200,
-			recordReadTimeout: 260,
-			recordDeleteTimeout: 100,
-			rpcResponseTimeout: 200,
-			heartbeatInterval: 500
-		});
-		global.dsClient.on( 'error', function(){
-			errors.push( arguments );
-		});
-		setTimeout( callback, config.messageWaitTime );
-	});
+  this.Given(/^the client is initialised$/, (callback) => {
+    if (global.dsClient) {
+      global.dsClient.close()
+      global.dsClient.removeListener('error')
+    }
+    global.dsClient = deepstream(`${config.testServerHost}:${config.testServerPort}`, {
+      subscriptionTimeout: 100,
+      recordReadAckTimeout: 200,
+      recordReadTimeout: 400,
+      recordDeleteTimeout: 100,
+      rpcResponseTimeout: 200
+    })
+    global.dsClient.on('error', function () {
+      errors.push(arguments)
+    })
+    setTimeout(callback, config.messageWaitTime)
+  })
 
-	this.When( /^some time passes$/, function( callback ){
-		setTimeout( callback, 200 );
-	});
+  this.Given(/^the client is initialised with a small heartbeat interval$/, (callback) => {
+    if (global.dsClient) {
+      global.dsClient.close()
+      global.dsClient.removeListener('error')
+    }
+    global.dsClient = deepstream(`${config.testServerHost}:${config.testServerPort}`, {
+      subscriptionTimeout: 100,
+      recordReadAckTimeout: 200,
+      recordReadTimeout: 260,
+      recordDeleteTimeout: 100,
+      rpcResponseTimeout: 200,
+      heartbeatInterval: 500
+    })
+    global.dsClient.on('error', function () {
+      errors.push(arguments)
+    })
+    setTimeout(callback, config.messageWaitTime)
+  })
 
-	this.When( /^two seconds later$/, function( callback ){
-		setTimeout( callback, 2000 );
-	});
+  this.When(/^some time passes$/, (callback) => {
+    setTimeout(callback, 200)
+  })
 
-	this.When( /^the client logs in with username "(\w*)" and password "(\w*)"$/, function( username, password, callback ){
-		global.dsClient.login({ username: username, password: password }, function(){
-			lastAuthArgs = arguments;
-		});
-		setTimeout( callback, config.
+  this.When(/^two seconds later$/, (callback) => {
+    setTimeout(callback, 2000)
+  })
 
-messageWaitTime );
-	});
+  this.When(/^the client logs in with username "(\w*)" and password "(\w*)"$/, (username, password, callback) => {
+    global.dsClient.login({ username, password }, function () {
+      lastAuthArgs = arguments
+    })
+    setTimeout(callback, config
 
-	this.Then( /^the last login was successful$/, function( callback ){
-		check( 'last login result', true, lastAuthArgs[ 0 ], callback );
-	});
+.messageWaitTime)
+  })
 
-	this.Then( /^the clients connection state is "(\w*)"$/, function( connectionState, callback ){
-		check( 'connectionState', connectionState, global.dsClient.getConnectionState(), callback );
-	});
+  this.Then(/^the last login was successful$/, (callback) => {
+    check('last login result', true, lastAuthArgs[0], callback)
+  })
 
-	this.Then( /^the client throws a "(\w*)" error with message "(.*)"$/, function( error, errorMessage, callback ){
-		catchError = true;
-		var lastErrorArgs = errors[ errors.length - 1 ];
+  this.Then(/^the clients connection state is "(\w*)"$/, (connectionState, callback) => {
+    check('connectionState', connectionState, global.dsClient.getConnectionState(), callback)
+  })
 
-		if( errors.length === 0 ) {
-			callback( 'No errors were thrown' );
-			return;
-		}
+  this.Then(/^the client throws a "(\w*)" error with message "(.*)"$/, (error, errorMessage, callback) => {
+    catchError = true
+    const lastErrorArgs = errors[errors.length - 1]
 
-		var error = check( 'last error', error, lastErrorArgs[ 1 ] );
-		var errorMessage = check( 'last error message', errorMessage, lastErrorArgs[ 0 ] );
-		if( error || errorMessage ) {
-			callback( error + ' ' + errorMessage );
-			return;
-		}
+    if (errors.length === 0) {
+      callback('No errors were thrown')
+      return
+    }
 
-		callback();
-	});
+    error = check('last error', error, lastErrorArgs[1])
+    errorMessage = check('last error message', errorMessage, lastErrorArgs[0])
+    if (error || errorMessage) {
+      callback(`${error} ${errorMessage}`)
+      return
+    }
 
-	this.Then( /^the last login failed with error message "(.*)"$/, function( errorMessage, callback ){
-		catchError = true;
-		//check( 'last auth error', error, lastAuthArgs[ 1 ], callback, true );
-		check( 'last auth error message', errorMessage, lastAuthArgs[ 1 ], callback );
-	});
-};
+    callback()
+  })
+
+  this.Then(/^the last login failed with error message "(.*)"$/, (errorMessage, callback) => {
+    catchError = true
+    // check( 'last auth error', error, lastAuthArgs[ 1 ], callback, true );
+    check('last auth error message', errorMessage, lastAuthArgs[1], callback)
+  })
+}

@@ -8,7 +8,9 @@
     "test": "test"
   },
   "scripts": {
+    "commitmsg": "validate-commit-msg",
     "all": "npm t && npm run e2e && npm run specs",
+    "lint": "node_modules/.bin/eslint src/",
     "test": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
     "reporter": "istanbul cover jasmine-runner.js",
     "coverage": "istanbul cover node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=jasmine.json",
@@ -16,13 +18,13 @@
     "unit": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
     "unit::watch": "watch \"npm run unit\" ./src ./test-unit",
     "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js",
-    "e2e": "node ./node_modules/cucumber/bin/cucumber.js test-e2e --require ./test-e2e/steps --fail-fast",
+    "e2e": "node ./node_modules/cucumber/bin/cucumber.js test-e2e --require ./test-e2e/steps",
     "rpc-e2e": "npm run e2e -- --tags @rpcs",
     "event-e2e": "npm run e2e -- --tags @events",
     "record-e2e": "npm run e2e -- --tags @records",
     "login-e2e": "npm run e2e -- --tags @login",
     "presence-e2e": "npm run e2e -- --tags @presence",
-    "specs": " node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps --fail-fast"
+    "specs": " node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps"
   },
   "repository": {
     "type": "git",
@@ -54,6 +56,7 @@
     "deepstream.io-cache-redis": "latest",
     "deepstream.io-msg-redis": "latest",
     "derequire": "2.0.6",
+    "eslint-config-deepstream": "^2.1.1",
     "grunt": "~1.0.1",
     "grunt-babel": "^6.0.0",
     "grunt-browserify": "5.0.0",
@@ -61,12 +64,14 @@
     "grunt-contrib-uglify": "2.1.0",
     "grunt-exec": "1.0.1",
     "grunt-release": "0.14.0",
+    "husky": "^0.13.2",
     "istanbul": "^0.4.5",
     "jasmine": "^2.5.3",
     "jasmine-spec-reporter": "^3.2.0",
     "proxyquire": "1.7.11",
     "sinon": "^1.17.7",
-    "uws": "^0.13.0",
+    "uws": "^0.12.0",
+    "validate-commit-msg": "^2.11.2",
     "watch": "^1.0.2"
   },
   "author": "deepstreamHub GmbH",
@@ -74,5 +79,8 @@
   "bugs": {
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js/issues"
   },
-  "homepage": "http://deepstream.io"
+  "homepage": "http://deepstream.io",
+  "eslintConfig": {
+    "extends": "deepstream"
+  }
 }

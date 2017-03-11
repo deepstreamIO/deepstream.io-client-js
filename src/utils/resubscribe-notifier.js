@@ -1,4 +1,6 @@
-var C = require( '../constants/constants' );
+'use strict'
+
+const C = require('../constants/constants')
 
 /**
  * Makes sure that all functionality is resubscribed on reconnect. Subscription is called
@@ -13,41 +15,41 @@ var C = require( '../constants/constants' );
  *
  * @constructor
  */
-var ResubscribeNotifier = function( client, resubscribe ) {
-	this._client = client;
-	this._resubscribe = resubscribe;
+const ResubscribeNotifier = function (client, resubscribe) {
+  this._client = client
+  this._resubscribe = resubscribe
 
-	this._isReconnecting = false;
-	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
-	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
-};
+  this._isReconnecting = false
+  this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind(this)
+  this._client.on('connectionStateChanged', this._connectionStateChangeHandler)
+}
 
 /**
  * Call this whenever this functionality is no longer needed to remove links
  *
  * @returns {void}
  */
-ResubscribeNotifier.prototype.destroy = function() {
-	this._client.removeListener( 'connectionStateChanged', this._connectionStateChangeHandler );
-	this._connectionStateChangeHandler = null;
-	this._client = null;
-};
+ResubscribeNotifier.prototype.destroy = function () {
+  this._client.removeListener('connectionStateChanged', this._connectionStateChangeHandler)
+  this._connectionStateChangeHandler = null
+  this._client = null
+}
 
  /**
  * Check whenever the connection state changes if it is in reconnecting to resubscribe
  * @private
  * @returns {void}
  */
- ResubscribeNotifier.prototype._handleConnectionStateChanges = function() {
-	var state = this._client.getConnectionState();
+ResubscribeNotifier.prototype._handleConnectionStateChanges = function () {
+  const state = this._client.getConnectionState()
 
-	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
-		this._isReconnecting = true;
-	}
-	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
-		this._isReconnecting = false;
-		this._resubscribe();
-	}
- };
+  if (state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false) {
+    this._isReconnecting = true
+  }
+  if (state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true) {
+    this._isReconnecting = false
+    this._resubscribe()
+  }
+}
 
-module.exports = ResubscribeNotifier;
+module.exports = ResubscribeNotifier

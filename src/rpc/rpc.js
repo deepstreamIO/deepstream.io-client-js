@@ -1,5 +1,7 @@
-var C = require( '../constants/constants' ),
-	messageParser = require( '../message/message-parser' );
+'use strict'
+
+const C = require('../constants/constants')
+const messageParser = require('../message/message-parser')
 
 /**
  * This class represents a single remote procedure
@@ -7,33 +9,34 @@ var C = require( '../constants/constants' ),
  * is to encapsulate the logic around timeouts and to convert the
  * incoming response data
  *
- * @param {Object}   options  deepstream client config
- * @param {Function} callback the function that will be called once the request is complete or failed
+ * @param {Object}   options           deepstream client config
+ * @param {Function} callback          the function that will be called once the request
+ *                                     is complete or failed
  * @param {Client} client
  *
  * @constructor
  */
-var Rpc = function( name, callback, options, client ) {
-	this._options = options;
-	this._callback = callback;
-	this._client = client;
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._ackTimeout = this._ackTimeoutRegistry.add({
-		topic: C.TOPIC.RPC,
-		action: C.ACTIONS.ACK,
-		name: name,
-		timeout: this._options.rpcAckTimeout,
-		callback: this.error.bind( this )
-	});
-	this._responseTimeout = this._ackTimeoutRegistry.add({
-		topic: C.TOPIC.RPC,
-		action: C.ACTIONS.REQUEST,
-		name: name,
-		event: C.EVENT.RESPONSE_TIMEOUT,
-		timeout: this._options.rpcResponseTimeout,
-		callback: this.error.bind( this )
-	});
-};
+const Rpc = function (name, callback, options, client) {
+  this._options = options
+  this._callback = callback
+  this._client = client
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry()
+  this._ackTimeout = this._ackTimeoutRegistry.add({
+    topic: C.TOPIC.RPC,
+    action: C.ACTIONS.ACK,
+    name,
+    timeout: this._options.rpcAckTimeout,
+    callback: this.error.bind(this)
+  })
+  this._responseTimeout = this._ackTimeoutRegistry.add({
+    topic: C.TOPIC.RPC,
+    action: C.ACTIONS.REQUEST,
+    name,
+    event: C.EVENT.RESPONSE_TIMEOUT,
+    timeout: this._options.rpcResponseTimeout,
+    callback: this.error.bind(this)
+  })
+}
 
 /**
  * Called once an ack message is received from the server
@@ -41,11 +44,11 @@ var Rpc = function( name, callback, options, client ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.ack = function() {
-	this._ackTimeoutRegistry.remove({
-		ackId: this._ackTimeout
-	});
-};
+Rpc.prototype.ack = function () {
+  this._ackTimeoutRegistry.remove({
+    ackId: this._ackTimeout
+  })
+}
 
 /**
  * Called once a response message is received from the server.
@@ -56,11 +59,11 @@ Rpc.prototype.ack = function() {
  * @public
  * @returns {void}
  */
-Rpc.prototype.respond = function( data ) {
-	var convertedData = messageParser.convertTyped( data, this._client );
-	this._callback( null, convertedData );
-	this._complete();
-};
+Rpc.prototype.respond = function (data) {
+  const convertedData = messageParser.convertTyped(data, this._client)
+  this._callback(null, convertedData)
+  this._complete()
+}
 
 /**
  * Callback for error messages received from the server. Once
@@ -73,10 +76,10 @@ Rpc.prototype.respond = function( data ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.error = function(timeout) {
-	this._callback( timeout.event || timeout );
-	this._complete();
-};
+Rpc.prototype.error = function (timeout) {
+  this._callback(timeout.event || timeout)
+  this._complete()
+}
 
 /**
  * Called after either an error or a response
@@ -85,13 +88,13 @@ Rpc.prototype.error = function(timeout) {
  * @private
  * @returns {void}
  */
-Rpc.prototype._complete = function() {
-	this._ackTimeoutRegistry.remove({
-		ackId: this._ackTimeout
-	});
-	this._ackTimeoutRegistry.remove({
-		ackId: this._responseTimeout
-	});
-};
+Rpc.prototype._complete = function () {
+  this._ackTimeoutRegistry.remove({
+    ackId: this._ackTimeout
+  })
+  this._ackTimeoutRegistry.remove({
+    ackId: this._responseTimeout
+  })
+}
 
-module.exports = Rpc;
+module.exports = Rpc

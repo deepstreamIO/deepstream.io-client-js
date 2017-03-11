@@ -1,6 +1,8 @@
-var C = require( '../constants/constants' ),
-	utils = require( '../utils/utils' ),
-	messageBuilder = require( '../message/message-builder' );
+'use strict'
+
+const C = require('../constants/constants')
+const utils = require('../utils/utils')
+const messageBuilder = require('../message/message-builder')
 
 /**
  * This object provides a number of methods that allow a rpc provider
@@ -10,15 +12,15 @@ var C = require( '../constants/constants' ),
  * @param {String} name the name of the rpc
  * @param {String} correlationId the correlationId for the RPC
  */
-var RpcResponse = function( connection, name, correlationId ) {
-	this._connection = connection;
-	this._name = name;
-	this._correlationId = correlationId;
-	this._isAcknowledged = false;
-	this._isComplete = false;
-	this.autoAck = true;
-	utils.nextTick( this._performAutoAck.bind( this ) );
-};
+const RpcResponse = function (connection, name, correlationId) {
+  this._connection = connection
+  this._name = name
+  this._correlationId = correlationId
+  this._isAcknowledged = false
+  this._isComplete = false
+  this.autoAck = true
+  utils.nextTick(this._performAutoAck.bind(this))
+}
 
 /**
  * Acknowledges the receipt of the request. This
@@ -26,18 +28,18 @@ var RpcResponse = function( connection, name, correlationId ) {
  * explicitly sets autoAck to false
  *
  * @public
- * @returns 	{void}
+ * @returns   {void}
  */
-RpcResponse.prototype.ack = function() {
-	if( this._isAcknowledged === false ) {
-		this._connection.sendMsg(
-			C.TOPIC.RPC,
-			C.ACTIONS.ACK,
-			[ C.ACTIONS.REQUEST, this._name, this._correlationId ]
-		);
-		this._isAcknowledged = true;
-	}
-};
+RpcResponse.prototype.ack = function () {
+  if (this._isAcknowledged === false) {
+    this._connection.sendMsg(
+      C.TOPIC.RPC,
+      C.ACTIONS.ACK,
+      [C.ACTIONS.REQUEST, this._name, this._correlationId]
+    )
+    this._isAcknowledged = true
+  }
+}
 
 /**
  * Reject the request. This might be necessary if the client
@@ -47,14 +49,14 @@ RpcResponse.prototype.ack = function() {
  * providers left
  *
  * @public
- * @returns	{void}
+ * @returns  {void}
  */
-RpcResponse.prototype.reject = function() {
-	this.autoAck = false;
-	this._isComplete = true;
-	this._isAcknowledged = true;
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ this._name, this._correlationId ] );
-};
+RpcResponse.prototype.reject = function () {
+  this.autoAck = false
+  this._isComplete = true
+  this._isAcknowledged = true
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REJECTION, [this._name, this._correlationId])
+}
 
 /**
  * Notifies the server that an error has occured while trying to process the request.
@@ -62,14 +64,18 @@ RpcResponse.prototype.reject = function() {
  *
  * @param {String} errorMsg the message used to describe the error that occured
  * @public
- * @returns	{void}
+ * @returns  {void}
  */
-RpcResponse.prototype.error = function( errorMsg ) {
-	this.autoAck = false;
-	this._isComplete = true;
-	this._isAcknowledged = true;
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ERROR, [ errorMsg, this._name, this._correlationId ] );
-};
+RpcResponse.prototype.error = function (errorMsg) {
+  this.autoAck = false
+  this._isComplete = true
+  this._isAcknowledged = true
+  this._connection.sendMsg(
+    C.TOPIC.RPC,
+    C.ACTIONS.ERROR,
+    [errorMsg, this._name, this._correlationId]
+  )
+}
 
 /**
  * Completes the request by sending the response data
@@ -84,16 +90,20 @@ RpcResponse.prototype.error = function( errorMsg ) {
  * @public
  * @returns {void}
  */
-RpcResponse.prototype.send = function( data ) {
-	if( this._isComplete === true ) {
-		throw new Error( 'Rpc ' + this._name + ' already completed' );
-	}
-	this.ack();
+RpcResponse.prototype.send = function (data) {
+  if (this._isComplete === true) {
+    throw new Error(`Rpc ${this._name} already completed`)
+  }
+  this.ack()
 
-	var typedData = messageBuilder.typed( data );
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.RESPONSE, [ this._name, this._correlationId, typedData ] );
-	this._isComplete = true;
-};
+  const typedData = messageBuilder.typed(data)
+  this._connection.sendMsg(
+    C.TOPIC.RPC,
+    C.ACTIONS.RESPONSE,
+    [this._name, this._correlationId, typedData]
+  )
+  this._isComplete = true
+}
 
 /**
  * Callback for the autoAck timeout. Executes ack
@@ -102,10 +112,10 @@ RpcResponse.prototype.send = function( data ) {
  * @private
  * @returns {void}
  */
-RpcResponse.prototype._performAutoAck = function() {
-	if( this.autoAck === true ) {
-		this.ack();
-	}
-};
+RpcResponse.prototype._performAutoAck = function () {
+  if (this.autoAck === true) {
+    this.ack()
+  }
+}
 
-module.exports = RpcResponse;
+module.exports = RpcResponse

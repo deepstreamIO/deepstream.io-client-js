@@ -1838,17 +1838,18 @@ module.exports = {
 };
 
 },{}],10:[function(_dereq_,module,exports){
-var C = _dereq_( './constants/constants' ),
-	MS = _dereq_( './constants/merge-strategies' ),
-	Emitter = _dereq_( 'component-emitter2' ),
-	Connection = _dereq_( './message/connection' ),
-	EventHandler = _dereq_( './event/event-handler' ),
-	RpcHandler = _dereq_( './rpc/rpc-handler' ),
-	RecordHandler = _dereq_( './record/record-handler' ),
-	PresenceHandler = _dereq_( './presence/presence-handler' ),
-	defaultOptions = _dereq_( './default-options' ),
-	messageBuilder = _dereq_( './message/message-builder' ),
-	AckTimeoutRegistry = _dereq_( './utils/ack-timeout-registry' );
+'use strict';
+
+var C = _dereq_('./constants/constants');
+var MS = _dereq_('./constants/merge-strategies');
+var Emitter = _dereq_('component-emitter2');
+var Connection = _dereq_('./message/connection');
+var EventHandler = _dereq_('./event/event-handler');
+var RpcHandler = _dereq_('./rpc/rpc-handler');
+var RecordHandler = _dereq_('./record/record-handler');
+var PresenceHandler = _dereq_('./presence/presence-handler');
+var defaultOptions = _dereq_('./default-options');
+var AckTimeoutRegistry = _dereq_('./utils/ack-timeout-registry');
 
 /**
  * deepstream.io javascript client
@@ -1866,27 +1867,27 @@ var C = _dereq_( './constants/constants' ),
  * @public
  * @constructor
  */
-var Client = function( url, options ) {
-	this._url = url;
-	this._options = this._getOptions( options || {} );
+var Client = function Client(url, options) {
+  this._url = url;
+  this._options = this._getOptions(options || {});
 
-	this._connection = new Connection( this, this._url, this._options );
-	this._ackTimeoutRegistry = new AckTimeoutRegistry(this, this._options);
+  this._connection = new Connection(this, this._url, this._options);
+  this._ackTimeoutRegistry = new AckTimeoutRegistry(this, this._options);
 
-	this.event = new EventHandler( this._options, this._connection, this );
-	this.rpc = new RpcHandler( this._options, this._connection, this );
-	this.record = new RecordHandler( this._options, this._connection, this );
-	this.presence = new PresenceHandler( this._options, this._connection, this );
+  this.event = new EventHandler(this._options, this._connection, this);
+  this.rpc = new RpcHandler(this._options, this._connection, this);
+  this.record = new RecordHandler(this._options, this._connection, this);
+  this.presence = new PresenceHandler(this._options, this._connection, this);
 
-	this._messageCallbacks = {};
-	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
-	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
-	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
-	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this.presence._$handle.bind( this.presence );
-	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
+  this._messageCallbacks = {};
+  this._messageCallbacks[C.TOPIC.EVENT] = this.event._$handle.bind(this.event);
+  this._messageCallbacks[C.TOPIC.RPC] = this.rpc._$handle.bind(this.rpc);
+  this._messageCallbacks[C.TOPIC.RECORD] = this.record._$handle.bind(this.record);
+  this._messageCallbacks[C.TOPIC.PRESENCE] = this.presence._$handle.bind(this.presence);
+  this._messageCallbacks[C.TOPIC.ERROR] = this._onErrorMessage.bind(this);
 };
 
-Emitter( Client.prototype );
+Emitter(Client.prototype);
 
 /**
  * Send authentication parameters to the client to fully open
@@ -1915,9 +1916,9 @@ Emitter( Client.prototype );
  * @public
  * @returns {Client}
  */
-Client.prototype.login = function( authParams, callback ) {
-	this._connection.authenticate( authParams || {}, callback );
-	return this;
+Client.prototype.login = function (authParams, callback) {
+  this._connection.authenticate(authParams || {}, callback);
+  return this;
 };
 
 /**
@@ -1926,8 +1927,8 @@ Client.prototype.login = function( authParams, callback ) {
  * @public
  * @returns {void}
  */
-Client.prototype.close = function() {
-	this._connection.close();
+Client.prototype.close = function () {
+  this._connection.close();
 };
 
 /**
@@ -1937,8 +1938,8 @@ Client.prototype.close = function() {
  *
  * @returns {[type]} [description]
  */
-Client.prototype.getConnectionState = function() {
-	return this._connection.getState();
+Client.prototype.getConnectionState = function () {
+  return this._connection.getState();
 };
 
 /**
@@ -1949,22 +1950,23 @@ Client.prototype.getConnectionState = function() {
  * @public
  * @returns {String} unique id
  */
-Client.prototype.getUid = function() {
-	var timestamp = (new Date()).getTime().toString(36),
-		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
+Client.prototype.getUid = function () {
+  var timestamp = new Date().getTime().toString(36);
+  var randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '');
 
-	return timestamp + '-' + randomString;
+  return timestamp + '-' + randomString;
 };
 
 /**
- * Package private ack timeout registry. This is how all classes can get access to register timeouts.
+ * Package private ack timeout registry. This is how all classes can get access to
+ * register timeouts.
  * (Well... that's the intention anyways)
  *
  * @package private
  * @returns {AckTimeoutRegistry}
  */
-Client.prototype._$getAckTimeoutRegistry = function() {
-	return this._ackTimeoutRegistry;
+Client.prototype._$getAckTimeoutRegistry = function () {
+  return this._ackTimeoutRegistry;
 };
 
 /**
@@ -1976,17 +1978,17 @@ Client.prototype._$getAckTimeoutRegistry = function() {
  * @package private
  * @returns {void}
  */
-Client.prototype._$onMessage = function( message ) {
-	if( this._messageCallbacks[ message.topic ] ) {
-		this._messageCallbacks[ message.topic ]( message );
-	} else {
-		message.processedError = true;
-		this._$onError( message.topic, C.EVENT.MESSAGE_PARSE_ERROR, 'Received message for unknown topic ' + message.topic );
-	}
+Client.prototype._$onMessage = function (message) {
+  if (this._messageCallbacks[message.topic]) {
+    this._messageCallbacks[message.topic](message);
+  } else {
+    message.processedError = true;
+    this._$onError(message.topic, C.EVENT.MESSAGE_PARSE_ERROR, 'Received message for unknown topic ' + message.topic);
+  }
 
-	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
-		this._$onError( message.topic, message.data[ 0 ],  message.data.slice( 0 ) );
-	}
+  if (message.action === C.ACTIONS.ERROR && !message.processedError) {
+    this._$onError(message.topic, message.data[0], message.data.slice(0));
+  }
 };
 
 /**
@@ -2009,34 +2011,34 @@ Client.prototype._$onMessage = function( message ) {
  * @package private
  * @returns {void}
  */
-Client.prototype._$onError = function( topic, event, msg ) {
-	var errorMsg;
+Client.prototype._$onError = function (topic, event, msg) {
+  var errorMsg = void 0;
 
-	/*
-	 * Help to diagnose the problem quicker by checking for
-	 * some common problems
-	 */
-	if( event === C.EVENT.ACK_TIMEOUT || event === C.EVENT.RESPONSE_TIMEOUT ) {
-		if( this.getConnectionState() === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
-			errorMsg = 'Your message timed out because you\'re not authenticated. Have you called login()?';
-			setTimeout( this._$onError.bind( this, C.EVENT.NOT_AUTHENTICATED, C.TOPIC.ERROR, errorMsg ), 1 );
-		}
-	}
+  /*
+   * Help to diagnose the problem quicker by checking for
+   * some common problems
+   */
+  if (event === C.EVENT.ACK_TIMEOUT || event === C.EVENT.RESPONSE_TIMEOUT) {
+    if (this.getConnectionState() === C.CONNECTION_STATE.AWAITING_AUTHENTICATION) {
+      errorMsg = 'Your message timed out because you\'re not authenticated. Have you called login()?';
+      setTimeout(this._$onError.bind(this, C.EVENT.NOT_AUTHENTICATED, C.TOPIC.ERROR, errorMsg), 1);
+    }
+  }
 
-	if( this.hasListeners( 'error' ) ) {
-		this.emit( 'error', msg, event, topic );
-		this.emit( event, topic, msg );
-	} else {
-		console.log( '--- You can catch all deepstream errors by subscribing to the error event ---' );
+  if (this.hasListeners('error')) {
+    this.emit('error', msg, event, topic);
+    this.emit(event, topic, msg);
+  } else {
+    console.log('--- You can catch all deepstream errors by subscribing to the error event ---');
 
-		errorMsg = event + ': ' + msg;
+    errorMsg = event + ': ' + msg;
 
-		if( topic ) {
-			errorMsg += ' (' + topic + ')';
-		}
+    if (topic) {
+      errorMsg += ' (' + topic + ')';
+    }
 
-		throw new Error( errorMsg );
-	}
+    throw new Error(errorMsg);
+  }
 };
 
 /**
@@ -2048,8 +2050,8 @@ Client.prototype._$onError = function( topic, event, msg ) {
  * @private
  * @returns {void}
  */
-Client.prototype._onErrorMessage = function( errorMessage ) {
-	this._$onError( errorMessage.topic, errorMessage.data[ 0 ], errorMessage.data[ 1 ] );
+Client.prototype._onErrorMessage = function (errorMessage) {
+  this._$onError(errorMessage.topic, errorMessage.data[0], errorMessage.data[1]);
 };
 
 /**
@@ -2059,21 +2061,20 @@ Client.prototype._onErrorMessage = function( errorMessage ) {
  * @param   {Object} options The user specified client configuration options
  *
  * @private
- * @returns {Object}	merged options
+ * @returns {Object}  merged options
  */
-Client.prototype._getOptions = function( options ) {
-	var mergedOptions = {},
-		key;
+Client.prototype._getOptions = function (options) {
+  var mergedOptions = {};
 
-	for( key in defaultOptions ) {
-		if( typeof options[ key ] === 'undefined' ) {
-			mergedOptions[ key ] = defaultOptions[ key ];
-		} else {
-			mergedOptions[ key ] = options[ key ];
-		}
-	}
+  for (var key in defaultOptions) {
+    if (typeof options[key] === 'undefined') {
+      mergedOptions[key] = defaultOptions[key];
+    } else {
+      mergedOptions[key] = options[key];
+    }
+  }
 
-	return mergedOptions;
+  return mergedOptions;
 };
 
 /**
@@ -2086,8 +2087,8 @@ Client.prototype._getOptions = function( options ) {
  * @public
  * @returns {void}
  */
-function createDeepstream( url, options ) {
-	return new Client( url, options );
+function createDeepstream(url, options) {
+  return new Client(url, options);
 }
 
 /**
@@ -2104,7 +2105,9 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./message/message-builder":16,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"./utils/ack-timeout-registry":27,"component-emitter2":1}],11:[function(_dereq_,module,exports){
+},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"./utils/ack-timeout-registry":27,"component-emitter2":1}],11:[function(_dereq_,module,exports){
+'use strict';
+
 exports.CONNECTION_STATE = {};
 
 exports.CONNECTION_STATE.CLOSED = 'CLOSED';
@@ -2116,8 +2119,8 @@ exports.CONNECTION_STATE.OPEN = 'OPEN';
 exports.CONNECTION_STATE.ERROR = 'ERROR';
 exports.CONNECTION_STATE.RECONNECTING = 'RECONNECTING';
 
-exports.MESSAGE_SEPERATOR = String.fromCharCode( 30 ); // ASCII Record Seperator 1E
-exports.MESSAGE_PART_SEPERATOR = String.fromCharCode( 31 ); // ASCII Unit Separator 1F
+exports.MESSAGE_SEPERATOR = String.fromCharCode(30); // ASCII Record Seperator 1E
+exports.MESSAGE_PART_SEPERATOR = String.fromCharCode(31); // ASCII Unit Separator 1F
 
 exports.TYPES = {};
 exports.TYPES.STRING = 'S';
@@ -2207,152 +2210,184 @@ exports.CALL_STATE.ENDED = 'ENDED';
 exports.CALL_STATE.ERROR = 'ERROR';
 
 },{}],12:[function(_dereq_,module,exports){
+'use strict';
+
 module.exports = {
-	/**
-	*	Choose the server's state over the client's
-	**/
-	REMOTE_WINS: function( record, remoteValue, remoteVersion, callback ) {
-		callback( null, remoteValue );
-	},
-	/**
-	*	Choose the local state over the server's
-	**/
-	LOCAL_WINS: function( record, remoteValue, remoteVersion, callback ) {
-		callback( null, record.get() );
-	}
+  /**
+  *  Choose the server's state over the client's
+  **/
+  REMOTE_WINS: function REMOTE_WINS(record, remoteValue, remoteVersion, callback) {
+    callback(null, remoteValue);
+  },
+
+  /**
+  *  Choose the local state over the server's
+  **/
+  LOCAL_WINS: function LOCAL_WINS(record, remoteValue, remoteVersion, callback) {
+    callback(null, record.get());
+  }
 };
+
 },{}],13:[function(_dereq_,module,exports){
+'use strict';
+
 var MERGE_STRATEGIES = _dereq_('./constants/merge-strategies');
 
 module.exports = {
-	/**
-	 * @param {Number} heartBeatInterval How often you expect the heartbeat to be sent. If two heatbeats are missed
-	 * in a row the client will consider the server to have disconnected and will close the connection in order to 
-	 * establish a new one.
-	 */
-	heartbeatInterval: 30000,
+  /**
+   * @param {Number} heartBeatInterval           How often you expect the heartbeat to be sent.
+   *                                             If two heatbeats are missed in a row the client
+   *                                             will consider the server to have disconnected
+   *                                             and will close the connection in order to
+   *                                             establish a new one.
+   */
+  heartbeatInterval: 30000,
 
-	/**
-	 * @param {Boolean} recordPersistDefault Whether records should be
-	 *                                       persisted by default. Can be overwritten
-	 *                                       for individual records when calling getRecord( name, persist );
-	 */
-	recordPersistDefault: true,
+  /**
+   * @param {Boolean} recordPersistDefault       Whether records should be
+   *                                             persisted by default. Can be overwritten
+   *                                             for individual records when calling
+   *                                             getRecord( name, persist );
+   */
+  recordPersistDefault: true,
 
-	/**
-	 * @param {Number} reconnectIntervalIncrement Specifies the number of milliseconds by which the time until
-	 *                                            the next reconnection attempt will be incremented after every
-	 *                                            unsuccesful attempt.
-	 *                                            E.g. for 1500: if the connection is lost, the client will attempt to reconnect
-	 *                                            immediatly, if that fails it will try again after 1.5 seconds, if that fails
-	 *                                            it will try again after 3 seconds and so on
-	 */
-	reconnectIntervalIncrement: 4000,
+  /**
+   * @param {Number} reconnectIntervalIncrement  Specifies the number of milliseconds by
+   *                                             which the time until the next reconnection
+   *                                             attempt will be incremented after every
+   *                                             unsuccesful attempt.
+   *                                             E.g. for 1500: if the connection is lost,
+   *                                             the client will attempt to reconnect immediatly,
+   *                                             if that fails it will try again after 1.5 seconds,
+   *                                             if that fails it will try again after 3 seconds
+   *                                             and so on
+   */
+  reconnectIntervalIncrement: 4000,
 
-	/**
-	 * @param {Number} maxReconnectInterval       Specifies the maximum number of milliseconds for the reconnectIntervalIncrement
-	 *                                            The amount of reconnections will reach this value
-	 *                                            then reconnectIntervalIncrement will be ignored.
-	 */
-	maxReconnectInterval: 180000,
+  /**
+   * @param {Number} maxReconnectInterval        Specifies the maximum number of milliseconds for
+   *                                             the reconnectIntervalIncrement
+   *                                             The amount of reconnections will reach this value
+   *                                             then reconnectIntervalIncrement will be ignored.
+   */
+  maxReconnectInterval: 180000,
 
-	/**
-	 * @param {Number} maxReconnectAttempts		The number of reconnection attempts until the client gives
-	 *                                       	up and declares the connection closed
-	 */
-	maxReconnectAttempts: 5,
+  /**
+   * @param {Number} maxReconnectAttempts        The number of reconnection attempts until the
+   *                                             client gives up and declares the connection closed
+   */
+  maxReconnectAttempts: 5,
 
-	/**
-	 * @param {Number} rpcAckTimeout			The number of milliseconds after which a rpc will create an error if
-	 * 											no Ack-message has been received
-	 */
-	rpcAckTimeout: 15000,
+  /**
+   * @param {Number} rpcAckTimeout               The number of milliseconds after which a rpc will
+   *                                             create an error if no Ack-message has been received
+   */
+  rpcAckTimeout: 6000,
 
-	/**
-	 * @param {Number} rpcResponseTimeout		The number of milliseconds after which a rpc will create an error if
-	 * 											no response-message has been received
-	 */
-	rpcResponseTimeout: 15000,
+  /**
+   * @param {Number} rpcResponseTimeout          The number of milliseconds after which a rpc will
+   *                                             create an error if no response-message has been
+   *                                             received
+   */
+  rpcResponseTimeout: 10000,
 
-	/**
-	 * @param {Number} subscriptionTimeout		The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/
-	 * 											listening to a record before an error is thrown
-	 */
-	subscriptionTimeout: 15000,
+  /**
+   * @param {Number} subscriptionTimeout         The number of milliseconds that can pass after
+   *                                             providing/unproviding a RPC or subscribing/
+   *                                             unsubscribing/listening to a record before an
+   *                                             error is thrown
+   */
+  subscriptionTimeout: 2000,
 
-	/**
-	 * @param {Number} maxMessagesPerPacket	If the implementation tries to send a large number of messages at the same
-	 *                                      	time, the deepstream client will try to split them into smaller packets and send
-	 *                                      	these every <timeBetweenSendingQueuedPackages> ms.
-	 *
-	 *                                       	This parameter specifies the number of messages after which deepstream sends the
-	 *                                       	packet and queues the remaining messages. Set to Infinity to turn the feature off.
-	 *
-	 */
-	maxMessagesPerPacket: 100,
+  /**
+   * @param {Number} maxMessagesPerPacket        If the implementation tries to send a large
+   *                                             number of messages at the same time, the deepstream
+   *                                             client will try to split them into smaller packets
+   *                                             and send these every
+   *                                             <timeBetweenSendingQueuedPackages> ms.
+   *
+   *                                             This parameter specifies the number of messages
+   *                                             after which deepstream sends the packet and
+   *                                             queues the remaining messages.
+   *                                             Set to Infinity to turn the feature off.
+   *
+   */
+  maxMessagesPerPacket: 100,
 
+  /**
+   * @param {Number} timeBetweenSendingQueuedPackages
+   *                                             Please see description for
+   *                                             maxMessagesPerPacket. Sets the time in ms.
+   */
+  timeBetweenSendingQueuedPackages: 16,
 
-	/**
-	 * @param {Number} timeBetweenSendingQueuedPackages Please see description for maxMessagesPerPacket. Sets the time in ms.
-	 */
-	timeBetweenSendingQueuedPackages: 16,
+  /**
+   * @param {Number} recordReadAckTimeout       The number of milliseconds from the moment
+   *                                            client.record.getRecord() is called until an error
+   *                                            is thrown since no ack message has been received.
+   */
+  recordReadAckTimeout: 15000,
 
-	/**
-	 * @param {Number} recordReadAckTimeout 	The number of milliseconds from the moment client.record.getRecord() is called
-	 *                                       	until an error is thrown since no ack message has been received.
-	 */
-	recordReadAckTimeout: 15000,
+  /**
+   * @param {Number} recordReadTimeout           The number of milliseconds from the moment
+   *                                             client.record.getRecord() is called until an error
+   *                                             is thrown since no data has been received.
+   */
+  recordReadTimeout: 15000,
 
-	/**
-	 * @param {Number} recordReadTimeout 		The number of milliseconds from the moment client.record.getRecord() is called
-	 *                                       	until an error is thrown since no data has been received.
-	 */
-	recordReadTimeout: 15000,
+  /**
+   * @param {Number} recordDeleteTimeout         The number of milliseconds from the moment
+   *                                             record.delete() is called until an error is
+   *                                             thrown since no delete ack message had been
+   *                                             received.
+   *                                             Please take into account that the deletion is only
+   *                                             complete after the record has been deleted from
+   *                                             both cache and storage
+   */
+  recordDeleteTimeout: 15000,
 
-	/**
-	 * @param {Number} recordDeleteTimeout 	The number of milliseconds from the moment record.delete() is called
-	 *                                       	until an error is thrown since no delete ack message had been received. Please
-	 *                                       	take into account that the deletion is only complete after the record has been
-	 *                                       	deleted from both cache and storage
-	 */
-	recordDeleteTimeout: 15000,
+  /**
+   * @param {String} path path to connect to
+   */
+  path: '/deepstream',
 
-	/**
-	 * @param {String} path path to connect to
-	 */
-	path: '/deepstream',
+  /**
+   *  @param {Function} mergeStrategy            This provides the default strategy used to
+   *                                             deal with merge conflicts.
+   *                                             If the merge strategy is not succesfull it will
+   *                                             set an error, else set the returned data as the
+   *                                             latest revision. This can be overriden on a per
+   *                                             record basis by setting the `setMergeStrategy`.
+   */
+  mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
 
-	/**
-	 *  @param {Function} mergeStrategy 	This provides the default strategy used to deal with merge conflicts.
-	 *                                  If the merge strategy is not succesfull it will set an error, else set the
-	 *                                  returned data as the latest revision. This can be overriden on a per record
-	 *                                  basis by setting the `setMergeStrategy`.
-	 */
-	mergeStrategy: MERGE_STRATEGIES.REMOTE_WINS,
+  /**
+   * @param {Boolean} recordDeepCopy             Setting to false disabled deepcopying of record
+   *                                             data when provided via `get()` in a `subscribe`
+   *                                             callback. This improves speed at the expense of
+   *                                             the user having to ensure object immutability.
+   */
+  recordDeepCopy: true,
 
-	/**
-	 * @param {Boolean} recordDeepCopy Setting to false disabled deepcopying of record data
-	 *                                  when provided via `get()` in a `subscribe` callback. This
-	 *                                  improves speed at the expense of the user having to ensure
-	 *                                  object immutability.
-	 */
-	recordDeepCopy: true,
-
-	/**
-	 * @param {Object} nodeSocketOptions    Options to pass to the websocket constructor in node.
-	 * @default null
-	 * @see https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketaddress-protocols-options
-	 */
-	nodeSocketOptions: null
+  /**
+   * https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketaddress-protocols-options
+   *
+   * @param {Object} nodeSocketOptions           Options to pass to the websocket constructor in
+   *                                             node.
+   * @default null
+   */
+  nodeSocketOptions: null
 };
 
 },{"./constants/merge-strategies":12}],14:[function(_dereq_,module,exports){
-var messageBuilder = _dereq_( '../message/message-builder' ),
-	messageParser = _dereq_( '../message/message-parser' ),
-	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
-	C = _dereq_( '../constants/constants' ),
-	Listener = _dereq_( '../utils/listener' ),
-	EventEmitter = _dereq_( 'component-emitter2' );
+'use strict';
+
+var messageBuilder = _dereq_('../message/message-builder');
+var messageParser = _dereq_('../message/message-parser');
+var ResubscribeNotifier = _dereq_('../utils/resubscribe-notifier');
+var C = _dereq_('../constants/constants');
+var Listener = _dereq_('../utils/listener');
+var EventEmitter = _dereq_('component-emitter2');
 
 /**
  * This class handles incoming and outgoing messages in relation
@@ -2365,14 +2400,14 @@ var messageBuilder = _dereq_( '../message/message-builder' ),
  * @public
  * @constructor
  */
-var EventHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._emitter = new EventEmitter();
-	this._listener = {};
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
+var EventHandler = function EventHandler(options, connection, client) {
+  this._options = options;
+  this._connection = connection;
+  this._client = client;
+  this._emitter = new EventEmitter();
+  this._listener = {};
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resubscribe.bind(this));
 };
 
 /**
@@ -2385,24 +2420,24 @@ var EventHandler = function( options, connection, client ) {
  * @public
  * @returns {void}
  */
-EventHandler.prototype.subscribe = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+EventHandler.prototype.subscribe = function (name, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add({
-			topic: C.TOPIC.EVENT,
-			action: C.ACTIONS.SUBSCRIBE,
-			name: name
-		});
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ name ] );
-	}
+  if (!this._emitter.hasListeners(name)) {
+    this._ackTimeoutRegistry.add({
+      topic: C.TOPIC.EVENT,
+      action: C.ACTIONS.SUBSCRIBE,
+      name: name
+    });
+    this._connection.sendMsg(C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [name]);
+  }
 
-	this._emitter.on( name, callback );
+  this._emitter.on(name, callback);
 };
 
 /**
@@ -2416,23 +2451,23 @@ EventHandler.prototype.subscribe = function( name, callback ) {
  * @public
  * @returns {void}
  */
-EventHandler.prototype.unsubscribe = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if ( callback !== undefined && typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
-	this._emitter.off( name, callback );
+EventHandler.prototype.unsubscribe = function (name, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
+  if (callback !== undefined && typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
+  this._emitter.off(name, callback);
 
-	if( !this._emitter.hasListeners( name ) ) {
-		this._ackTimeoutRegistry.add({
-			topic: C.TOPIC.EVENT,
-			action: C.ACTIONS.UNSUBSCRIBE,
-			name: name
-		});
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [ name ] );
-	}
+  if (!this._emitter.hasListeners(name)) {
+    this._ackTimeoutRegistry.add({
+      topic: C.TOPIC.EVENT,
+      action: C.ACTIONS.UNSUBSCRIBE,
+      name: name
+    });
+    this._connection.sendMsg(C.TOPIC.EVENT, C.ACTIONS.UNSUBSCRIBE, [name]);
+  }
 };
 
 /**
@@ -2445,13 +2480,13 @@ EventHandler.prototype.unsubscribe = function( name, callback ) {
  * @public
  * @returns {void}
  */
-EventHandler.prototype.emit = function( name, data ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
+EventHandler.prototype.emit = function (name, data) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
 
-	this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.EVENT, [ name, messageBuilder.typed( data ) ] );
-	this._emitter.emit( name, data );
+  this._connection.sendMsg(C.TOPIC.EVENT, C.ACTIONS.EVENT, [name, messageBuilder.typed(data)]);
+  this._emitter.emit(name, data);
 };
 
 /**
@@ -2465,21 +2500,22 @@ EventHandler.prototype.emit = function( name, data ) {
  * @public
  * @returns {void}
  */
-EventHandler.prototype.listen = function( pattern, callback ) {
-	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
-		throw new Error( 'invalid argument pattern' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+EventHandler.prototype.listen = function (pattern, callback) {
+  if (typeof pattern !== 'string' || pattern.length === 0) {
+    throw new Error('invalid argument pattern');
+  }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
-		return this._client._$onError( C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern );
-	} else if( this._listener[ pattern ] ) {
-		this._listener[ pattern ].destroy();
-	}
+  if (this._listener[pattern] && !this._listener[pattern].destroyPending) {
+    this._client._$onError(C.TOPIC.EVENT, C.EVENT.LISTENER_EXISTS, pattern);
+    return;
+  } else if (this._listener[pattern]) {
+    this._listener[pattern].destroy();
+  }
 
-	this._listener[ pattern ] = new Listener( C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection );
+  this._listener[pattern] = new Listener(C.TOPIC.EVENT, pattern, callback, this._options, this._client, this._connection);
 };
 
 /**
@@ -2491,26 +2527,26 @@ EventHandler.prototype.listen = function( pattern, callback ) {
  * @public
  * @returns {void}
  */
-EventHandler.prototype.unlisten = function( pattern ) {
-	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
-		throw new Error( 'invalid argument pattern' );
-	}
+EventHandler.prototype.unlisten = function (pattern) {
+  if (typeof pattern !== 'string' || pattern.length === 0) {
+    throw new Error('invalid argument pattern');
+  }
 
-	var listener = this._listener[ pattern ];
+  var listener = this._listener[pattern];
 
-	if( listener && !listener.destroyPending ) {
-		listener.sendDestroy();
-	} else if( this._listener[ pattern ] ) {
-		this._ackTimeoutRegistry.add({
-			topic: C.TOPIC.EVENT,
-			action: C.EVENT.UNLISTEN,
-			name: pattern
-		});
-		this._listener[ pattern ].destroy();
-		delete this._listener[ pattern ];
-	} else {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
-	}
+  if (listener && !listener.destroyPending) {
+    listener.sendDestroy();
+  } else if (this._listener[pattern]) {
+    this._ackTimeoutRegistry.add({
+      topic: C.TOPIC.EVENT,
+      action: C.EVENT.UNLISTEN,
+      name: pattern
+    });
+    this._listener[pattern].destroy();
+    delete this._listener[pattern];
+  } else {
+    this._client._$onError(C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern);
+  }
 };
 
 /**
@@ -2521,65 +2557,59 @@ EventHandler.prototype.unlisten = function( pattern ) {
  * @package private
  * @returns {void}
  */
-EventHandler.prototype._$handle = function( message ) {
-	var name = message.data[ message.action === C.ACTIONS.ACK ? 1 : 0 ];
+EventHandler.prototype._$handle = function (message) {
+  var name = message.data[message.action === C.ACTIONS.ACK ? 1 : 0];
 
-	if( message.action === C.ACTIONS.EVENT ) {
-		processed = true;
-		if( message.data && message.data.length === 2 ) {
-			this._emitter.emit( name, messageParser.convertTyped( message.data[ 1 ], this._client ) );
-		} else {
-			this._emitter.emit( name );
-		}
-		return;
-	}
+  if (message.action === C.ACTIONS.EVENT) {
+    if (message.data && message.data.length === 2) {
+      this._emitter.emit(name, messageParser.convertTyped(message.data[1], this._client));
+    } else {
+      this._emitter.emit(name);
+    }
+    return;
+  }
 
-	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
-		this._listener[ name ] && this._listener[ name ].destroyPending
-	) {
-		this._listener[ name ].destroy();
-		delete this._listener[ name ];
-		return;
-	} else if( this._listener[ name ] ) {
-		processed = true;
-		this._listener[ name ]._$onMessage( message );
-		return;
-	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
-		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
-		return;
-	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
-		// record can receive a HAS_PROVIDER after discarding the record
-		return;
-	}
+  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && this._listener[name] && this._listener[name].destroyPending) {
+    this._listener[name].destroy();
+    delete this._listener[name];
+    return;
+  } else if (this._listener[name]) {
+    this._listener[name]._$onMessage(message);
+    return;
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
+    // An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+    return;
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
+    // record can receive a HAS_PROVIDER after discarding the record
+    return;
+  }
 
-	if( message.action === C.ACTIONS.ACK ) {
-		this._ackTimeoutRegistry.clear( message );
-		return;
-	}
+  if (message.action === C.ACTIONS.ACK) {
+    this._ackTimeoutRegistry.clear(message);
+    return;
+  }
 
-	if( message.action === C.ACTIONS.ERROR ) {
-	    if (message.data[0] === C.EVENT.MESSAGE_DENIED){
-	      this._ackTimeoutRegistry.remove({
-	      	topic: C.TOPIC.EVENT,
-	      	name: message.data[1],
-	      	action: message.data[2]
-	      });
-	    }
-	    else if ( message.data[0] === C.EVENT.NOT_SUBSCRIBED ){
-	      this._ackTimeoutRegistry.remove({
-	      	topic: C.TOPIC.EVENT,
-	      	name: message.data[1],
-	      	action: C.ACTIONS.UNSUBSCRIBE
-	      });
-	    }
-		message.processedError = true;
-		this._client._$onError( C.TOPIC.EVENT, message.data[ 0 ], message.data[ 1 ] );
-		return;
-	}
+  if (message.action === C.ACTIONS.ERROR) {
+    if (message.data[0] === C.EVENT.MESSAGE_DENIED) {
+      this._ackTimeoutRegistry.remove({
+        topic: C.TOPIC.EVENT,
+        name: message.data[1],
+        action: message.data[2]
+      });
+    } else if (message.data[0] === C.EVENT.NOT_SUBSCRIBED) {
+      this._ackTimeoutRegistry.remove({
+        topic: C.TOPIC.EVENT,
+        name: message.data[1],
+        action: C.ACTIONS.UNSUBSCRIBE
+      });
+    }
+    message.processedError = true;
+    this._client._$onError(C.TOPIC.EVENT, message.data[0], message.data[1]);
+    return;
+  }
 
-	this._client._$onError( C.TOPIC.EVENT, C.EVENT.UNSOLICITED_MESSAGE, name );
+  this._client._$onError(C.TOPIC.EVENT, C.EVENT.UNSOLICITED_MESSAGE, name);
 };
-
 
 /**
  * Resubscribes to events when connection is lost
@@ -2587,23 +2617,25 @@ EventHandler.prototype._$handle = function( message ) {
  * @package private
  * @returns {void}
  */
-EventHandler.prototype._resubscribe = function() {
-	var callbacks = this._emitter._callbacks;
-	for( var eventName in callbacks ) {
-		this._connection.sendMsg( C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [ eventName ] );
-	}
+EventHandler.prototype._resubscribe = function () {
+  var callbacks = this._emitter._callbacks;
+  for (var eventName in callbacks) {
+    this._connection.sendMsg(C.TOPIC.EVENT, C.ACTIONS.SUBSCRIBE, [eventName]);
+  }
 };
 
 module.exports = EventHandler;
 
 },{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":1}],15:[function(_dereq_,module,exports){
 (function (global){
-var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
-	NodeWebSocket =  _dereq_( 'ws' ),
-	messageParser = _dereq_( './message-parser' ),
-	messageBuilder = _dereq_( './message-builder' ),
-	utils = _dereq_( '../utils/utils' ),
-	C = _dereq_( '../constants/constants' );
+'use strict';
+
+var BrowserWebSocket = global.WebSocket || global.MozWebSocket;
+var NodeWebSocket = _dereq_('ws');
+var messageParser = _dereq_('./message-parser');
+var messageBuilder = _dereq_('./message-builder');
+var utils = _dereq_('../utils/utils');
+var C = _dereq_('../constants/constants');
 
 /**
  * Establishes a connection to a deepstream server using websockets
@@ -2614,31 +2646,31 @@ var BrowserWebSocket = global.WebSocket || global.MozWebSocket,
  *
  * @constructor
  */
-var Connection = function( client, url, options ) {
-	this._client = client;
-	this._options = options;
-	this._authParams = null;
-	this._authCallback = null;
-	this._deliberateClose = false;
-	this._redirecting = false;
-	this._tooManyAuthAttempts = false;
-	this._connectionAuthenticationTimeout = false;
-	this._challengeDenied = false;
-	this._queuedMessages = [];
-	this._reconnectTimeout = null;
-	this._reconnectionAttempt = 0;
-	this._currentPacketMessageCount = 0;
-	this._sendNextPacketTimeout = null;
-	this._currentMessageResetTimeout = null;
-	this._endpoint = null;
-	this._lastHeartBeat = null;
-	this._heartbeatInterval = null;
+var Connection = function Connection(client, url, options) {
+  this._client = client;
+  this._options = options;
+  this._authParams = null;
+  this._authCallback = null;
+  this._deliberateClose = false;
+  this._redirecting = false;
+  this._tooManyAuthAttempts = false;
+  this._connectionAuthenticationTimeout = false;
+  this._challengeDenied = false;
+  this._queuedMessages = [];
+  this._reconnectTimeout = null;
+  this._reconnectionAttempt = 0;
+  this._currentPacketMessageCount = 0;
+  this._sendNextPacketTimeout = null;
+  this._currentMessageResetTimeout = null;
+  this._endpoint = null;
+  this._lastHeartBeat = null;
+  this._heartbeatInterval = null;
 
-	this._originalUrl = utils.parseUrl( url, this._options.path );
-	this._url = this._originalUrl;
+  this._originalUrl = utils.parseUrl(url, this._options.path);
+  this._url = this._originalUrl;
 
-	this._state = C.CONNECTION_STATE.CLOSED;
-	this._createEndpoint();
+  this._state = C.CONNECTION_STATE.CLOSED;
+  this._createEndpoint();
 };
 
 /**
@@ -2648,8 +2680,8 @@ var Connection = function( client, url, options ) {
  * @public
  * @returns {String} connectionState
  */
-Connection.prototype.getState = function() {
-	return this._state;
+Connection.prototype.getState = function () {
+  return this._state;
 };
 
 /**
@@ -2657,29 +2689,29 @@ Connection.prototype.getState = function() {
  * to the server. Can be called up to <maxAuthAttempts>
  * times for the same connection.
  *
- * @param   {Object}   authParams A map of user defined auth parameters. E.g. { username:<String>, password:<String> }
+ * @param   {Object}   authParams A map of user defined auth parameters.
+ *                                E.g. { username:<String>, password:<String> }
  * @param   {Function} callback   A callback that will be invoked with the authenticationr result
  *
  * @public
  * @returns {void}
  */
-Connection.prototype.authenticate = function( authParams, callback ) {
-	this._authParams = authParams;
-	this._authCallback = callback;
+Connection.prototype.authenticate = function (authParams, callback) {
+  this._authParams = authParams;
+  this._authCallback = callback;
 
-	if( this._tooManyAuthAttempts || this._challengeDenied || this._connectionAuthenticationTimeout ) {
-		this._client._$onError( C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed' );
-		return;
-	}
-	else if( this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED ) {
-		this._createEndpoint();
-		this._deliberateClose = false;
-		return;
-	}
+  if (this._tooManyAuthAttempts || this._challengeDenied || this._connectionAuthenticationTimeout) {
+    this._client._$onError(C.TOPIC.ERROR, C.EVENT.IS_CLOSED, 'this client\'s connection was closed');
+    return;
+  } else if (this._deliberateClose === true && this._state === C.CONNECTION_STATE.CLOSED) {
+    this._createEndpoint();
+    this._deliberateClose = false;
+    return;
+  }
 
-	if( this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
-		this._sendAuthParams();
-	}
+  if (this._state === C.CONNECTION_STATE.AWAITING_AUTHENTICATION) {
+    this._sendAuthParams();
+  }
 };
 
 /**
@@ -2688,14 +2720,14 @@ Connection.prototype.authenticate = function( authParams, callback ) {
  *
  * @param   {String} topic  One of C.TOPIC
  * @param   {String} action One of C.ACTIONS
- * @param   {[Mixed]} data 	Date that will be added to the message. Primitive values will
+ * @param   {[Mixed]} data   Date that will be added to the message. Primitive values will
  *                          be appended directly, objects and arrays will be serialized as JSON
  *
  * @private
  * @returns {void}
  */
-Connection.prototype.sendMsg = function( topic, action, data ) {
-	this.send( messageBuilder.getMsg( topic, action, data ) );
+Connection.prototype.sendMsg = function (topic, action, data) {
+  this.send(messageBuilder.getMsg(topic, action, data));
 };
 
 /**
@@ -2708,22 +2740,19 @@ Connection.prototype.sendMsg = function( topic, action, data ) {
  * @public
  * @returns {void}
  */
-Connection.prototype.send = function( message ) {
-	this._queuedMessages.push( message );
-	this._currentPacketMessageCount++;
+Connection.prototype.send = function (message) {
+  this._queuedMessages.push(message);
+  this._currentPacketMessageCount++;
 
-	if( this._currentMessageResetTimeout === null ) {
-		this._currentMessageResetTimeout = utils.nextTick( this._resetCurrentMessageCount.bind( this ) );
-	}
+  if (this._currentMessageResetTimeout === null) {
+    this._currentMessageResetTimeout = utils.nextTick(this._resetCurrentMessageCount.bind(this));
+  }
 
-	if( this._state === C.CONNECTION_STATE.OPEN &&
-		this._queuedMessages.length < this._options.maxMessagesPerPacket &&
-		this._currentPacketMessageCount < this._options.maxMessagesPerPacket ) {
-		this._sendQueuedMessages();
-	}
-	else if( this._sendNextPacketTimeout === null ) {
-		this._queueNextPacket();
-	}
+  if (this._state === C.CONNECTION_STATE.OPEN && this._queuedMessages.length < this._options.maxMessagesPerPacket && this._currentPacketMessageCount < this._options.maxMessagesPerPacket) {
+    this._sendQueuedMessages();
+  } else if (this._sendNextPacketTimeout === null) {
+    this._queueNextPacket();
+  }
 };
 
 /**
@@ -2734,10 +2763,10 @@ Connection.prototype.send = function( message ) {
  * @public
  * @returns {void}
  */
-Connection.prototype.close = function() {
-	clearInterval( this._heartbeatInterval );
-	this._deliberateClose = true;
-	this._endpoint.close();
+Connection.prototype.close = function () {
+  clearInterval(this._heartbeatInterval);
+  this._deliberateClose = true;
+  this._endpoint.close();
 };
 
 /**
@@ -2747,16 +2776,13 @@ Connection.prototype.close = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._createEndpoint = function() {
-	this._endpoint = BrowserWebSocket
-		? new BrowserWebSocket( this._url )
-		: new NodeWebSocket( this._url , this._options.nodeSocketOptions )
-	;
+Connection.prototype._createEndpoint = function () {
+  this._endpoint = BrowserWebSocket ? new BrowserWebSocket(this._url) : new NodeWebSocket(this._url, this._options.nodeSocketOptions);
 
-	this._endpoint.onopen = this._onOpen.bind( this );
-	this._endpoint.onerror = this._onError.bind( this );
-	this._endpoint.onclose = this._onClose.bind( this );
-	this._endpoint.onmessage = this._onMessage.bind( this );
+  this._endpoint.onopen = this._onOpen.bind(this);
+  this._endpoint.onerror = this._onError.bind(this);
+  this._endpoint.onclose = this._onClose.bind(this);
+  this._endpoint.onmessage = this._onMessage.bind(this);
 };
 
 /**
@@ -2772,9 +2798,9 @@ Connection.prototype._createEndpoint = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._resetCurrentMessageCount = function() {
-	this._currentPacketMessageCount = 0;
-	this._currentMessageResetTimeout = null;
+Connection.prototype._resetCurrentMessageCount = function () {
+  this._currentPacketMessageCount = 0;
+  this._currentMessageResetTimeout = null;
 };
 
 /**
@@ -2785,25 +2811,25 @@ Connection.prototype._resetCurrentMessageCount = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._sendQueuedMessages = function() {
-	if( this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN ) {
-		return;
-	}
+Connection.prototype._sendQueuedMessages = function () {
+  if (this._state !== C.CONNECTION_STATE.OPEN || this._endpoint.readyState !== this._endpoint.OPEN) {
+    return;
+  }
 
-	if( this._queuedMessages.length === 0 ) {
-		this._sendNextPacketTimeout = null;
-		return;
-	}
+  if (this._queuedMessages.length === 0) {
+    this._sendNextPacketTimeout = null;
+    return;
+  }
 
-	var message = this._queuedMessages.splice( 0, this._options.maxMessagesPerPacket ).join( '' );
+  var message = this._queuedMessages.splice(0, this._options.maxMessagesPerPacket).join('');
 
-	if( this._queuedMessages.length !== 0 ) {
-		this._queueNextPacket();
-	} else {
-		this._sendNextPacketTimeout = null;
-	}
+  if (this._queuedMessages.length !== 0) {
+    this._queueNextPacket();
+  } else {
+    this._sendNextPacketTimeout = null;
+  }
 
-	this._submit( message );
+  this._submit(message);
 };
 
 /**
@@ -2815,13 +2841,13 @@ Connection.prototype._sendQueuedMessages = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._submit = function( message ) {
-	if( this._endpoint.readyState === this._endpoint.OPEN ) {
-		this._endpoint.send( message );
-	} else {
-		this._onError( 'Tried to send message on a closed websocket connection' );
-	}
-}
+Connection.prototype._submit = function (message) {
+  if (this._endpoint.readyState === this._endpoint.OPEN) {
+    this._endpoint.send(message);
+  } else {
+    this._onError('Tried to send message on a closed websocket connection');
+  }
+};
 
 /**
  * Schedules the next packet whilst the connection is under
@@ -2830,11 +2856,11 @@ Connection.prototype._submit = function( message ) {
  * @private
  * @returns {void}
  */
-Connection.prototype._queueNextPacket = function() {
-	var fn = this._sendQueuedMessages.bind( this ),
-		delay = this._options.timeBetweenSendingQueuedPackages;
+Connection.prototype._queueNextPacket = function () {
+  var fn = this._sendQueuedMessages.bind(this);
+  var delay = this._options.timeBetweenSendingQueuedPackages;
 
-	this._sendNextPacketTimeout = setTimeout( fn, delay );
+  this._sendNextPacketTimeout = setTimeout(fn, delay);
 };
 
 /**
@@ -2844,10 +2870,10 @@ Connection.prototype._queueNextPacket = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._sendAuthParams = function() {
-	this._setState( C.CONNECTION_STATE.AUTHENTICATING );
-	var authMessage = messageBuilder.getMsg( C.TOPIC.AUTH, C.ACTIONS.REQUEST, [ this._authParams ] );
-	this._submit( authMessage );
+Connection.prototype._sendAuthParams = function () {
+  this._setState(C.CONNECTION_STATE.AUTHENTICATING);
+  var authMessage = messageBuilder.getMsg(C.TOPIC.AUTH, C.ACTIONS.REQUEST, [this._authParams]);
+  this._submit(authMessage);
 };
 
 /**
@@ -2855,17 +2881,14 @@ Connection.prototype._sendAuthParams = function() {
  * to have been lost and closes it for reconnection.
  * @return {void}
  */
-Connection.prototype._checkHeartBeat = function() {
-	var heartBeatTolerance = this._options.heartbeatInterval * 2;
+Connection.prototype._checkHeartBeat = function () {
+  var heartBeatTolerance = this._options.heartbeatInterval * 2;
 
-	if( Date.now() - this._lastHeartBeat > heartBeatTolerance ) {
-		clearInterval( this._heartbeatInterval );
-		this._client._$onError(
-			C.TOPIC.CONNECTION,
-			C.EVENT.CONNECTION_ERROR,
-			'Two connections heartbeats missed successively' );
-		this._endpoint.close();
-	}
+  if (Date.now() - this._lastHeartBeat > heartBeatTolerance) {
+    clearInterval(this._heartbeatInterval);
+    this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, 'Two connections heartbeats missed successively');
+    this._endpoint.close();
+  }
 };
 
 /**
@@ -2876,11 +2899,11 @@ Connection.prototype._checkHeartBeat = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._onOpen = function() {
-	this._clearReconnect();
-	this._lastHeartBeat = Date.now();
-	this._heartbeatInterval = utils.setInterval( this._checkHeartBeat.bind( this ), this._options.heartbeatInterval );
-	this._setState( C.CONNECTION_STATE.AWAITING_CONNECTION );
+Connection.prototype._onOpen = function () {
+  this._clearReconnect();
+  this._lastHeartBeat = Date.now();
+  this._heartbeatInterval = utils.setInterval(this._checkHeartBeat.bind(this), this._options.heartbeatInterval);
+  this._setState(C.CONNECTION_STATE.AWAITING_CONNECTION);
 };
 
 /**
@@ -2895,23 +2918,25 @@ Connection.prototype._onOpen = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._onError = function( error ) {
-	clearInterval( this._heartbeatInterval );
-	this._setState( C.CONNECTION_STATE.ERROR );
+Connection.prototype._onError = function (error) {
+  var _this = this;
 
-	/*
-	 * If the implementation isn't listening on the error event this will throw
-	 * an error. So let's defer it to allow the reconnection to kick in.
-	 */
-	setTimeout(function(){
-		var msg;
-		if( error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED' ) {
-			msg = 'Can\'t connect! Deepstream server unreachable on ' + this._originalUrl;
-		} else {
-			msg = error.toString();
-		}
-		this._client._$onError( C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg );
-	}.bind( this ), 1);
+  clearInterval(this._heartbeatInterval);
+  this._setState(C.CONNECTION_STATE.ERROR);
+
+  /*
+   * If the implementation isn't listening on the error event this will throw
+   * an error. So let's defer it to allow the reconnection to kick in.
+   */
+  setTimeout(function () {
+    var msg = void 0;
+    if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
+      msg = 'Can\'t connect! Deepstream server unreachable on ' + _this._originalUrl;
+    } else {
+      msg = error.toString();
+    }
+    _this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg);
+  }, 1);
 };
 
 /**
@@ -2925,19 +2950,17 @@ Connection.prototype._onError = function( error ) {
  * @private
  * @returns {void}
  */
-Connection.prototype._onClose = function() {
-	clearInterval( this._heartbeatInterval );
+Connection.prototype._onClose = function () {
+  clearInterval(this._heartbeatInterval);
 
-	if( this._redirecting === true ) {
-		this._redirecting = false;
-		this._createEndpoint();
-	}
-	else if( this._deliberateClose === true ) {
-		this._setState( C.CONNECTION_STATE.CLOSED );
-	}
-	else {
-		this._tryReconnect();
-	}
+  if (this._redirecting === true) {
+    this._redirecting = false;
+    this._createEndpoint();
+  } else if (this._deliberateClose === true) {
+    this._setState(C.CONNECTION_STATE.CLOSED);
+  } else {
+    this._tryReconnect();
+  }
 };
 
 /**
@@ -2948,23 +2971,20 @@ Connection.prototype._onClose = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._onMessage = function( message ) {
-	var parsedMessages = messageParser.parse( message.data, this._client ),
-		i;
+Connection.prototype._onMessage = function (message) {
+  var parsedMessages = messageParser.parse(message.data, this._client);
 
-	for( i = 0; i < parsedMessages.length; i++ ) {
-		if( parsedMessages[ i ] === null ) {
-			continue;
-		}
-		else if( parsedMessages[ i ].topic === C.TOPIC.CONNECTION ) {
-			this._handleConnectionResponse( parsedMessages[ i ] );
-		}
-		else if( parsedMessages[ i ].topic === C.TOPIC.AUTH ) {
-			this._handleAuthResponse( parsedMessages[ i ] );
-		} else {
-			this._client._$onMessage( parsedMessages[ i ] );
-		}
-	}
+  for (var i = 0; i < parsedMessages.length; i++) {
+    if (parsedMessages[i] === null) {
+      continue;
+    } else if (parsedMessages[i].topic === C.TOPIC.CONNECTION) {
+      this._handleConnectionResponse(parsedMessages[i]);
+    } else if (parsedMessages[i].topic === C.TOPIC.AUTH) {
+      this._handleAuthResponse(parsedMessages[i]);
+    } else {
+      this._client._$onMessage(parsedMessages[i]);
+    }
+  }
 };
 
 /**
@@ -2989,39 +3009,32 @@ Connection.prototype._onMessage = function( message ) {
  * @private
  * @returns {void}
  */
-Connection.prototype._handleConnectionResponse = function( message ) {
-	var data;
-
-	if( message.action === C.ACTIONS.PING ) {
-		this._lastHeartBeat = Date.now();
-		this._submit( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.PONG ) );
-	}
-	else if( message.action === C.ACTIONS.ACK ) {
-		this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
-		if( this._authParams ) {
-			this._sendAuthParams();
-		}
-	}
-	else if( message.action === C.ACTIONS.CHALLENGE ) {
-		this._setState( C.CONNECTION_STATE.CHALLENGING );
-		this._submit( messageBuilder.getMsg( C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [ this._originalUrl ] ) );
-	}
-	else if( message.action === C.ACTIONS.REJECTION ) {
-		this._challengeDenied = true;
-		this.close();
-	}
-	else if( message.action === C.ACTIONS.REDIRECT ) {
-		this._url = message.data[ 0 ];
-		this._redirecting = true;
-		this._endpoint.close();
-	}
-	else if( message.action === C.ACTIONS.ERROR ) {
-		if( message.data[ 0 ] === C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT ) {
-			this._deliberateClose = true;
-			this._connectionAuthenticationTimeout = true;
-			this._client._$onError( C.TOPIC.CONNECTION, message.data[ 0 ], message.data[ 1 ] );
-		}
-	}
+Connection.prototype._handleConnectionResponse = function (message) {
+  if (message.action === C.ACTIONS.PING) {
+    this._lastHeartBeat = Date.now();
+    this._submit(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.PONG));
+  } else if (message.action === C.ACTIONS.ACK) {
+    this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION);
+    if (this._authParams) {
+      this._sendAuthParams();
+    }
+  } else if (message.action === C.ACTIONS.CHALLENGE) {
+    this._setState(C.CONNECTION_STATE.CHALLENGING);
+    this._submit(messageBuilder.getMsg(C.TOPIC.CONNECTION, C.ACTIONS.CHALLENGE_RESPONSE, [this._originalUrl]));
+  } else if (message.action === C.ACTIONS.REJECTION) {
+    this._challengeDenied = true;
+    this.close();
+  } else if (message.action === C.ACTIONS.REDIRECT) {
+    this._url = message.data[0];
+    this._redirecting = true;
+    this._endpoint.close();
+  } else if (message.action === C.ACTIONS.ERROR) {
+    if (message.data[0] === C.EVENT.CONNECTION_AUTHENTICATION_TIMEOUT) {
+      this._deliberateClose = true;
+      this._connectionAuthenticationTimeout = true;
+      this._client._$onError(C.TOPIC.CONNECTION, message.data[0], message.data[1]);
+    }
+  }
 };
 
 /**
@@ -3035,31 +3048,28 @@ Connection.prototype._handleConnectionResponse = function( message ) {
  * @private
  * @returns {void}
  */
-Connection.prototype._handleAuthResponse = function( message ) {
-	var data;
+Connection.prototype._handleAuthResponse = function (message) {
+  if (message.action === C.ACTIONS.ERROR) {
 
-	if( message.action === C.ACTIONS.ERROR ) {
+    if (message.data[0] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS) {
+      this._deliberateClose = true;
+      this._tooManyAuthAttempts = true;
+    } else {
+      this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION);
+    }
 
-		if( message.data[ 0 ] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS ) {
-			this._deliberateClose = true;
-			this._tooManyAuthAttempts = true;
-		} else {
-			this._setState( C.CONNECTION_STATE.AWAITING_AUTHENTICATION );
-		}
+    if (this._authCallback) {
+      this._authCallback(false, this._getAuthData(message.data[1]));
+    }
+  } else if (message.action === C.ACTIONS.ACK) {
+    this._setState(C.CONNECTION_STATE.OPEN);
 
-		if( this._authCallback ) {
-			this._authCallback( false, this._getAuthData( message.data[ 1 ] ) );
-		}
+    if (this._authCallback) {
+      this._authCallback(true, this._getAuthData(message.data[0]));
+    }
 
-	} else if( message.action === C.ACTIONS.ACK ) {
-		this._setState( C.CONNECTION_STATE.OPEN );
-
-		if( this._authCallback ) {
-			this._authCallback( true, this._getAuthData( message.data[ 0 ] ) );
-		}
-
-		this._sendQueuedMessages();
-	}
+    this._sendQueuedMessages();
+  }
 };
 
 /**
@@ -3071,12 +3081,11 @@ Connection.prototype._handleAuthResponse = function( message ) {
  * @private
  * @returns {object}
  */
-Connection.prototype._getAuthData = function( data ) {
-	if( data === undefined ) {
-		return null;
-	} else {
-		return messageParser.convertTyped( data, this._client );
-	}
+Connection.prototype._getAuthData = function (data) {
+  if (data === undefined) {
+    return null;
+  }
+  return messageParser.convertTyped(data, this._client);
 };
 
 /**
@@ -3086,9 +3095,9 @@ Connection.prototype._getAuthData = function( data ) {
  * @private
  * @returns {void}
  */
-Connection.prototype._setState = function( state ) {
-	this._state = state;
-	this._client.emit( C.EVENT.CONNECTION_STATE_CHANGED, state );
+Connection.prototype._setState = function (state) {
+  this._state = state;
+  this._client.emit(C.EVENT.CONNECTION_STATE_CHANGED, state);
 };
 
 /**
@@ -3101,26 +3110,20 @@ Connection.prototype._setState = function( state ) {
  * @private
  * @returns {void}
  */
-Connection.prototype._tryReconnect = function() {
-	if( this._reconnectTimeout !== null ) {
-		return;
-	}
+Connection.prototype._tryReconnect = function () {
+  if (this._reconnectTimeout !== null) {
+    return;
+  }
 
-	if( this._reconnectionAttempt < this._options.maxReconnectAttempts ) {
-		this._setState( C.CONNECTION_STATE.RECONNECTING );
-		this._reconnectTimeout = setTimeout(
-			this._tryOpen.bind( this ),
-			Math.min(
-				this._options.maxReconnectInterval,
-				this._options.reconnectIntervalIncrement * this._reconnectionAttempt
-			)
-		);
-		this._reconnectionAttempt++;
-	} else {
-		this._clearReconnect();
-		this.close();
-		this._client.emit( C.MAX_RECONNECTION_ATTEMPTS_REACHED, this._reconnectionAttempt );
-	}
+  if (this._reconnectionAttempt < this._options.maxReconnectAttempts) {
+    this._setState(C.CONNECTION_STATE.RECONNECTING);
+    this._reconnectTimeout = setTimeout(this._tryOpen.bind(this), Math.min(this._options.maxReconnectInterval, this._options.reconnectIntervalIncrement * this._reconnectionAttempt));
+    this._reconnectionAttempt++;
+  } else {
+    this._clearReconnect();
+    this.close();
+    this._client.emit(C.MAX_RECONNECTION_ATTEMPTS_REACHED, this._reconnectionAttempt);
+  }
 };
 
 /**
@@ -3129,12 +3132,12 @@ Connection.prototype._tryReconnect = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._tryOpen = function() {
-	if( this._originalUrl !== this._url ) {
-		this._url = this._originalUrl;
-	}
-	this._createEndpoint();
-	this._reconnectTimeout = null;
+Connection.prototype._tryOpen = function () {
+  if (this._originalUrl !== this._url) {
+    this._url = this._originalUrl;
+  }
+  this._createEndpoint();
+  this._reconnectTimeout = null;
 };
 
 /**
@@ -3146,21 +3149,26 @@ Connection.prototype._tryOpen = function() {
  * @private
  * @returns {void}
  */
-Connection.prototype._clearReconnect = function() {
-	clearTimeout( this._reconnectTimeout );
-	this._reconnectTimeout = null;
-	this._reconnectionAttempt = 0;
+Connection.prototype._clearReconnect = function () {
+  clearTimeout(this._reconnectTimeout);
+  this._reconnectTimeout = null;
+  this._reconnectionAttempt = 0;
 };
 
 module.exports = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":2}],16:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' ),
-	SEP = C.MESSAGE_PART_SEPERATOR;
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var C = _dereq_('../constants/constants');
+
+var SEP = C.MESSAGE_PART_SEPERATOR;
 
 /**
- * Creates a deepstream message string, based on the 
+ * Creates a deepstream message string, based on the
  * provided parameters
  *
  * @param   {String} topic  One of CONSTANTS.TOPIC
@@ -3169,72 +3177,74 @@ var C = _dereq_( '../constants/constants' ),
  *
  * @returns {String} deepstream message string
  */
-exports.getMsg = function( topic, action, data ) {
-	if( data && !( data instanceof Array ) ) {
-		throw new Error( 'data must be an array' );
-	}
-	var sendData = [ topic, action ],
-		i;
+exports.getMsg = function (topic, action, data) {
+  if (data && !(data instanceof Array)) {
+    throw new Error('data must be an array');
+  }
+  var sendData = [topic, action];
 
-	if( data ) {
-		for( i = 0; i < data.length; i++ ) {
-			if( typeof data[ i ] === 'object' ) {
-				sendData.push( JSON.stringify( data[ i ] ) );
-			} else {
-				sendData.push( data[ i ] );
-			}
-		}
-	}
+  if (data) {
+    for (var i = 0; i < data.length; i++) {
+      if (_typeof(data[i]) === 'object') {
+        sendData.push(JSON.stringify(data[i]));
+      } else {
+        sendData.push(data[i]);
+      }
+    }
+  }
 
-	return sendData.join( SEP ) + C.MESSAGE_SEPERATOR;
+  return sendData.join(SEP) + C.MESSAGE_SEPERATOR;
 };
 
 /**
  * Converts a serializable value into its string-representation and adds
  * a flag that provides instructions on how to deserialize it.
- * 
+ *
  * Please see messageParser.convertTyped for the counterpart of this method
- * 
+ *
  * @param {Mixed} value
- * 
+ *
  * @public
  * @returns {String} string representation of the value
  */
-exports.typed = function( value ) {
-	var type = typeof value;
-	
-	if( type === 'string' ) {
-		return C.TYPES.STRING + value;
-	}
-	
-	if( value === null ) {
-		return C.TYPES.NULL;
-	}
-	
-	if( type === 'object' ) {
-		return C.TYPES.OBJECT + JSON.stringify( value );
-	}
-	
-	if( type === 'number' ) {
-		return C.TYPES.NUMBER + value.toString();
-	}
-	
-	if( value === true ) {
-		return C.TYPES.TRUE;
-	}
-	
-	if( value === false ) {
-		return C.TYPES.FALSE;
-	}
-	
-	if( value === undefined ) {
-		return C.TYPES.UNDEFINED;
-	}
-	
-	throw new Error( 'Can\'t serialize type ' + value );
+exports.typed = function (value) {
+  var type = typeof value === 'undefined' ? 'undefined' : _typeof(value);
+
+  if (type === 'string') {
+    return C.TYPES.STRING + value;
+  }
+
+  if (value === null) {
+    return C.TYPES.NULL;
+  }
+
+  if (type === 'object') {
+    return C.TYPES.OBJECT + JSON.stringify(value);
+  }
+
+  if (type === 'number') {
+    return C.TYPES.NUMBER + value.toString();
+  }
+
+  if (value === true) {
+    return C.TYPES.TRUE;
+  }
+
+  if (value === false) {
+    return C.TYPES.FALSE;
+  }
+
+  if (value === undefined) {
+    return C.TYPES.UNDEFINED;
+  }
+
+  throw new Error('Can\'t serialize type ' + value);
 };
+
 },{"../constants/constants":11}],17:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' );
+'use strict';
+
+var C = _dereq_('../constants/constants');
 
 /**
  * Parses ASCII control character seperated
@@ -3242,8 +3252,8 @@ var C = _dereq_( '../constants/constants' );
  *
  * @constructor
  */
-var MessageParser = function() {
-	this._actions = this._getActions();
+var MessageParser = function MessageParser() {
+  this._actions = this._getActions();
 };
 
 /**
@@ -3259,72 +3269,72 @@ var MessageParser = function() {
  * @returns {Array} array of parsed message objects
  *                  following the format
  *                  {
- *                  	raw: <original message string>
- *                  	topic: <string>
- *                  	action: <string - shortcode>
- *                  	data: <array of strings>
+ *                    raw: <original message string>
+ *                    topic: <string>
+ *                    action: <string - shortcode>
+ *                    data: <array of strings>
  *                  }
  */
-MessageParser.prototype.parse = function( message, client ) {
-	var parsedMessages = [],
-		rawMessages = message.split( C.MESSAGE_SEPERATOR ),
-		i;
+MessageParser.prototype.parse = function (message, client) {
+  var parsedMessages = [];
+  var rawMessages = message.split(C.MESSAGE_SEPERATOR);
 
-	for( i = 0; i < rawMessages.length; i++ ) {
-		if( rawMessages[ i ].length > 2 ) {
-			parsedMessages.push( this._parseMessage( rawMessages[ i ], client ) );
-		}
-	}
+  for (var i = 0; i < rawMessages.length; i++) {
+    if (rawMessages[i].length > 2) {
+      parsedMessages.push(this._parseMessage(rawMessages[i], client));
+    }
+  }
 
-	return parsedMessages;
+  return parsedMessages;
 };
 
 /**
  * Deserializes values created by MessageBuilder.typed to
  * their original format
- * 
+ *
  * @param {String} value
  *
  * @public
  * @returns {Mixed} original value
  */
-MessageParser.prototype.convertTyped = function( value, client ) {
-	var type = value.charAt( 0 );
-	
-	if( type === C.TYPES.STRING ) {
-		return value.substr( 1 );
-	}
-	
-	if( type === C.TYPES.OBJECT ) {
-		try {
-			return JSON.parse( value.substr( 1 ) );
-		} catch( e ) {
-			client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')' );
-			return;
-		}
-	}
-	
-	if( type === C.TYPES.NUMBER ) {
-		return parseFloat( value.substr( 1 ) );
-	}
-	
-	if( type === C.TYPES.NULL ) {
-		return null;
-	}
-	
-	if( type === C.TYPES.TRUE ) {
-		return true;
-	}
-	
-	if( type === C.TYPES.FALSE ) {
-		return false;
-	}
-	
-	if( type === C.TYPES.UNDEFINED ) {
-		return undefined;
-	}
-	
-	client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')' );
+MessageParser.prototype.convertTyped = function (value, client) {
+  var type = value.charAt(0);
+
+  if (type === C.TYPES.STRING) {
+    return value.substr(1);
+  }
+
+  if (type === C.TYPES.OBJECT) {
+    try {
+      return JSON.parse(value.substr(1));
+    } catch (e) {
+      client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, e.toString() + '(' + value + ')');
+      return undefined;
+    }
+  }
+
+  if (type === C.TYPES.NUMBER) {
+    return parseFloat(value.substr(1));
+  }
+
+  if (type === C.TYPES.NULL) {
+    return null;
+  }
+
+  if (type === C.TYPES.TRUE) {
+    return true;
+  }
+
+  if (type === C.TYPES.FALSE) {
+    return false;
+  }
+
+  if (type === C.TYPES.UNDEFINED) {
+    return undefined;
+  }
+
+  client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'UNKNOWN_TYPE (' + value + ')');
+  return undefined;
 };
 
 /**
@@ -3335,58 +3345,56 @@ MessageParser.prototype.convertTyped = function( value, client ) {
  *
  * @returns {Object} actions
  */
-MessageParser.prototype._getActions = function() {
-	var actions = {},
-		key;
+MessageParser.prototype._getActions = function () {
+  var actions = {};
 
-	for( key in C.ACTIONS ) {
-		actions[ C.ACTIONS[ key ] ] = key;
-	}
+  for (var key in C.ACTIONS) {
+    actions[C.ACTIONS[key]] = key;
+  }
 
-	return actions;
+  return actions;
 };
 
 /**
- * Parses an individual message (as oposed to a 
+ * Parses an individual message (as oppnosed to a
  * block of multiple messages as is processed by .parse())
  *
  * @param   {String} message
  *
  * @private
- * 
+ *
  * @returns {Object} parsedMessage
  */
-MessageParser.prototype._parseMessage = function( message, client ) {
-	var parts = message.split( C.MESSAGE_PART_SEPERATOR ), 
-		messageObject = {};
+MessageParser.prototype._parseMessage = function (message, client) {
+  var parts = message.split(C.MESSAGE_PART_SEPERATOR);
+  var messageObject = {};
 
-	if( parts.length < 2 ) {
-		message.processedError = true;
-		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts' );
-		return null;
-	}
+  if (parts.length < 2) {
+    client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Insufficiant message parts');
+    return null;
+  }
 
-	if( this._actions[ parts[ 1 ] ] === undefined ) {
-		message.processedError = true;
-		client._$onError( C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[ 1 ] );
-		return null;
-	}
+  if (this._actions[parts[1]] === undefined) {
+    client._$onError(C.TOPIC.ERROR, C.EVENT.MESSAGE_PARSE_ERROR, 'Unknown action ' + parts[1]);
+    return null;
+  }
 
-	messageObject.raw = message;
-	messageObject.topic = parts[ 0 ];
-	messageObject.action = parts[ 1 ];
-	messageObject.data = parts.splice( 2 );
+  messageObject.raw = message;
+  messageObject.topic = parts[0];
+  messageObject.action = parts[1];
+  messageObject.data = parts.splice(2);
 
-	return messageObject;
+  return messageObject;
 };
 
 module.exports = new MessageParser();
+
 },{"../constants/constants":11}],18:[function(_dereq_,module,exports){
-var EventEmitter = _dereq_( 'component-emitter2' ),
-	C = _dereq_( '../constants/constants' ),
-	messageParser = _dereq_( '../message/message-parser' ),
-	messageBuilder = _dereq_( '../message/message-builder' ),
-	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' );
+'use strict';
+
+var EventEmitter = _dereq_('component-emitter2');
+var C = _dereq_('../constants/constants');
+var ResubscribeNotifier = _dereq_('../utils/resubscribe-notifier');
 
 /**
  * The main class for presence in deepstream
@@ -3401,13 +3409,13 @@ var EventEmitter = _dereq_( 'component-emitter2' ),
  * @constructor
  * @public
  */
-var PresenceHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._emitter = new EventEmitter();
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resubscribe.bind( this ) );
+var PresenceHandler = function PresenceHandler(options, connection, client) {
+  this._options = options;
+  this._connection = connection;
+  this._client = client;
+  this._emitter = new EventEmitter();
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resubscribe.bind(this));
 };
 
 /**
@@ -3418,12 +3426,12 @@ var PresenceHandler = function( options, connection, client ) {
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.getAll = function( callback ) {
-	if( !this._emitter.hasListeners( C.ACTIONS.QUERY ) ) {
-		// At least one argument is required for a message to be permissionable
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [ C.ACTIONS.QUERY ] );
-	}
-	this._emitter.once( C.ACTIONS.QUERY, callback );
+PresenceHandler.prototype.getAll = function (callback) {
+  if (!this._emitter.hasListeners(C.ACTIONS.QUERY)) {
+    // At least one argument is required for a message to be permissionable
+    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [C.ACTIONS.QUERY]);
+  }
+  this._emitter.once(C.ACTIONS.QUERY, callback);
 };
 
 /**
@@ -3435,21 +3443,21 @@ PresenceHandler.prototype.getAll = function( callback ) {
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.subscribe = function( callback ) {
-	if ( callback !== undefined && typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+PresenceHandler.prototype.subscribe = function (callback) {
+  if (callback !== undefined && typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
-		this._ackTimeoutRegistry.add({
-			topic: C.TOPIC.PRESENCE,
-			action: C.ACTIONS.SUBSCRIBE,
-			name: C.TOPIC.PRESENCE
-		});
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.SUBSCRIBE ] );
-	}
+  if (!this._emitter.hasListeners(C.TOPIC.PRESENCE)) {
+    this._ackTimeoutRegistry.add({
+      topic: C.TOPIC.PRESENCE,
+      action: C.ACTIONS.SUBSCRIBE,
+      name: C.TOPIC.PRESENCE
+    });
+    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [C.ACTIONS.SUBSCRIBE]);
+  }
 
-	this._emitter.on( C.TOPIC.PRESENCE, callback );
+  this._emitter.on(C.TOPIC.PRESENCE, callback);
 };
 
 /**
@@ -3460,21 +3468,21 @@ PresenceHandler.prototype.subscribe = function( callback ) {
  * @public
  * @returns {void}
  */
-PresenceHandler.prototype.unsubscribe = function( callback ) {
-	if ( callback !== undefined && typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+PresenceHandler.prototype.unsubscribe = function (callback) {
+  if (callback !== undefined && typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	this._emitter.off( C.TOPIC.PRESENCE, callback );
+  this._emitter.off(C.TOPIC.PRESENCE, callback);
 
-	if( !this._emitter.hasListeners( C.TOPIC.PRESENCE ) ) {
-		this._ackTimeoutRegistry.add({
-			topic: C.TOPIC.PRESENCE,
-			action: C.ACTIONS.UNSUBSCRIBE,
-			name: C.TOPIC.PRESENCE
-		});
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [ C.ACTIONS.UNSUBSCRIBE ] );
-	}
+  if (!this._emitter.hasListeners(C.TOPIC.PRESENCE)) {
+    this._ackTimeoutRegistry.add({
+      topic: C.TOPIC.PRESENCE,
+      action: C.ACTIONS.UNSUBSCRIBE,
+      name: C.TOPIC.PRESENCE
+    });
+    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [C.ACTIONS.UNSUBSCRIBE]);
+  }
 };
 
 /**
@@ -3485,27 +3493,22 @@ PresenceHandler.prototype.unsubscribe = function( callback ) {
  * @package private
  * @returns {void}
  */
-PresenceHandler.prototype._$handle = function( message ) {
-	if( message.action === C.ACTIONS.ERROR && message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
-		this._ackTimeoutRegistry.remove( C.TOPIC.PRESENCE, message.data[ 1 ] );
-		message.processedError = true;
-		this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.MESSAGE_DENIED, message.data[ 1 ] );
-	}
-	else if( message.action === C.ACTIONS.ACK ) {
-		this._ackTimeoutRegistry.clear( message );
-	}
-	else if( message.action === C.ACTIONS.PRESENCE_JOIN ) {
-		this._emitter.emit( C.TOPIC.PRESENCE, message.data[ 0 ], true );
-	}
-	else if( message.action === C.ACTIONS.PRESENCE_LEAVE ) {
-		this._emitter.emit( C.TOPIC.PRESENCE, message.data[ 0 ], false );
-	}
-	else if( message.action === C.ACTIONS.QUERY ) {
-		this._emitter.emit( C.ACTIONS.QUERY, message.data );
-	}
-	else {
-		this._client._$onError( C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action );
-	}
+PresenceHandler.prototype._$handle = function (message) {
+  if (message.action === C.ACTIONS.ERROR && message.data[0] === C.EVENT.MESSAGE_DENIED) {
+    this._ackTimeoutRegistry.remove(C.TOPIC.PRESENCE, message.data[1]);
+    message.processedError = true;
+    this._client._$onError(C.TOPIC.PRESENCE, C.EVENT.MESSAGE_DENIED, message.data[1]);
+  } else if (message.action === C.ACTIONS.ACK) {
+    this._ackTimeoutRegistry.clear(message);
+  } else if (message.action === C.ACTIONS.PRESENCE_JOIN) {
+    this._emitter.emit(C.TOPIC.PRESENCE, message.data[0], true);
+  } else if (message.action === C.ACTIONS.PRESENCE_LEAVE) {
+    this._emitter.emit(C.TOPIC.PRESENCE, message.data[0], false);
+  } else if (message.action === C.ACTIONS.QUERY) {
+    this._emitter.emit(C.ACTIONS.QUERY, message.data);
+  } else {
+    this._client._$onError(C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action);
+  }
 };
 
 /**
@@ -3514,17 +3517,20 @@ PresenceHandler.prototype._$handle = function( message ) {
  * @package private
  * @returns {void}
  */
-PresenceHandler.prototype._resubscribe = function() {
-	var callbacks = this._emitter._callbacks;
-	if( callbacks && callbacks[ C.TOPIC.PRESENCE ] ) {
-		this._connection.sendMsg( C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [ C.ACTIONS.SUBSCRIBE ] );
-	}
+PresenceHandler.prototype._resubscribe = function () {
+  var callbacks = this._emitter._callbacks;
+  if (callbacks && callbacks[C.TOPIC.PRESENCE]) {
+    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [C.ACTIONS.SUBSCRIBE]);
+  }
 };
 
 module.exports = PresenceHandler;
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
-var Record = _dereq_( './record' ),
-	EventEmitter = _dereq_( 'component-emitter2' );
+
+},{"../constants/constants":11,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
+'use strict';
+
+var Record = _dereq_('./record');
+var EventEmitter = _dereq_('component-emitter2');
 
 /**
  * An AnonymousRecord is a record without a predefined name. It
@@ -3539,20 +3545,20 @@ var Record = _dereq_( './record' ),
  * show the selected user's details
  *
  * @param {RecordHandler} recordHandler
- * 
+ *
  * @constructor
  */
-var AnonymousRecord = function( recordHandler ) {
-	this.name = null;
-	this._recordHandler = recordHandler;
-	this._record = null;
-	this._subscriptions = [];
-	this._proxyMethod( 'delete' );
-	this._proxyMethod( 'set' );
-	this._proxyMethod( 'discard' );
+var AnonymousRecord = function AnonymousRecord(recordHandler) {
+  this.name = null;
+  this._recordHandler = recordHandler;
+  this._record = null;
+  this._subscriptions = [];
+  this._proxyMethod('delete');
+  this._proxyMethod('set');
+  this._proxyMethod('discard');
 };
 
-EventEmitter( AnonymousRecord.prototype );
+EventEmitter(AnonymousRecord.prototype);
 
 /**
  * Proxies the actual record's get method. It is valid
@@ -3565,12 +3571,12 @@ EventEmitter( AnonymousRecord.prototype );
  * @public
  * @returns {mixed}    the value of path or the entire object
  */
-AnonymousRecord.prototype.get = function( path ) {
-	if( this._record === null ) {
-		return undefined;
-	}
+AnonymousRecord.prototype.get = function (path) {
+  if (this._record === null) {
+    return undefined;
+  }
 
-	return this._record.get( path );
+  return this._record.get(path);
 };
 
 /**
@@ -3578,57 +3584,54 @@ AnonymousRecord.prototype.get = function( path ) {
  * can be used. Can be called prior to setName(). Please note, triggerIfReady
  * will always be set to true to reflect changes in the underlying record.
  *
- * @param   {[String]} path 	A json path. If non is provided,
- *	                          	it subscribes to changes for the entire record.
+ * @param   {[String]} path   A json path. If non is provided,
+ *                              it subscribes to changes for the entire record.
  *
- * @param 	{Function} callback A callback function that will be invoked whenever
+ * @param   {Function} callback A callback function that will be invoked whenever
  *                              the subscribed path or record updates
  *
  * @public
  * @returns {void}
  */
-AnonymousRecord.prototype.subscribe = function() {
-	var parameters = Record.prototype._normalizeArguments( arguments );
-	parameters.triggerNow = true;
-	this._subscriptions.push( parameters );
+AnonymousRecord.prototype.subscribe = function () {
+  var parameters = Record.prototype._normalizeArguments(arguments);
+  parameters.triggerNow = true;
+  this._subscriptions.push(parameters);
 
-	if( this._record !== null ) {
-		this._record.subscribe( parameters );
-	}
+  if (this._record !== null) {
+    this._record.subscribe(parameters);
+  }
 };
 
 /**
  * Proxies the actual record's unsubscribe method. The same parameters
  * can be used. Can be called prior to setName()
  *
- * @param   {[String]} path 	A json path. If non is provided,
- *	                          	it subscribes to changes for the entire record.
+ * @param   {[String]} path   A json path. If non is provided,
+ *                              it subscribes to changes for the entire record.
  *
- * @param 	{Function} callback A callback function that will be invoked whenever
+ * @param   {Function} callback A callback function that will be invoked whenever
  *                              the subscribed path or record updates
  *
  * @public
  * @returns {void}
  */
-AnonymousRecord.prototype.unsubscribe = function() {
-	var parameters = Record.prototype._normalizeArguments( arguments ),
-		subscriptions = [],
-		i;
+AnonymousRecord.prototype.unsubscribe = function () {
+  var parameters = Record.prototype._normalizeArguments(arguments);
+  var subscriptions = [];
+  var i = void 0;
 
-	for( i = 0; i < this._subscriptions.length; i++ ) {
-		if(
-			this._subscriptions[ i ].path !== parameters.path ||
-			this._subscriptions[ i ].callback !== parameters.callback
-		) {
-			subscriptions.push( this._subscriptions[ i ] );
-		}
-	}
+  for (i = 0; i < this._subscriptions.length; i++) {
+    if (this._subscriptions[i].path !== parameters.path || this._subscriptions[i].callback !== parameters.callback) {
+      subscriptions.push(this._subscriptions[i]);
+    }
+  }
 
-	this._subscriptions = subscriptions;
+  this._subscriptions = subscriptions;
 
-	if( this._record !== null ) {
-		this._record.unsubscribe( parameters );
-	}
+  if (this._record !== null) {
+    this._record.unsubscribe(parameters);
+  }
 };
 
 /**
@@ -3640,26 +3643,26 @@ AnonymousRecord.prototype.unsubscribe = function() {
  * @public
  * @returns {void}
  */
-AnonymousRecord.prototype.setName = function( recordName ) {
-	this.name = recordName;
-	
-	var i;
+AnonymousRecord.prototype.setName = function (recordName) {
+  this.name = recordName;
 
-	if( this._record !== null && !this._record.isDestroyed) {
-		for( i = 0; i < this._subscriptions.length; i++ ) {
-			this._record.unsubscribe( this._subscriptions[ i ] );
-		}
-		this._record.discard();
-	}
+  var i = void 0;
 
-	this._record = this._recordHandler.getRecord( recordName );
+  if (this._record !== null && !this._record.isDestroyed) {
+    for (i = 0; i < this._subscriptions.length; i++) {
+      this._record.unsubscribe(this._subscriptions[i]);
+    }
+    this._record.discard();
+  }
 
-	for( i = 0; i < this._subscriptions.length; i++ ) {
-		this._record.subscribe( this._subscriptions[ i ] );
-	}
+  this._record = this._recordHandler.getRecord(recordName);
 
-	this._record.whenReady( this.emit.bind( this, 'ready' ) );
-	this.emit( 'nameChanged', recordName );
+  for (i = 0; i < this._subscriptions.length; i++) {
+    this._record.subscribe(this._subscriptions[i]);
+  }
+
+  this._record.whenReady(this.emit.bind(this, 'ready'));
+  this.emit('nameChanged', recordName);
 };
 
 /**
@@ -3671,8 +3674,8 @@ AnonymousRecord.prototype.setName = function( recordName ) {
  * @private
  * @returns {void}
  */
-AnonymousRecord.prototype._proxyMethod = function( methodName ) {
-	this[ methodName ] = this._callMethodOnRecord.bind( this, methodName );
+AnonymousRecord.prototype._proxyMethod = function (methodName) {
+  this[methodName] = this._callMethodOnRecord.bind(this, methodName);
 };
 
 /**
@@ -3685,26 +3688,31 @@ AnonymousRecord.prototype._proxyMethod = function( methodName ) {
  * @private
  * @returns {Mixed} the return value of the actual method
  */
-AnonymousRecord.prototype._callMethodOnRecord = function( methodName ) {
-	if( this._record === null ) {
-		throw new Error( 'Can`t invoke ' + methodName + '. AnonymousRecord not initialised. Call setName first' );
-	}
+AnonymousRecord.prototype._callMethodOnRecord = function (methodName) {
+  if (this._record === null) {
+    throw new Error('Can`t invoke ' + methodName + '. AnonymousRecord not initialised. Call setName first');
+  }
 
-	if( typeof this._record[ methodName ] !== 'function' ) {
-		throw new Error( methodName + ' is not a method on the record' );
-	}
+  if (typeof this._record[methodName] !== 'function') {
+    throw new Error(methodName + ' is not a method on the record');
+  }
 
-	var args = Array.prototype.slice.call( arguments, 1 );
+  var args = Array.prototype.slice.call(arguments, 1);
 
-	return this._record[ methodName ].apply( this._record, args );
+  return this._record[methodName].apply(this._record, args);
 };
 
 module.exports = AnonymousRecord;
-},{"./record":23,"component-emitter2":1}],20:[function(_dereq_,module,exports){
-var utils = _dereq_( '../utils/utils' );
-var PARTS_REG_EXP = /([^\.\[\]\s]+)/g;
 
-var cache = Object.create( null );
+},{"./record":23,"component-emitter2":1}],20:[function(_dereq_,module,exports){
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var utils = _dereq_('../utils/utils');
+
+var PARTS_REG_EXP = /([^.[\]\s]+)/g;
+var cache = Object.create(null);
 
 /**
  * Returns the value of the path or
@@ -3713,20 +3721,20 @@ var cache = Object.create( null );
  * @public
  * @returns {Mixed}
  */
-module.exports.get = function ( data, path, deepCopy ) {
-	var tokens = tokenize( path );
+module.exports.get = function (data, path, deepCopy) {
+  var tokens = tokenize(path);
 
-	for( var i = 0; i < tokens.length; i++ ) {
-		if ( data === undefined ) {
-			return undefined;
-		}
-		if ( typeof data !== 'object' ) {
-			throw new Error( 'invalid data or path' );
-		}
-		data = data[ tokens[ i ] ];
-	}
+  for (var i = 0; i < tokens.length; i++) {
+    if (data === undefined) {
+      return undefined;
+    }
+    if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== 'object') {
+      throw new Error('invalid data or path');
+    }
+    data = data[tokens[i]];
+  }
 
-	return deepCopy !== false ? utils.deepCopy( data ) : data;
+  return deepCopy !== false ? utils.deepCopy(data) : data;
 };
 
 /**
@@ -3738,39 +3746,36 @@ module.exports.get = function ( data, path, deepCopy ) {
  * @public
  * @returns {Mixed} updated value
  */
-module.exports.set = function( data, path, value, deepCopy ) {
-	var tokens = tokenize( path );
+module.exports.set = function (data, path, value, deepCopy) {
+  var tokens = tokenize(path);
 
-	if ( tokens.length === 0 ) {
-		return patch( data, value, deepCopy );
-	}
+  if (tokens.length === 0) {
+    return patch(data, value, deepCopy);
+  }
 
-	var oldValue = module.exports.get( data, path, false );
-	var newValue = patch( oldValue, value, deepCopy );
+  var oldValue = module.exports.get(data, path, false);
+  var newValue = patch(oldValue, value, deepCopy);
 
-	if ( newValue === oldValue ) {
-		return data;
-	}
+  if (newValue === oldValue) {
+    return data;
+  }
 
-	var result = utils.shallowCopy( data );
+  var result = utils.shallowCopy(data);
 
-	var node = result;
-	for( var i = 0; i < tokens.length; i++ ) {
-		if ( i === tokens.length - 1) {
-			node[ tokens[ i ] ] = newValue;
-		}
-		else if( node[ tokens[ i ] ] !== undefined ) {
-			node = node[ tokens[ i ] ] = utils.shallowCopy( node[ tokens[ i ] ] );
-		}
-		else if( tokens[ i + 1 ] && !isNaN( tokens[ i + 1 ] ) ){
-			node = node[ tokens[ i ] ] = [];
-		}
-		else {
-			node = node[ tokens[ i ] ] = Object.create( null );
-		}
-	}
+  var node = result;
+  for (var i = 0; i < tokens.length; i++) {
+    if (i === tokens.length - 1) {
+      node[tokens[i]] = newValue;
+    } else if (node[tokens[i]] !== undefined) {
+      node = node[tokens[i]] = utils.shallowCopy(node[tokens[i]]);
+    } else if (tokens[i + 1] && !isNaN(tokens[i + 1])) {
+      node = node[tokens[i]] = [];
+    } else {
+      node = node[tokens[i]] = Object.create(null);
+    }
+  }
 
-	return result;
+  return result;
 };
 
 /**
@@ -3780,57 +3785,53 @@ module.exports.set = function( data, path, value, deepCopy ) {
  * @param  {boolean} deepCopy
  * @return {Mixed}
  */
-function patch( oldValue, newValue, deepCopy ) {
-	var i;
-	var j;
-	if ( oldValue === null || newValue === null ) {
-		return newValue;
-	}
-	else if ( Array.isArray( oldValue ) && Array.isArray( newValue ) ) {
-		var arr;
-		for ( i = 0; i < newValue.length; i++ ) {
-			var value = patch( oldValue[ i ], newValue[ i ], false );
-			if ( !arr ) {
-				if ( value === oldValue[ i ] ) {
-					continue
-				}
-				arr = [];
-				for (	j = 0; j < i; ++j) {
-					arr[ j ] = oldValue[ j ];
-				}
-			}
-			arr[ i ] = value;
-		}
-		arr = arr && deepCopy !== false ? utils.deepCopy( arr ) : arr;
-		arr = arr || (oldValue.length === newValue.length ? oldValue : newValue);
-		return arr;
-	}
-	else if ( !Array.isArray( newValue ) && typeof oldValue === 'object' && typeof newValue === 'object' ) {
-		var obj;
-		var props = Object.keys( newValue );
-		for ( i = 0; i < props.length; i++ ) {
-			var value = patch( oldValue[ props[ i ] ], newValue[ props[ i ] ], false );
-			if ( !obj ) {
-				if ( value === oldValue[ props[ i ] ]) {
-					continue;
-				}
-				obj = Object.create( null );
-				for ( j = 0; j < i; ++j) {
-					obj[ props[ j ] ] = oldValue[ props[ j ] ];
-				}
-			}
-			obj[ props[ i ] ] = newValue[ props[ i ] ];
-		}
-		obj = obj && deepCopy !== false ? utils.deepCopy( obj ) : obj;
-		obj = obj || (Object.keys(oldValue).length === props.length ? oldValue : newValue);
-		return obj;
-	}
-	else if (newValue !== oldValue) {
-		return deepCopy !== false ? utils.deepCopy( newValue ) : newValue;
-	}
-  else {
-    return oldValue;
+function patch(oldValue, newValue, deepCopy) {
+  var i = void 0;
+  var j = void 0;
+  if (oldValue === null || newValue === null) {
+    return newValue;
+  } else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+    var arr = void 0;
+    for (i = 0; i < newValue.length; i++) {
+      var value = patch(oldValue[i], newValue[i], false);
+      if (!arr) {
+        if (value === oldValue[i]) {
+          continue;
+        }
+        arr = [];
+        for (j = 0; j < i; ++j) {
+          arr[j] = oldValue[j];
+        }
+      }
+      arr[i] = value;
+    }
+    arr = arr && deepCopy !== false ? utils.deepCopy(arr) : arr;
+    arr = arr || (oldValue.length === newValue.length ? oldValue : newValue);
+    return arr;
+  } else if (!Array.isArray(newValue) && (typeof oldValue === 'undefined' ? 'undefined' : _typeof(oldValue)) === 'object' && (typeof newValue === 'undefined' ? 'undefined' : _typeof(newValue)) === 'object') {
+    var obj = void 0;
+    var props = Object.keys(newValue);
+    for (i = 0; i < props.length; i++) {
+      var _value = patch(oldValue[props[i]], newValue[props[i]], false);
+      if (!obj) {
+        if (_value === oldValue[props[i]]) {
+          continue;
+        }
+        obj = Object.create(null);
+        for (j = 0; j < i; ++j) {
+          obj[props[j]] = oldValue[props[j]];
+        }
+      }
+      obj[props[i]] = newValue[props[i]];
+    }
+    obj = obj && deepCopy !== false ? utils.deepCopy(obj) : obj;
+    obj = obj || (Object.keys(oldValue).length === props.length ? oldValue : newValue);
+    return obj;
+  } else if (newValue !== oldValue) {
+    return deepCopy !== false ? utils.deepCopy(newValue) : newValue;
   }
+
+  return oldValue;
 }
 
 /**
@@ -3839,27 +3840,31 @@ function patch( oldValue, newValue, deepCopy ) {
  *
  * @returns Array of tokens
  */
-function tokenize( path ) {
-	if ( cache[ path ] ) {
-		return cache[ path ];
-	}
+function tokenize(path) {
+  if (cache[path]) {
+    return cache[path];
+  }
 
-	var parts = String(path) !== 'undefined' ? String( path ).match(PARTS_REG_EXP) : [];
+  var parts = String(path) !== 'undefined' ? String(path).match(PARTS_REG_EXP) : [];
 
-	if ( !parts ) {
-		throw new Error('invalid path ' + path)
-	}
+  if (!parts) {
+    throw new Error('invalid path ' + path);
+  }
 
-	return cache[ path ] = parts;
-};
+  cache[path] = parts;
+  return cache[path];
+}
 
 },{"../utils/utils":31}],21:[function(_dereq_,module,exports){
-var EventEmitter = _dereq_( 'component-emitter2' ),
-	Record = _dereq_( './record' ),
-	C = _dereq_( '../constants/constants' ),
-	ENTRY_ADDED_EVENT = 'entry-added',
-	ENTRY_REMOVED_EVENT = 'entry-removed',
-	ENTRY_MOVED_EVENT = 'entry-moved';
+'use strict';
+
+var EventEmitter = _dereq_('component-emitter2');
+var Record = _dereq_('./record');
+var C = _dereq_('../constants/constants');
+
+var ENTRY_ADDED_EVENT = 'entry-added';
+var ENTRY_REMOVED_EVENT = 'entry-removed';
+var ENTRY_MOVED_EVENT = 'entry-moved';
 
 /**
  * A List is a specialised Record that contains
@@ -3871,34 +3876,34 @@ var EventEmitter = _dereq_( 'component-emitter2' ),
  *
  * @constructor
  */
-var List = function( recordHandler, name, options ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
+var List = function List(recordHandler, name, options) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
 
-	this._recordHandler = recordHandler;
-	this._record = this._recordHandler.getRecord( name, options );
-	this._record._applyUpdate = this._applyUpdate.bind( this );
+  this._recordHandler = recordHandler;
+  this._record = this._recordHandler.getRecord(name, options);
+  this._record._applyUpdate = this._applyUpdate.bind(this);
 
-	this._record.on( 'delete', this.emit.bind( this, 'delete' ) );
-	this._record.on( 'discard', this._onDiscard.bind( this ) );
-	this._record.on( 'ready', this._onReady.bind( this ) );
+  this._record.on('delete', this.emit.bind(this, 'delete'));
+  this._record.on('discard', this._onDiscard.bind(this));
+  this._record.on('ready', this._onReady.bind(this));
 
-	this.isDestroyed = this._record.isDestroyed;
-	this.isReady = this._record.isReady;
-	this.name = name;
-	this._queuedMethods = [];
-	this._beforeStructure = null;
-	this._hasAddListener = null;
-	this._hasRemoveListener = null;
-	this._hasMoveListener = null;
+  this.isDestroyed = this._record.isDestroyed;
+  this.isReady = this._record.isReady;
+  this.name = name;
+  this._queuedMethods = [];
+  this._beforeStructure = null;
+  this._hasAddListener = null;
+  this._hasRemoveListener = null;
+  this._hasMoveListener = null;
 
-	this.delete = this._record.delete.bind( this._record );
-	this.discard = this._record.discard.bind( this._record );
-	this.whenReady = this._record.whenReady.bind( this );
+  this.delete = this._record.delete.bind(this._record);
+  this.discard = this._record.discard.bind(this._record);
+  this.whenReady = this._record.whenReady.bind(this);
 };
 
-EventEmitter( List.prototype );
+EventEmitter(List.prototype);
 
 /**
  * Returns the array of list entries or an
@@ -3907,14 +3912,14 @@ EventEmitter( List.prototype );
  * @public
  * @returns {Array} entries
  */
-List.prototype.getEntries = function() {
-	var entries = this._record.get();
+List.prototype.getEntries = function () {
+  var entries = this._record.get();
 
-	if( !( entries instanceof Array ) ) {
-		return [];
-	}
+  if (!(entries instanceof Array)) {
+    return [];
+  }
 
-	return entries;
+  return entries;
 };
 
 /**
@@ -3923,8 +3928,8 @@ List.prototype.getEntries = function() {
  * @public
  * @returns {Boolean} isEmpty
  */
-List.prototype.isEmpty = function() {
-	return this.getEntries().length === 0;
+List.prototype.isEmpty = function () {
+  return this.getEntries().length === 0;
 };
 
 /**
@@ -3933,27 +3938,27 @@ List.prototype.isEmpty = function() {
  * @public
  * @param {Array} entries
  */
-List.prototype.setEntries = function( entries ) {
-	var errorMsg = 'entries must be an array of record names',
-		i;
+List.prototype.setEntries = function (entries) {
+  var errorMsg = 'entries must be an array of record names';
+  var i = void 0;
 
-	if( !( entries instanceof Array ) ) {
-		throw new Error( errorMsg );
-	}
+  if (!(entries instanceof Array)) {
+    throw new Error(errorMsg);
+  }
 
-	for( i = 0; i < entries.length; i++ ) {
-		if( typeof entries[ i ] !== 'string' ) {
-			throw new Error( errorMsg );
-		}
-	}
+  for (i = 0; i < entries.length; i++) {
+    if (typeof entries[i] !== 'string') {
+      throw new Error(errorMsg);
+    }
+  }
 
-	if( this._record.isReady === false ) {
-		this._queuedMethods.push( this.setEntries.bind( this, entries ) );
-	} else {
-		this._beforeChange();
-		this._record.set( entries );
-		this._afterChange();
-	}
+  if (this._record.isReady === false) {
+    this._queuedMethods.push(this.setEntries.bind(this, entries));
+  } else {
+    this._beforeChange();
+    this._record.set(entries);
+    this._afterChange();
+  }
 };
 
 /**
@@ -3965,25 +3970,25 @@ List.prototype.setEntries = function( entries ) {
  * @public
  * @returns {void}
  */
-List.prototype.removeEntry = function( entry, index ) {
-	if( this._record.isReady === false ) {
-		this._queuedMethods.push( this.removeEntry.bind( this, entry, index ) );
-		return;
-	}
+List.prototype.removeEntry = function (entry, index) {
+  if (this._record.isReady === false) {
+    this._queuedMethods.push(this.removeEntry.bind(this, entry, index));
+    return;
+  }
 
-	var currentEntries = this._record.get(),
-		hasIndex = this._hasIndex( index ),
-		entries = [],
-		i;
+  var currentEntries = this._record.get();
+  var hasIndex = this._hasIndex(index);
+  var entries = [];
+  var i = void 0;
 
-	for( i = 0; i < currentEntries.length; i++ ) {
-		if( currentEntries[i] !== entry || ( hasIndex && index !== i ) ) {
-			entries.push( currentEntries[i] );
-		}
-	}
-	this._beforeChange();
-	this._record.set( entries );
-	this._afterChange();
+  for (i = 0; i < currentEntries.length; i++) {
+    if (currentEntries[i] !== entry || hasIndex && index !== i) {
+      entries.push(currentEntries[i]);
+    }
+  }
+  this._beforeChange();
+  this._record.set(entries);
+  this._afterChange();
 };
 
 /**
@@ -3995,26 +4000,26 @@ List.prototype.removeEntry = function( entry, index ) {
  * @public
  * @returns {void}
  */
-List.prototype.addEntry = function( entry, index ) {
-	if( typeof entry !== 'string' ) {
-		throw new Error( 'Entry must be a recordName' );
-	}
+List.prototype.addEntry = function (entry, index) {
+  if (typeof entry !== 'string') {
+    throw new Error('Entry must be a recordName');
+  }
 
-	if( this._record.isReady === false ) {
-		this._queuedMethods.push( this.addEntry.bind( this, entry, index ) );
-		return;
-	}
+  if (this._record.isReady === false) {
+    this._queuedMethods.push(this.addEntry.bind(this, entry, index));
+    return;
+  }
 
-	var hasIndex = this._hasIndex( index );
-	var entries = this.getEntries();
-	if( hasIndex ) {
-		entries.splice( index, 0, entry );
-	} else {
-		entries.push( entry );
-	}
-	this._beforeChange();
-	this._record.set( entries );
-	this._afterChange();
+  var hasIndex = this._hasIndex(index);
+  var entries = this.getEntries();
+  if (hasIndex) {
+    entries.splice(index, 0, entry);
+  } else {
+    entries.push(entry);
+  }
+  this._beforeChange();
+  this._record.set(entries);
+  this._afterChange();
 };
 
 /**
@@ -4024,31 +4029,31 @@ List.prototype.addEntry = function( entry, index ) {
  * @public
  * @returns {void}
  */
-List.prototype.subscribe = function() {
-	var parameters = Record.prototype._normalizeArguments( arguments );
+List.prototype.subscribe = function () {
+  var parameters = Record.prototype._normalizeArguments(arguments);
 
-	if( parameters.path ) {
-		throw new Error( 'path is not supported for List.subscribe' );
-	}
+  if (parameters.path) {
+    throw new Error('path is not supported for List.subscribe');
+  }
 
-	//Make sure the callback is invoked with an empty array for new records
-	var listCallback = function( callback ) {
-		callback( this.getEntries() );
-	}.bind( this, parameters.callback );
+  // Make sure the callback is invoked with an empty array for new records
+  var listCallback = function (callback) {
+    callback(this.getEntries());
+  }.bind(this, parameters.callback);
 
-	/**
-	* Adding a property onto a function directly is terrible practice,
-	* and we will change this as soon as we have a more seperate approach
-	* of creating lists that doesn't have records default state.
-	*
-	* The reason we are holding a referencing to wrapped array is so that
-	* on unsubscribe it can provide a reference to the actual method the
-	* record is subscribed too.
-	**/
-	parameters.callback.wrappedCallback = listCallback;
-	parameters.callback = listCallback;
+  /**
+  * Adding a property onto a function directly is terrible practice,
+  * and we will change this as soon as we have a more seperate approach
+  * of creating lists that doesn't have records default state.
+  *
+  * The reason we are holding a referencing to wrapped array is so that
+  * on unsubscribe it can provide a reference to the actual method the
+  * record is subscribed too.
+  **/
+  parameters.callback.wrappedCallback = listCallback;
+  parameters.callback = listCallback;
 
-	this._record.subscribe( parameters );
+  this._record.subscribe(parameters);
 };
 
 /**
@@ -4058,15 +4063,15 @@ List.prototype.subscribe = function() {
  * @public
  * @returns {void}
  */
-List.prototype.unsubscribe = function() {
-	var parameters = Record.prototype._normalizeArguments( arguments );
+List.prototype.unsubscribe = function () {
+  var parameters = Record.prototype._normalizeArguments(arguments);
 
-	if( parameters.path ) {
-		throw new Error( 'path is not supported for List.unsubscribe' );
-	}
+  if (parameters.path) {
+    throw new Error('path is not supported for List.unsubscribe');
+  }
 
-	parameters.callback = parameters.callback.wrappedCallback;
-	this._record.unsubscribe( parameters );
+  parameters.callback = parameters.callback.wrappedCallback;
+  this._record.unsubscribe(parameters);
 };
 
 /**
@@ -4076,15 +4081,15 @@ List.prototype.unsubscribe = function() {
  * @private
  * @returns {void}
  */
-List.prototype._onReady = function() {
-	this.isReady = true;
+List.prototype._onReady = function () {
+  this.isReady = true;
 
-	for( var i = 0; i < this._queuedMethods.length; i++ ) {
-		this._queuedMethods[ i ]();
-	}
+  for (var i = 0; i < this._queuedMethods.length; i++) {
+    this._queuedMethods[i]();
+  }
 
-	this._queuedMethods = [];
-	this.emit( 'ready' );
+  this._queuedMethods = [];
+  this.emit('ready');
 };
 
 /**
@@ -4094,9 +4099,9 @@ List.prototype._onReady = function() {
  * @private
  * @returns {void}
  */
-List.prototype._onDiscard = function() {
-	this.isDestroyed = true;
-	this.emit( 'discard' );
+List.prototype._onDiscard = function () {
+  this.isDestroyed = true;
+  this.emit('discard');
 };
 
 /**
@@ -4109,18 +4114,18 @@ List.prototype._onDiscard = function() {
  * @private
  * @returns {void}
  */
-List.prototype._applyUpdate = function( message ) {
-	if( message.action === C.ACTIONS.PATCH ) {
-		throw new Error( 'PATCH is not supported for Lists' );
-	}
+List.prototype._applyUpdate = function (message) {
+  if (message.action === C.ACTIONS.PATCH) {
+    throw new Error('PATCH is not supported for Lists');
+  }
 
-	if( message.data[ 2 ].charAt( 0 ) !== '[' ) {
-		message.data[ 2 ] = '[]';
-	}
+  if (message.data[2].charAt(0) !== '[') {
+    message.data[2] = '[]';
+  }
 
-	this._beforeChange();
-	Record.prototype._applyUpdate.call( this._record, message );
-	this._afterChange();
+  this._beforeChange();
+  Record.prototype._applyUpdate.call(this._record, message);
+  this._afterChange();
 };
 
 /**
@@ -4131,19 +4136,19 @@ List.prototype._applyUpdate = function( message ) {
  * @private
  * @returns {Number}
  */
-List.prototype._hasIndex = function( index ) {
-	var hasIndex = false;
-	var entries = this.getEntries();
-	if( index !== undefined ) {
-		if( isNaN( index ) ) {
-			throw new Error( 'Index must be a number' );
-		}
-		if( index !== entries.length && ( index >= entries.length || index < 0 ) ) {
-			throw new Error( 'Index must be within current entries' );
-		}
-		hasIndex = true;
-	}
-	return hasIndex;
+List.prototype._hasIndex = function (index) {
+  var hasIndex = false;
+  var entries = this.getEntries();
+  if (index !== undefined) {
+    if (isNaN(index)) {
+      throw new Error('Index must be a number');
+    }
+    if (index !== entries.length && (index >= entries.length || index < 0)) {
+      throw new Error('Index must be within current entries');
+    }
+    hasIndex = true;
+  }
+  return hasIndex;
 };
 
 /**
@@ -4156,16 +4161,16 @@ List.prototype._hasIndex = function( index ) {
  * @private
  * @returns {void}
  */
-List.prototype._beforeChange = function() {
-	this._hasAddListener = this.listeners( ENTRY_ADDED_EVENT ).length > 0;
-	this._hasRemoveListener = this.listeners( ENTRY_REMOVED_EVENT ).length > 0;
-	this._hasMoveListener = this.listeners( ENTRY_MOVED_EVENT ).length > 0;
+List.prototype._beforeChange = function () {
+  this._hasAddListener = this.listeners(ENTRY_ADDED_EVENT).length > 0;
+  this._hasRemoveListener = this.listeners(ENTRY_REMOVED_EVENT).length > 0;
+  this._hasMoveListener = this.listeners(ENTRY_MOVED_EVENT).length > 0;
 
-	if( this._hasAddListener || this._hasRemoveListener || this._hasMoveListener ) {
-		this._beforeStructure = this._getStructure();
-	} else {
-		this._beforeStructure = null;
-	}
+  if (this._hasAddListener || this._hasRemoveListener || this._hasMoveListener) {
+    this._beforeStructure = this._getStructure();
+  } else {
+    this._beforeStructure = null;
+  }
 };
 
 /**
@@ -4175,44 +4180,45 @@ List.prototype._beforeChange = function() {
  * @private
  * @returns {void}
  */
-List.prototype._afterChange = function() {
-	if( this._beforeStructure === null ) {
-		return;
-	}
+List.prototype._afterChange = function () {
+  if (this._beforeStructure === null) {
+    return;
+  }
 
-	var after = this._getStructure();
-	var before = this._beforeStructure;
-	var entry, i;
+  var after = this._getStructure();
+  var before = this._beforeStructure;
+  var entry = void 0;
+  var i = void 0;
 
-	if( this._hasRemoveListener ) {
-		for( entry in before ) {
-			for( i = 0; i < before[ entry ].length; i++ ) {
-				if( after[ entry ] === undefined || after[ entry ][ i ] === undefined ) {
-					this.emit( ENTRY_REMOVED_EVENT, entry, before[ entry ][ i ] );
-				}
-			}
-		}
-	}
+  if (this._hasRemoveListener) {
+    for (entry in before) {
+      for (i = 0; i < before[entry].length; i++) {
+        if (after[entry] === undefined || after[entry][i] === undefined) {
+          this.emit(ENTRY_REMOVED_EVENT, entry, before[entry][i]);
+        }
+      }
+    }
+  }
 
-	if( this._hasAddListener || this._hasMoveListener ) {
-		for( entry in after ) {
-			if( before[ entry ] === undefined ) {
-				for( i = 0; i < after[ entry ].length; i++ ) {
-					this.emit( ENTRY_ADDED_EVENT, entry, after[ entry ][ i ] );
-				}
-			} else {
-				for( i = 0; i < after[ entry ].length; i++ ) {
-					if( before[ entry ][ i ] !== after[ entry ][ i ] ) {
-						if( before[ entry ][ i ] === undefined ) {
-							this.emit( ENTRY_ADDED_EVENT, entry, after[ entry ][ i ] );
-						} else {
-							this.emit( ENTRY_MOVED_EVENT, entry, after[ entry ][ i ] );
-						}
-					}
-				}
-			}
-		}
-	}
+  if (this._hasAddListener || this._hasMoveListener) {
+    for (entry in after) {
+      if (before[entry] === undefined) {
+        for (i = 0; i < after[entry].length; i++) {
+          this.emit(ENTRY_ADDED_EVENT, entry, after[entry][i]);
+        }
+      } else {
+        for (i = 0; i < after[entry].length; i++) {
+          if (before[entry][i] !== after[entry][i]) {
+            if (before[entry][i] === undefined) {
+              this.emit(ENTRY_ADDED_EVENT, entry, after[entry][i]);
+            } else {
+              this.emit(ENTRY_MOVED_EVENT, entry, after[entry][i]);
+            }
+          }
+        }
+      }
+    }
+  }
 };
 
 /**
@@ -4220,41 +4226,43 @@ List.prototype._afterChange = function() {
  * and an array of its position(s) within the list as a value, e.g.
  *
  * {
- * 	'recordA': [ 0, 3 ],
- * 	'recordB': [ 1 ],
- * 	'recordC': [ 2 ]
+ *   'recordA': [ 0, 3 ],
+ *   'recordB': [ 1 ],
+ *   'recordC': [ 2 ]
  * }
  *
  * @private
  * @returns {Array} structure
  */
-List.prototype._getStructure = function() {
-	var structure = {};
-	var i;
-	var entries = this._record.get();
+List.prototype._getStructure = function () {
+  var structure = {};
+  var i = void 0;
+  var entries = this._record.get();
 
-	for( i = 0; i < entries.length; i++ ) {
-		if( structure[ entries[ i ] ] === undefined ) {
-			structure[ entries[ i ] ] = [ i ];
-		} else {
-			structure[ entries[ i ] ].push( i );
-		}
-	}
+  for (i = 0; i < entries.length; i++) {
+    if (structure[entries[i]] === undefined) {
+      structure[entries[i]] = [i];
+    } else {
+      structure[entries[i]].push(i);
+    }
+  }
 
-	return structure;
+  return structure;
 };
 
 module.exports = List;
 
 },{"../constants/constants":11,"./record":23,"component-emitter2":1}],22:[function(_dereq_,module,exports){
-var Record = _dereq_( './record' ),
-	AnonymousRecord = _dereq_( './anonymous-record' ),
-	List = _dereq_( './list' ),
-	Listener = _dereq_( '../utils/listener' ),
-	SingleNotifier = _dereq_( '../utils/single-notifier' ),
-	C = _dereq_( '../constants/constants' ),
-	messageParser = _dereq_( '../message/message-parser' ),
-	EventEmitter = _dereq_( 'component-emitter2' );
+'use strict';
+
+var Record = _dereq_('./record');
+var AnonymousRecord = _dereq_('./anonymous-record');
+var List = _dereq_('./list');
+var Listener = _dereq_('../utils/listener');
+var SingleNotifier = _dereq_('../utils/single-notifier');
+var C = _dereq_('../constants/constants');
+var messageParser = _dereq_('../message/message-parser');
+var EventEmitter = _dereq_('component-emitter2');
 
 /**
  * A collection of factories for records. This class
@@ -4264,41 +4272,41 @@ var Record = _dereq_( './record' ),
  * @param {Connection} connection
  * @param {Client} client
  */
-var RecordHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._records = {};
-	this._lists = {};
-	this._listener = {};
-	this._destroyEventEmitter = new EventEmitter();
+var RecordHandler = function RecordHandler(options, connection, client) {
+  this._options = options;
+  this._connection = connection;
+  this._client = client;
+  this._records = {};
+  this._lists = {};
+  this._listener = {};
+  this._destroyEventEmitter = new EventEmitter();
 
-	this._hasRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout );
-	this._snapshotRegistry = new SingleNotifier( client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout );
+  this._hasRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout);
+  this._snapshotRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout);
 };
 
 /**
  * Returns an existing record or creates a new one.
  *
- * @param   {String} name          		the unique name of the record
- * @param   {[Object]} recordOptions 	A map of parameters for this particular record.
- *                                    	{ persist: true }
+ * @param   {String} name              the unique name of the record
+ * @param   {[Object]} recordOptions   A map of parameters for this particular record.
+ *                                      { persist: true }
  *
  * @public
  * @returns {Record}
  */
-RecordHandler.prototype.getRecord = function( name, recordOptions ) {
-	if( !this._records[ name ] ) {
-		this._records[ name ] = new Record( name, recordOptions || {}, this._connection, this._options, this._client );
-		this._records[ name ].on( 'error', this._onRecordError.bind( this, name ) );
-		this._records[ name ].on( 'destroyPending', this._onDestroyPending.bind( this, name ) );
-		this._records[ name ].on( 'delete', this._removeRecord.bind( this, name ) );
-		this._records[ name ].on( 'discard', this._removeRecord.bind( this, name ) );
-	}
+RecordHandler.prototype.getRecord = function (name, recordOptions) {
+  if (!this._records[name]) {
+    this._records[name] = new Record(name, recordOptions || {}, this._connection, this._options, this._client);
+    this._records[name].on('error', this._onRecordError.bind(this, name));
+    this._records[name].on('destroyPending', this._onDestroyPending.bind(this, name));
+    this._records[name].on('delete', this._removeRecord.bind(this, name));
+    this._records[name].on('discard', this._removeRecord.bind(this, name));
+  }
 
-	this._records[ name ].usages++;
+  this._records[name].usages++;
 
-	return this._records[ name ];
+  return this._records[name];
 };
 
 /**
@@ -4306,19 +4314,19 @@ RecordHandler.prototype.getRecord = function( name, recordOptions ) {
  * type of record that holds an array of recordNames.
  *
  * @param   {String} name       the unique name of the list
- * @param   {[Object]} options 	A map of parameters for this particular list.
+ * @param   {[Object]} options   A map of parameters for this particular list.
  *                              { persist: true }
  *
  * @public
  * @returns {List}
  */
-RecordHandler.prototype.getList = function( name, options ) {
-	if( !this._lists[ name ] ) {
-		this._lists[ name ] = new List( this, name, options );
-	} else {
-		this._records[ name ].usages++;
-	}
-	return this._lists[ name ];
+RecordHandler.prototype.getList = function (name, options) {
+  if (!this._lists[name]) {
+    this._lists[name] = new List(this, name, options);
+  } else {
+    this._records[name].usages++;
+  }
+  return this._lists[name];
 };
 
 /**
@@ -4335,8 +4343,8 @@ RecordHandler.prototype.getList = function( name, options ) {
  * @public
  * @returns {AnonymousRecord}
  */
-RecordHandler.prototype.getAnonymousRecord = function() {
-	return new AnonymousRecord( this );
+RecordHandler.prototype.getAnonymousRecord = function () {
+  return new AnonymousRecord(this);
 };
 
 /**
@@ -4350,22 +4358,24 @@ RecordHandler.prototype.getAnonymousRecord = function() {
  * @public
  * @returns {void}
  */
-RecordHandler.prototype.listen = function( pattern, callback ) {
-	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
-		throw new Error( 'invalid argument pattern' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+RecordHandler.prototype.listen = function (pattern, callback) {
+  if (typeof pattern !== 'string' || pattern.length === 0) {
+    throw new Error('invalid argument pattern');
+  }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	if( this._listener[ pattern ] && !this._listener[ pattern ].destroyPending ) {
-		return this._client._$onError( C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern );
-	}
+  if (this._listener[pattern] && !this._listener[pattern].destroyPending) {
+    this._client._$onError(C.TOPIC.RECORD, C.EVENT.LISTENER_EXISTS, pattern);
+    return;
+  }
 
-	if( this._listener[ pattern ] ) {
-		this._listener[ pattern ].destroy();
-	}
-	this._listener[ pattern ] = new Listener( C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection );
+  if (this._listener[pattern]) {
+    this._listener[pattern].destroy();
+  }
+
+  this._listener[pattern] = new Listener(C.TOPIC.RECORD, pattern, callback, this._options, this._client, this._connection);
 };
 
 /**
@@ -4377,60 +4387,60 @@ RecordHandler.prototype.listen = function( pattern, callback ) {
  * @public
  * @returns {void}
  */
-RecordHandler.prototype.unlisten = function( pattern ) {
-	if ( typeof pattern !== 'string' || pattern.length === 0 ) {
-		throw new Error( 'invalid argument pattern' );
-	}
+RecordHandler.prototype.unlisten = function (pattern) {
+  if (typeof pattern !== 'string' || pattern.length === 0) {
+    throw new Error('invalid argument pattern');
+  }
 
-	var listener = this._listener[ pattern ];
-	if( listener && !listener.destroyPending ) {
-		listener.sendDestroy();
-	} else if( this._listener[ pattern ] ) {
-		this._listener[ pattern ].destroy();
-		delete this._listener[ pattern ];
-	} else {
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern );
-	}
+  var listener = this._listener[pattern];
+  if (listener && !listener.destroyPending) {
+    listener.sendDestroy();
+  } else if (this._listener[pattern]) {
+    this._listener[pattern].destroy();
+    delete this._listener[pattern];
+  } else {
+    this._client._$onError(C.TOPIC.RECORD, C.EVENT.NOT_LISTENING, pattern);
+  }
 };
 
 /**
  * Retrieve the current record data without subscribing to changes
  *
- * @param   {String}	name the unique name of the record
- * @param   {Function}	callback
+ * @param   {String}  name the unique name of the record
+ * @param   {Function}  callback
  *
  * @public
  */
-RecordHandler.prototype.snapshot = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
+RecordHandler.prototype.snapshot = function (name, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
 
-	if( this._records[ name ] && this._records[ name ].isReady ) {
-		callback( null, this._records[ name ].get() );
-	} else {
-		this._snapshotRegistry.request( name, callback );
-	}
+  if (this._records[name] && this._records[name].isReady) {
+    callback(null, this._records[name].get());
+  } else {
+    this._snapshotRegistry.request(name, callback);
+  }
 };
 
 /**
  * Allows the user to query to see whether or not the record exists.
  *
- * @param   {String}	name the unique name of the record
- * @param   {Function}	callback
+ * @param   {String}  name the unique name of the record
+ * @param   {Function}  callback
  *
  * @public
  */
-RecordHandler.prototype.has = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
+RecordHandler.prototype.has = function (name, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
 
-	if( this._records[ name ] ) {
-		callback( null, true );
-	} else {
-		this._hasRegistry.request( name, callback );
-	}
+  if (this._records[name]) {
+    callback(null, true);
+  } else {
+    this._hasRegistry.request(name, callback);
+  }
 };
 
 /**
@@ -4441,98 +4451,86 @@ RecordHandler.prototype.has = function( name, callback ) {
  * @package private
  * @returns {void}
  */
-RecordHandler.prototype._$handle = function( message ) {
-	var name;
+RecordHandler.prototype._$handle = function (message) {
+  var name = void 0;
 
-	if( message.action === C.ACTIONS.ERROR &&
-		( message.data[ 0 ] !== C.EVENT.VERSION_EXISTS &&
-			message.data[ 0 ] !== C.ACTIONS.SNAPSHOT &&
-			message.data[ 0 ] !== C.ACTIONS.HAS  &&
-			message.data[ 0 ] !== C.EVENT.MESSAGE_DENIED
-		)
-	) {
-		message.processedError = true;
-		this._client._$onError( C.TOPIC.RECORD, message.data[ 0 ], message.data[ 1 ] );
-		return;
-	}
+  if (message.action === C.ACTIONS.ERROR && message.data[0] !== C.EVENT.VERSION_EXISTS && message.data[0] !== C.ACTIONS.SNAPSHOT && message.data[0] !== C.ACTIONS.HAS && message.data[0] !== C.EVENT.MESSAGE_DENIED) {
+    message.processedError = true;
+    this._client._$onError(C.TOPIC.RECORD, message.data[0], message.data[1]);
+    return;
+  }
 
-	if( message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR ) {
-		name = message.data[ 1 ];
+  if (message.action === C.ACTIONS.ACK || message.action === C.ACTIONS.ERROR) {
+    name = message.data[1];
 
-		/*
-		 * The following prevents errors that occur when a record is discarded or deleted and
-		 * recreated before the discard / delete ack message is received.
-		 *
-		 * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
-		 * between another clients creation and read message for the same record
-		 */
-		if( message.data[ 0 ] === C.ACTIONS.DELETE ||
-			  message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ||
-			 ( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.DELETE  )
-			) {
-			this._destroyEventEmitter.emit( 'destroy_ack_' + name, message );
+    /*
+     * The following prevents errors that occur when a record is discarded or deleted and
+     * recreated before the discard / delete ack message is received.
+     *
+     * A (presumably unsolvable) problem remains when a client deletes a record in the exact moment
+     * between another clients creation and read message for the same record
+     */
+    if (message.data[0] === C.ACTIONS.DELETE || message.data[0] === C.ACTIONS.UNSUBSCRIBE || message.data[0] === C.EVENT.MESSAGE_DENIED && message.data[2] === C.ACTIONS.DELETE) {
+      this._destroyEventEmitter.emit('destroy_ack_' + name, message);
 
-			if( message.data[ 0 ] === C.ACTIONS.DELETE && this._records[ name ] ) {
-				this._records[ name ]._$onMessage( message );
-			}
+      if (message.data[0] === C.ACTIONS.DELETE && this._records[name]) {
+        this._records[name]._$onMessage(message);
+      }
 
-			return;
-		}
+      return;
+    }
 
-		if( message.data[ 0 ] === C.ACTIONS.SNAPSHOT ) {
-			message.processedError = true;
-			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
-			return;
-		}
+    if (message.data[0] === C.ACTIONS.SNAPSHOT) {
+      message.processedError = true;
+      this._snapshotRegistry.recieve(name, message.data[2]);
+      return;
+    }
 
-		if( message.data[ 0 ] === C.ACTIONS.HAS ) {
-			message.processedError = true;
-			this._snapshotRegistry.recieve( name, message.data[ 2 ] );
-			return;
-		}
+    if (message.data[0] === C.ACTIONS.HAS) {
+      message.processedError = true;
+      this._snapshotRegistry.recieve(name, message.data[2]);
+      return;
+    }
+  } else {
+    name = message.data[0];
+  }
 
-	} else {
-		name = message.data[ 0 ];
-	}
+  var processed = false;
 
-	var processed = false;
+  if (this._records[name]) {
+    processed = true;
+    this._records[name]._$onMessage(message);
+  }
 
-	if( this._records[ name ] ) {
-		processed = true;
-		this._records[ name ]._$onMessage( message );
-	}
+  if (message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest(name)) {
+    processed = true;
+    this._snapshotRegistry.recieve(name, null, JSON.parse(message.data[2]));
+  }
 
-	if( message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest( name ) ) {
-		processed = true;
-		this._snapshotRegistry.recieve( name, null, JSON.parse( message.data[ 2 ] ) );
-	}
+  if (message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest(name)) {
+    processed = true;
+    this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]));
+  }
 
-	if( message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest( name ) ) {
-		processed = true;
-		this._hasRegistry.recieve( name, null, messageParser.convertTyped( message.data[ 1 ] ) );
-	}
+  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && this._listener[name] && this._listener[name].destroyPending) {
+    processed = true;
+    this._listener[name].destroy();
+    delete this._listener[name];
+  } else if (this._listener[name]) {
+    processed = true;
+    this._listener[name]._$onMessage(message);
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
+    // An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
+    processed = true;
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
+    // record can receive a HAS_PROVIDER after discarding the record
+    processed = true;
+  }
 
-	if( message.action === C.ACTIONS.ACK && message.data[ 0 ] === C.ACTIONS.UNLISTEN &&
-		this._listener[ name ] && this._listener[ name ].destroyPending
-	) {
-		processed = true;
-		this._listener[ name ].destroy();
-		delete this._listener[ name ];
-	} else if( this._listener[ name ] ) {
-		processed = true;
-		this._listener[ name ]._$onMessage( message );
-	} else if( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
-		// An unlisten ACK was received before an PATTERN_REMOVED which is a valid case
-		processed = true;
-	}  else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
-		// record can receive a HAS_PROVIDER after discarding the record
-		processed = true;
-	}
-
-	if( !processed ) {
-		message.processedError = true;
-		this._client._$onError( C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name );
-	}
+  if (!processed) {
+    message.processedError = true;
+    this._client._$onError(C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name);
+  }
 };
 
 /**
@@ -4544,8 +4542,8 @@ RecordHandler.prototype._$handle = function( message ) {
  * @private
  * @returns {void}
  */
-RecordHandler.prototype._onRecordError = function( recordName, error ) {
-	this._client._$onError( C.TOPIC.RECORD, error, recordName );
+RecordHandler.prototype._onRecordError = function (recordName, error) {
+  this._client._$onError(C.TOPIC.RECORD, error, recordName);
 };
 
 /**
@@ -4559,14 +4557,14 @@ RecordHandler.prototype._onRecordError = function( recordName, error ) {
  * @private
  * @returns {void}
  */
-RecordHandler.prototype._onDestroyPending = function( recordName ) {
-	if ( !this._records[ recordName ] ) {
-		this.emit( 'error', 'Record \'' + recordName + '\' does not exists' );
-		return;
-	}
-	var onMessage = this._records[ recordName ]._$onMessage.bind( this._records[ recordName ] );
-	this._destroyEventEmitter.once( 'destroy_ack_' + recordName, onMessage );
-	this._removeRecord( recordName );
+RecordHandler.prototype._onDestroyPending = function (recordName) {
+  if (!this._records[recordName]) {
+    this.emit('error', 'Record \'' + recordName + '\' does not exists');
+    return;
+  }
+  var onMessage = this._records[recordName]._$onMessage.bind(this._records[recordName]);
+  this._destroyEventEmitter.once('destroy_ack_' + recordName, onMessage);
+  this._removeRecord(recordName);
 };
 
 /**
@@ -4577,21 +4575,24 @@ RecordHandler.prototype._onDestroyPending = function( recordName ) {
  *
  * @returns {void}
  */
-RecordHandler.prototype._removeRecord = function( recordName ) {
-	delete this._records[ recordName ];
-	delete this._lists[ recordName ];
+RecordHandler.prototype._removeRecord = function (recordName) {
+  delete this._records[recordName];
+  delete this._lists[recordName];
 };
 
 module.exports = RecordHandler;
 
 },{"../constants/constants":11,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter2":1}],23:[function(_dereq_,module,exports){
-var jsonPath = _dereq_( './json-path' ),
-	utils = _dereq_( '../utils/utils' ),
-	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
-	EventEmitter = _dereq_( 'component-emitter2' ),
-	C = _dereq_( '../constants/constants' ),
-	messageBuilder = _dereq_( '../message/message-builder' ),
-	messageParser = _dereq_( '../message/message-parser' );
+'use strict';
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var jsonPath = _dereq_('./json-path');
+var ResubscribeNotifier = _dereq_('../utils/resubscribe-notifier');
+var EventEmitter = _dereq_('component-emitter2');
+var C = _dereq_('../constants/constants');
+var messageBuilder = _dereq_('../message/message-builder');
+var messageParser = _dereq_('../message/message-parser');
 
 /**
  * This class represents a single record - an observable
@@ -4599,59 +4600,59 @@ var jsonPath = _dereq_( './json-path' ),
  *
  * @extends {EventEmitter}
  *
- * @param {String} name          		The unique name of the record
- * @param {Object} recordOptions 		A map of options, e.g. { persist: true }
- * @param {Connection} Connection		The instance of the server connection
- * @param {Object} options				Deepstream options
- * @param {Client} client				deepstream.io client
+ * @param {String} name              The unique name of the record
+ * @param {Object} recordOptions     A map of options, e.g. { persist: true }
+ * @param {Connection} Connection    The instance of the server connection
+ * @param {Object} options        Deepstream options
+ * @param {Client} client        deepstream.io client
  *
  * @constructor
  */
-var Record = function( name, recordOptions, connection, options, client ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
+var Record = function Record(name, recordOptions, connection, options, client) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
 
-	this.name = name;
-	this.usages = 0;
-	this._recordOptions = recordOptions;
-	this._connection = connection;
-	this._client = client;
-	this._options = options;
-	this.isReady = false;
-	this.isDestroyed = false;
-	this.hasProvider = false;
-	this._$data = Object.create( null );
-	this.version = null;
-	this._eventEmitter = new EventEmitter();
-	this._queuedMethodCalls = [];
-	this._writeCallbacks = {};
+  this.name = name;
+  this.usages = 0;
+  this._recordOptions = recordOptions;
+  this._connection = connection;
+  this._client = client;
+  this._options = options;
+  this.isReady = false;
+  this.isDestroyed = false;
+  this.hasProvider = false;
+  this._$data = Object.create(null);
+  this.version = null;
+  this._eventEmitter = new EventEmitter();
+  this._queuedMethodCalls = [];
+  this._writeCallbacks = {};
 
-	this._mergeStrategy = null;
-	if( options.mergeStrategy ) {
-		this.setMergeStrategy( options.mergeStrategy );
-	}
+  this._mergeStrategy = null;
+  if (options.mergeStrategy) {
+    this.setMergeStrategy(options.mergeStrategy);
+  }
 
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._sendRead.bind( this ) );
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._sendRead.bind(this));
 
-	this._readAckTimeout = this._ackTimeoutRegistry.add({
-		topic: C.TOPIC.RECORD,
-		name: name,
-		action: C.ACTIONS.SUBSCRIBE,
-		timeout: this._options.recordReadAckTimeout
-	});
-	this._responseTimeout = this._ackTimeoutRegistry.add({
-		topic: C.TOPIC.RECORD,
-		name: name,
-		action: C.ACTIONS.READ,
-		event: C.EVENT.RESPONSE_TIMEOUT,
-		timeout: this._options.recordReadTimeout
-	});
-	this._sendRead();
+  this._readAckTimeout = this._ackTimeoutRegistry.add({
+    topic: C.TOPIC.RECORD,
+    name: name,
+    action: C.ACTIONS.SUBSCRIBE,
+    timeout: this._options.recordReadAckTimeout
+  });
+  this._responseTimeout = this._ackTimeoutRegistry.add({
+    topic: C.TOPIC.RECORD,
+    name: name,
+    action: C.ACTIONS.READ,
+    event: C.EVENT.RESPONSE_TIMEOUT,
+    timeout: this._options.recordReadTimeout
+  });
+  this._sendRead();
 };
 
-EventEmitter( Record.prototype );
+EventEmitter(Record.prototype);
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
@@ -4665,14 +4666,13 @@ EventEmitter( Record.prototype );
  * @public
  * @returns {void}
  */
-Record.prototype.setMergeStrategy = function( mergeStrategy ) {
-	if( typeof mergeStrategy === 'function' ) {
-		this._mergeStrategy = mergeStrategy;
-	} else {
-		throw new Error( 'Invalid merge strategy: Must be a Function' );
-	}
+Record.prototype.setMergeStrategy = function (mergeStrategy) {
+  if (typeof mergeStrategy === 'function') {
+    this._mergeStrategy = mergeStrategy;
+  } else {
+    throw new Error('Invalid merge strategy: Must be a Function');
+  }
 };
-
 
 /**
  * Returns a copy of either the entire dataset of the record
@@ -4688,8 +4688,8 @@ Record.prototype.setMergeStrategy = function( mergeStrategy ) {
  * @public
  * @returns {Mixed} value
  */
-Record.prototype.get = function( path ) {
-	return jsonPath.get( this._$data, path, this._options.recordDeepCopy );
+Record.prototype.get = function (path) {
+  return jsonPath.get(this._$data, path, this._options.recordDeepCopy);
 };
 
 /**
@@ -4699,74 +4699,73 @@ Record.prototype.get = function( path ) {
  *
  * If the new data is equal to the current data, nothing will happen
  *
- * @param {[String|Object]} pathOrData Either a JSON path when called with two arguments or the data itself
+ * @param {[String|Object]} pathOrData Either a JSON path when called with
+ *                                     two arguments or the data itself
  * @param {Object} data     The data that should be stored in the record
  *
  * @public
  * @returns {void}
  */
-Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
-	var path,
-		data;
-	// set( object )
-	if( arguments.length === 1 ) {
-		if( typeof pathOrData !== 'object' )
-			throw new Error( 'invalid argument data' );
-		data = pathOrData;
-	}
-	else if( arguments.length === 2 ) {
-		// set( path, data )
-		if( ( typeof pathOrData === 'string' && pathOrData.length !== 0 ) && typeof dataOrCallback !== 'function' ) {
-			path = pathOrData;
-			data = dataOrCallback
-		}
-		// set( data, callback )
-		else if( typeof pathOrData === 'object' && typeof dataOrCallback === 'function' ) {
-			data = pathOrData;
-			callback = dataOrCallback;
-		}
-		else {
-			throw new Error( 'invalid argument path' )
-		}
-	}
-	// set( path, data, callback )
-	else if( arguments.length === 3 ) {
-		if( typeof pathOrData !== 'string' || pathOrData.length === 0 || typeof callback !== 'function' ) {
-			throw new Error( 'invalid arguments, must pass in a string, a value and a function')
-		}
-		path = pathOrData;
-		data = dataOrCallback;
-	}
+Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
+  var path = void 0;
+  var data = void 0;
 
-	if( this._checkDestroyed( 'set' ) ) {
-		return this;
-	}
+  // set( object )
+  if (arguments.length === 1) {
+    if ((typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) !== 'object') {
+      throw new Error('invalid argument data');
+    }
+    data = pathOrData;
+  } else if (arguments.length === 2) {
+    if (typeof pathOrData === 'string' && pathOrData.length !== 0 && typeof dataOrCallback !== 'function') {
+      // set( path, data )
+      path = pathOrData;
+      data = dataOrCallback;
+    } else if ((typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) === 'object' && typeof dataOrCallback === 'function') {
+      // set( data, callback )
+      data = pathOrData;
+      callback = dataOrCallback;
+    } else {
+      throw new Error('invalid argument path');
+    }
+  } else if (arguments.length === 3) {
+    // set( path, data, callback )
+    if (typeof pathOrData !== 'string' || pathOrData.length === 0 || typeof callback !== 'function') {
+      throw new Error('invalid arguments, must pass in a string, a value and a function');
+    }
+    path = pathOrData;
+    data = dataOrCallback;
+  }
 
-	if( !this.isReady ) {
-		this._queuedMethodCalls.push({ method: 'set', args: arguments });
-		return this;
-	}
+  if (this._checkDestroyed('set')) {
+    return this;
+  }
 
-	var oldValue = this._$data;
-	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
+  if (!this.isReady) {
+    this._queuedMethodCalls.push({ method: 'set', args: arguments });
+    return this;
+  }
 
-	if ( oldValue === newValue ) {
-		return this;
-	}
+  var oldValue = this._$data;
+  var newValue = jsonPath.set(oldValue, path, data, this._options.recordDeepCopy);
 
-	var config;
-	if( callback !== undefined ) {
-		config = {};
-		config.writeSuccess = true;
-		this._setUpCallback(this.version, callback)
-		var connectionState = this._client.getConnectionState();
-		if( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING ) {
-			callback( 'Connection error: error updating record as connection was closed' );
-		}
-	}
-	this._sendUpdate( path, data, config );
-	this._applyChange( newValue );
-	return this;
+  if (oldValue === newValue) {
+    return this;
+  }
+
+  var config = void 0;
+  if (callback !== undefined) {
+    config = {};
+    config.writeSuccess = true;
+    this._setUpCallback(this.version, callback);
+    var connectionState = this._client.getConnectionState();
+    if (connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING) {
+      callback('Connection error: error updating record as connection was closed');
+    }
+  }
+  this._sendUpdate(path, data, config);
+  this._applyChange(newValue);
+  return this;
 };
 
 /**
@@ -4780,36 +4779,38 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
  * If called with true for triggerNow, the callback will
  * be called immediatly with the current value
  *
- * @param   {[String]}		path			A JSON path within the record to subscribe to
- * @param   {Function} 		callback       	Callback function to notify on changes
- * @param   {[Boolean]}		triggerNow      A flag to specify whether the callback should be invoked immediatly
- *                                       	with the current value
+ * @param   {[String]}    path      A JSON path within the record to subscribe to
+ * @param   {Function}    callback         Callback function to notify on changes
+ * @param   {[Boolean]}   triggerNow      A flag to specify whether the callback should
+ *                                         be invoked immediatly with the current value
  *
  * @public
  * @returns {void}
  */
-Record.prototype.subscribe = function( path, callback, triggerNow ) {
-	var args = this._normalizeArguments( arguments );
+Record.prototype.subscribe = function (path, callback, triggerNow) {
+  var _this = this;
 
-	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
-		throw new Error( 'invalid argument path' );
-	}
-	if ( typeof args.callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+  var args = this._normalizeArguments(arguments);
 
-	if( this._checkDestroyed( 'subscribe' ) ) {
-		return;
-	}
+  if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
+    throw new Error('invalid argument path');
+  }
+  if (typeof args.callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	if( args.triggerNow ) {
-		this.whenReady( function () {
-			this._eventEmitter.on( args.path, args.callback );
-			args.callback( this.get( args.path ) );
-		}.bind(this) );
-	} else {
-		this._eventEmitter.on( args.path, args.callback );
-	}
+  if (this._checkDestroyed('subscribe')) {
+    return;
+  }
+
+  if (args.triggerNow) {
+    this.whenReady(function () {
+      _this._eventEmitter.on(args.path, args.callback);
+      args.callback(_this.get(args.path));
+    });
+  } else {
+    this._eventEmitter.on(args.path, args.callback);
+  }
 };
 
 /**
@@ -4823,26 +4824,27 @@ Record.prototype.subscribe = function( path, callback, triggerNow ) {
  * discard instead
  *
  * @param   {[String|Function]}   pathOrCallback A JSON path
- * @param   {Function} 			  callback   	The callback method. Please note, if a bound method was passed to
- *                                	   			subscribe, the same method must be passed to unsubscribe as well.
+ * @param   {Function}         callback     The callback method. Please note, if a bound
+ *                                          method was passed to subscribe, the same method
+ *                                          must be passed to unsubscribe as well.
  *
  * @public
  * @returns {void}
  */
-Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
-	var args = this._normalizeArguments( arguments );
+Record.prototype.unsubscribe = function (pathOrCallback, callback) {
+  var args = this._normalizeArguments(arguments);
 
-	if ( args.path !== undefined && ( typeof args.path !== 'string' || args.path.length === 0 ) ) {
-		throw new Error( 'invalid argument path' );
-	}
-	if ( args.callback !== undefined && typeof args.callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+  if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
+    throw new Error('invalid argument path');
+  }
+  if (args.callback !== undefined && typeof args.callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	if( this._checkDestroyed( 'unsubscribe' ) ) {
-		return;
-	}
-	this._eventEmitter.off( args.path, args.callback );
+  if (this._checkDestroyed('unsubscribe')) {
+    return;
+  }
+  this._eventEmitter.off(args.path, args.callback);
 };
 
 /**
@@ -4852,22 +4854,24 @@ Record.prototype.unsubscribe = function( pathOrCallback, callback ) {
  * @public
  * @returns {void}
  */
-Record.prototype.discard = function() {
-	if( this._checkDestroyed( 'discard' ) ) {
-		return;
-	}
-	this.whenReady( function() {
-		this.usages--;
-		if( this.usages <= 0 ) {
-				this.emit( 'destroyPending' );
-				this._discardTimeout = this._ackTimeoutRegistry.add({
-					topic: C.TOPIC.RECORD,
-					name: this.name,
-					action: C.ACTIONS.UNSUBSCRIBE
-				});
-				this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [ this.name ] );
-		}
-	}.bind( this ) );
+Record.prototype.discard = function () {
+  var _this2 = this;
+
+  if (this._checkDestroyed('discard')) {
+    return;
+  }
+  this.whenReady(function () {
+    _this2.usages--;
+    if (_this2.usages <= 0) {
+      _this2.emit('destroyPending');
+      _this2._discardTimeout = _this2._ackTimeoutRegistry.add({
+        topic: C.TOPIC.RECORD,
+        name: _this2.name,
+        action: C.ACTIONS.UNSUBSCRIBE
+      });
+      _this2._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [_this2.name]);
+    }
+  });
 };
 
 /**
@@ -4876,21 +4880,23 @@ Record.prototype.discard = function() {
  * @public
  * @returns {void}
  */
-Record.prototype.delete = function() {
-	if( this._checkDestroyed( 'delete' ) ) {
-		return;
-	}
-	this.whenReady( function() {
-		this.emit( 'destroyPending' );
-		this._deleteAckTimeout = this._ackTimeoutRegistry.add({
-			topic: C.TOPIC.RECORD,
-			name: this.name,
-			action: C.ACTIONS.DELETE,
-			event: C.EVENT.DELETE_TIMEOUT,
-			timeout: this._options.recordDeleteTimeout
-		});
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.DELETE, [ this.name ] );
-	}.bind( this ) );
+Record.prototype.delete = function () {
+  var _this3 = this;
+
+  if (this._checkDestroyed('delete')) {
+    return;
+  }
+  this.whenReady(function () {
+    _this3.emit('destroyPending');
+    _this3._deleteAckTimeout = _this3._ackTimeoutRegistry.add({
+      topic: C.TOPIC.RECORD,
+      name: _this3.name,
+      action: C.ACTIONS.DELETE,
+      event: C.EVENT.DELETE_TIMEOUT,
+      timeout: _this3._options.recordDeleteTimeout
+    });
+    _this3._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.DELETE, [_this3.name]);
+  });
 };
 
 /**
@@ -4902,12 +4908,12 @@ Record.prototype.delete = function() {
  *
  * @returns {void}
  */
-Record.prototype.whenReady = function( callback ) {
-	if( this.isReady === true ) {
-		callback( this );
-	} else {
-		this.once( 'ready', callback.bind( this, this ) );
-	}
+Record.prototype.whenReady = function (callback) {
+  if (this.isReady === true) {
+    callback(this);
+  } else {
+    this.once('ready', callback.bind(this, this));
+  }
 };
 
 /**
@@ -4918,42 +4924,37 @@ Record.prototype.whenReady = function( callback ) {
  * @package private
  * @returns {void}
  */
-Record.prototype._$onMessage = function( message ) {
-	if( message.action === C.ACTIONS.READ ) {
-		if( this.version === null ) {
-			this._ackTimeoutRegistry.clear(message);
-			this._onRead( message );
-		} else {
-			this._applyUpdate( message, this._client );
-		}
-	}
-	else if( message.action === C.ACTIONS.ACK ) {
-		this._processAckMessage( message );
-	}
-	else if( message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH ) {
-		this._applyUpdate( message, this._client );
-	}
-	else if( message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT ) {
-		var versions = JSON.parse(message.data[ 1 ]);
-		for (var i = 0; i < versions.length; i++) {
-			var callback = this._writeCallbacks[ versions[ i ] ];
-			if( callback !== undefined ) {
-				callback( messageParser.convertTyped( message.data[ 2 ], this._client ) )
-				delete this._writeCallbacks[ versions[ i ] ];
-			}
-		}
-	}
-	// Otherwise it should be an error, and dealt with accordingly
-	else if( message.data[ 0 ] === C.EVENT.VERSION_EXISTS ) {
-		this._recoverRecord( message.data[ 2 ], JSON.parse( message.data[ 3 ] ), message );
-	}
-	else if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED ) {
-		this._clearTimeouts();
-	} else if( message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER ) {
-		var hasProvider = messageParser.convertTyped( message.data[ 1 ], this._client );
-		this.hasProvider = hasProvider;
-		this.emit( 'hasProviderChanged', hasProvider );
-	}
+Record.prototype._$onMessage = function (message) {
+  if (message.action === C.ACTIONS.READ) {
+    if (this.version === null) {
+      this._ackTimeoutRegistry.clear(message);
+      this._onRead(message);
+    } else {
+      this._applyUpdate(message, this._client);
+    }
+  } else if (message.action === C.ACTIONS.ACK) {
+    this._processAckMessage(message);
+  } else if (message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH) {
+    this._applyUpdate(message, this._client);
+  } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
+    var versions = JSON.parse(message.data[1]);
+    for (var i = 0; i < versions.length; i++) {
+      var callback = this._writeCallbacks[versions[i]];
+      if (callback !== undefined) {
+        callback(messageParser.convertTyped(message.data[2], this._client));
+        delete this._writeCallbacks[versions[i]];
+      }
+    }
+  } else if (message.data[0] === C.EVENT.VERSION_EXISTS) {
+    // Otherwise it should be an error, and dealt with accordingly
+    this._recoverRecord(message.data[2], JSON.parse(message.data[3]), message);
+  } else if (message.data[0] === C.EVENT.MESSAGE_DENIED) {
+    this._clearTimeouts();
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
+    var hasProvider = messageParser.convertTyped(message.data[1], this._client);
+    this.hasProvider = hasProvider;
+    this.emit('hasProviderChanged', hasProvider);
+  }
 };
 
 /**
@@ -4968,30 +4969,25 @@ Record.prototype._$onMessage = function( message ) {
  * @private
  * @returns {void}
  */
-Record.prototype._recoverRecord = function( remoteVersion, remoteData, message ) {
-	message.processedError = true;
-	if( this._mergeStrategy ) {
-		this._mergeStrategy( this, remoteData, remoteVersion, this._onRecordRecovered.bind( this, remoteVersion, remoteData, message ) );
-	}
-	else {
-		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
-	}
+Record.prototype._recoverRecord = function (remoteVersion, remoteData, message) {
+  message.processedError = true;
+  if (this._mergeStrategy) {
+    this._mergeStrategy(this, remoteData, remoteVersion, this._onRecordRecovered.bind(this, remoteVersion, remoteData, message));
+  } else {
+    this.emit('error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version);
+  }
 };
 
-Record.prototype._sendUpdate = function ( path, data, config ) {
-	this.version++;
-	var msgData;
-	if( !path ) {
-		msgData = config === undefined ?
-			[ this.name, this.version, data ] :
-			[ this.name, this.version, data, config ];
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.UPDATE, msgData );
-	} else {
-		msgData = config === undefined ?
-			[ this.name, this.version, path, messageBuilder.typed( data ) ] :
-			[ this.name, this.version, path, messageBuilder.typed( data ), config ];
-		this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.PATCH, msgData );
-	}
+Record.prototype._sendUpdate = function (path, data, config) {
+  this.version++;
+  var msgData = void 0;
+  if (!path) {
+    msgData = config === undefined ? [this.name, this.version, data] : [this.name, this.version, data, config];
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UPDATE, msgData);
+  } else {
+    msgData = config === undefined ? [this.name, this.version, path, messageBuilder.typed(data)] : [this.name, this.version, path, messageBuilder.typed(data), config];
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.PATCH, msgData);
+  }
 };
 
 /**
@@ -5006,28 +5002,28 @@ Record.prototype._sendUpdate = function ( path, data, config ) {
  * @private
  * @returns {void}
  */
-Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, message, error, data ) {
-	if( !error ) {
-		var oldVersion = this.version;
-		this.version = remoteVersion;
+Record.prototype._onRecordRecovered = function (remoteVersion, remoteData, message, error, data) {
+  if (!error) {
+    var oldVersion = this.version;
+    this.version = remoteVersion;
 
-		var oldValue = this._$data;
-		var newValue = jsonPath.set( oldValue, undefined, data, false );
-		if ( oldValue === newValue ) {
-			return;
-		}
+    var oldValue = this._$data;
+    var newValue = jsonPath.set(oldValue, undefined, data, false);
+    if (oldValue === newValue) {
+      return;
+    }
 
-		var config = message.data[ 4 ];
-		if( config && JSON.parse( config ).writeSuccess ) {
-			var callback = this._writeCallbacks[ oldVersion ];
-			delete this._writeCallbacks[ oldVersion ];
-			this._setUpCallback( this.version, callback )
-		}
-		this._sendUpdate( undefined, data, config );
-		this._applyChange( newValue );
-	} else {
-		this.emit( 'error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version );
-	}
+    var config = message.data[4];
+    if (config && JSON.parse(config).writeSuccess) {
+      var callback = this._writeCallbacks[oldVersion];
+      delete this._writeCallbacks[oldVersion];
+      this._setUpCallback(this.version, callback);
+    }
+    this._sendUpdate(undefined, data, config);
+    this._applyChange(newValue);
+  } else {
+    this.emit('error', C.EVENT.VERSION_EXISTS, 'received update for ' + remoteVersion + ' but version is ' + this.version);
+  }
 };
 
 /**
@@ -5039,22 +5035,18 @@ Record.prototype._onRecordRecovered = function( remoteVersion, remoteData, messa
  * @private
  * @returns {void}
  */
-Record.prototype._processAckMessage = function( message ) {
-	var acknowledgedAction = message.data[ 0 ];
+Record.prototype._processAckMessage = function (message) {
+  var acknowledgedAction = message.data[0];
 
-	if( acknowledgedAction === C.ACTIONS.SUBSCRIBE ) {
-		this._ackTimeoutRegistry.clear(message);
-	}
-
-	else if( acknowledgedAction === C.ACTIONS.DELETE ) {
-		this.emit( 'delete' );
-		this._destroy();
-	}
-
-	else if( acknowledgedAction === C.ACTIONS.UNSUBSCRIBE ) {
-		this.emit( 'discard' );
-		this._destroy();
-	}
+  if (acknowledgedAction === C.ACTIONS.SUBSCRIBE) {
+    this._ackTimeoutRegistry.clear(message);
+  } else if (acknowledgedAction === C.ACTIONS.DELETE) {
+    this.emit('delete');
+    this._destroy();
+  } else if (acknowledgedAction === C.ACTIONS.UNSUBSCRIBE) {
+    this.emit('discard');
+    this._destroy();
+  }
 };
 
 /**
@@ -5065,33 +5057,32 @@ Record.prototype._processAckMessage = function( message ) {
  * @private
  * @returns {void}
  */
-Record.prototype._applyUpdate = function( message ) {
-	var version = parseInt( message.data[ 1 ], 10 );
-	var data;
-	if( message.action === C.ACTIONS.PATCH ) {
-		data = messageParser.convertTyped( message.data[ 3 ], this._client );
-	} else {
-		data = JSON.parse( message.data[ 2 ] );
-	}
+Record.prototype._applyUpdate = function (message) {
+  var version = parseInt(message.data[1], 10);
+  var data = void 0;
+  if (message.action === C.ACTIONS.PATCH) {
+    data = messageParser.convertTyped(message.data[3], this._client);
+  } else {
+    data = JSON.parse(message.data[2]);
+  }
 
-	if( this.version === null ) {
-		this.version = version;
-	}
-	else if( this.version + 1 !== version ) {
-		if( message.action === C.ACTIONS.PATCH ) {
-			/**
-			* Request a snapshot so that a merge can be done with the read reply which contains
-			* the full state of the record
-			**/
-			this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [ this.name ] );
-		} else {
-			this._recoverRecord( version, data, message );
-		}
-		return;
-	}
+  if (this.version === null) {
+    this.version = version;
+  } else if (this.version + 1 !== version) {
+    if (message.action === C.ACTIONS.PATCH) {
+      /**
+      * Request a snapshot so that a merge can be done with the read reply which contains
+      * the full state of the record
+      **/
+      this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, [this.name]);
+    } else {
+      this._recoverRecord(version, data, message);
+    }
+    return;
+  }
 
-	this.version = version;
-	this._applyChange( jsonPath.set( this._$data, message.action === C.ACTIONS.PATCH ? message.data[ 2 ] : undefined, data ) );
+  this.version = version;
+  this._applyChange(jsonPath.set(this._$data, message.action === C.ACTIONS.PATCH ? message.data[2] : undefined, data));
 };
 
 /**
@@ -5102,10 +5093,10 @@ Record.prototype._applyUpdate = function( message ) {
  * @private
  * @returns {void}
  */
-Record.prototype._onRead = function( message ) {
-	this.version = parseInt( message.data[ 1 ], 10 );
-	this._applyChange( jsonPath.set( this._$data, undefined, JSON.parse( message.data[ 2 ] ) ) );
-	this._setReady();
+Record.prototype._onRead = function (message) {
+  this.version = parseInt(message.data[1], 10);
+  this._applyChange(jsonPath.set(this._$data, undefined, JSON.parse(message.data[2])));
+  this._setReady();
 };
 
 /**
@@ -5115,19 +5106,19 @@ Record.prototype._onRead = function( message ) {
  * @private
  * @returns {void}
  */
-Record.prototype._setReady = function() {
-	this.isReady = true;
-	for( var i = 0; i < this._queuedMethodCalls.length; i++ ) {
-		this[ this._queuedMethodCalls[ i ].method ].apply( this, this._queuedMethodCalls[ i ].args );
-	}
-	this._queuedMethodCalls = [];
-	this.emit( 'ready' );
+Record.prototype._setReady = function () {
+  this.isReady = true;
+  for (var i = 0; i < this._queuedMethodCalls.length; i++) {
+    this[this._queuedMethodCalls[i].method].apply(this, this._queuedMethodCalls[i].args);
+  }
+  this._queuedMethodCalls = [];
+  this.emit('ready');
 };
 
-Record.prototype._setUpCallback = function(currentVersion, callback) {
-	var newVersion = Number( this.version ) + 1;
-	this._writeCallbacks[ newVersion ] = callback;
-}
+Record.prototype._setUpCallback = function (currentVersion, callback) {
+  var newVersion = Number(this.version) + 1;
+  this._writeCallbacks[newVersion] = callback;
+};
 
 /**
  * Sends the read message, either initially at record
@@ -5136,9 +5127,9 @@ Record.prototype._setUpCallback = function(currentVersion, callback) {
  * @private
  * @returns {void}
  */
- Record.prototype._sendRead = function() {
- 	this._connection.sendMsg( C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [ this.name ] );
- };
+Record.prototype._sendRead = function () {
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.CREATEORREAD, [this.name]);
+};
 
 /**
  * Compares the new values for every path with the previously stored ones and
@@ -5147,23 +5138,23 @@ Record.prototype._setUpCallback = function(currentVersion, callback) {
  * @private
  * @returns {void}
  */
-Record.prototype._applyChange = function( newData ) {
-	if ( this.isDestroyed ) {
-		return;
-	}
+Record.prototype._applyChange = function (newData) {
+  if (this.isDestroyed) {
+    return;
+  }
 
-	var oldData = this._$data;
-	this._$data = newData;
+  var oldData = this._$data;
+  this._$data = newData;
 
-	var paths = this._eventEmitter.eventNames();
-	for ( var i = 0; i < paths.length; i++ ) {
-		var newValue = jsonPath.get( newData, paths[ i ], false );
-		var oldValue = jsonPath.get( oldData, paths[ i ], false );
+  var paths = this._eventEmitter.eventNames();
+  for (var i = 0; i < paths.length; i++) {
+    var newValue = jsonPath.get(newData, paths[i], false);
+    var oldValue = jsonPath.get(oldData, paths[i], false);
 
-		if( newValue !== oldValue ) {
-			this._eventEmitter.emit( paths[ i ], this.get( paths[ i ] ) );
-		}
-	}
+    if (newValue !== oldValue) {
+      this._eventEmitter.emit(paths[i], this.get(paths[i]));
+    }
+  }
 };
 
 /**
@@ -5174,28 +5165,26 @@ Record.prototype._applyChange = function( newData ) {
  * @private
  * @returns {Object} arguments map
  */
-Record.prototype._normalizeArguments = function( args ) {
-	// If arguments is already a map of normalized parameters
-	// (e.g. when called by AnonymousRecord), just return it.
-	if( args.length === 1 && typeof args[ 0 ] === 'object' ) {
-		return args[ 0 ];
-	}
+Record.prototype._normalizeArguments = function (args) {
+  // If arguments is already a map of normalized parameters
+  // (e.g. when called by AnonymousRecord), just return it.
+  if (args.length === 1 && _typeof(args[0]) === 'object') {
+    return args[0];
+  }
 
-	var result = Object.create( null );
+  var result = Object.create(null);
 
-	for( var i = 0; i < args.length; i++ ) {
-		if( typeof args[ i ] === 'string' ) {
-			result.path = args[ i ];
-		}
-		else if( typeof args[ i ] === 'function' ) {
-			result.callback = args[ i ];
-		}
-		else if( typeof args[ i ] === 'boolean' ) {
-			result.triggerNow = args[ i ];
-		}
-	}
+  for (var i = 0; i < args.length; i++) {
+    if (typeof args[i] === 'string') {
+      result.path = args[i];
+    } else if (typeof args[i] === 'function') {
+      result.callback = args[i];
+    } else if (typeof args[i] === 'boolean') {
+      result.triggerNow = args[i];
+    }
+  }
 
-	return result;
+  return result;
 };
 
 /**
@@ -5204,11 +5193,11 @@ Record.prototype._normalizeArguments = function( args ) {
  * @private
  * @returns {void}
  */
-Record.prototype._clearTimeouts = function() {
-	this._ackTimeoutRegistry.remove({ ackId: this._readAckTimeout, silent: true });
-	this._ackTimeoutRegistry.remove({ ackId: this._responseTimeout, silent: true });
-	this._ackTimeoutRegistry.remove({ ackId: this._deleteAckTimeout, silent: true });
-	this._ackTimeoutRegistry.remove({ ackId: this._discardTimeout, silent: true });
+Record.prototype._clearTimeouts = function () {
+  this._ackTimeoutRegistry.remove({ ackId: this._readAckTimeout, silent: true });
+  this._ackTimeoutRegistry.remove({ ackId: this._responseTimeout, silent: true });
+  this._ackTimeoutRegistry.remove({ ackId: this._deleteAckTimeout, silent: true });
+  this._ackTimeoutRegistry.remove({ ackId: this._discardTimeout, silent: true });
 };
 
 /**
@@ -5220,13 +5209,13 @@ Record.prototype._clearTimeouts = function() {
  * @private
  * @returns {Boolean} is destroyed
  */
-Record.prototype._checkDestroyed = function( methodName ) {
-	if( this.isDestroyed ) {
-		this.emit( 'error', 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed' );
-		return true;
-	}
+Record.prototype._checkDestroyed = function (methodName) {
+  if (this.isDestroyed) {
+    this.emit('error', 'Can\'t invoke \'' + methodName + '\'. Record \'' + this.name + '\' is already destroyed');
+    return true;
+  }
 
-	return false;
+  return false;
 };
 
 /**
@@ -5236,26 +5225,28 @@ Record.prototype._checkDestroyed = function( methodName ) {
  * @private
  * @returns {void}
  */
- Record.prototype._destroy = function() {
- 	this._clearTimeouts();
- 	this._eventEmitter.off();
- 	this._resubscribeNotifier.destroy();
- 	this.isDestroyed = true;
- 	this.isReady = false;
- 	this._client = null;
-	this._eventEmitter = null;
-	this._connection = null;
- };
+Record.prototype._destroy = function () {
+  this._clearTimeouts();
+  this._eventEmitter.off();
+  this._resubscribeNotifier.destroy();
+  this.isDestroyed = true;
+  this.isReady = false;
+  this._client = null;
+  this._eventEmitter = null;
+  this._connection = null;
+};
 
 module.exports = Record;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' ),
-	ResubscribeNotifier = _dereq_( '../utils/resubscribe-notifier' ),
-	RpcResponse = _dereq_( './rpc-response' ),
-	Rpc = _dereq_( './rpc' ),
-	messageParser= _dereq_( '../message/message-parser' ),
-	messageBuilder = _dereq_( '../message/message-builder' );
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
+'use strict';
+
+var C = _dereq_('../constants/constants');
+var ResubscribeNotifier = _dereq_('../utils/resubscribe-notifier');
+var RpcResponse = _dereq_('./rpc-response');
+var Rpc = _dereq_('./rpc');
+var messageParser = _dereq_('../message/message-parser');
+var messageBuilder = _dereq_('../message/message-builder');
 
 /**
  * The main class for remote procedure calls
@@ -5270,14 +5261,14 @@ var C = _dereq_( '../constants/constants' ),
  * @constructor
  * @public
  */
-var RpcHandler = function( options, connection, client ) {
-	this._options = options;
-	this._connection = connection;
-	this._client = client;
-	this._rpcs = {};
-	this._providers = {};
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._reprovide.bind( this ) );
+var RpcHandler = function RpcHandler(options, connection, client) {
+  this._options = options;
+  this._connection = connection;
+  this._client = client;
+  this._rpcs = {};
+  this._providers = {};
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._reprovide.bind(this));
 };
 
 /**
@@ -5285,35 +5276,38 @@ var RpcHandler = function( options, connection, client ) {
  * client.rpc.make() the request will be routed to this method
  *
  * The callback will be invoked with two arguments:
- * 		{Mixed} data The data passed to the client.rpc.make function
- *   	{RpcResponse} rpcResponse An object with methods to respons, acknowledge or reject the request
+ *     {Mixed} data The data passed to the client.rpc.make function
+ *     {RpcResponse} rpcResponse An object with methods to response,
+ *                               acknowledge or reject the request
  *
  * Only one callback can be registered for a RPC at a time
  *
- * Please note: Deepstream tries to deliver data in its original format. Data passed to client.rpc.make as a String will arrive as a String,
- * numbers or implicitly JSON serialized objects will arrive in their respective format as well
+ * Please note: Deepstream tries to deliver data in its original format.
+ * Data passed to client.rpc.make as a String will arrive as a String,
+ * numbers or implicitly JSON serialized objects will arrive in their
+ * respective format as well
  *
  * @public
  * @returns void
  */
-RpcHandler.prototype.provide = function( name, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if( this._providers[ name ] ) {
-		throw new Error( 'RPC ' + name + ' already registered' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+RpcHandler.prototype.provide = function (name, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
+  if (this._providers[name]) {
+    throw new Error('RPC ' + name + ' already registered');
+  }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	this._ackTimeoutRegistry.add({
-		topic: C.TOPIC.RPC,
-		name: name,
-		action: C.ACTIONS.SUBSCRIBE,
-	});
-	this._providers[ name ] = callback;
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ name ] );
+  this._ackTimeoutRegistry.add({
+    topic: C.TOPIC.RPC,
+    name: name,
+    action: C.ACTIONS.SUBSCRIBE
+  });
+  this._providers[name] = callback;
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [name]);
 };
 
 /**
@@ -5324,20 +5318,20 @@ RpcHandler.prototype.provide = function( name, callback ) {
  * @public
  * @returns {void}
  */
-RpcHandler.prototype.unprovide = function( name ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
+RpcHandler.prototype.unprovide = function (name) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
 
-	if( this._providers[ name ] ) {
-		delete this._providers[ name ];
-		this._ackTimeoutRegistry.add({
-			topic: C.TOPIC.RPC,
-			name: name,
-			action: C.ACTIONS.UNSUBSCRIBE,
-		});
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [ name ] );
-	}
+  if (this._providers[name]) {
+    delete this._providers[name];
+    this._ackTimeoutRegistry.add({
+      topic: C.TOPIC.RPC,
+      name: name,
+      action: C.ACTIONS.UNSUBSCRIBE
+    });
+    this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.UNSUBSCRIBE, [name]);
+  }
 };
 
 /**
@@ -5351,19 +5345,19 @@ RpcHandler.prototype.unprovide = function( name ) {
  * @public
  * @returns {void}
  */
-RpcHandler.prototype.make = function( name, data, callback ) {
-	if ( typeof name !== 'string' || name.length === 0 ) {
-		throw new Error( 'invalid argument name' );
-	}
-	if ( typeof callback !== 'function' ) {
-		throw new Error( 'invalid argument callback' );
-	}
+RpcHandler.prototype.make = function (name, data, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument name');
+  }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
 
-	var uid = this._client.getUid(),
-		typedData = messageBuilder.typed( data );
+  var uid = this._client.getUid();
+  var typedData = messageBuilder.typed(data);
 
-	this._rpcs[ uid ] = new Rpc( name, callback, this._options, this._client );
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REQUEST, [ name, uid, typedData ] );
+  this._rpcs[uid] = new Rpc(name, callback, this._options, this._client);
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REQUEST, [name, uid, typedData]);
 };
 
 /**
@@ -5376,15 +5370,15 @@ RpcHandler.prototype.make = function( name, data, callback ) {
  * @private
  * @returns {Rpc}
  */
-RpcHandler.prototype._getRpc = function( correlationId, rpcName, rawMessage ) {
-	var rpc = this._rpcs[ correlationId ];
+RpcHandler.prototype._getRpc = function (correlationId, rpcName, rawMessage) {
+  var rpc = this._rpcs[correlationId];
 
-	if( !rpc ) {
-		this._client._$onError( C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rawMessage );
-		return null;
-	}
+  if (!rpc) {
+    this._client._$onError(C.TOPIC.RPC, C.EVENT.UNSOLICITED_MESSAGE, rawMessage);
+    return null;
+  }
 
-	return rpc;
+  return rpc;
 };
 
 /**
@@ -5398,22 +5392,22 @@ RpcHandler.prototype._getRpc = function( correlationId, rpcName, rawMessage ) {
  * @private
  * @returns {void}
  */
-RpcHandler.prototype._respondToRpc = function( message ) {
-	var name = message.data[ 0 ],
-		correlationId = message.data[ 1 ],
-		data = null,
-		response;
+RpcHandler.prototype._respondToRpc = function (message) {
+  var name = message.data[0];
+  var correlationId = message.data[1];
+  var data = null;
+  var response = void 0;
 
-	if( message.data[ 2 ] ) {
-		data = messageParser.convertTyped( message.data[ 2 ], this._client );
-	}
+  if (message.data[2]) {
+    data = messageParser.convertTyped(message.data[2], this._client);
+  }
 
-	if( this._providers[ name ] ) {
-		response = new RpcResponse( this._connection, name, correlationId );
-		this._providers[ name ]( data, response );
-	} else {
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ name, correlationId ] );
-	}
+  if (this._providers[name]) {
+    response = new RpcResponse(this._connection, name, correlationId);
+    this._providers[name](data, response);
+  } else {
+    this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REJECTION, [name, correlationId]);
+  }
 };
 
 /**
@@ -5425,74 +5419,72 @@ RpcHandler.prototype._respondToRpc = function( message ) {
  * @private
  * @returns {void}
  */
-RpcHandler.prototype._$handle = function( message ) {
-	var rpcName, correlationId, rpc;
+RpcHandler.prototype._$handle = function (message) {
+  var rpcName = void 0;
+  var correlationId = void 0;
 
-	// RPC Requests
-	if( message.action === C.ACTIONS.REQUEST ) {
-		this._respondToRpc( message );
-		return;
-	}
+  // RPC Requests
+  if (message.action === C.ACTIONS.REQUEST) {
+    this._respondToRpc(message);
+    return;
+  }
 
-	// RPC subscription Acks
-	if( message.action === C.ACTIONS.ACK &&
-		( message.data[ 0 ] === C.ACTIONS.SUBSCRIBE  || message.data[ 0 ] === C.ACTIONS.UNSUBSCRIBE ) ) {
-		this._ackTimeoutRegistry.clear( message );
-		return;
-	}
+  // RPC subscription Acks
+  if (message.action === C.ACTIONS.ACK && (message.data[0] === C.ACTIONS.SUBSCRIBE || message.data[0] === C.ACTIONS.UNSUBSCRIBE)) {
+    this._ackTimeoutRegistry.clear(message);
+    return;
+  }
 
-	// handle auth/denied subscription errors
-	if( message.action === C.ACTIONS.ERROR ) {
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_PERMISSION_ERROR ) {
-			return;
-		}
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.SUBSCRIBE ) {
-			this._ackTimeoutRegistry.remove({
-				topic: C.TOPIC.RPC,
-				action: C.ACTIONS.SUBSCRIBE,
-				name: message.data[ 1 ]
-			} );
-			return;
-		}
-	}
+  // handle auth/denied subscription errors
+  if (message.action === C.ACTIONS.ERROR) {
+    if (message.data[0] === C.EVENT.MESSAGE_PERMISSION_ERROR) {
+      return;
+    }
+    if (message.data[0] === C.EVENT.MESSAGE_DENIED && message.data[2] === C.ACTIONS.SUBSCRIBE) {
+      this._ackTimeoutRegistry.remove({
+        topic: C.TOPIC.RPC,
+        action: C.ACTIONS.SUBSCRIBE,
+        name: message.data[1]
+      });
+      return;
+    }
+  }
 
-	/*
-	 * Error messages always have the error as first parameter. So the
-	 * order is different to ack and response messages
-	 */
-	if( message.action === C.ACTIONS.ERROR || message.action === C.ACTIONS.ACK ) {
-		if( message.data[ 0 ] === C.EVENT.MESSAGE_DENIED && message.data[ 2 ] === C.ACTIONS.REQUEST ) {
-			correlationId = message.data[ 3 ];
-		} else {
-			correlationId = message.data[ 2 ];
-		}
-		rpcName = message.data[ 1 ];
-	} else {
-		rpcName = message.data[ 0 ];
-		correlationId = message.data[ 1 ];
-	}
+  /*
+   * Error messages always have the error as first parameter. So the
+   * order is different to ack and response messages
+   */
+  if (message.action === C.ACTIONS.ERROR || message.action === C.ACTIONS.ACK) {
+    if (message.data[0] === C.EVENT.MESSAGE_DENIED && message.data[2] === C.ACTIONS.REQUEST) {
+      correlationId = message.data[3];
+    } else {
+      correlationId = message.data[2];
+    }
+    rpcName = message.data[1];
+  } else {
+    rpcName = message.data[0];
+    correlationId = message.data[1];
+  }
 
-	/*
-	* Retrieve the rpc object
-	*/
-	rpc = this._getRpc( correlationId, rpcName, message.raw );
-	if( rpc === null ) {
-		return;
-	}
+  /*
+  * Retrieve the rpc object
+  */
+  var rpc = this._getRpc(correlationId, rpcName, message.raw);
+  if (rpc === null) {
+    return;
+  }
 
-	// RPC Responses
-	if( message.action === C.ACTIONS.ACK ) {
-		rpc.ack();
-	}
-	else if( message.action === C.ACTIONS.RESPONSE ) {
-		rpc.respond( message.data[ 2 ] );
-		delete this._rpcs[ correlationId ];
-	}
-	else if( message.action === C.ACTIONS.ERROR ) {
-		message.processedError = true;
-		rpc.error( message.data[ 0 ] );
-		delete this._rpcs[ correlationId ];
-	}
+  // RPC Responses
+  if (message.action === C.ACTIONS.ACK) {
+    rpc.ack();
+  } else if (message.action === C.ACTIONS.RESPONSE) {
+    rpc.respond(message.data[2]);
+    delete this._rpcs[correlationId];
+  } else if (message.action === C.ACTIONS.ERROR) {
+    message.processedError = true;
+    rpc.error(message.data[0]);
+    delete this._rpcs[correlationId];
+  }
 };
 
 /**
@@ -5501,19 +5493,20 @@ RpcHandler.prototype._$handle = function( message ) {
  * @package private
  * @returns {void}
  */
-RpcHandler.prototype._reprovide = function() {
-	for( var rpcName in this._providers ) {
-		this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [ rpcName ] );
-	}
+RpcHandler.prototype._reprovide = function () {
+  for (var rpcName in this._providers) {
+    this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.SUBSCRIBE, [rpcName]);
+  }
 };
-
 
 module.exports = RpcHandler;
 
 },{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"./rpc":26,"./rpc-response":25}],25:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' ),
-	utils = _dereq_( '../utils/utils' ),
-	messageBuilder = _dereq_( '../message/message-builder' );
+'use strict';
+
+var C = _dereq_('../constants/constants');
+var utils = _dereq_('../utils/utils');
+var messageBuilder = _dereq_('../message/message-builder');
 
 /**
  * This object provides a number of methods that allow a rpc provider
@@ -5523,14 +5516,14 @@ var C = _dereq_( '../constants/constants' ),
  * @param {String} name the name of the rpc
  * @param {String} correlationId the correlationId for the RPC
  */
-var RpcResponse = function( connection, name, correlationId ) {
-	this._connection = connection;
-	this._name = name;
-	this._correlationId = correlationId;
-	this._isAcknowledged = false;
-	this._isComplete = false;
-	this.autoAck = true;
-	utils.nextTick( this._performAutoAck.bind( this ) );
+var RpcResponse = function RpcResponse(connection, name, correlationId) {
+  this._connection = connection;
+  this._name = name;
+  this._correlationId = correlationId;
+  this._isAcknowledged = false;
+  this._isComplete = false;
+  this.autoAck = true;
+  utils.nextTick(this._performAutoAck.bind(this));
 };
 
 /**
@@ -5539,17 +5532,13 @@ var RpcResponse = function( connection, name, correlationId ) {
  * explicitly sets autoAck to false
  *
  * @public
- * @returns 	{void}
+ * @returns   {void}
  */
-RpcResponse.prototype.ack = function() {
-	if( this._isAcknowledged === false ) {
-		this._connection.sendMsg(
-			C.TOPIC.RPC,
-			C.ACTIONS.ACK,
-			[ C.ACTIONS.REQUEST, this._name, this._correlationId ]
-		);
-		this._isAcknowledged = true;
-	}
+RpcResponse.prototype.ack = function () {
+  if (this._isAcknowledged === false) {
+    this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.ACK, [C.ACTIONS.REQUEST, this._name, this._correlationId]);
+    this._isAcknowledged = true;
+  }
 };
 
 /**
@@ -5560,13 +5549,13 @@ RpcResponse.prototype.ack = function() {
  * providers left
  *
  * @public
- * @returns	{void}
+ * @returns  {void}
  */
-RpcResponse.prototype.reject = function() {
-	this.autoAck = false;
-	this._isComplete = true;
-	this._isAcknowledged = true;
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.REJECTION, [ this._name, this._correlationId ] );
+RpcResponse.prototype.reject = function () {
+  this.autoAck = false;
+  this._isComplete = true;
+  this._isAcknowledged = true;
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REJECTION, [this._name, this._correlationId]);
 };
 
 /**
@@ -5575,13 +5564,13 @@ RpcResponse.prototype.reject = function() {
  *
  * @param {String} errorMsg the message used to describe the error that occured
  * @public
- * @returns	{void}
+ * @returns  {void}
  */
-RpcResponse.prototype.error = function( errorMsg ) {
-	this.autoAck = false;
-	this._isComplete = true;
-	this._isAcknowledged = true;
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.ERROR, [ errorMsg, this._name, this._correlationId ] );
+RpcResponse.prototype.error = function (errorMsg) {
+  this.autoAck = false;
+  this._isComplete = true;
+  this._isAcknowledged = true;
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.ERROR, [errorMsg, this._name, this._correlationId]);
 };
 
 /**
@@ -5597,15 +5586,15 @@ RpcResponse.prototype.error = function( errorMsg ) {
  * @public
  * @returns {void}
  */
-RpcResponse.prototype.send = function( data ) {
-	if( this._isComplete === true ) {
-		throw new Error( 'Rpc ' + this._name + ' already completed' );
-	}
-	this.ack();
+RpcResponse.prototype.send = function (data) {
+  if (this._isComplete === true) {
+    throw new Error('Rpc ' + this._name + ' already completed');
+  }
+  this.ack();
 
-	var typedData = messageBuilder.typed( data );
-	this._connection.sendMsg( C.TOPIC.RPC, C.ACTIONS.RESPONSE, [ this._name, this._correlationId, typedData ] );
-	this._isComplete = true;
+  var typedData = messageBuilder.typed(data);
+  this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.RESPONSE, [this._name, this._correlationId, typedData]);
+  this._isComplete = true;
 };
 
 /**
@@ -5615,17 +5604,19 @@ RpcResponse.prototype.send = function( data ) {
  * @private
  * @returns {void}
  */
-RpcResponse.prototype._performAutoAck = function() {
-	if( this.autoAck === true ) {
-		this.ack();
-	}
+RpcResponse.prototype._performAutoAck = function () {
+  if (this.autoAck === true) {
+    this.ack();
+  }
 };
 
 module.exports = RpcResponse;
 
 },{"../constants/constants":11,"../message/message-builder":16,"../utils/utils":31}],26:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' ),
-	messageParser = _dereq_( '../message/message-parser' );
+'use strict';
+
+var C = _dereq_('../constants/constants');
+var messageParser = _dereq_('../message/message-parser');
 
 /**
  * This class represents a single remote procedure
@@ -5633,32 +5624,33 @@ var C = _dereq_( '../constants/constants' ),
  * is to encapsulate the logic around timeouts and to convert the
  * incoming response data
  *
- * @param {Object}   options  deepstream client config
- * @param {Function} callback the function that will be called once the request is complete or failed
+ * @param {Object}   options           deepstream client config
+ * @param {Function} callback          the function that will be called once the request
+ *                                     is complete or failed
  * @param {Client} client
  *
  * @constructor
  */
-var Rpc = function( name, callback, options, client ) {
-	this._options = options;
-	this._callback = callback;
-	this._client = client;
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._ackTimeout = this._ackTimeoutRegistry.add({
-		topic: C.TOPIC.RPC,
-		action: C.ACTIONS.ACK,
-		name: name,
-		timeout: this._options.rpcAckTimeout,
-		callback: this.error.bind( this )
-	});
-	this._responseTimeout = this._ackTimeoutRegistry.add({
-		topic: C.TOPIC.RPC,
-		action: C.ACTIONS.REQUEST,
-		name: name,
-		event: C.EVENT.RESPONSE_TIMEOUT,
-		timeout: this._options.rpcResponseTimeout,
-		callback: this.error.bind( this )
-	});
+var Rpc = function Rpc(name, callback, options, client) {
+  this._options = options;
+  this._callback = callback;
+  this._client = client;
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+  this._ackTimeout = this._ackTimeoutRegistry.add({
+    topic: C.TOPIC.RPC,
+    action: C.ACTIONS.ACK,
+    name: name,
+    timeout: this._options.rpcAckTimeout,
+    callback: this.error.bind(this)
+  });
+  this._responseTimeout = this._ackTimeoutRegistry.add({
+    topic: C.TOPIC.RPC,
+    action: C.ACTIONS.REQUEST,
+    name: name,
+    event: C.EVENT.RESPONSE_TIMEOUT,
+    timeout: this._options.rpcResponseTimeout,
+    callback: this.error.bind(this)
+  });
 };
 
 /**
@@ -5667,10 +5659,10 @@ var Rpc = function( name, callback, options, client ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.ack = function() {
-	this._ackTimeoutRegistry.remove({
-		ackId: this._ackTimeout
-	});
+Rpc.prototype.ack = function () {
+  this._ackTimeoutRegistry.remove({
+    ackId: this._ackTimeout
+  });
 };
 
 /**
@@ -5682,10 +5674,10 @@ Rpc.prototype.ack = function() {
  * @public
  * @returns {void}
  */
-Rpc.prototype.respond = function( data ) {
-	var convertedData = messageParser.convertTyped( data, this._client );
-	this._callback( null, convertedData );
-	this._complete();
+Rpc.prototype.respond = function (data) {
+  var convertedData = messageParser.convertTyped(data, this._client);
+  this._callback(null, convertedData);
+  this._complete();
 };
 
 /**
@@ -5699,9 +5691,9 @@ Rpc.prototype.respond = function( data ) {
  * @public
  * @returns {void}
  */
-Rpc.prototype.error = function(timeout) {
-	this._callback( timeout.event || timeout );
-	this._complete();
+Rpc.prototype.error = function (timeout) {
+  this._callback(timeout.event || timeout);
+  this._complete();
 };
 
 /**
@@ -5711,19 +5703,22 @@ Rpc.prototype.error = function(timeout) {
  * @private
  * @returns {void}
  */
-Rpc.prototype._complete = function() {
-	this._ackTimeoutRegistry.remove({
-		ackId: this._ackTimeout
-	});
-	this._ackTimeoutRegistry.remove({
-		ackId: this._responseTimeout
-	});
+Rpc.prototype._complete = function () {
+  this._ackTimeoutRegistry.remove({
+    ackId: this._ackTimeout
+  });
+  this._ackTimeoutRegistry.remove({
+    ackId: this._responseTimeout
+  });
 };
 
 module.exports = Rpc;
+
 },{"../constants/constants":11,"../message/message-parser":17}],27:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' ),
-	EventEmitter = _dereq_( 'component-emitter2' );
+'use strict';
+
+var C = _dereq_('../constants/constants');
+var EventEmitter = _dereq_('component-emitter2');
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -5738,15 +5733,15 @@ var C = _dereq_( '../constants/constants' ),
  * @extends {EventEmitter}
  * @constructor
  */
-var AckTimeoutRegistry = function( client, options ) {
-	this._options = options;
-	this._client = client;
-	this._register = {};
-	this._counter = 1;
-	client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this));
+var AckTimeoutRegistry = function AckTimeoutRegistry(client, options) {
+  this._options = options;
+  this._client = client;
+  this._register = {};
+  this._counter = 1;
+  client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this));
 };
 
-EventEmitter( AckTimeoutRegistry.prototype );
+EventEmitter(AckTimeoutRegistry.prototype);
 
 /**
  * Add an entry
@@ -5756,22 +5751,19 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @public
  * @returns {Number} The timeout identifier
  */
-AckTimeoutRegistry.prototype.add = function(timeout) {
-	var timeoutDuration = timeout.timeout || this._options.subscriptionTimeout;
+AckTimeoutRegistry.prototype.add = function (timeout) {
+  var timeoutDuration = timeout.timeout || this._options.subscriptionTimeout;
 
-	if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN || timeoutDuration < 1) {
-		return -1;
-	}
+  if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN || timeoutDuration < 1) {
+    return -1;
+  }
 
-	this.remove(timeout);
-	timeout.ackId = this._counter++;
-	timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
-	timeout.__timeout = setTimeout(
-		this._onTimeout.bind(this, timeout),
-		timeoutDuration
-	);
-	this._register[ this._getUniqueName(timeout) ] = timeout;
-	return timeout.ackId;
+  this.remove(timeout);
+  timeout.ackId = this._counter++;
+  timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
+  timeout.__timeout = setTimeout(this._onTimeout.bind(this, timeout), timeoutDuration);
+  this._register[this._getUniqueName(timeout)] = timeout;
+  return timeout.ackId;
 };
 
 /**
@@ -5782,26 +5774,26 @@ AckTimeoutRegistry.prototype.add = function(timeout) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.remove = function(timeout) {
-	if( timeout.ackId ) {
-		for(var uniqueName in this._register) {
-			if(timeout.ackId === this._register[uniqueName].ackId) {
-				this.clear( {
-					topic: this._register[uniqueName].topic,
-					action: this._register[uniqueName].action,
-					data: [ this._register[uniqueName].name ]
-				} );
-			}
-		}
-	}
+AckTimeoutRegistry.prototype.remove = function (timeout) {
+  if (timeout.ackId) {
+    for (var uniqueName in this._register) {
+      if (timeout.ackId === this._register[uniqueName].ackId) {
+        this.clear({
+          topic: this._register[uniqueName].topic,
+          action: this._register[uniqueName].action,
+          data: [this._register[uniqueName].name]
+        });
+      }
+    }
+  }
 
-	if( this._register[ this._getUniqueName(timeout) ] ) {
-		this.clear( {
-			topic: timeout.topic,
-			action: timeout.action,
-			data: [ timeout.name ]
-		} );
-	}
+  if (this._register[this._getUniqueName(timeout)]) {
+    this.clear({
+      topic: timeout.topic,
+      action: timeout.action,
+      data: [timeout.name]
+    });
+  }
 };
 
 /**
@@ -5812,19 +5804,19 @@ AckTimeoutRegistry.prototype.remove = function(timeout) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.clear = function( message ) {
-	var uniqueName;
-	if (message.action === C.ACTIONS.ACK && message.data.length > 1) {
-		uniqueName = message.topic + message.data[ 0 ] + (message.data[ 1 ] ? message.data[ 1 ] : '');
-	} else {
-		uniqueName = message.topic + message.action + message.data[ 0 ];
-	}
+AckTimeoutRegistry.prototype.clear = function (message) {
+  var uniqueName = void 0;
+  if (message.action === C.ACTIONS.ACK && message.data.length > 1) {
+    uniqueName = message.topic + message.data[0] + (message.data[1] ? message.data[1] : '');
+  } else {
+    uniqueName = message.topic + message.action + message.data[0];
+  }
 
-	if( this._register[ uniqueName ] ) {
-		clearTimeout( this._register[ uniqueName ].__timeout );
-	}
+  if (this._register[uniqueName]) {
+    clearTimeout(this._register[uniqueName].__timeout);
+  }
 
-	delete this._register[ uniqueName ];
+  delete this._register[uniqueName];
 };
 
 /**
@@ -5835,17 +5827,17 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
-	delete this._register[ this._getUniqueName(timeout) ];
+AckTimeoutRegistry.prototype._onTimeout = function (timeout) {
+  delete this._register[this._getUniqueName(timeout)];
 
-	if (timeout.callback) {
-		delete timeout.__timeout
-		delete timeout.timeout
-		timeout.callback(timeout);
-	} else {
-		var msg = 'No ACK message received in time' + ( timeout.name ? ' for ' + timeout.name : '');
-		this._client._$onError( timeout.topic, timeout.event, msg );
-	}
+  if (timeout.callback) {
+    delete timeout.__timeout;
+    delete timeout.timeout;
+    timeout.callback(timeout);
+  } else {
+    var msg = 'No ACK message received in time' + (timeout.name ? ' for ' + timeout.name : '');
+    this._client._$onError(timeout.topic, timeout.event, msg);
+  }
 };
 
 /**
@@ -5854,8 +5846,8 @@ AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._getUniqueName = function(timeout) {
-	return timeout.topic + timeout.action + (timeout.name ? timeout.name : '');
+AckTimeoutRegistry.prototype._getUniqueName = function (timeout) {
+  return timeout.topic + timeout.action + (timeout.name ? timeout.name : '');
 };
 
 /**
@@ -5864,56 +5856,58 @@ AckTimeoutRegistry.prototype._getUniqueName = function(timeout) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onConnectionStateChanged = function(connectionState) {
-	if (connectionState !== C.CONNECTION_STATE.OPEN) {
-		for (var uniqueName in this._register) {
-			clearTimeout( this._register[ uniqueName ].__timeout );
-		}
-	}
-}
+AckTimeoutRegistry.prototype._onConnectionStateChanged = function (connectionState) {
+  if (connectionState !== C.CONNECTION_STATE.OPEN) {
+    for (var uniqueName in this._register) {
+      clearTimeout(this._register[uniqueName].__timeout);
+    }
+  }
+};
 
 module.exports = AckTimeoutRegistry;
 
 },{"../constants/constants":11,"component-emitter2":1}],28:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' );
-var ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
+'use strict';
+
+var C = _dereq_('../constants/constants');
+var ResubscribeNotifier = _dereq_('./resubscribe-notifier');
 
 /*
  * Creates a listener instance which is usedby deepstream Records and Events.
  *
  * @param {String} topic                 One of CONSTANTS.TOPIC
  * @param {String} pattern              A pattern that can be compiled via new RegExp(pattern)
- * @param {Function} callback           The function which is called when pattern was found and removed
+ * @param {Function} callback           The function which is called when pattern was found and
+ *                                      removed
  * @param {Connection} Connection       The instance of the server connection
  * @param {Object} options              Deepstream options
  * @param {Client} client               deepstream.io client
  *
  * @constructor
  */
-var Listener = function( topic, pattern, callback, options, client, connection ) {
-	this._topic = topic;
-	this._callback = callback;
-	this._pattern = pattern;
-	this._options = options;
-	this._client = client;
-	this._connection = connection;
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._ackTimeoutRegistry.add({
-		topic: this._topic,
-		name: pattern,
-		action: C.ACTIONS.LISTEN
-	});
+var Listener = function Listener(topic, pattern, callback, options, client, connection) {
+  this._topic = topic;
+  this._callback = callback;
+  this._pattern = pattern;
+  this._options = options;
+  this._client = client;
+  this._connection = connection;
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+  this._ackTimeoutRegistry.add({
+    topic: this._topic,
+    name: pattern,
+    action: C.ACTIONS.LISTEN
+  });
 
-	this._resubscribeNotifier = new ResubscribeNotifier( client, this._sendListen.bind( this ) );
-	this._sendListen();
-	this.destroyPending = false;
+  this._resubscribeNotifier = new ResubscribeNotifier(client, this._sendListen.bind(this));
+  this._sendListen();
+  this.destroyPending = false;
 };
 
-Listener.prototype.sendDestroy = function() {
-	this.destroyPending = true;
-	this._connection.sendMsg( this._topic, C.ACTIONS.UNLISTEN, [ this._pattern ] );
-	this._resubscribeNotifier.destroy();
-
+Listener.prototype.sendDestroy = function () {
+  this.destroyPending = true;
+  this._connection.sendMsg(this._topic, C.ACTIONS.UNLISTEN, [this._pattern]);
+  this._resubscribeNotifier.destroy();
 };
 
 /*
@@ -5921,37 +5915,39 @@ Listener.prototype.sendDestroy = function() {
  *
  * @returns {void}
  */
-Listener.prototype.destroy = function() {
-	this._callback = null;
-	this._pattern = null;
-	this._client = null;
-	this._connection = null;
+Listener.prototype.destroy = function () {
+  this._callback = null;
+  this._pattern = null;
+  this._client = null;
+  this._connection = null;
 };
 
 /*
  * Accepting a listener request informs deepstream that the current provider is willing to
  * provide the record or event matching the subscriptionName . This will establish the current
  * provider as the only publisher for the actual subscription with the deepstream cluster.
- * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a
+ * deprecated warning.
  *
  * @returns {void}
  */
-Listener.prototype.accept = function( name ) {
-	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN_ACCEPT, [ this._pattern, name ] );
-}
+Listener.prototype.accept = function (name) {
+  this._connection.sendMsg(this._topic, C.ACTIONS.LISTEN_ACCEPT, [this._pattern, name]);
+};
 
 /*
- *  Rejecting a listener request informs deepstream that the current provider is not willing
+ * Rejecting a listener request informs deepstream that the current provider is not willing
  * to provide the record or event matching the subscriptionName . This will result in deepstream
  * requesting another provider to do so instead. If no other provider accepts or exists, the
  * record will remain unprovided.
- * Either accept or reject needs to be called by the listener, otherwise it prints out a deprecated warning.
+ * Either accept or reject needs to be called by the listener, otherwise it prints out a
+ * deprecated warning.
  *
  * @returns {void}
  */
-Listener.prototype.reject = function( name ) {
-	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN_REJECT, [ this._pattern, name ] );
-}
+Listener.prototype.reject = function (name) {
+  this._connection.sendMsg(this._topic, C.ACTIONS.LISTEN_REJECT, [this._pattern, name]);
+};
 
 /*
  * Wraps accept and reject as an argument for the callback function.
@@ -5959,12 +5955,12 @@ Listener.prototype.reject = function( name ) {
  * @private
  * @returns {Object}
  */
-Listener.prototype._createCallbackResponse = function(message) {
-	return {
-		accept: this.accept.bind( this, message.data[ 1 ] ),
-		reject: this.reject.bind( this, message.data[ 1 ] )
-	}
-}
+Listener.prototype._createCallbackResponse = function (message) {
+  return {
+    accept: this.accept.bind(this, message.data[1]),
+    reject: this.reject.bind(this, message.data[1])
+  };
+};
 
 /*
  * Handles the incomming message.
@@ -5972,16 +5968,16 @@ Listener.prototype._createCallbackResponse = function(message) {
  * @private
  * @returns {void}
  */
-Listener.prototype._$onMessage = function( message ) {
-	if( message.action === C.ACTIONS.ACK ) {
-		this._ackTimeoutRegistry.clear(message);
-	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ) {
-		this._callback( message.data[ 1 ], true, this._createCallbackResponse( message) );
-	} else if ( message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ) {
-		this._callback( message.data[ 1 ], false );
-	} else {
-		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.data[ 0 ] + '|' + message.data[ 1 ] );
-	}
+Listener.prototype._$onMessage = function (message) {
+  if (message.action === C.ACTIONS.ACK) {
+    this._ackTimeoutRegistry.clear(message);
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND) {
+    this._callback(message.data[1], true, this._createCallbackResponse(message));
+  } else if (message.action === C.ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
+    this._callback(message.data[1], false);
+  } else {
+    this._client._$onError(this._topic, C.EVENT.UNSOLICITED_MESSAGE, message.data[0] + '|' + message.data[1]);
+  }
 };
 
 /*
@@ -5990,14 +5986,16 @@ Listener.prototype._$onMessage = function( message ) {
  * @private
  * @returns {void}
  */
-Listener.prototype._sendListen = function() {
-	this._connection.sendMsg( this._topic, C.ACTIONS.LISTEN, [ this._pattern ] );
+Listener.prototype._sendListen = function () {
+  this._connection.sendMsg(this._topic, C.ACTIONS.LISTEN, [this._pattern]);
 };
 
 module.exports = Listener;
 
 },{"../constants/constants":11,"./resubscribe-notifier":29}],29:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' );
+'use strict';
+
+var C = _dereq_('../constants/constants');
 
 /**
  * Makes sure that all functionality is resubscribed on reconnect. Subscription is called
@@ -6012,13 +6010,13 @@ var C = _dereq_( '../constants/constants' );
  *
  * @constructor
  */
-var ResubscribeNotifier = function( client, resubscribe ) {
-	this._client = client;
-	this._resubscribe = resubscribe;
+var ResubscribeNotifier = function ResubscribeNotifier(client, resubscribe) {
+  this._client = client;
+  this._resubscribe = resubscribe;
 
-	this._isReconnecting = false;
-	this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind( this );
-	this._client.on( 'connectionStateChanged', this._connectionStateChangeHandler );
+  this._isReconnecting = false;
+  this._connectionStateChangeHandler = this._handleConnectionStateChanges.bind(this);
+  this._client.on('connectionStateChanged', this._connectionStateChangeHandler);
 };
 
 /**
@@ -6026,33 +6024,36 @@ var ResubscribeNotifier = function( client, resubscribe ) {
  *
  * @returns {void}
  */
-ResubscribeNotifier.prototype.destroy = function() {
-	this._client.removeListener( 'connectionStateChanged', this._connectionStateChangeHandler );
-	this._connectionStateChangeHandler = null;
-	this._client = null;
+ResubscribeNotifier.prototype.destroy = function () {
+  this._client.removeListener('connectionStateChanged', this._connectionStateChangeHandler);
+  this._connectionStateChangeHandler = null;
+  this._client = null;
 };
 
- /**
- * Check whenever the connection state changes if it is in reconnecting to resubscribe
- * @private
- * @returns {void}
- */
- ResubscribeNotifier.prototype._handleConnectionStateChanges = function() {
-	var state = this._client.getConnectionState();
+/**
+* Check whenever the connection state changes if it is in reconnecting to resubscribe
+* @private
+* @returns {void}
+*/
+ResubscribeNotifier.prototype._handleConnectionStateChanges = function () {
+  var state = this._client.getConnectionState();
 
-	if( state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false ) {
-		this._isReconnecting = true;
-	}
-	if( state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true ) {
-		this._isReconnecting = false;
-		this._resubscribe();
-	}
- };
+  if (state === C.CONNECTION_STATE.RECONNECTING && this._isReconnecting === false) {
+    this._isReconnecting = true;
+  }
+  if (state === C.CONNECTION_STATE.OPEN && this._isReconnecting === true) {
+    this._isReconnecting = false;
+    this._resubscribe();
+  }
+};
 
 module.exports = ResubscribeNotifier;
+
 },{"../constants/constants":11}],30:[function(_dereq_,module,exports){
-var C = _dereq_( '../constants/constants' ),
-	ResubscribeNotifier = _dereq_( './resubscribe-notifier' );
+'use strict';
+
+var C = _dereq_('../constants/constants');
+var ResubscribeNotifier = _dereq_('./resubscribe-notifier');
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
@@ -6068,16 +6069,16 @@ var C = _dereq_( '../constants/constants' ),
  *
  * @constructor
  */
-var SingleNotifier = function( client, connection, topic, action, timeoutDuration ) {
-	this._client = client;
-	this._connection = connection;
-	this._topic = topic;
-	this._action = action;
-	this._timeoutDuration = timeoutDuration;
-	this._requests = {};
-	this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-	this._resubscribeNotifier = new ResubscribeNotifier( this._client, this._resendRequests.bind( this ) );
-	this._onResponseTimeout = this._onResponseTimeout.bind(this);
+var SingleNotifier = function SingleNotifier(client, connection, topic, action, timeoutDuration) {
+  this._client = client;
+  this._connection = connection;
+  this._topic = topic;
+  this._action = action;
+  this._timeoutDuration = timeoutDuration;
+  this._requests = {};
+  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resendRequests.bind(this));
+  this._onResponseTimeout = this._onResponseTimeout.bind(this);
 };
 
 /**
@@ -6088,8 +6089,8 @@ var SingleNotifier = function( client, connection, topic, action, timeoutDuratio
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.hasRequest = function( name ) {
-	return !!this._requests[ name ];
+SingleNotifier.prototype.hasRequest = function (name) {
+  return !!this._requests[name];
 };
 
 /**
@@ -6102,23 +6103,21 @@ SingleNotifier.prototype.hasRequest = function( name ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.request = function( name, callback ) {
-	var responseTimeout;
+SingleNotifier.prototype.request = function (name, callback) {
+  if (!this._requests[name]) {
+    this._requests[name] = [];
+    this._connection.sendMsg(this._topic, this._action, [name]);
+  }
 
-	if( !this._requests[ name ] ) {
-		this._requests[ name ] = [];
-		this._connection.sendMsg( this._topic, this._action, [ name ] );
-	}
-
-	var ackId = this._ackTimeoutRegistry.add({
-		topic: this._topic,
-		event: C.EVENT.RESPONSE_TIMEOUT,
-		name: name,
-		action: this._action,
-		timeout: this._timeoutDuration,
-		callback: this._onResponseTimeout
-	});
-	this._requests[ name ].push({ callback: callback, ackId: ackId });
+  var ackId = this._ackTimeoutRegistry.add({
+    topic: this._topic,
+    event: C.EVENT.RESPONSE_TIMEOUT,
+    name: name,
+    action: this._action,
+    timeout: this._timeoutDuration,
+    callback: this._onResponseTimeout
+  });
+  this._requests[name].push({ callback: callback, ackId: ackId });
 };
 
 /**
@@ -6132,22 +6131,22 @@ SingleNotifier.prototype.request = function( name, callback ) {
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.recieve = function( name, error, data ) {
-	var entries = this._requests[ name ];
+SingleNotifier.prototype.recieve = function (name, error, data) {
+  var entries = this._requests[name];
 
-	if( !entries ) {
-		this._client._$onError( this._topic, C.EVENT.UNSOLICITED_MESSAGE, 'no entry for ' + name );
-		return;
-	}
+  if (!entries) {
+    this._client._$onError(this._topic, C.EVENT.UNSOLICITED_MESSAGE, 'no entry for ' + name);
+    return;
+  }
 
-	for( i=0; i < entries.length; i++ ) {
-		entry = entries[ i ];
-		this._ackTimeoutRegistry.remove({
-			ackId: entry.ackId
-		});
-		entry.callback( error, data );
-	}
-	delete this._requests[ name ];
+  for (var i = 0; i < entries.length; i++) {
+    var entry = entries[i];
+    this._ackTimeoutRegistry.remove({
+      ackId: entry.ackId
+    });
+    entry.callback(error, data);
+  }
+  delete this._requests[name];
 };
 
 /**
@@ -6158,9 +6157,9 @@ SingleNotifier.prototype.recieve = function( name, error, data ) {
  * @private
  * @returns {void}
  */
-SingleNotifier.prototype._onResponseTimeout = function( timeout ) {
-	var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + timeout.name;
-	this._client._$onError( this._topic, C.EVENT.RESPONSE_TIMEOUT, msg );
+SingleNotifier.prototype._onResponseTimeout = function (timeout) {
+  var msg = 'No response received in time for ' + this._topic + '|' + this._action + '|' + timeout.name;
+  this._client._$onError(this._topic, C.EVENT.RESPONSE_TIMEOUT, msg);
 };
 
 /**
@@ -6169,21 +6168,27 @@ SingleNotifier.prototype._onResponseTimeout = function( timeout ) {
  * @private
  * @returns {void}
  */
-SingleNotifier.prototype._resendRequests = function() {
-	for( var request in this._requests ) {
-		this._connection.sendMsg( this._topic, this._action, [ request ] );
-	}
+SingleNotifier.prototype._resendRequests = function () {
+  for (var request in this._requests) {
+    this._connection.sendMsg(this._topic, this._action, [request]);
+  }
 };
 
 module.exports = SingleNotifier;
+
 },{"../constants/constants":11,"./resubscribe-notifier":29}],31:[function(_dereq_,module,exports){
 (function (process){
+'use strict';
+
 /**
  * A regular expression that matches whitespace on either side, but
  * not in the center of a string
  *
  * @type {RegExp}
  */
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
 
 /**
@@ -6212,12 +6217,12 @@ exports.isNode = typeof process !== 'undefined' && process.toString() === '[obje
  * @public
  * @returns {void}
  */
-exports.nextTick = function( fn ) {
-	if( exports.isNode ) {
-		process.nextTick( fn );
-	} else {
-		setTimeout( fn, 0 );
-	}
+exports.nextTick = function (fn) {
+  if (exports.isNode) {
+    process.nextTick(fn);
+  } else {
+    setTimeout(fn, 0);
+  }
 };
 
 /**
@@ -6228,12 +6233,11 @@ exports.nextTick = function( fn ) {
  * @public
  * @returns {String} trimmedString
  */
-exports.trim = function( inputString ) {
-	if( inputString.trim ) {
-		return inputString.trim();
-	} else {
-		return inputString.replace( TRIM_REGULAR_EXPRESSION, '' );
-	}
+exports.trim = function (inputString) {
+  if (inputString.trim) {
+    return inputString.trim();
+  }
+  return inputString.replace(TRIM_REGULAR_EXPRESSION, '');
 };
 
 /**
@@ -6257,26 +6261,24 @@ exports.trim = function( inputString ) {
  * @public
  * @returns {Boolean} isEqual
  */
-exports.deepEquals= function( objA, objB ) {
-	if ( objA === objB ) {
-		return true
-	}
-	else if( typeof objA !== OBJECT || typeof objB !== OBJECT ) {
-		return false;
-	}
-	else {
-		return JSON.stringify( objA ) === JSON.stringify( objB );
-	}
+exports.deepEquals = function (objA, objB) {
+  if (objA === objB) {
+    return true;
+  } else if ((typeof objA === 'undefined' ? 'undefined' : _typeof(objA)) !== OBJECT || (typeof objB === 'undefined' ? 'undefined' : _typeof(objB)) !== OBJECT) {
+    return false;
+  }
+
+  return JSON.stringify(objA) === JSON.stringify(objB);
 };
 
 /**
  * Similar to deepEquals above, tests have shown that JSON stringify outperforms any attempt of
- * a code based implementation by 50% - 100% whilst also handling edge-cases and keeping implementation
- * complexity low.
+ * a code based implementation by 50% - 100% whilst also handling edge-cases and keeping
+ * implementation complexity low.
  *
- * If ES6/7 ever decides to implement deep copying natively (what happened to Object.clone? that was briefly
- * a thing...), let's switch it for the native implementation. For now though, even Object.assign({}, obj) only
- * provides a shallow copy.
+ * If ES6/7 ever decides to implement deep copying natively (what happened to Object.clone?
+ * that was briefly a thing...), let's switch it for the native implementation. For now though,
+ * even Object.assign({}, obj) only provides a shallow copy.
  *
  * Please find performance test results backing these statements here:
  *
@@ -6287,12 +6289,11 @@ exports.deepEquals= function( objA, objB ) {
  * @public
  * @returns {Mixed} clone
  */
-exports.deepCopy = function( obj ) {
-	if( typeof obj === OBJECT ) {
-		return JSON.parse( JSON.stringify( obj ) );
-	} else {
-		return obj;
-	}
+exports.deepCopy = function (obj) {
+  if ((typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === OBJECT) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+  return obj;
 };
 
 /**
@@ -6305,20 +6306,19 @@ exports.deepCopy = function( obj ) {
  * @public
  * @returns {Mixed} clone
  */
-exports.shallowCopy = function ( obj ) {
-	if ( Array.isArray( obj ) ) {
-		return obj.slice( 0 );
-	}
-	else if ( typeof obj === OBJECT ) {
-		var copy = Object.create( null );
-		var props = Object.keys( obj );
-		for ( var i = 0; i < props.length; i++ ) {
-			copy[ props[ i ] ] = obj[ props[ i ] ];
-		}
-	  return copy;
-	}
-	return obj;
-}
+exports.shallowCopy = function (obj) {
+  if (Array.isArray(obj)) {
+    return obj.slice(0);
+  } else if ((typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === OBJECT) {
+    var copy = Object.create(null);
+    var props = Object.keys(obj);
+    for (var i = 0; i < props.length; i++) {
+      copy[props[i]] = obj[props[i]];
+    }
+    return copy;
+  }
+  return obj;
+};
 
 /**
  * Set timeout utility that adds support for disabling a timeout
@@ -6330,12 +6330,11 @@ exports.shallowCopy = function ( obj ) {
  * @public
  * @returns {Number} timeoutId
  */
-exports.setTimeout = function( callback, timeoutDuration ) {
-	if( timeoutDuration !== null ) {
-		return setTimeout( callback, timeoutDuration );
-	} else {
-		return -1;
-	}
+exports.setTimeout = function (callback, timeoutDuration) {
+  if (timeoutDuration !== null) {
+    return setTimeout(callback, timeoutDuration);
+  }
+  return -1;
 };
 
 /**
@@ -6348,12 +6347,11 @@ exports.setTimeout = function( callback, timeoutDuration ) {
  * @public
  * @returns {Number} intervalId
  */
-exports.setInterval = function( callback, intervalDuration ) {
-	if( intervalDuration !== null ) {
-		return setInterval( callback, intervalDuration );
-	} else {
-		return -1;
-	}
+exports.setInterval = function (callback, intervalDuration) {
+  if (intervalDuration !== null) {
+    return setInterval(callback, intervalDuration);
+  }
+  return -1;
 };
 
 /**
@@ -6368,7 +6366,7 @@ var hasUrlProtocol = /^wss:|^ws:|^\/\//;
  */
 var unsupportedProtocol = /^http:|^https:/;
 
-var URL = _dereq_( 'url' );
+var URL = _dereq_('url');
 
 /**
  * Take the url passed when creating the client and ensure the correct
@@ -6376,23 +6374,25 @@ var URL = _dereq_( 'url' );
  * @param  {String} url Url passed in by client
  * @return {String} Url with supported protocol
  */
-exports.parseUrl = function( url, defaultPath ) {
-	if( unsupportedProtocol.test( url ) ) {
-		throw new Error( 'Only ws and wss are supported' );
-	}
-	if( !hasUrlProtocol.test( url ) ) {
-		url = 'ws://' + url;
-	} else if( url.indexOf( '//' ) === 0  ) {
-		url = 'ws:' + url;
-	}
-	var serverUrl = URL.parse( url );
-	if (!serverUrl.host) {
-		throw new Error('invalid url, missing host');
-	}
-	serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
-	serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
-	return URL.format( serverUrl );
+exports.parseUrl = function (initialURl, defaultPath) {
+  var url = initialURl;
+  if (unsupportedProtocol.test(url)) {
+    throw new Error('Only ws and wss are supported');
+  }
+  if (!hasUrlProtocol.test(url)) {
+    url = 'ws://' + url;
+  } else if (url.indexOf('//') === 0) {
+    url = 'ws:' + url;
+  }
+  var serverUrl = URL.parse(url);
+  if (!serverUrl.host) {
+    throw new Error('invalid url, missing host');
+  }
+  serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
+  serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
+  return URL.format(serverUrl);
 };
+
 }).call(this,_dereq_('_process'))
 },{"_process":3,"url":8}]},{},[10])(10)
 });

@@ -1,5 +1,7 @@
-var C = require( '../constants/constants' ),
-	EventEmitter = require( 'component-emitter2' );
+'use strict'
+
+const C = require('../constants/constants')
+const EventEmitter = require('component-emitter2')
 
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -14,15 +16,15 @@ var C = require( '../constants/constants' ),
  * @extends {EventEmitter}
  * @constructor
  */
-var AckTimeoutRegistry = function( client, options ) {
-	this._options = options;
-	this._client = client;
-	this._register = {};
-	this._counter = 1;
-	client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this));
-};
+const AckTimeoutRegistry = function (client, options) {
+  this._options = options
+  this._client = client
+  this._register = {}
+  this._counter = 1
+  client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this))
+}
 
-EventEmitter( AckTimeoutRegistry.prototype );
+EventEmitter(AckTimeoutRegistry.prototype)
 
 /**
  * Add an entry
@@ -32,23 +34,23 @@ EventEmitter( AckTimeoutRegistry.prototype );
  * @public
  * @returns {Number} The timeout identifier
  */
-AckTimeoutRegistry.prototype.add = function(timeout) {
-	var timeoutDuration = timeout.timeout || this._options.subscriptionTimeout;
+AckTimeoutRegistry.prototype.add = function (timeout) {
+  const timeoutDuration = timeout.timeout || this._options.subscriptionTimeout
 
-	if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN || timeoutDuration < 1) {
-		return -1;
-	}
+  if (this._client.getConnectionState() !== C.CONNECTION_STATE.OPEN || timeoutDuration < 1) {
+    return -1
+  }
 
-	this.remove(timeout);
-	timeout.ackId = this._counter++;
-	timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT;
-	timeout.__timeout = setTimeout(
-		this._onTimeout.bind(this, timeout),
-		timeoutDuration
-	);
-	this._register[ this._getUniqueName(timeout) ] = timeout;
-	return timeout.ackId;
-};
+  this.remove(timeout)
+  timeout.ackId = this._counter++
+  timeout.event = timeout.event || C.EVENT.ACK_TIMEOUT
+  timeout.__timeout = setTimeout(
+    this._onTimeout.bind(this, timeout),
+    timeoutDuration
+  )
+  this._register[this._getUniqueName(timeout)] = timeout
+  return timeout.ackId
+}
 
 /**
  * Remove an entry
@@ -58,27 +60,27 @@ AckTimeoutRegistry.prototype.add = function(timeout) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.remove = function(timeout) {
-	if( timeout.ackId ) {
-		for(var uniqueName in this._register) {
-			if(timeout.ackId === this._register[uniqueName].ackId) {
-				this.clear( {
-					topic: this._register[uniqueName].topic,
-					action: this._register[uniqueName].action,
-					data: [ this._register[uniqueName].name ]
-				} );
-			}
-		}
-	}
+AckTimeoutRegistry.prototype.remove = function (timeout) {
+  if (timeout.ackId) {
+    for (const uniqueName in this._register) {
+      if (timeout.ackId === this._register[uniqueName].ackId) {
+        this.clear({
+          topic: this._register[uniqueName].topic,
+          action: this._register[uniqueName].action,
+          data: [this._register[uniqueName].name]
+        })
+      }
+    }
+  }
 
-	if( this._register[ this._getUniqueName(timeout) ] ) {
-		this.clear( {
-			topic: timeout.topic,
-			action: timeout.action,
-			data: [ timeout.name ]
-		} );
-	}
-};
+  if (this._register[this._getUniqueName(timeout)]) {
+    this.clear({
+      topic: timeout.topic,
+      action: timeout.action,
+      data: [timeout.name]
+    })
+  }
+}
 
 /**
  * Processes an incoming ACK-message and removes the corresponding subscription
@@ -88,20 +90,20 @@ AckTimeoutRegistry.prototype.remove = function(timeout) {
  * @public
  * @returns {void}
  */
-AckTimeoutRegistry.prototype.clear = function( message ) {
-	var uniqueName;
-	if (message.action === C.ACTIONS.ACK && message.data.length > 1) {
-		uniqueName = message.topic + message.data[ 0 ] + (message.data[ 1 ] ? message.data[ 1 ] : '');
-	} else {
-		uniqueName = message.topic + message.action + message.data[ 0 ];
-	}
+AckTimeoutRegistry.prototype.clear = function (message) {
+  let uniqueName
+  if (message.action === C.ACTIONS.ACK && message.data.length > 1) {
+    uniqueName = message.topic + message.data[0] + (message.data[1] ? message.data[1] : '')
+  } else {
+    uniqueName = message.topic + message.action + message.data[0]
+  }
 
-	if( this._register[ uniqueName ] ) {
-		clearTimeout( this._register[ uniqueName ].__timeout );
-	}
+  if (this._register[uniqueName]) {
+    clearTimeout(this._register[uniqueName].__timeout)
+  }
 
-	delete this._register[ uniqueName ];
-};
+  delete this._register[uniqueName]
+}
 
 /**
  * Will be invoked if the timeout has occured before the ack message was received
@@ -111,18 +113,18 @@ AckTimeoutRegistry.prototype.clear = function( message ) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
-	delete this._register[ this._getUniqueName(timeout) ];
+AckTimeoutRegistry.prototype._onTimeout = function (timeout) {
+  delete this._register[this._getUniqueName(timeout)]
 
-	if (timeout.callback) {
-		delete timeout.__timeout
-		delete timeout.timeout
-		timeout.callback(timeout);
-	} else {
-		var msg = 'No ACK message received in time' + ( timeout.name ? ' for ' + timeout.name : '');
-		this._client._$onError( timeout.topic, timeout.event, msg );
-	}
-};
+  if (timeout.callback) {
+    delete timeout.__timeout
+    delete timeout.timeout
+    timeout.callback(timeout)
+  } else {
+    const msg = `No ACK message received in time${timeout.name ? ` for ${timeout.name}` : ''}`
+    this._client._$onError(timeout.topic, timeout.event, msg)
+  }
+}
 
 /**
  * Returns a unique name from the timeout
@@ -130,9 +132,9 @@ AckTimeoutRegistry.prototype._onTimeout = function(timeout) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._getUniqueName = function(timeout) {
-	return timeout.topic + timeout.action + (timeout.name ? timeout.name : '');
-};
+AckTimeoutRegistry.prototype._getUniqueName = function (timeout) {
+  return timeout.topic + timeout.action + (timeout.name ? timeout.name : '')
+}
 
 /**
  * Remote all timeouts when connection disconnects
@@ -140,12 +142,12 @@ AckTimeoutRegistry.prototype._getUniqueName = function(timeout) {
  * @private
  * @returns {void}
  */
-AckTimeoutRegistry.prototype._onConnectionStateChanged = function(connectionState) {
-	if (connectionState !== C.CONNECTION_STATE.OPEN) {
-		for (var uniqueName in this._register) {
-			clearTimeout( this._register[ uniqueName ].__timeout );
-		}
-	}
+AckTimeoutRegistry.prototype._onConnectionStateChanged = function (connectionState) {
+  if (connectionState !== C.CONNECTION_STATE.OPEN) {
+    for (const uniqueName in this._register) {
+      clearTimeout(this._register[uniqueName].__timeout)
+    }
+  }
 }
 
-module.exports = AckTimeoutRegistry;
+module.exports = AckTimeoutRegistry
