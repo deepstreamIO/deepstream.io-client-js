@@ -151,7 +151,13 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 	var newValue = jsonPath.set( oldValue, path, data, this._options.recordDeepCopy );
 
 	if ( oldValue === newValue ) {
-		if ( typeof callback === 'function' ) utils.setImmediate( callback, null );
+		if ( typeof callback === 'function' ) {
+			if (isConnected( this._client )) {
+				utils.setImmediate( callback, null );
+			} else {
+				utils.setImmediate( callback, 'Connection error: error updating record as connection was closed' );
+			}
+		}
 		return this;
 	}
 
@@ -160,15 +166,21 @@ Record.prototype.set = function( pathOrData, dataOrCallback, callback ) {
 		config = {};
 		config.writeSuccess = true;
 		this._setUpCallback(this.version, callback)
-		var connectionState = this._client.getConnectionState();
-		if( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING ) {
+
+		if (!isConnected( this._client )) {
 			utils.setImmediate( callback, 'Connection error: error updating record as connection was closed' );
 		}
 	}
+
 	this._sendUpdate( path, data, config );
 	this._applyChange( newValue );
 	return this;
 };
+
+function isConnected( client ) {
+	var connectionState = client.getConnectionState();
+	return !( connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING );
+}
 
 /**
  * Subscribes to changes to the records dataset.
