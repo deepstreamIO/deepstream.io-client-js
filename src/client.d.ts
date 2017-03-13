@@ -134,12 +134,12 @@ declare namespace deepstreamIO {
         Important:
         It is important to unsubscribe all callbacks that are registered when discarding a record. Just calling discard does not guarantee that callbacks will not be called.*/
                 unsubscribe(path: string, callback: Function): void;
-                /**Removes a subscription previous made using record.subscribe(). Defining a path with unsubscribe removes that specific path, or with a callback, can remove it from generic subscriptions.
+                /**Removes a subscription previous made using record.subscribe() or all subscriptions if callback is null. Defining a path with unsubscribe removes that specific path, or with a callback, can remove it from generic subscriptions.
         Info:
         unsubscribe is entirely a client-side operation. To notify the server that the app would no longer interested in the record, use discard() instead.
         Important:
         It is important to unsubscribe all callbacks that are registered when discarding a record. Just calling discard does not guarantee that callbacks will not be called.*/
-                unsubscribe(callback: Function): void;
+                unsubscribe(callback?: Function): void;
                 /**Removes all change listerners and notifies the server that client no longer wants updates for this record if your application no longer requires the record. */
                 discard(): void;
                 /**This permanently deletes the record on the server for all users. */
@@ -163,9 +163,9 @@ declare namespace deepstreamIO {
                 removeEntry(entry: string, index?: number): void;
                 /**Registers a function that will be invoked whenever any changes to the list's contents occur. Optionally you can also pass true to execute the callback function straight away with the list's current entries. */
                 subscribe(callback: Function, trggerNow?: boolean): void;
-                /**Removes a subscription that was previously made using list.subscribe()
+                /**Removes a subscription that was previously made using list.subscribe() or all subscriptions if callback is null.
         Please Note: unsubscribe is purely a client side operation. To notify the server that the app no longer requires updates for this list use discard(). */
-                unsubscribe(callback: Function): void;
+                unsubscribe(callback?: Function): void;
                 /**Removes all change listeners and notifies the server that the client is no longer interested in updates for this list. */
                 discard(): void;
                 /**Deletes the list on the server. This action deletes the list for all users from both cache and storage and is irreversible. */
