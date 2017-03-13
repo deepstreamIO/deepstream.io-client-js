@@ -1,14 +1,15 @@
-var C = require( './constants/constants' ),
-	MS = require( './constants/merge-strategies' ),
-	Emitter = require( 'component-emitter2' ),
-	Connection = require( './message/connection' ),
-	EventHandler = require( './event/event-handler' ),
-	RpcHandler = require( './rpc/rpc-handler' ),
-	RecordHandler = require( './record/record-handler' ),
-	PresenceHandler = require( './presence/presence-handler' ),
-	defaultOptions = require( './default-options' ),
-	messageBuilder = require( './message/message-builder' ),
-	AckTimeoutRegistry = require( './utils/ack-timeout-registry' );
+'use strict'
+
+const C = require('./constants/constants')
+const MS = require('./constants/merge-strategies')
+const Emitter = require('component-emitter2')
+const Connection = require('./message/connection')
+const EventHandler = require('./event/event-handler')
+const RpcHandler = require('./rpc/rpc-handler')
+const RecordHandler = require('./record/record-handler')
+const PresenceHandler = require('./presence/presence-handler')
+const defaultOptions = require('./default-options')
+const AckTimeoutRegistry = require('./utils/ack-timeout-registry')
 
 /**
  * deepstream.io javascript client
@@ -26,27 +27,27 @@ var C = require( './constants/constants' ),
  * @public
  * @constructor
  */
-var Client = function( url, options ) {
-	this._url = url;
-	this._options = this._getOptions( options || {} );
+const Client = function (url, options) {
+  this._url = url
+  this._options = this._getOptions(options || {})
 
-	this._connection = new Connection( this, this._url, this._options );
-	this._ackTimeoutRegistry = new AckTimeoutRegistry(this, this._options);
+  this._connection = new Connection(this, this._url, this._options)
+  this._ackTimeoutRegistry = new AckTimeoutRegistry(this, this._options)
 
-	this.event = new EventHandler( this._options, this._connection, this );
-	this.rpc = new RpcHandler( this._options, this._connection, this );
-	this.record = new RecordHandler( this._options, this._connection, this );
-	this.presence = new PresenceHandler( this._options, this._connection, this );
+  this.event = new EventHandler(this._options, this._connection, this)
+  this.rpc = new RpcHandler(this._options, this._connection, this)
+  this.record = new RecordHandler(this._options, this._connection, this)
+  this.presence = new PresenceHandler(this._options, this._connection, this)
 
-	this._messageCallbacks = {};
-	this._messageCallbacks[ C.TOPIC.EVENT ] = this.event._$handle.bind( this.event );
-	this._messageCallbacks[ C.TOPIC.RPC ] = this.rpc._$handle.bind( this.rpc );
-	this._messageCallbacks[ C.TOPIC.RECORD ] = this.record._$handle.bind( this.record );
-	this._messageCallbacks[ C.TOPIC.PRESENCE ] = this.presence._$handle.bind( this.presence );
-	this._messageCallbacks[ C.TOPIC.ERROR ] = this._onErrorMessage.bind( this );
-};
+  this._messageCallbacks = {}
+  this._messageCallbacks[C.TOPIC.EVENT] = this.event._$handle.bind(this.event)
+  this._messageCallbacks[C.TOPIC.RPC] = this.rpc._$handle.bind(this.rpc)
+  this._messageCallbacks[C.TOPIC.RECORD] = this.record._$handle.bind(this.record)
+  this._messageCallbacks[C.TOPIC.PRESENCE] = this.presence._$handle.bind(this.presence)
+  this._messageCallbacks[C.TOPIC.ERROR] = this._onErrorMessage.bind(this)
+}
 
-Emitter( Client.prototype );
+Emitter(Client.prototype)
 
 /**
  * Send authentication parameters to the client to fully open
@@ -75,10 +76,10 @@ Emitter( Client.prototype );
  * @public
  * @returns {Client}
  */
-Client.prototype.login = function( authParams, callback ) {
-	this._connection.authenticate( authParams || {}, callback );
-	return this;
-};
+Client.prototype.login = function (authParams, callback) {
+  this._connection.authenticate(authParams || {}, callback)
+  return this
+}
 
 /**
  * Closes the connection to the server.
@@ -86,9 +87,9 @@ Client.prototype.login = function( authParams, callback ) {
  * @public
  * @returns {void}
  */
-Client.prototype.close = function() {
-	this._connection.close();
-};
+Client.prototype.close = function () {
+  this._connection.close()
+}
 
 /**
  * Returns the current state of the connection.
@@ -97,9 +98,9 @@ Client.prototype.close = function() {
  *
  * @returns {[type]} [description]
  */
-Client.prototype.getConnectionState = function() {
-	return this._connection.getState();
-};
+Client.prototype.getConnectionState = function () {
+  return this._connection.getState()
+}
 
 /**
  * Returns a random string. The first block of characters
@@ -109,23 +110,24 @@ Client.prototype.getConnectionState = function() {
  * @public
  * @returns {String} unique id
  */
-Client.prototype.getUid = function() {
-	var timestamp = (new Date()).getTime().toString(36),
-		randomString = (Math.random() * 10000000000000000).toString(36).replace( '.', '' );
+Client.prototype.getUid = function () {
+  const timestamp = (new Date()).getTime().toString(36)
+  const randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '')
 
-	return timestamp + '-' + randomString;
-};
+  return `${timestamp}-${randomString}`
+}
 
 /**
- * Package private ack timeout registry. This is how all classes can get access to register timeouts.
+ * Package private ack timeout registry. This is how all classes can get access to
+ * register timeouts.
  * (Well... that's the intention anyways)
  *
  * @package private
  * @returns {AckTimeoutRegistry}
  */
-Client.prototype._$getAckTimeoutRegistry = function() {
-	return this._ackTimeoutRegistry;
-};
+Client.prototype._$getAckTimeoutRegistry = function () {
+  return this._ackTimeoutRegistry
+}
 
 /**
  * Package private callback for parsed incoming messages. Will be invoked
@@ -136,18 +138,22 @@ Client.prototype._$getAckTimeoutRegistry = function() {
  * @package private
  * @returns {void}
  */
-Client.prototype._$onMessage = function( message ) {
-	if( this._messageCallbacks[ message.topic ] ) {
-		this._messageCallbacks[ message.topic ]( message );
-	} else {
-		message.processedError = true;
-		this._$onError( message.topic, C.EVENT.MESSAGE_PARSE_ERROR, 'Received message for unknown topic ' + message.topic );
-	}
+Client.prototype._$onMessage = function (message) {
+  if (this._messageCallbacks[message.topic]) {
+    this._messageCallbacks[message.topic](message)
+  } else {
+    message.processedError = true
+    this._$onError(
+      message.topic,
+      C.EVENT.MESSAGE_PARSE_ERROR,
+      `Received message for unknown topic ${message.topic}`
+    )
+  }
 
-	if( message.action === C.ACTIONS.ERROR && !message.processedError ) {
-		this._$onError( message.topic, message.data[ 0 ],  message.data.slice( 0 ) );
-	}
-};
+  if (message.action === C.ACTIONS.ERROR && !message.processedError) {
+    this._$onError(message.topic, message.data[0], message.data.slice(0))
+  }
+}
 
 /**
  * Package private error callback. This is the single point at which
@@ -169,35 +175,35 @@ Client.prototype._$onMessage = function( message ) {
  * @package private
  * @returns {void}
  */
-Client.prototype._$onError = function( topic, event, msg ) {
-	var errorMsg;
+Client.prototype._$onError = function (topic, event, msg) {
+  let errorMsg
 
-	/*
-	 * Help to diagnose the problem quicker by checking for
-	 * some common problems
-	 */
-	if( event === C.EVENT.ACK_TIMEOUT || event === C.EVENT.RESPONSE_TIMEOUT ) {
-		if( this.getConnectionState() === C.CONNECTION_STATE.AWAITING_AUTHENTICATION ) {
-			errorMsg = 'Your message timed out because you\'re not authenticated. Have you called login()?';
-			setTimeout( this._$onError.bind( this, C.EVENT.NOT_AUTHENTICATED, C.TOPIC.ERROR, errorMsg ), 1 );
-		}
-	}
+  /*
+   * Help to diagnose the problem quicker by checking for
+   * some common problems
+   */
+  if (event === C.EVENT.ACK_TIMEOUT || event === C.EVENT.RESPONSE_TIMEOUT) {
+    if (this.getConnectionState() === C.CONNECTION_STATE.AWAITING_AUTHENTICATION) {
+      errorMsg = 'Your message timed out because you\'re not authenticated. Have you called login()?'
+      setTimeout(this._$onError.bind(this, C.EVENT.NOT_AUTHENTICATED, C.TOPIC.ERROR, errorMsg), 1)
+    }
+  }
 
-	if( this.hasListeners( 'error' ) ) {
-		this.emit( 'error', msg, event, topic );
-		this.emit( event, topic, msg );
-	} else {
-		console.log( '--- You can catch all deepstream errors by subscribing to the error event ---' );
+  if (this.hasListeners('error')) {
+    this.emit('error', msg, event, topic)
+    this.emit(event, topic, msg)
+  } else {
+    console.log('--- You can catch all deepstream errors by subscribing to the error event ---')
 
-		errorMsg = event + ': ' + msg;
+    errorMsg = `${event}: ${msg}`
 
-		if( topic ) {
-			errorMsg += ' (' + topic + ')';
-		}
+    if (topic) {
+      errorMsg += ` (${topic})`
+    }
 
-		throw new Error( errorMsg );
-	}
-};
+    throw new Error(errorMsg)
+  }
+}
 
 /**
  * Passes generic messages from the error topic
@@ -208,9 +214,9 @@ Client.prototype._$onError = function( topic, event, msg ) {
  * @private
  * @returns {void}
  */
-Client.prototype._onErrorMessage = function( errorMessage ) {
-	this._$onError( errorMessage.topic, errorMessage.data[ 0 ], errorMessage.data[ 1 ] );
-};
+Client.prototype._onErrorMessage = function (errorMessage) {
+  this._$onError(errorMessage.topic, errorMessage.data[0], errorMessage.data[1])
+}
 
 /**
  * Creates a new options map by extending default
@@ -219,22 +225,21 @@ Client.prototype._onErrorMessage = function( errorMessage ) {
  * @param   {Object} options The user specified client configuration options
  *
  * @private
- * @returns {Object}	merged options
+ * @returns {Object}  merged options
  */
-Client.prototype._getOptions = function( options ) {
-	var mergedOptions = {},
-		key;
+Client.prototype._getOptions = function (options) {
+  const mergedOptions = {}
 
-	for( key in defaultOptions ) {
-		if( typeof options[ key ] === 'undefined' ) {
-			mergedOptions[ key ] = defaultOptions[ key ];
-		} else {
-			mergedOptions[ key ] = options[ key ];
-		}
-	}
+  for (const key in defaultOptions) {
+    if (typeof options[key] === 'undefined') {
+      mergedOptions[key] = defaultOptions[key]
+    } else {
+      mergedOptions[key] = options[key]
+    }
+  }
 
-	return mergedOptions;
-};
+  return mergedOptions
+}
 
 /**
  * Exports factory function to adjust to the current JS style of
@@ -246,20 +251,20 @@ Client.prototype._getOptions = function( options ) {
  * @public
  * @returns {void}
  */
-function createDeepstream( url, options ) {
-	return new Client( url, options );
+function createDeepstream(url, options) {
+  return new Client(url, options)
 }
 
 /**
  * Expose constants to allow consumers to access them
 */
-Client.prototype.CONSTANTS = C;
-createDeepstream.CONSTANTS = C;
+Client.prototype.CONSTANTS = C
+createDeepstream.CONSTANTS = C
 
 /**
  * Expose merge strategies to allow consumers to access them
 */
-Client.prototype.MERGE_STRATEGIES = MS;
-createDeepstream.MERGE_STRATEGIES = MS;
+Client.prototype.MERGE_STRATEGIES = MS
+createDeepstream.MERGE_STRATEGIES = MS
 
-module.exports = createDeepstream;
+module.exports = createDeepstream

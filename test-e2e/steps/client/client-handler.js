@@ -1,22 +1,22 @@
 'use strict'
 
-const sinon = require( 'sinon' );
+const sinon = require('sinon')
 
-const clients = {};
+const clients = {}
 
-const utils = require('./utils');
+const utils = require('./utils')
 
-const DeepstreamClient = require( '../../../src/client' );
+const DeepstreamClient = require('../../../src/client')
 
-function createClient( clientName, server ) {
-  const gatewayUrl = global.cluster.getUrl( server - 1, clientName );
-  const client = DeepstreamClient( gatewayUrl, {
-      maxReconnectInterval: 300,
-      maxReconnectAttempts: 20,
-    } );
-  clients[ clientName ] = {
+function createClient(clientName, server) {
+  const gatewayUrl = global.cluster.getUrl(server - 1, clientName)
+  const client = DeepstreamClient(gatewayUrl, {
+    maxReconnectInterval: 300,
+    maxReconnectAttempts: 20,
+  })
+  clients[clientName] = {
     name: clientName,
-    client: client,
+    client,
     login: sinon.spy(),
     error: {},
     event: {
@@ -69,44 +69,42 @@ function createClient( clientName, server ) {
 
   }
 
-  clients[ clientName ].client.on( 'error', ( message, event, topic ) => {
-    console.log( 'An Error occured on', clientName , message, event, topic );
+  clients[clientName].client.on('error', (message, event, topic) => {
+    console.log('An Error occured on', clientName, message, event, topic)
 
-    const clientErrors = clients[ clientName ].error;
-    clientErrors[ topic ]          = clientErrors[ topic ]          || {};
-    clientErrors[ topic ][ event ] = clientErrors[ topic ][ event ] || sinon.spy();
-    clients[ clientName ].error[ topic ][ event ]( message );
-  });
+    const clientErrors = clients[clientName].error
+    clientErrors[topic]          = clientErrors[topic] || {}
+    clientErrors[topic][event] = clientErrors[topic][event] || sinon.spy()
+    clients[clientName].error[topic][event](message)
+  })
 
-  return clients[ clientName ];
+  return clients[clientName]
 }
 
-function getClientNames( expression ) {
-  const clientExpression = /all clients|(?:subscriber|publisher|clients?) ([^\s']*)(?:'s)?/;
-  const result = clientExpression.exec( expression );
-  if( result[ 0 ] === 'all clients' ) {
-    return Object.keys( clients );
+function getClientNames(expression) {
+  const clientExpression = /all clients|(?:subscriber|publisher|clients?) ([^\s']*)(?:'s)?/
+  const result = clientExpression.exec(expression)
+  if (result[0] === 'all clients') {
+    return Object.keys(clients)
+  } else if (result.length === 2 && result[1].indexOf(',') > -1) {
+    return result[1].replace(/"/g, '').split(',')
+  } else if (result.length === 2) {
+    return [result[1].replace(/"/g, '')]
   }
-  else if( result.length === 2 && result[ 1 ].indexOf(',') > -1 ) {
-    return result[1].replace(/"/g,"").split(',');
-  }
-  else if( result.length === 2 ) {
-    return [ result[ 1 ].replace(/"/g,'') ];
-  }
-  else {
-    throw `Invalid expression: ${expression}`;
-  }
+
+  throw `Invalid expression: ${expression}`
+
 }
 
-function getClients( expression ) {
-  return getClientNames( expression ).map( client => clients[ client ] );
+function getClients(expression) {
+  return getClientNames(expression).map(client => clients[client])
 }
 
-function assertNoErrors( client ){
-  const clientErrors = clients[ client ].error;
-  for ( const topic in clientErrors ){
-    for ( const event in clientErrors[ topic ] ){
-      sinon.assert.notCalled( clientErrors[ topic ][ event ] );
+function assertNoErrors(client) {
+  const clientErrors = clients[client].error
+  for (const topic in clientErrors) {
+    for (const event in clientErrors[topic]) {
+      sinon.assert.notCalled(clientErrors[topic][event])
     }
   }
 }

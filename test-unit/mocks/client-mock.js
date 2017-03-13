@@ -1,38 +1,40 @@
-var Emitter = require( 'component-emitter2' );
-var AckTimeoutRegistry = require( '../../src/utils/ack-timeout-registry');
+'use strict'
 
-var ClientMock = function(options) {
-	this.uid = 1;
-	this.lastError = null;
+const Emitter = require('component-emitter2')
+const AckTimeoutRegistry = require('../../src/utils/ack-timeout-registry')
 
-	this.connectionState = 'OPEN';
-	this.on( 'connectionStateChanged', function( connectionState ) {
-		this.connectionState = connectionState;
-	}.bind( this ) );
+const ClientMock = function (options) {
+  this.uid = 1
+  this.lastError = null
 
-	this.options = { subscriptionTimeout: 5 } || options;
-};
+  this.connectionState = 'OPEN'
+  this.on('connectionStateChanged', (connectionState) => {
+    this.connectionState = connectionState
+  })
 
-Emitter( ClientMock.prototype );
+  this.options = { subscriptionTimeout: 5 } || options
+}
 
-ClientMock.prototype.getUid = function(){
-	return this.uid.toString();
-};
+Emitter(ClientMock.prototype)
 
-ClientMock.prototype.getConnectionState = function(){
-	return this.connectionState;
-};
+ClientMock.prototype.getUid = function () {
+  return this.uid.toString()
+}
 
-ClientMock.prototype._$getAckTimeoutRegistry = function() {
-	return new AckTimeoutRegistry(this, this.options)
-};
+ClientMock.prototype.getConnectionState = function () {
+  return this.connectionState
+}
 
-ClientMock.prototype._$onError = function( topic, event, msg ) {
-	this.lastError = [ topic, event, msg ];
-};
+ClientMock.prototype._$getAckTimeoutRegistry = function () {
+  return new AckTimeoutRegistry(this, this.options)
+}
 
-ClientMock.prototype._$onMessage = function( msg ) {
+ClientMock.prototype._$onError = function (topic, event, msg) {
+  this.lastError = [topic, event, msg]
+}
 
-};
+ClientMock.prototype._$onMessage = function (msg) {
 
-module.exports = ClientMock;
+}
+
+module.exports = ClientMock

@@ -1,24 +1,26 @@
-var messageBuilder = require( '../../../src/message/message-builder' );
+'use strict'
 
-var ConnectionMock = function() {
-	this.lastSendMessage = null;
-	this.state = 'CLOSED';
-};
+const messageBuilder = require('../../../src/message/message-builder')
 
-ConnectionMock.prototype.sendMsg = function( topic, action, data ) {
-	this.lastSendMessage = messageBuilder.getMsg( topic, action, data );
-};
+const ConnectionMock = function () {
+  this.lastSendMessage = null
+  this.state = 'CLOSED'
+}
 
-ConnectionMock.prototype.send = function( message ) {
-	this.lastSendMessage = message;
-};
+ConnectionMock.prototype.sendMsg = function (topic, action, data) {
+  this.lastSendMessage = messageBuilder.getMsg(topic, action, data)
+}
 
-ConnectionMock.prototype.getState = function() {
-	return this.state;
-};
+ConnectionMock.prototype.send = function (message) {
+  this.lastSendMessage = message
+}
 
-ConnectionMock.prototype.authenticate = function() {
+ConnectionMock.prototype.getState = function () {
+  return this.state
+}
 
-};
+ConnectionMock.prototype.authenticate = function () {
 
-module.exports = ConnectionMock;
+}
+
+module.exports = ConnectionMock

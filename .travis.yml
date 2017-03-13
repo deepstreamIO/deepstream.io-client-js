@@ -4,6 +4,7 @@ services:
   - redis-server
 
 node_js:
+  - "7"
   - "6"
   - "4"
 

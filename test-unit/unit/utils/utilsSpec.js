@@ -1,188 +1,191 @@
-var utils = require( '../../../src/utils/utils' );
+'use strict'
+/* global describe, it, expect, jasmine */
 
-describe( 'deepEquals', function(){
+const utils = require('../../../src/utils/utils')
 
-	it( 'compares two primitive values', function(){
-		var a = 'A',
-			b = 'B';
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
+describe('deepEquals', () => {
 
-	it( 'compares two different simple objects', function(){
-		var a = { name: 'Wolfram' },
-			b = { name: 'Egon' };
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
+  it('compares two primitive values', () => {
+    let a = 'A',
+      b = 'B'
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
 
-	it( 'compares two equal simple objects', function(){
-		var a = { name: 'Wolfram' },
-			b = { name: 'Wolfram' };
-		expect( utils.deepEquals( a, b ) ).toBe( true );
-	});
+  it('compares two different simple objects', () => {
+    let a = { name: 'Wolfram' },
+      b = { name: 'Egon' }
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
 
-	it( 'compares two different arrays', function(){
-		var a = [ 'a', 'b' ],
-			b = [ 'a', 'c' ];
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
+  it('compares two equal simple objects', () => {
+    let a = { name: 'Wolfram' },
+      b = { name: 'Wolfram' }
+    expect(utils.deepEquals(a, b)).toBe(true)
+  })
 
-	it( 'compares two equal arrays', function(){
-		var a = [ 'a', 'b' ],
-			b = [ 'a', 'b' ];
-		expect( utils.deepEquals( a, b ) ).toBe( true );
-	});
+  it('compares two different arrays', () => {
+    let a = ['a', 'b'],
+      b = ['a', 'c']
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
 
-	it( 'compares two different complex objects', function(){
-		var a = { x: 'y', a: [ 'b', { q: 'f' } ] },
-			b = { x: 'y', a: [ 'b', { q: 'x' } ] };
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
+  it('compares two equal arrays', () => {
+    let a = ['a', 'b'],
+      b = ['a', 'b']
+    expect(utils.deepEquals(a, b)).toBe(true)
+  })
 
-	it( 'compares two equal complex objects', function(){
-		var a = { x: 'y', a: [ 'b', { q: 'f' } ] },
-			b = { x: 'y', a: [ 'b', { q: 'f' } ] };
-		expect( utils.deepEquals( a, b ) ).toBe( true );
-	});
+  it('compares two different complex objects', () => {
+    let a = { x: 'y', a: ['b', { q: 'f' }] },
+      b = { x: 'y', a: ['b', { q: 'x' }] }
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
 
-	it( 'a complex object and a primitive', function(){
-		var a = { x: 'y', a: [ 'b', { q: 'f' } ] },
-			b = 44;
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
+  it('compares two equal complex objects', () => {
+    let a = { x: 'y', a: ['b', { q: 'f' }] },
+      b = { x: 'y', a: ['b', { q: 'f' }] }
+    expect(utils.deepEquals(a, b)).toBe(true)
+  })
 
-	it( 'handles undefined', function(){
-		var a = undefined, // jshint ignore:line
-			b = { x: 'y', a: [ 'b', { q: 'f' } ] };
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
+  it('a complex object and a primitive', () => {
+    let a = { x: 'y', a: ['b', { q: 'f' }] },
+      b = 44
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
 
-	it( 'handles empty objects', function(){
-		var a = {},
-			b = { firstname: 'Wolfram' };
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
+  it('handles undefined', () => {
+    let a, // jshint ignore:line
+      b = { x: 'y', a: ['b', { q: 'f' }] }
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
 
-	it( 'finds additional paths on objB', function(){
-		var a = { a: 'b' },
-			b = { a: 'b', c: 'd' };
-		expect( utils.deepEquals( a, b ) ).toBe( false );
-	});
-});
+  it('handles empty objects', () => {
+    let a = {},
+      b = { firstname: 'Wolfram' }
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
 
-describe( 'deepCopy', function(){
+  it('finds additional paths on objB', () => {
+    let a = { a: 'b' },
+      b = { a: 'b', c: 'd' }
+    expect(utils.deepEquals(a, b)).toBe(false)
+  })
+})
 
-	it( 'copies primitives', function(){
-		expect( utils.deepCopy( 'bla' ) ).toBe( 'bla' );
-		expect( utils.deepCopy( 42 ) ).toBe( 42 );
-	});
+describe('deepCopy', () => {
 
-	it( 'copies arrays', function(){
-		var original = [ 'a', 'b', 2 ],
-			copy = utils.deepCopy( original );
+  it('copies primitives', () => {
+    expect(utils.deepCopy('bla')).toBe('bla')
+    expect(utils.deepCopy(42)).toBe(42)
+  })
 
-		expect( copy ).toEqual( original );
-		expect( copy ).not.toBe( original );
-	});
+  it('copies arrays', () => {
+    let original = ['a', 'b', 2],
+      copy = utils.deepCopy(original)
 
-	it( 'copies objects', function(){
-		var original = { firstname: 'Wolfram', lastname:' Hempel' },
-			copy = utils.deepCopy( original );
+    expect(copy).toEqual(original)
+    expect(copy).not.toBe(original)
+  })
 
-		expect( copy ).toEqual( original );
-		expect( copy ).not.toBe( original );
-	});
+  it('copies objects', () => {
+    let original = { firstname: 'Wolfram', lastname:' Hempel' },
+      copy = utils.deepCopy(original)
 
-	it( 'copies objects with null values', function(){
-		var original = { firstname: 'Wolfram', lastname: null },
-			copy = utils.deepCopy( original );
+    expect(copy).toEqual(original)
+    expect(copy).not.toBe(original)
+  })
 
-		expect( copy ).toEqual( original );
-		expect( copy ).not.toBe( original );
-	});
+  it('copies objects with null values', () => {
+    let original = { firstname: 'Wolfram', lastname: null },
+      copy = utils.deepCopy(original)
 
-	it( 'copies null values', function(){
-		var copy = utils.deepCopy( null );
-		expect( copy ).toBeNull();
-	});
+    expect(copy).toEqual(original)
+    expect(copy).not.toBe(original)
+  })
 
-	it( 'copies nested values', function(){
-		var original = { a: { b: 'c', d: 4 } };
-		var copy = utils.deepCopy( original );
-		expect( original ).toEqual( copy );
-		expect( original.a ).not.toBe( copy.a );
-	});
+  it('copies null values', () => {
+    const copy = utils.deepCopy(null)
+    expect(copy).toBeNull()
+  })
 
-	it( 'copies nested arrays', function(){
-		var original = { a: { b: 'c', d: [ 'a', { x: 'y' }] } };
-		var copy = utils.deepCopy( original );
-		expect( original ).toEqual( copy );
-		expect( original.a.d ).not.toBe( copy.a.d );
-		expect( Array.isArray( copy.a.d ) ).toBe( true );
-		expect( copy.a.d[ 1 ] ).toEqual( { x: 'y' });
-		expect( original.a.d[ 1 ] === copy.a.d[ 1 ] ).toBe( false );
-	});
+  it('copies nested values', () => {
+    const original = { a: { b: 'c', d: 4 } }
+    const copy = utils.deepCopy(original)
+    expect(original).toEqual(copy)
+    expect(original.a).not.toBe(copy.a)
+  })
 
-	//This is a JSON.stringify specific behaviour. Not too sure it's ideal,
-	//but it is something that will break behaviour when changed, so let's
-	//keep an eye on it
-	it( 'converts undefined', function(){
-		var copy = utils.deepCopy([ undefined ]);
-		expect( copy[ 0 ] ).toBe( null );
+  it('copies nested arrays', () => {
+    const original = { a: { b: 'c', d: ['a', { x: 'y' }] } }
+    const copy = utils.deepCopy(original)
+    expect(original).toEqual(copy)
+    expect(original.a.d).not.toBe(copy.a.d)
+    expect(Array.isArray(copy.a.d)).toBe(true)
+    expect(copy.a.d[1]).toEqual({ x: 'y' })
+    expect(original.a.d[1] === copy.a.d[1]).toBe(false)
+  })
 
-		copy = utils.deepCopy({ x: undefined });
-		expect( copy ).toEqual( {} );
-	});
-});
+	// This is a JSON.stringify specific behaviour. Not too sure it's ideal,
+	// but it is something that will break behaviour when changed, so let's
+	// keep an eye on it
+  it('converts undefined', () => {
+    let copy = utils.deepCopy([undefined])
+    expect(copy[0]).toBe(null)
 
-describe( 'utils.trim removes whitespace', function(){
-	it( 'removes various kinds of whitespace', function(){
-		expect( utils.trim( 'a  	') ).toEqual( 'a' );
-		expect( utils.trim( ' 	b  	') ).toEqual( 'b' );
-		expect( utils.trim( ' 	c d  	') ).toEqual( 'c d' );
-	});
-});
+    copy = utils.deepCopy({ x: undefined })
+    expect(copy).toEqual({})
+  })
+})
 
-//As these tests are only ever run in node, this is a bit pointless
-describe( 'utils.isNode detects the environment', function(){
-	it( 'has detected something', function(){
-		expect( typeof utils.isNode ).toBe( 'boolean' );
-	});
-});
+describe('utils.trim removes whitespace', () => {
+  it('removes various kinds of whitespace', () => {
+    expect(utils.trim('a  	')).toEqual('a')
+    expect(utils.trim(' 	b  	')).toEqual('b')
+    expect(utils.trim(' 	c d  	')).toEqual('c d')
+  })
+})
 
-describe( 'utils.parseUrl adds all missing parts of the url', function(){
-	it( 'accepts no protocol and default to ws', function(){
-		expect( utils.parseUrl( 'localhost', '/deepstream' ) )
-			.toBe( 'ws://localhost/deepstream' );
-	});
+// As these tests are only ever run in node, this is a bit pointless
+describe('utils.isNode detects the environment', () => {
+  it('has detected something', () => {
+    expect(typeof utils.isNode).toBe('boolean')
+  })
+})
 
-	it( 'accepts // as protocol', function(){
-		expect( utils.parseUrl( '//localhost:6020', '/deepstream' ) )
-			.toBe( 'ws://localhost:6020/deepstream' );
-	});
+describe('utils.parseUrl adds all missing parts of the url', () => {
+  it('accepts no protocol and default to ws', () => {
+    expect(utils.parseUrl('localhost', '/deepstream'))
+			.toBe('ws://localhost/deepstream')
+  })
 
-	it( 'accepts ws protocols', function(){
-		expect( utils.parseUrl( 'ws://localhost:6020', '/deepstream' ) )
-			.toBe( 'ws://localhost:6020/deepstream' );
-		expect( utils.parseUrl( 'wss://localhost:6020', '/deepstream' ) )
-			.toBe( 'wss://localhost:6020/deepstream' );
-	});
+  it('accepts // as protocol', () => {
+    expect(utils.parseUrl('//localhost:6020', '/deepstream'))
+			.toBe('ws://localhost:6020/deepstream')
+  })
 
-	it( 'rejects http protocols', function(){
-		expect( function() {
-			utils.parseUrl( 'http://localhost:6020', '/deepstream' )
-		}).toThrow( new Error('Only ws and wss are supported') );
-		expect( function() {
-			utils.parseUrl( 'https://localhost:6020', '/deepstream' )
-		}).toThrow( new Error('Only ws and wss are supported') );
-	});
+  it('accepts ws protocols', () => {
+    expect(utils.parseUrl('ws://localhost:6020', '/deepstream'))
+			.toBe('ws://localhost:6020/deepstream')
+    expect(utils.parseUrl('wss://localhost:6020', '/deepstream'))
+			.toBe('wss://localhost:6020/deepstream')
+  })
 
-	it( 'accepts full url with protocol and path and doesn\'t change it', function(){
-		expect( utils.parseUrl( 'ws://localhost:6020/anotherdeepstream' ) )
-			.toBe( 'ws://localhost:6020/anotherdeepstream' );
-	});
+  it('rejects http protocols', () => {
+    expect(() => {
+      utils.parseUrl('http://localhost:6020', '/deepstream')
+    }).toThrow(new Error('Only ws and wss are supported'))
+    expect(() => {
+      utils.parseUrl('https://localhost:6020', '/deepstream')
+    }).toThrow(new Error('Only ws and wss are supported'))
+  })
 
-	it( 'respects queries and hash', function(){
-		expect( utils.parseUrl( 'localhost?query=value#login', '/deepstream' ) )
-			.toBe( 'ws://localhost/deepstream?query=value#login' );
-	});
-});
+  it('accepts full url with protocol and path and doesn\'t change it', () => {
+    expect(utils.parseUrl('ws://localhost:6020/anotherdeepstream'))
+			.toBe('ws://localhost:6020/anotherdeepstream')
+  })
+
+  it('respects queries and hash', () => {
+    expect(utils.parseUrl('localhost?query=value#login', '/deepstream'))
+			.toBe('ws://localhost/deepstream?query=value#login')
+  })
+})
