@@ -6,6 +6,7 @@ const EventEmitter = require('component-emitter2')
 const C = require('../constants/constants')
 const messageBuilder = require('../message/message-builder')
 const messageParser = require('../message/message-parser')
+const utils = require('../utils/utils')
 
 /**
  * This class represents a single record - an observable
@@ -430,8 +431,21 @@ Record.prototype._onRecordRecovered = function (remoteVersion, remoteData, messa
     this.version = remoteVersion
 
     const oldValue = this._$data
+
+    if (utils.deepEquals(oldValue, remoteData)) {
+      return
+    }
+
     const newValue = jsonPath.set(oldValue, undefined, data, false)
-    if (oldValue === newValue) {
+
+    if (utils.deepEquals(data, remoteData)) {
+      this._applyChange(data)
+
+      const callback = this._writeCallbacks[remoteVersion]
+      if (callback !== undefined) {
+        callback(null)
+        delete this._writeCallbacks[remoteVersion]
+      }
       return
     }
 
