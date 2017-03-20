@@ -267,7 +267,7 @@ Connection.prototype._checkHeartBeat = function () {
     this._client._$onError(
       C.TOPIC.CONNECTION,
       C.EVENT.CONNECTION_ERROR,
-      'Two connections heartbeats missed successively')
+      'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds')
     this._endpoint.close()
   }
 }
