@@ -116,7 +116,7 @@ describe('connects - heartbeats', () => {
     setTimeout(() => {
       expect(connection._endpoint.lastSendMessage).toBe(null)
       expect(connection.getState()).toBe('CLOSED')
-      expect(clientMock.lastError).toEqual(['C', 'connectionError', 'Two connections heartbeats missed successively'])
+      expect(clientMock.lastError).toEqual(['C', 'connectionError', 'heartbeat not received in the last 100 milliseconds'])
       done()
     }, 200)
   })
