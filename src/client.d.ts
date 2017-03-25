@@ -115,9 +115,7 @@ declare namespace deepstreamIO {
                 /**Immediately executes the callback if the record is ready. Otherwise, it registers it as a callback for the ready event. */
                 whenReady(callback: Function): void;
                 /**Used to set the record's data and can be called with a value. A path can optionally be included. */
-                set(path: string, value: any): void;
-                /**Used to set the record's data and can be called with a value. A path can optionally be included. */
-                set(value: any): void;
+                set(path?: string, value: any, callback?: (error: string) => void): void;
                 /**Used to return the record's data but if called without an argument, will return all the data. get() can also be used to retrive a specific part by defining a path string. If the part can not be found, undefined will be returned. */
                 get(path?: string): any;
                 /**Registers that a function will be performed whenever the record's value changes. All of the record's data can be subscribed to by providing a callback function or when changes are performed to a specific path within the record.
