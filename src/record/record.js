@@ -150,6 +150,10 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
     data = dataOrCallback
   }
 
+  if(!path && (data === null || typeof data !== 'object')) {
+      throw new Error('invalid arguments, scalar values cannot be set without path');
+  }
+
   if (this._checkDestroyed('set')) {
     return this
   }
