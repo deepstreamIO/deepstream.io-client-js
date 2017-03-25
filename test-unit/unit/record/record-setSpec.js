@@ -41,6 +41,18 @@ describe('setting values sends the right messages to the server', () => {
     expect(() => { record.set(undefined) }).toThrow()
   })
 
+  it('throws error for null record data', () => {
+    expect(() => { record.set(null) }).toThrow()
+  })
+
+  it('throws error for string record data', () => {
+    expect(() => { record.set('Some String') }).toThrow()
+  })
+
+  it('throws error for numeric record data', () => {
+    expect(() => { record.set(100.24) }).toThrow()
+  })
+
   it('sends update messages for entire data changes with callback', () => {
     record.set({ name: 'Alex' }, setCallback)
     expect(connection.lastSendMessage).toBe(msg('R|U|testRecord|4|{"name":"Alex"}|{"writeSuccess":true}+'))
