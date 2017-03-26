@@ -67,6 +67,11 @@ Connection.prototype.getState = function () {
  * @returns {void}
  */
 Connection.prototype.authenticate = function (authParams, callback) {
+  if(typeof authParams !== 'object') {
+    this._client._$onError(C.TOPIC.ERROR, C.EVENT.INVALID_AUTH_MSG, 'authParams is not an object')
+    return
+  }
+
   this._authParams = authParams
   this._authCallback = callback
 
@@ -442,6 +447,14 @@ Connection.prototype._handleAuthResponse = function (message) {
     if (message.data[0] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS) {
       this._deliberateClose = true
       this._tooManyAuthAttempts = true
+    } else if (message.data[0] === C.EVENT.INVALID_AUTH_MSG) {
+      this._deliberateClose = true
+
+      if (this._authCallback) {
+        this._authCallback(false, 'invalid authentication message')
+      }
+      
+      return;
     } else {
       this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION)
     }
