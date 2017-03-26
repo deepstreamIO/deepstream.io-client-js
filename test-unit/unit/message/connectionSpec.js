@@ -386,14 +386,14 @@ describe('connection auth with bad login data', () => {
   it('reopens the connection', () => {
     connection._endpoint.simulateOpen()
     expect(connection.getState()).toBe('AWAITING_CONNECTION')
+    connection._endpoint.emit('message', msg('C|A+'))
   })
 
   it('sends auth parameters on connection ack', () => {
     authCallback = jasmine.createSpy('invalid auth callback')
-
-    connection._endpoint.emit('message', msg('C|A+'))
+    connection._endpoint.lastSendMessage = null
     connection.authenticate('Bad Auth', authCallback)
-
+    expect(connection._endpoint.lastSendMessage).toBe(null)
     expect(clientMock.lastError).toEqual(['X', 'INVALID_AUTH_MSG', 'authParams is not an object'])
   })
 })
