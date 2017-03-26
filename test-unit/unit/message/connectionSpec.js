@@ -353,6 +353,51 @@ describe('connection handles auth rejections', () => {
 
 })
 
+describe('connection auth with bad login data', () => {
+  let connection,
+    authCallback = jasmine.createSpy('invalid auth callback')
+
+  it('creates the connection', () => {
+    connection = new Connection(clientMock, url, options)
+    expect(connection.getState()).toBe('CLOSED')
+    expect(connection._endpoint.lastSendMessage).toBe(null)
+  })
+
+  it('opens the connection', () => {
+    connection._endpoint.simulateOpen()
+    expect(connection.getState()).toBe('AWAITING_CONNECTION')
+  })
+
+  it('sends auth parameters on connection ack', () => {
+    connection._endpoint.emit('message', msg('C|A+'))
+    expect(connection._endpoint.lastSendMessage).toBe(null)
+    connection.authenticate(new String('Bad Auth'), authCallback)
+    expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|"Bad Auth"+'))
+    expect(connection.getState()).toBe('AUTHENTICATING')
+    expect(authCallback).not.toHaveBeenCalled()
+  })
+
+  it('receives auth parse error', () => {
+    connection._endpoint.emit('message', msg('A|E|INVALID_AUTH_MSG|invalid authentication message+'))
+    expect(authCallback).toHaveBeenCalledWith(false, 'invalid authentication message')
+    expect(connection._deliberateClose).toBe(true)
+  })
+
+  it('reopens the connection', () => {
+    connection._endpoint.simulateOpen()
+    expect(connection.getState()).toBe('AWAITING_CONNECTION')
+  })
+
+  it('sends auth parameters on connection ack', () => {
+    authCallback = jasmine.createSpy('invalid auth callback')
+
+    connection._endpoint.emit('message', msg('C|A+'))
+    connection.authenticate('Bad Auth', authCallback)
+
+    expect(clientMock.lastError).toEqual(['X', 'INVALID_AUTH_MSG', 'authParams is not an object'])
+  })
+})
+
 /** ***************************************
 * Login With Return Data
 *****************************************/
