@@ -63,6 +63,7 @@ Cluster.prototype._startServer = function (port, done) {
     clusterActiveCheckInterval : 100,
     clusterNodeInactiveTimeout : 200,
     lockTimeout                : 1000,
+    shuffleListenProviders     : false,
 
     showLogo : false,
     stopped  : this._checkStopped.bind(this),
