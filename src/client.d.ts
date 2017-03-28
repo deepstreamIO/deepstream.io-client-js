@@ -115,7 +115,8 @@ declare namespace deepstreamIO {
                 /**Immediately executes the callback if the record is ready. Otherwise, it registers it as a callback for the ready event. */
                 whenReady(callback: Function): void;
                 /**Used to set the record's data and can be called with a value. A path can optionally be included. */
-                set(path?: string, value: any, callback?: (error: string) => void): void;
+                set(path: string, value: any, callback?: (error: string) => void): void;
+                set(value: any, callback?: (error: string) => void): void;
                 /**Used to return the record's data but if called without an argument, will return all the data. get() can also be used to retrive a specific part by defining a path string. If the part can not be found, undefined will be returned. */
                 get(path?: string): any;
                 /**Registers that a function will be performed whenever the record's value changes. All of the record's data can be subscribed to by providing a callback function or when changes are performed to a specific path within the record.
@@ -205,11 +206,11 @@ declare namespace deepstreamIO {
                 /** An AnonymousRecord is a record that can change its name. It acts as a wrapper around an actual record that can be swapped out for another one whilst keeping all bindings intact. */
                 getAnonymousRecord(): Record;
                 /** Check if a record exists and run a callback that contains an error argument and a boolean to indicate whether or not the record exists in deepstream. */
-                has(name: string, callback: (error: string, hasRecord: boolean) => void);
+                has(name: string, callback: (error: string, hasRecord: boolean) => void): void;
                 /** Listen for record subscriptions made by other clients. */
-                listen(pattern: string, callback: (match: string, isSubscribed: boolean, response: any) => void);
+                listen(pattern: string, callback: (match: string, isSubscribed: boolean, response: any) => void): void;
                 /** Removes a listener that was previously registered using listen() */
-                unlisten(pattern: string);
+                unlisten(pattern: string): void;
         }
 
         interface EventStatic {
