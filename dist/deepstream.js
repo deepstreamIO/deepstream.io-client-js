@@ -2159,6 +2159,7 @@ exports.EVENT.MESSAGE_PERMISSION_ERROR = 'MESSAGE_PERMISSION_ERROR';
 exports.EVENT.LISTENER_EXISTS = 'LISTENER_EXISTS';
 exports.EVENT.NOT_LISTENING = 'NOT_LISTENING';
 exports.EVENT.TOO_MANY_AUTH_ATTEMPTS = 'TOO_MANY_AUTH_ATTEMPTS';
+exports.EVENT.INVALID_AUTH_MSG = 'INVALID_AUTH_MSG';
 exports.EVENT.IS_CLOSED = 'IS_CLOSED';
 exports.EVENT.RECORD_NOT_FOUND = 'RECORD_NOT_FOUND';
 exports.EVENT.NOT_SUBSCRIBED = 'NOT_SUBSCRIBED';
@@ -2630,6 +2631,8 @@ module.exports = EventHandler;
 (function (global){
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket;
 var NodeWebSocket = _dereq_('ws');
 var messageParser = _dereq_('./message-parser');
@@ -2697,6 +2700,11 @@ Connection.prototype.getState = function () {
  * @returns {void}
  */
 Connection.prototype.authenticate = function (authParams, callback) {
+  if ((typeof authParams === 'undefined' ? 'undefined' : _typeof(authParams)) !== 'object') {
+    this._client._$onError(C.TOPIC.ERROR, C.EVENT.INVALID_AUTH_MSG, 'authParams is not an object');
+    return;
+  }
+
   this._authParams = authParams;
   this._authCallback = callback;
 
@@ -2886,7 +2894,7 @@ Connection.prototype._checkHeartBeat = function () {
 
   if (Date.now() - this._lastHeartBeat > heartBeatTolerance) {
     clearInterval(this._heartbeatInterval);
-    this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, 'Two connections heartbeats missed successively');
+    this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, 'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds');
     this._endpoint.close();
   }
 };
@@ -3054,6 +3062,14 @@ Connection.prototype._handleAuthResponse = function (message) {
     if (message.data[0] === C.EVENT.TOO_MANY_AUTH_ATTEMPTS) {
       this._deliberateClose = true;
       this._tooManyAuthAttempts = true;
+    } else if (message.data[0] === C.EVENT.INVALID_AUTH_MSG) {
+      this._deliberateClose = true;
+
+      if (this._authCallback) {
+        this._authCallback(false, 'invalid authentication message');
+      }
+
+      return;
     } else {
       this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION);
     }
@@ -4593,6 +4609,7 @@ var EventEmitter = _dereq_('component-emitter2');
 var C = _dereq_('../constants/constants');
 var messageBuilder = _dereq_('../message/message-builder');
 var messageParser = _dereq_('../message/message-parser');
+var utils = _dereq_('../utils/utils');
 
 /**
  * This class represents a single record - an observable
@@ -4735,6 +4752,10 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
     }
     path = pathOrData;
     data = dataOrCallback;
+  }
+
+  if (!path && (data === null || (typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== 'object')) {
+    throw new Error('invalid arguments, scalar values cannot be set without path');
   }
 
   if (this._checkDestroyed('set')) {
@@ -5008,16 +5029,29 @@ Record.prototype._onRecordRecovered = function (remoteVersion, remoteData, messa
     this.version = remoteVersion;
 
     var oldValue = this._$data;
+
+    if (utils.deepEquals(oldValue, remoteData)) {
+      return;
+    }
+
     var newValue = jsonPath.set(oldValue, undefined, data, false);
-    if (oldValue === newValue) {
+
+    if (utils.deepEquals(data, remoteData)) {
+      this._applyChange(data);
+
+      var callback = this._writeCallbacks[remoteVersion];
+      if (callback !== undefined) {
+        callback(null);
+        delete this._writeCallbacks[remoteVersion];
+      }
       return;
     }
 
     var config = message.data[4];
     if (config && JSON.parse(config).writeSuccess) {
-      var callback = this._writeCallbacks[oldVersion];
+      var _callback = this._writeCallbacks[oldVersion];
       delete this._writeCallbacks[oldVersion];
-      this._setUpCallback(this.version, callback);
+      this._setUpCallback(this.version, _callback);
     }
     this._sendUpdate(undefined, data, config);
     this._applyChange(newValue);
@@ -5238,7 +5272,7 @@ Record.prototype._destroy = function () {
 
 module.exports = Record;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
 'use strict';
 
 var C = _dereq_('../constants/constants');
