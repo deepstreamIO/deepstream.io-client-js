@@ -8,6 +8,7 @@
     "test": "test"
   },
   "scripts": {
+    "precommit": "npm run lint && npm run unit",
     "commitmsg": "validate-commit-msg",
     "all": "npm t && npm run e2e && npm run specs",
     "lint": "node_modules/.bin/eslint src/",
@@ -45,25 +46,12 @@
     "ws": false
   },
   "devDependencies": {
-    "babel-cli": "^6.23.0",
-    "babel-preset-es2015": "^6.22.0",
-    "babel-preset-es2016": "^6.22.0",
-    "babelify": "^7.3.0",
-    "browserify": "^14.1.0",
     "coveralls": "^2.11.16",
     "cucumber": "^1.3.1",
     "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "deepstream.io-cache-redis": "latest",
     "deepstream.io-msg-redis": "latest",
-    "derequire": "2.0.6",
     "eslint-config-deepstream": "^2.1.1",
-    "grunt": "~1.0.1",
-    "grunt-babel": "^6.0.0",
-    "grunt-browserify": "5.0.0",
-    "grunt-cli": "^1.2.0",
-    "grunt-contrib-uglify": "2.1.0",
-    "grunt-exec": "1.0.1",
-    "grunt-release": "0.14.0",
     "husky": "^0.13.2",
     "istanbul": "^0.4.5",
     "jasmine": "^2.5.3",
