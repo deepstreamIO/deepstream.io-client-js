@@ -12,7 +12,9 @@ env:
   - DEFAULT_DELAY: 50
 
 script:
-  - npm run lint
+  - if [ "$TRAVIS_NODE_VERSION" == "6.10.0" ]; then
+      npm run lint;
+    fi
   - npm run reporter
   - npm run e2e
   - npm run specs

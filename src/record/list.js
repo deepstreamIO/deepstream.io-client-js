@@ -1,4 +1,5 @@
 'use strict'
+/* eslint-disable prefer-rest-params */
 
 const EventEmitter = require('component-emitter2')
 const Record = require('./record')
@@ -45,7 +46,7 @@ const List = function (recordHandler, name, options) {
   this.whenReady = this._record.whenReady.bind(this)
 }
 
-EventEmitter(List.prototype)
+EventEmitter(List.prototype) // eslint-disable-line
 
 /**
  * Returns the array of list entries or an

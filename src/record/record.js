@@ -1,4 +1,5 @@
 'use strict'
+/* eslint-disable prefer-spread, prefer-rest-params */
 
 const jsonPath = require('./json-path')
 const ResubscribeNotifier = require('../utils/resubscribe-notifier')
@@ -66,7 +67,7 @@ const Record = function (name, recordOptions, connection, options, client) {
   this._sendRead()
 }
 
-EventEmitter(Record.prototype)
+EventEmitter(Record.prototype) // eslint-disable-line
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
@@ -137,7 +138,7 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
     } else if (typeof pathOrData === 'object' && typeof dataOrCallback === 'function') {
       // set( data, callback )
       data = pathOrData
-      callback = dataOrCallback
+      callback = dataOrCallback // eslint-disable-line
     } else {
       throw new Error('invalid argument path')
     }
@@ -150,8 +151,8 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
     data = dataOrCallback
   }
 
-  if(!path && (data === null || typeof data !== 'object')) {
-      throw new Error('invalid arguments, scalar values cannot be set without path');
+  if (!path && (data === null || typeof data !== 'object')) {
+    throw new Error('invalid arguments, scalar values cannot be set without path')
   }
 
   if (this._checkDestroyed('set')) {
@@ -207,6 +208,7 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
  * @public
  * @returns {void}
  */
+// eslint-disable-next-line
 Record.prototype.subscribe = function (path, callback, triggerNow) {
   const args = this._normalizeArguments(arguments)
 
@@ -249,6 +251,7 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
  * @public
  * @returns {void}
  */
+// eslint-disable-next-line
 Record.prototype.unsubscribe = function (pathOrCallback, callback) {
   const args = this._normalizeArguments(arguments)
 

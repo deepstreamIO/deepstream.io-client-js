@@ -67,7 +67,7 @@ Connection.prototype.getState = function () {
  * @returns {void}
  */
 Connection.prototype.authenticate = function (authParams, callback) {
-  if(typeof authParams !== 'object') {
+  if (typeof authParams !== 'object') {
     this._client._$onError(C.TOPIC.ERROR, C.EVENT.INVALID_AUTH_MSG, 'authParams is not an object')
     return
   }
@@ -272,7 +272,7 @@ Connection.prototype._checkHeartBeat = function () {
     this._client._$onError(
       C.TOPIC.CONNECTION,
       C.EVENT.CONNECTION_ERROR,
-      'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds')
+      `heartbeat not received in the last ${heartBeatTolerance} milliseconds`)
     this._endpoint.close()
   }
 }
@@ -453,8 +453,8 @@ Connection.prototype._handleAuthResponse = function (message) {
       if (this._authCallback) {
         this._authCallback(false, 'invalid authentication message')
       }
-      
-      return;
+
+      return
     } else {
       this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION)
     }

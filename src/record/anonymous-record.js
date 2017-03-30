@@ -1,4 +1,5 @@
 'use strict'
+/* eslint-disable prefer-rest-params, prefer-spread */
 
 const Record = require('./record')
 const EventEmitter = require('component-emitter2')
@@ -29,7 +30,7 @@ const AnonymousRecord = function (recordHandler) {
   this._proxyMethod('discard')
 }
 
-EventEmitter(AnonymousRecord.prototype)
+EventEmitter(AnonymousRecord.prototype) // eslint-disable-line
 
 /**
  * Proxies the actual record's get method. It is valid

@@ -47,7 +47,7 @@ const Client = function (url, options) {
   this._messageCallbacks[C.TOPIC.ERROR] = this._onErrorMessage.bind(this)
 }
 
-Emitter(Client.prototype)
+Emitter(Client.prototype) // eslint-disable-line
 
 /**
  * Send authentication parameters to the client to fully open
@@ -251,7 +251,7 @@ Client.prototype._getOptions = function (options) {
  * @public
  * @returns {void}
  */
-function createDeepstream(url, options) {
+function createDeepstream (url, options) {
   return new Client(url, options)
 }
 
