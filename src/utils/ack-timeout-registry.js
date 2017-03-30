@@ -24,7 +24,7 @@ const AckTimeoutRegistry = function (client, options) {
   client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this))
 }
 
-EventEmitter(AckTimeoutRegistry.prototype)
+EventEmitter(AckTimeoutRegistry.prototype) // eslint-disable-line
 
 /**
  * Add an entry

@@ -14,18 +14,18 @@ const cache = Object.create(null)
  */
 module.exports.get = function (data, path, deepCopy) {
   const tokens = tokenize(path)
-
+  let value = data
   for (let i = 0; i < tokens.length; i++) {
-    if (data === undefined) {
+    if (value === undefined) {
       return undefined
     }
-    if (typeof data !== 'object') {
+    if (typeof value !== 'object') {
       throw new Error('invalid data or path')
     }
-    data = data[tokens[i]]
+    value = value[tokens[i]]
   }
 
-  return deepCopy !== false ? utils.deepCopy(data) : data
+  return deepCopy !== false ? utils.deepCopy(value) : value
 }
 
 /**
@@ -76,7 +76,7 @@ module.exports.set = function (data, path, value, deepCopy) {
  * @param  {boolean} deepCopy
  * @return {Mixed}
  */
-function patch(oldValue, newValue, deepCopy) {
+function patch (oldValue, newValue, deepCopy) {
   let i
   let j
   if (oldValue === null || newValue === null) {
@@ -132,7 +132,7 @@ function patch(oldValue, newValue, deepCopy) {
  *
  * @returns Array of tokens
  */
-function tokenize(path) {
+function tokenize (path) {
   if (cache[path]) {
     return cache[path]
   }
