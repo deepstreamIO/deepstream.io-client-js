@@ -172,24 +172,39 @@ exports.setInterval = function (callback, intervalDuration) {
     return setInterval(callback, intervalDuration)
   }
   return -1
-
 }
-
 
 /**
  * This method is used to break up long running operations and run a callback function immediately
  * after the browser has completed other operations such as events and display updates.
  *
  * @param {Function} callback        the function that will be called after the given time
- * @param {...*}   param1, ..., paramN additional parameters which are passed through to the callback
+ * @param {...*}   param1, ..., paramN additional parameters which are passed through
+ *                                   to the callback
  *
  * @public
  */
-exports.setImmediate = typeof setImmediate === 'function' ? setImmediate : function () {
-  const args = Array.prototype.slice.call(arguments)
-  args.splice(1, 0, 0)
-  setTimeout.apply(this, args)
-}
+exports.requestIdleCallback = (!exports.isNode &&
+  window.requestIdleCallback &&
+  window.requestIdleCallback.bind(window)) ||
+  function (cb) {
+    const start = Date.now()
+    return setTimeout(() => {
+      cb({
+        didTimeout: false,
+        timeRemaining () {
+          return Math.max(0, 50 - (Date.now() - start))
+        }
+      })
+    }, 1)
+  }
+
+exports.cancelIdleCallback = (!exports.isNode &&
+  window.cancelIdleCallback &&
+  window.cancelIdleCallback.bind(window)) ||
+  function (id) {
+    clearTimeout(id)
+  }
 
 /**
  * Used to see if a protocol is specified within the url
