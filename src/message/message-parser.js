@@ -33,7 +33,7 @@ const MessageParser = function () {
  */
 MessageParser.prototype.parse = function (message, client) {
   const parsedMessages = []
-  const rawMessages = message.split(C.MESSAGE_SEPERATOR)
+  const rawMessages = (message.data || message).split(C.MESSAGE_SEPERATOR)
 
   for (let i = 0; i < rawMessages.length; i++) {
     if (rawMessages[i].length > 2) {

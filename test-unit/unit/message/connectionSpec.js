@@ -40,26 +40,35 @@ describe('connects - happy path', () => {
     expect(clientConnectionStateChangeCount).toBe(1)
   })
 
-  it('when it recieves connection ack switches to awaiting authentication', () => {
+  it('when it recieves connection ack switches to awaiting authentication', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
-    expect(clientConnectionStateChangeCount).toBe(2)
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+      expect(clientConnectionStateChangeCount).toBe(2)
+      done()
+    }, 10)
   })
 
-  it('sends auth parameters', () => {
+  it('sends auth parameters', (done) => {
     expect(connection._endpoint.lastSendMessage).toBe(null)
     connection.authenticate({ user: 'Wolfram' }, authCallback)
     expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|{"user":"Wolfram"}+'))
-    expect(connection.getState()).toBe('AUTHENTICATING')
-    expect(clientConnectionStateChangeCount).toBe(3)
-    expect(authCallback).not.toHaveBeenCalled()
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AUTHENTICATING')
+      expect(clientConnectionStateChangeCount).toBe(3)
+      expect(authCallback).not.toHaveBeenCalled()
+      done()
+    }, 10)
   })
 
-  it('processes the authentication response', () => {
+  it('processes the authentication response', (done) => {
     connection._endpoint.emit('message', msg('A|A+'))
-    expect(connection.getState()).toBe('OPEN')
-    expect(authCallback).toHaveBeenCalledWith(true, null)
-    expect(clientConnectionStateChangeCount).toBe(4)
+    setTimeout(() => {
+      expect(connection.getState()).toBe('OPEN')
+      expect(authCallback).toHaveBeenCalledWith(true, null)
+      expect(clientConnectionStateChangeCount).toBe(4)
+      done()
+    }, 10)
   })
 
   it('sends individual messages', (done) => {
@@ -99,9 +108,12 @@ describe('connects - heartbeats', () => {
     connection.close()
   })
 
-  it('when it recieves a ping responds with a pong', () => {
+  it('when it recieves a ping responds with a pong', (done) => {
     connection._endpoint.emit('message', msg('C|PI+'))
-    expect(connection._endpoint.lastSendMessage).toBe(msg('C|PO+'))
+     setTimeout(() => {
+      expect(connection._endpoint.lastSendMessage).toBe(msg('C|PO+'))
+      done()
+    }, 10)
   })
 
   it('when it misses one heart beat nothing happens', (done) => {
@@ -134,43 +146,58 @@ describe('connects - redirect', () => {
       maxReconnectAttempts: 5
     }
 
-  it('creates the connection', () => {
+  it('creates the connection', (done) => {
     clientConnectionStateChangeCount = 0
 
     connection = new Connection(clientMock, url, options)
     expect(connection.getState()).toBe('CLOSED')
 
     connection._endpoint.simulateOpen()
-    expect(connection.getState()).toBe('AWAITING_CONNECTION')
-    expect(clientConnectionStateChangeCount).toBe(1)
+
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_CONNECTION')
+      expect(clientConnectionStateChangeCount).toBe(1)
+      done()
+    }, 10)
   })
 
-  it('recieves a connection challenge and responds with url', () => {
+  it('recieves a connection challenge and responds with url', (done) => {
     connection._endpoint.emit('message', msg('C|CH+'))
-    expect(connection.getState()).toBe('CHALLENGING')
-    expect(connection._endpoint.lastSendMessage).toBe(msg('C|CHR|ws://somehost:4444+'))
-    expect(clientConnectionStateChangeCount).toBe(2)
+    setTimeout(() => {
+      expect(connection.getState()).toBe('CHALLENGING')
+      expect(connection._endpoint.lastSendMessage).toBe(msg('C|CHR|ws://somehost:4444+'))
+      expect(clientConnectionStateChangeCount).toBe(2)
+      done()
+    }, 10)
   })
 
-  it('gets a redirect when it responds with a valid url', () => {
+  it('gets a redirect when it responds with a valid url', (done) => {
     connection._endpoint.emit('message', msg('C|RED|someotherhost:5050+'))
     connection._endpoint.simulateOpen()
-
-    expect(connection.getState()).toBe('AWAITING_CONNECTION')
-    expect(clientConnectionStateChangeCount).toBe(3)
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_CONNECTION')
+      expect(clientConnectionStateChangeCount).toBe(3)
+      done()
+    }, 10)
   })
 
-  it('creates connection to new url', () => {
+  it('creates connection to new url', (done) => {
     connection._endpoint.simulateOpen()
-    expect(connection.getState()).toBe('AWAITING_CONNECTION')
-    expect(clientConnectionStateChangeCount).toBe(4)
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_CONNECTION')
+      expect(clientConnectionStateChangeCount).toBe(4)
+      done()
+    }, 10)
   })
 
-  it('recieves a connection ack from new url', () => {
+  it('recieves a connection ack from new url', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
-    expect(clientConnectionStateChangeCount).toBe(5)
-    expect(connection._endpoint.url).toBe('someotherhost:5050')
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+      expect(clientConnectionStateChangeCount).toBe(5)
+      expect(connection._endpoint.url).toBe('someotherhost:5050')
+      done()
+    }, 10)
   })
 
   it('connects to the original url after it loses the connection', () => {
@@ -204,21 +231,30 @@ describe('connects - redirect rejection', () => {
     expect(clientConnectionStateChangeCount).toBe(1)
   })
 
-  it('recieves a connection challenge and responds with invalid url', () => {
+  it('recieves a connection challenge and responds with invalid url', (done) => {
     connection._endpoint.emit('message', msg('C|CH+'))
-    expect(connection.getState()).toBe('CHALLENGING')
-    expect(connection._endpoint.lastSendMessage).toBe(msg('C|CHR|ws://somehost:4444+'))
-    expect(clientConnectionStateChangeCount).toBe(2)
+    setTimeout(() => {
+      expect(clientConnectionStateChangeCount).toBe(2)
+      expect(connection.getState()).toBe('CHALLENGING')
+      expect(connection._endpoint.lastSendMessage).toBe(msg('C|CHR|ws://somehost:4444+'))
+      done()
+    }, 10)
   })
 
-  it('gets a reject and closes connection', () => {
+  it('gets a reject and closes connection', (done) => {
     connection._endpoint.emit('message', msg('C|CH+'))
-    expect(connection.getState()).toBe('CHALLENGING')
-    expect(clientConnectionStateChangeCount).toBe(3)
 
-    connection._endpoint.emit('message', msg('C|REJ+'))
-    expect(connection.getState()).toBe('CLOSED')
-    expect(clientConnectionStateChangeCount).toBe(4)
+    setTimeout(() => {
+      expect(connection.getState()).toBe('CHALLENGING')
+      expect(clientConnectionStateChangeCount).toBe(3)
+
+      connection._endpoint.emit('message', msg('C|REJ+'))
+      setTimeout(() => {
+        expect(connection.getState()).toBe('CLOSED')
+        expect(clientConnectionStateChangeCount).toBe(4)
+        done()
+      }, 10)
+    }, 10)
   })
 
   it('can longer attempt to authenticate user', () => {
@@ -260,9 +296,9 @@ describe('buffers messages whilst connection is closed', () => {
 
   it('tries to send messages whilst awaiting authentication', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
     connection.sendMsg('R', 'S', ['rec3'])
     setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
       expect(connection._endpoint.lastSendMessage).toBe(null)
       done()
     }, 10)
@@ -281,9 +317,9 @@ describe('buffers messages whilst connection is closed', () => {
 
   it('tries to send messages whilst authenticating', (done) => {
     connection._endpoint.emit('message', msg('A|A'))
-    expect(connection.getState()).toBe('OPEN')
 
     setTimeout(() => {
+      expect(connection.getState()).toBe('OPEN')
       const expected = msg('R|S|rec1', 'R|S|rec2', 'R|S|rec3', 'R|S|rec4+')
       expect(connection._endpoint.lastSendMessage).toBe(expected)
       done()
@@ -309,19 +345,25 @@ describe('connection handles auth rejections', () => {
     expect(connection.getState()).toBe('AWAITING_CONNECTION')
   })
 
-  it('sends auth parameters on connection ack', () => {
+  it('sends auth parameters on connection ack', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection._endpoint.lastSendMessage).toBe(null)
-    connection.authenticate({ user: 'Wolfram' }, authCallback)
-    expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|{"user":"Wolfram"}+'))
-    expect(connection.getState()).toBe('AUTHENTICATING')
-    expect(authCallback).not.toHaveBeenCalled()
+    setTimeout(() => {
+      expect(connection._endpoint.lastSendMessage).toBe(null)
+      connection.authenticate({ user: 'Wolfram' }, authCallback)
+      expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|{"user":"Wolfram"}+'))
+      expect(connection.getState()).toBe('AUTHENTICATING')
+      expect(authCallback).not.toHaveBeenCalled()
+      done()
+    }, 5)
   })
 
-  it('receives auth rejection message', () => {
+  it('receives auth rejection message', (done) => {
     connection._endpoint.emit('message', msg('A|E|INVALID_AUTH_DATA|Sunknown user+'))
-    expect(authCallback).toHaveBeenCalledWith(false, 'unknown user')
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+    setTimeout(() => {
+      expect(authCallback).toHaveBeenCalledWith(false, 'unknown user')
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+      done()
+    }, 5)
   })
 
   it('sends different auth parameters', () => {
@@ -330,10 +372,13 @@ describe('connection handles auth rejections', () => {
     expect(connection.getState()).toBe('AUTHENTICATING')
   })
 
-  it('receives auth ack message', () => {
+  it('receives auth ack message', (done) => {
     connection._endpoint.emit('message', msg('A|A+'))
-    expect(authCallback).toHaveBeenCalledWith(true, null)
-    expect(connection.getState()).toBe('OPEN')
+    setTimeout(() => {
+      expect(authCallback).toHaveBeenCalledWith(true, null)
+      expect(connection.getState()).toBe('OPEN')
+      done()
+    }, 5)
   })
 
   it('closes the connection, and then tries to authenticate again sends new credentials', (done) => {
@@ -343,10 +388,11 @@ describe('connection handles auth rejections', () => {
 
       connection._endpoint.simulateOpen()
       connection._endpoint.emit('message', msg('C|A+'))
-
-      expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|{"user":"John"}+'))
-      expect(connection.getState()).toBe('AUTHENTICATING')
-      done()
+      setTimeout(() => {
+        expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|{"user":"John"}+'))
+        expect(connection.getState()).toBe('AUTHENTICATING')
+        done()
+      }, 30)
     })
     connection.close()
   })
@@ -368,19 +414,25 @@ describe('connection auth with bad login data', () => {
     expect(connection.getState()).toBe('AWAITING_CONNECTION')
   })
 
-  it('sends auth parameters on connection ack', () => {
+  it('sends auth parameters on connection ack', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection._endpoint.lastSendMessage).toBe(null)
-    connection.authenticate(new String('Bad Auth'), authCallback)
-    expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|"Bad Auth"+'))
-    expect(connection.getState()).toBe('AUTHENTICATING')
-    expect(authCallback).not.toHaveBeenCalled()
+    setTimeout(() => {
+      expect(connection._endpoint.lastSendMessage).toBe(null)
+      connection.authenticate(new String('Bad Auth'), authCallback)
+      expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|"Bad Auth"+'))
+      expect(connection.getState()).toBe('AUTHENTICATING')
+      expect(authCallback).not.toHaveBeenCalled()
+      done()
+    }, 5)
   })
 
-  it('receives auth parse error', () => {
+  it('receives auth parse error', (done) => {
     connection._endpoint.emit('message', msg('A|E|INVALID_AUTH_MSG|invalid authentication message+'))
-    expect(authCallback).toHaveBeenCalledWith(false, 'invalid authentication message')
-    expect(connection._deliberateClose).toBe(true)
+    setTimeout(() => {
+      expect(authCallback).toHaveBeenCalledWith(false, 'invalid authentication message')
+      expect(connection._deliberateClose).toBe(true)
+      done()
+    }, 5)
   })
 
   it('reopens the connection', () => {
@@ -416,19 +468,25 @@ describe('connection handles data associated with login', () => {
     expect(connection.getState()).toBe('AWAITING_CONNECTION')
   })
 
-  it('sends auth parameters', () => {
+  it('sends auth parameters', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection._endpoint.lastSendMessage).toBe(null)
-    connection.authenticate({ user: 'Wolfram' }, authCallback)
-    expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|{"user":"Wolfram"}+'))
-    expect(connection.getState()).toBe('AUTHENTICATING')
-    expect(authCallback).not.toHaveBeenCalled()
+    setTimeout(() => {
+      expect(connection._endpoint.lastSendMessage).toBe(null)
+      connection.authenticate({ user: 'Wolfram' }, authCallback)
+      expect(connection._endpoint.lastSendMessage).toBe(msg('A|REQ|{"user":"Wolfram"}+'))
+      expect(connection.getState()).toBe('AUTHENTICATING')
+      expect(authCallback).not.toHaveBeenCalled()
+      done()
+    }, 5)
   })
 
-  it('receives auth ack message', () => {
+  it('receives auth ack message', (done) => {
     connection._endpoint.emit('message', msg('A|A|O{"id":12345}+'))
-    expect(authCallback).toHaveBeenCalledWith(true, { id: 12345 })
-    expect(connection.getState()).toBe('OPEN')
+    setTimeout(() => {
+      expect(authCallback).toHaveBeenCalledWith(true, { id: 12345 })
+      expect(connection.getState()).toBe('OPEN')
+      done()
+    }, 5)
   })
 })
 
@@ -457,9 +515,12 @@ describe('reach the max reconnect attempts and consider the maxReconnectInterval
     expect(connection.getState()).toBe('AWAITING_CONNECTION')
   })
 
-  it('recieves connection ack', () => {
+  it('recieves connection ack', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+      done()
+    }, 5)
   })
 
   it('loses the connection', (done) => {
@@ -504,9 +565,12 @@ describe('tries to reconnect if the connection drops unexpectedly', () => {
     expect(connection.getState()).toBe('AWAITING_CONNECTION')
   })
 
-  it('recieves connection ack', () => {
+  it('recieves connection ack', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+      done()
+    }, 5)
   })
 
   it('loses the connection', (done) => {
@@ -536,8 +600,8 @@ describe('tries to reconnect if the connection drops unexpectedly', () => {
     expect(connection._endpoint.url).toBe('ws://somehost:4444')
     connection._endpoint.simulateOpen()
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
     setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
       expect(connection._endpoint.getCallsToOpen()).toBe(2)
       done()
     }, 40)
@@ -550,9 +614,12 @@ describe('tries to reconnect if the connection drops unexpectedly', () => {
     expect(connection.getState()).toBe('AUTHENTICATING')
   })
 
-  it('receives auth ack message', () => {
+  it('receives auth ack message', (done) => {
     connection._endpoint.emit('message', msg('A|A+'))
-    expect(connection.getState()).toBe('OPEN')
+    setTimeout(() => {
+      expect(connection.getState()).toBe('OPEN')
+      done()
+    }, 5)
   })
 
   it('loses an authenticated connection', (done) => {
@@ -575,9 +642,12 @@ describe('tries to reconnect if the connection drops unexpectedly', () => {
     expect(connection.getState()).toBe('AUTHENTICATING')
   })
 
-  it('receives auth ack message', () => {
+  it('receives auth ack message', (done) => {
     connection._endpoint.emit('message', msg('A|A+'))
-    expect(connection.getState()).toBe('OPEN')
+    setTimeout(() => {
+      expect(connection.getState()).toBe('OPEN')
+      done()
+    }, 5)
   })
 })
 
@@ -607,9 +677,12 @@ describe('splits messages into smaller packets', () => {
     expect(connection.getState()).toBe('AWAITING_CONNECTION')
   })
 
-  it('recieves connection ack', () => {
+  it('recieves connection ack', (done) => {
     connection._endpoint.emit('message', msg('C|A+'))
-    expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+    setTimeout(() => {
+      expect(connection.getState()).toBe('AWAITING_AUTHENTICATION')
+      done()
+    }, 5)
   })
 
   it('sends auth parameters', () => {
@@ -619,9 +692,12 @@ describe('splits messages into smaller packets', () => {
     expect(connection.getState()).toBe('AUTHENTICATING')
   })
 
-  it('receives auth ack message', () => {
+  it('receives auth ack message', (done) => {
     connection._endpoint.emit('message', msg('A|A+'))
-    expect(connection.getState()).toBe('OPEN')
+    setTimeout(() => {
+      expect(connection.getState()).toBe('OPEN')
+      done()
+    }, 5)
   })
 
   it('sends individual messages straight away', () => {

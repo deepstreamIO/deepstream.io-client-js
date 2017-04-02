@@ -18,8 +18,6 @@ const C = require('../constants/constants')
  */
 const Connection = function (client, url, options) {
   this._client = client
-  this._originalUrl = url
-  this._url = url
   this._options = options
   this._authParams = null
   this._authCallback = null
@@ -37,6 +35,12 @@ const Connection = function (client, url, options) {
   this._sendNextPacketTimeout = null
   this._currentMessageResetTimeout = null
   this._endpoint = null
+  this._lastHeartBeat = null
+  this._heartbeatInterval = null
+
+  this._originalUrl = utils.parseUrl(url, this._options.path)
+  this._url = this._originalUrl
+
   this._idleTimeout = (Math.min(
     options.rpcAckTimeout,
     options.rpcResponseTimeout,
@@ -48,8 +52,6 @@ const Connection = function (client, url, options) {
   ) || 1000) - 200
 
   this._state = C.CONNECTION_STATE.CLOSED
-  this._lastHeartBeat = null
-  this._heartbeatInterval = null
   this._createEndpoint()
 }
 
@@ -152,11 +154,11 @@ Connection.prototype.send = function (message) {
  */
 Connection.prototype.close = function () {
   clearInterval(this._heartbeatInterval)
-  this._deliberateClose = true
-  this._endpoint.close()
   if (this._messageHandler) {
     utils.cancelIdleCallback(this._messageHandler)
   }
+  this._deliberateClose = true
+  this._endpoint.close()
 }
 
 /**
