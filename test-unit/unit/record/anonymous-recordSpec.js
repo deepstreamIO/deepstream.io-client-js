@@ -41,6 +41,13 @@ describe('anonymous record allows switching of underlying records', () => {
     expect(recordHandler._connection.lastSendMessage).toBe(msg('R|CR|recordA+'))
   })
 
+  it('does nothing if same name is set again', () => {
+    recordHandler._connection.lastSendMessage = null
+    anonymousRecord.setName('recordA')
+    expect(anonymousRecord.name).toBe('recordA')
+    expect(recordHandler._connection.lastSendMessage).toBe(null)
+  })
+
   it('updates subscriptions once the record is ready', () => {
     expect(firstnameCallback).not.toHaveBeenCalled()
     expect(generalCallback).not.toHaveBeenCalled()

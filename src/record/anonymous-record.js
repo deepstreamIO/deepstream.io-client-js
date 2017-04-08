@@ -119,6 +119,10 @@ AnonymousRecord.prototype.unsubscribe = function () {
  * @returns {void}
  */
 AnonymousRecord.prototype.setName = function (recordName) {
+  if (this.name === recordName) {
+    return
+  }
+
   this.name = recordName
 
   let i
