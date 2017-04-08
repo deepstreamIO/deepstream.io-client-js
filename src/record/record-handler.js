@@ -341,7 +341,7 @@ RecordHandler.prototype._onRecordError = function (recordName, error) {
  */
 RecordHandler.prototype._onDestroyPending = function (recordName) {
   if (!this._records[recordName]) {
-    this.emit('error', `Record '${recordName}' does not exists`)
+    this._client._$onError(C.TOPIC.RECORD, 'Record attempted to be destroyed but does not exists', recordName)
     return
   }
   const onMessage = this._records[recordName]._$onMessage.bind(this._records[recordName])
