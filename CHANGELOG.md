@@ -1,3 +1,20 @@
+## [2.1.3] - 2017-04-08
+
+### Enhancements
+- Write acks now called with a failure message if connection is down by [@Erik Karlsson](@Erik Karlsson)
+- Write acks now called with null if value hasn't changed by [@Erik Karlsson](@Erik Karlsson)
+- Linting / Babel support
+- Improved a few typescript bindings by [@EnigmaCurry](@EnigmaCurry)
+- Changed heartbeat missed message to include time
+- Setting anonymous record with same name no longer discards and resubscribes the record
+
+### Bug Fixes
+
+- Invalid remote wins merge conflicts
+- Prevent records from being set with scalar values by [@datasage](@datasage)
+- Prevent bad login message from constantly attempting to reconnect by [@datasage](@datasage)
+- RecordHandler invalid destroy state emitted an error instead of using client._$onError
+
 ## [2.1.2] - 2017-02-28
 
 ### Enhancements

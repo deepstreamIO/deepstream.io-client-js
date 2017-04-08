@@ -1887,7 +1887,7 @@ var Client = function Client(url, options) {
   this._messageCallbacks[C.TOPIC.ERROR] = this._onErrorMessage.bind(this);
 };
 
-Emitter(Client.prototype);
+Emitter(Client.prototype); // eslint-disable-line
 
 /**
  * Send authentication parameters to the client to fully open
@@ -2243,14 +2243,6 @@ module.exports = {
    *                                             establish a new one.
    */
   heartbeatInterval: 30000,
-
-  /**
-   * @param {Boolean} recordPersistDefault       Whether records should be
-   *                                             persisted by default. Can be overwritten
-   *                                             for individual records when calling
-   *                                             getRecord( name, persist );
-   */
-  recordPersistDefault: true,
 
   /**
    * @param {Number} reconnectIntervalIncrement  Specifies the number of milliseconds by
@@ -3544,6 +3536,7 @@ module.exports = PresenceHandler;
 
 },{"../constants/constants":11,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
 'use strict';
+/* eslint-disable prefer-rest-params, prefer-spread */
 
 var Record = _dereq_('./record');
 var EventEmitter = _dereq_('component-emitter2');
@@ -3574,7 +3567,7 @@ var AnonymousRecord = function AnonymousRecord(recordHandler) {
   this._proxyMethod('discard');
 };
 
-EventEmitter(AnonymousRecord.prototype);
+EventEmitter(AnonymousRecord.prototype); // eslint-disable-line
 
 /**
  * Proxies the actual record's get method. It is valid
@@ -3660,6 +3653,10 @@ AnonymousRecord.prototype.unsubscribe = function () {
  * @returns {void}
  */
 AnonymousRecord.prototype.setName = function (recordName) {
+  if (this.name === recordName) {
+    return;
+  }
+
   this.name = recordName;
 
   var i = void 0;
@@ -3739,18 +3736,18 @@ var cache = Object.create(null);
  */
 module.exports.get = function (data, path, deepCopy) {
   var tokens = tokenize(path);
-
+  var value = data;
   for (var i = 0; i < tokens.length; i++) {
-    if (data === undefined) {
+    if (value === undefined) {
       return undefined;
     }
-    if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== 'object') {
+    if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object') {
       throw new Error('invalid data or path');
     }
-    data = data[tokens[i]];
+    value = value[tokens[i]];
   }
 
-  return deepCopy !== false ? utils.deepCopy(data) : data;
+  return deepCopy !== false ? utils.deepCopy(value) : value;
 };
 
 /**
@@ -3873,6 +3870,7 @@ function tokenize(path) {
 
 },{"../utils/utils":31}],21:[function(_dereq_,module,exports){
 'use strict';
+/* eslint-disable prefer-rest-params */
 
 var EventEmitter = _dereq_('component-emitter2');
 var Record = _dereq_('./record');
@@ -3919,7 +3917,7 @@ var List = function List(recordHandler, name, options) {
   this.whenReady = this._record.whenReady.bind(this);
 };
 
-EventEmitter(List.prototype);
+EventEmitter(List.prototype); // eslint-disable-line
 
 /**
  * Returns the array of list entries or an
@@ -4575,7 +4573,7 @@ RecordHandler.prototype._onRecordError = function (recordName, error) {
  */
 RecordHandler.prototype._onDestroyPending = function (recordName) {
   if (!this._records[recordName]) {
-    this.emit('error', 'Record \'' + recordName + '\' does not exists');
+    this._client._$onError(C.TOPIC.RECORD, 'Record attempted to be destroyed but does not exists', recordName);
     return;
   }
   var onMessage = this._records[recordName]._$onMessage.bind(this._records[recordName]);
@@ -4600,6 +4598,7 @@ module.exports = RecordHandler;
 
 },{"../constants/constants":11,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter2":1}],23:[function(_dereq_,module,exports){
 'use strict';
+/* eslint-disable prefer-spread, prefer-rest-params */
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -4669,7 +4668,7 @@ var Record = function Record(name, recordOptions, connection, options, client) {
   this._sendRead();
 };
 
-EventEmitter(Record.prototype);
+EventEmitter(Record.prototype); // eslint-disable-line
 
 /**
  * Set a merge strategy to resolve any merge conflicts that may occur due
@@ -4726,9 +4725,8 @@ Record.prototype.get = function (path) {
 Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
   var path = void 0;
   var data = void 0;
-
-  // set( object )
   if (arguments.length === 1) {
+    // set( object )
     if ((typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) !== 'object') {
       throw new Error('invalid argument data');
     }
@@ -4741,7 +4739,7 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
     } else if ((typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) === 'object' && typeof dataOrCallback === 'function') {
       // set( data, callback )
       data = pathOrData;
-      callback = dataOrCallback;
+      callback = dataOrCallback; // eslint-disable-line
     } else {
       throw new Error('invalid argument path');
     }
@@ -4771,17 +4769,28 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
   var newValue = jsonPath.set(oldValue, path, data, this._options.recordDeepCopy);
 
   if (oldValue === newValue) {
+    if (typeof callback === 'function') {
+      var errorMessage = null;
+      if (!utils.isConnected(this._client)) {
+        errorMessage = 'Connection error: error updating record as connection was closed';
+      }
+      utils.requestIdleCallback(function () {
+        return callback(errorMessage);
+      });
+    }
     return this;
   }
 
   var config = void 0;
-  if (callback !== undefined) {
+  if (typeof callback === 'function') {
     config = {};
     config.writeSuccess = true;
-    this._setUpCallback(this.version, callback);
-    var connectionState = this._client.getConnectionState();
-    if (connectionState === C.CONNECTION_STATE.CLOSED || connectionState === C.CONNECTION_STATE.RECONNECTING) {
-      callback('Connection error: error updating record as connection was closed');
+    if (!utils.isConnected(this._client)) {
+      utils.requestIdleCallback(function () {
+        return callback('Connection error: error updating record as connection was closed');
+      });
+    } else {
+      this._setUpCallback(this.version, callback);
     }
   }
   this._sendUpdate(path, data, config);
@@ -4808,6 +4817,7 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
  * @public
  * @returns {void}
  */
+// eslint-disable-next-line
 Record.prototype.subscribe = function (path, callback, triggerNow) {
   var _this = this;
 
@@ -4852,6 +4862,7 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
  * @public
  * @returns {void}
  */
+// eslint-disable-next-line
 Record.prototype.unsubscribe = function (pathOrCallback, callback) {
   var args = this._normalizeArguments(arguments);
 
@@ -5775,7 +5786,7 @@ var AckTimeoutRegistry = function AckTimeoutRegistry(client, options) {
   client.on('connectionStateChanged', this._onConnectionStateChanged.bind(this));
 };
 
-EventEmitter(AckTimeoutRegistry.prototype);
+EventEmitter(AckTimeoutRegistry.prototype); // eslint-disable-line
 
 /**
  * Add an entry
@@ -6213,6 +6224,11 @@ module.exports = SingleNotifier;
 },{"../constants/constants":11,"./resubscribe-notifier":29}],31:[function(_dereq_,module,exports){
 (function (process){
 'use strict';
+/* eslint-disable valid-typeof */
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var C = _dereq_('../constants/constants');
 
 /**
  * A regular expression that matches whitespace on either side, but
@@ -6220,9 +6236,6 @@ module.exports = SingleNotifier;
  *
  * @type {RegExp}
  */
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
 var TRIM_REGULAR_EXPRESSION = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
 
 /**
@@ -6389,6 +6402,32 @@ exports.setInterval = function (callback, intervalDuration) {
 };
 
 /**
+ * This method is used to break up long running operations and run a callback function immediately
+ * after the browser has completed other operations such as events and display updates.
+ *
+ * @param {Function} callback        the function that will be called after the given time
+ * @param {...*}     param1, ..., paramN additional parameters which are passed through to the
+ *                                     callback
+ *
+ * @public
+ */
+exports.requestIdleCallback = !exports.isNode && window.requestIdleCallback && window.requestIdleCallback.bind(window) || function (cb) {
+  var start = Date.now();
+  return setTimeout(function () {
+    cb({
+      didTimeout: false,
+      timeRemaining: function timeRemaining() {
+        return Math.max(0, 50 - (Date.now() - start));
+      }
+    });
+  }, 1);
+};
+
+exports.cancelIdleCallback = !exports.isNode && window.cancelIdleCallback && window.cancelIdleCallback.bind(window) || function (id) {
+  clearTimeout(id);
+};
+
+/**
  * Used to see if a protocol is specified within the url
  * @type {RegExp}
  */
@@ -6427,6 +6466,15 @@ exports.parseUrl = function (initialURl, defaultPath) {
   return URL.format(serverUrl);
 };
 
+/**
+ * Returns true is the connection state is OPEN
+ * @return {Boolean}
+ */
+exports.isConnected = function (client) {
+  var connectionState = client.getConnectionState();
+  return connectionState === C.CONNECTION_STATE.OPEN;
+};
+
 }).call(this,_dereq_('_process'))
-},{"_process":3,"url":8}]},{},[10])(10)
+},{"../constants/constants":11,"_process":3,"url":8}]},{},[10])(10)
 });
