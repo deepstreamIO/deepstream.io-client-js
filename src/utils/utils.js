@@ -1,4 +1,6 @@
 'use strict'
+/* eslint-disable valid-typeof */
+const C = require('../constants/constants')
 
 /**
  * A regular expression that matches whitespace on either side, but
@@ -55,7 +57,6 @@ exports.trim = function (inputString) {
     return inputString.trim()
   }
   return inputString.replace(TRIM_REGULAR_EXPRESSION, '')
-
 }
 
 /**
@@ -87,7 +88,6 @@ exports.deepEquals = function (objA, objB) {
   }
 
   return JSON.stringify(objA) === JSON.stringify(objB)
-
 }
 
 /**
@@ -172,7 +172,6 @@ exports.setInterval = function (callback, intervalDuration) {
     return setInterval(callback, intervalDuration)
   }
   return -1
-
 }
 
 /**
@@ -235,3 +234,12 @@ exports.cancelIdleCallback = (!exports.isNode &&
   function (id) {
     clearTimeout(id)
   }
+
+/**
+ * Returns true is the connection state is OPEN
+ * @return {Boolean}
+ */
+exports.isConnected = function (client) {
+  const connectionState = client.getConnectionState()
+  return connectionState === C.CONNECTION_STATE.OPEN
+}

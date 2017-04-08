@@ -73,7 +73,6 @@ describe('deepEquals', () => {
 })
 
 describe('deepCopy', () => {
-
   it('copies primitives', () => {
     expect(utils.deepCopy('bla')).toBe('bla')
     expect(utils.deepCopy(42)).toBe(42)
@@ -125,9 +124,9 @@ describe('deepCopy', () => {
     expect(original.a.d[1] === copy.a.d[1]).toBe(false)
   })
 
-	// This is a JSON.stringify specific behaviour. Not too sure it's ideal,
-	// but it is something that will break behaviour when changed, so let's
-	// keep an eye on it
+  // This is a JSON.stringify specific behaviour. Not too sure it's ideal,
+  // but it is something that will break behaviour when changed, so let's
+  // keep an eye on it
   it('converts undefined', () => {
     let copy = utils.deepCopy([undefined])
     expect(copy[0]).toBe(null)
@@ -139,9 +138,9 @@ describe('deepCopy', () => {
 
 describe('utils.trim removes whitespace', () => {
   it('removes various kinds of whitespace', () => {
-    expect(utils.trim('a  	')).toEqual('a')
-    expect(utils.trim(' 	b  	')).toEqual('b')
-    expect(utils.trim(' 	c d  	')).toEqual('c d')
+    expect(utils.trim('a    ')).toEqual('a')
+    expect(utils.trim('   b    ')).toEqual('b')
+    expect(utils.trim('   c d    ')).toEqual('c d')
   })
 })
 
@@ -155,19 +154,19 @@ describe('utils.isNode detects the environment', () => {
 describe('utils.parseUrl adds all missing parts of the url', () => {
   it('accepts no protocol and default to ws', () => {
     expect(utils.parseUrl('localhost', '/deepstream'))
-			.toBe('ws://localhost/deepstream')
+      .toBe('ws://localhost/deepstream')
   })
 
   it('accepts // as protocol', () => {
     expect(utils.parseUrl('//localhost:6020', '/deepstream'))
-			.toBe('ws://localhost:6020/deepstream')
+      .toBe('ws://localhost:6020/deepstream')
   })
 
   it('accepts ws protocols', () => {
     expect(utils.parseUrl('ws://localhost:6020', '/deepstream'))
-			.toBe('ws://localhost:6020/deepstream')
+      .toBe('ws://localhost:6020/deepstream')
     expect(utils.parseUrl('wss://localhost:6020', '/deepstream'))
-			.toBe('wss://localhost:6020/deepstream')
+      .toBe('wss://localhost:6020/deepstream')
   })
 
   it('rejects http protocols', () => {
@@ -181,11 +180,24 @@ describe('utils.parseUrl adds all missing parts of the url', () => {
 
   it('accepts full url with protocol and path and doesn\'t change it', () => {
     expect(utils.parseUrl('ws://localhost:6020/anotherdeepstream'))
-			.toBe('ws://localhost:6020/anotherdeepstream')
+      .toBe('ws://localhost:6020/anotherdeepstream')
   })
 
   it('respects queries and hash', () => {
     expect(utils.parseUrl('localhost?query=value#login', '/deepstream'))
-			.toBe('ws://localhost/deepstream?query=value#login')
+      .toBe('ws://localhost/deepstream?query=value#login')
   })
+})
+
+describe('utils.requestIdleTimeout', () => {
+  it('callbacks asynchronously as soon as possible', (done) => {
+    let syncronous = false
+
+    utils.requestIdleCallback(() => {
+      expect(syncronous).toBe(true)
+      done()
+    })
+
+    syncronous = true
+  }, 100)
 })
