@@ -24,7 +24,6 @@ describe('connects', () => {
       recordPersistDefault: false,
       recordDeleteTimeout: 34852
     })
-    expect(client._options.recordPersistDefault).toBe(false)
     expect(client._options.recordReadTimeout).toBe(15000)
     expect(client._options.recordDeleteTimeout).toBe(34852)
   })

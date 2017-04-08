@@ -11,14 +11,6 @@ module.exports = {
   heartbeatInterval: 30000,
 
   /**
-   * @param {Boolean} recordPersistDefault       Whether records should be
-   *                                             persisted by default. Can be overwritten
-   *                                             for individual records when calling
-   *                                             getRecord( name, persist );
-   */
-  recordPersistDefault: true,
-
-  /**
    * @param {Number} reconnectIntervalIncrement  Specifies the number of milliseconds by
    *                                             which the time until the next reconnection
    *                                             attempt will be incremented after every
