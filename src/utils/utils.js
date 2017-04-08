@@ -1,4 +1,6 @@
 'use strict'
+/* eslint-disable valid-typeof */
+const C = require('../constants/constants')
 
 /**
  * A regular expression that matches whitespace on either side, but
@@ -55,7 +57,6 @@ exports.trim = function (inputString) {
     return inputString.trim()
   }
   return inputString.replace(TRIM_REGULAR_EXPRESSION, '')
-
 }
 
 /**
@@ -87,7 +88,6 @@ exports.deepEquals = function (objA, objB) {
   }
 
   return JSON.stringify(objA) === JSON.stringify(objB)
-
 }
 
 /**
@@ -179,8 +179,8 @@ exports.setInterval = function (callback, intervalDuration) {
  * after the browser has completed other operations such as events and display updates.
  *
  * @param {Function} callback        the function that will be called after the given time
- * @param {...*}   param1, ..., paramN additional parameters which are passed through
- *                                   to the callback
+ * @param {...*}     param1, ..., paramN additional parameters which are passed through to the
+ *                                     callback
  *
  * @public
  */
@@ -243,4 +243,13 @@ exports.parseUrl = function (initialURl, defaultPath) {
   serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:'
   serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath
   return URL.format(serverUrl)
+}
+
+/**
+ * Returns true is the connection state is OPEN
+ * @return {Boolean}
+ */
+exports.isConnected = function (client) {
+  const connectionState = client.getConnectionState()
+  return connectionState === C.CONNECTION_STATE.OPEN
 }

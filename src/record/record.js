@@ -168,13 +168,11 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
 
   if (oldValue === newValue) {
     if (typeof callback === 'function') {
-      if (isConnected(this._client)) {
-        utils.requestIdleCallback(callback)
-      } else {
-        utils.requestIdleCallback(
-          callback.bind(this, 'Connection error: error updating record as connection was closed')
-        )
+      let errorMessage = null
+      if (!utils.isConnected(this._client)) {
+        errorMessage = 'Connection error: error updating record as connection was closed'
       }
+      utils.requestIdleCallback(() => callback(errorMessage))
     }
     return this
   }
@@ -183,9 +181,9 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
   if (typeof callback === 'function') {
     config = {}
     config.writeSuccess = true
-    if (!isConnected(this._client)) {
+    if (!utils.isConnected(this._client)) {
       utils.requestIdleCallback(
-        callback.bind(this, 'Connection error: error updating record as connection was closed')
+        () => callback('Connection error: error updating record as connection was closed')
       )
     } else {
       this._setUpCallback(this.version, callback)
@@ -194,14 +192,6 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
   this._sendUpdate(path, data, config)
   this._applyChange(newValue)
   return this
-}
-
-function isConnected (client) {
-  const connectionState = client.getConnectionState()
-  return !(
-    connectionState === C.CONNECTION_STATE.CLOSED ||
-    connectionState === C.CONNECTION_STATE.RECONNECTING
-  )
 }
 
 /**

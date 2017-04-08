@@ -73,7 +73,6 @@ describe('deepEquals', () => {
 })
 
 describe('deepCopy', () => {
-
   it('copies primitives', () => {
     expect(utils.deepCopy('bla')).toBe('bla')
     expect(utils.deepCopy(42)).toBe(42)
@@ -139,9 +138,9 @@ describe('deepCopy', () => {
 
 describe('utils.trim removes whitespace', () => {
   it('removes various kinds of whitespace', () => {
-    expect(utils.trim('a ')).toEqual('a')
-    expect(utils.trim(' b ')).toEqual('b')
-    expect(utils.trim(' c d ')).toEqual('c d')
+    expect(utils.trim('a    ')).toEqual('a')
+    expect(utils.trim('   b    ')).toEqual('b')
+    expect(utils.trim('   c d    ')).toEqual('c d')
   })
 })
 
