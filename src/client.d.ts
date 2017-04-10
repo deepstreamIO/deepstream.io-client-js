@@ -235,7 +235,7 @@ declare namespace deepstreamIO {
         - response: contains two functions (accept and reject), one of them needs to be called */
                 listen(pattern: string, callback: (match: string, isSubscribed: boolean, response: ListenResponse) => void): void;
                 /**This removes a previously registered listening pattern and the user will no longer be listening for active/inactive subscriptions. */
-                unlisten(pattern: RegExp): void;
+                unlisten(pattern: string): void;
         }
 
         interface RPCStatic {
