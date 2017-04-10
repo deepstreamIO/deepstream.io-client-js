@@ -196,6 +196,13 @@ declare namespace deepstreamIO {
                 ack(): void;
         }
 
+        interface ListenResponse {
+                /** Accept the response */
+                accept(): void;
+                /** Reject the response */
+                reject(): void;
+        }
+  
         interface RecordStatic {
                 /** Get a record. */
                 getRecord(path: string): Record;
@@ -208,7 +215,7 @@ declare namespace deepstreamIO {
                 /** Check if a record exists and run a callback that contains an error argument and a boolean to indicate whether or not the record exists in deepstream. */
                 has(name: string, callback: (error: string, hasRecord: boolean) => void): void;
                 /** Listen for record subscriptions made by other clients. */
-                listen(pattern: string, callback: (match: string, isSubscribed: boolean, response: any) => void): void;
+                listen(pattern: string, callback: (match: string, isSubscribed: boolean, response: ListenResponse) => void): void;
                 /** Removes a listener that was previously registered using listen() */
                 unlisten(pattern: string): void;
         }
@@ -225,7 +232,7 @@ declare namespace deepstreamIO {
         - eventName: The name of the event that has been matched against the provided pattern
         - isSubscribed: A boolean indicating whether the event is subscribed or unsubscribed
         - response: contains two functions (accept and reject), one of them needs to be called */
-                listen(pattern: RegExp, callback: Function): void;
+                listen(pattern: string, callback: (match: string, isSubscribed: boolean, response: ListenResponse) => void): void;
                 /**This removes a previously registered listening pattern and the user will no longer be listening for active/inactive subscriptions. */
                 unlisten(pattern: RegExp): void;
         }
