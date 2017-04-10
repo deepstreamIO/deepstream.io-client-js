@@ -113,7 +113,7 @@ declare namespace deepstreamIO {
                 hasProvider: boolean;
                 isDestroyed: boolean;
                 /**Immediately executes the callback if the record is ready. Otherwise, it registers it as a callback for the ready event. */
-                whenReady(callback: Function): void;
+                whenReady(callback: (record: Record) => void): void;
                 /**Used to set the record's data and can be called with a value. A path can optionally be included. */
                 set(path: string, value: any, callback?: (error: string) => void): void;
                 set(value: any, callback?: (error: string) => void): void;
@@ -122,34 +122,35 @@ declare namespace deepstreamIO {
                 /**Registers that a function will be performed whenever the record's value changes. All of the record's data can be subscribed to by providing a callback function or when changes are performed to a specific path within the record.
         Optional: Passing true will execute the callback immediately with the record's current value.
         Listening to any changes on the record: */
-                subscribe(path: string, callback: Function, trggerNow?: boolean): void;
+                subscribe(path: string, callback: (data: any) => void, trggerNow?: boolean): void;
                 /**Registers that a function will be performed whenever the record's value changes. All of the record's data can be subscribed to by providing a callback function or when changes are performed to a specific path within the record.
         Optional: Passing true will execute the callback immediately with the record's current value.
         Listening to any changes on the record: */
-                subscribe(callback: Function, trggerNow?: boolean): void;
+                subscribe(callback: (data: any) => void, trggerNow?: boolean): void;
                 /**Removes a subscription previous made using record.subscribe(). Defining a path with unsubscribe removes that specific path, or with a callback, can remove it from generic subscriptions.
         Info:
         unsubscribe is entirely a client-side operation. To notify the server that the app would no longer interested in the record, use discard() instead.
         Important:
         It is important to unsubscribe all callbacks that are registered when discarding a record. Just calling discard does not guarantee that callbacks will not be called.*/
-                unsubscribe(path: string, callback: Function): void;
+                unsubscribe(path: string, callback: (data: any) => void): void;
                 /**Removes a subscription previous made using record.subscribe() or all subscriptions if callback is null. Defining a path with unsubscribe removes that specific path, or with a callback, can remove it from generic subscriptions.
         Info:
         unsubscribe is entirely a client-side operation. To notify the server that the app would no longer interested in the record, use discard() instead.
         Important:
         It is important to unsubscribe all callbacks that are registered when discarding a record. Just calling discard does not guarantee that callbacks will not be called.*/
-                unsubscribe(callback?: Function): void;
+                unsubscribe(callback?: (data: any) => void): void;
                 /**Removes all change listerners and notifies the server that client no longer wants updates for this record if your application no longer requires the record. */
                 discard(): void;
                 /**This permanently deletes the record on the server for all users. */
                 delete(): void;
         }
+
         interface List extends EventEmitter {
                 name: string;
                 usages: number;
                 isReady: boolean;
                 /**Invokes callback once the list has been loaded. This might happen synchronously if the list is already available or asynchronously if the list still needs to be retrieved. Some methods, e.g. addEntry() or setEntries() or subscribe() can be used before the list is ready. */
-                whenReady(callback: Function): void;
+                whenReady(callback: (list: List) => void): void;
                 /**Returns false if the list has entries or true if it doesn't. */
                 isEmpty(): boolean;
                 /**Returns an array of the current entries in the list. */
@@ -161,10 +162,10 @@ declare namespace deepstreamIO {
                 /**Removes an entry from the list. removeEntry will not throw any error if the entry doesn't exist. */
                 removeEntry(entry: string, index?: number): void;
                 /**Registers a function that will be invoked whenever any changes to the list's contents occur. Optionally you can also pass true to execute the callback function straight away with the list's current entries. */
-                subscribe(callback: Function, trggerNow?: boolean): void;
+                subscribe(callback: (entries: Array<string>) => void, trggerNow?: boolean): void;
                 /**Removes a subscription that was previously made using list.subscribe() or all subscriptions if callback is null.
         Please Note: unsubscribe is purely a client side operation. To notify the server that the app no longer requires updates for this list use discard(). */
-                unsubscribe(callback?: Function): void;
+                unsubscribe(callback?: (entries: Array<string>) => void): void;
                 /**Removes all change listeners and notifies the server that the client is no longer interested in updates for this list. */
                 discard(): void;
                 /**Deletes the list on the server. This action deletes the list for all users from both cache and storage and is irreversible. */
@@ -222,9 +223,9 @@ declare namespace deepstreamIO {
 
         interface EventStatic {
                 /**Subscribes to an event. Callback will receive the data passed to emit() */
-                subscribe(event: string, callback: Function): void;
+                subscribe(event: string, callback: (data: any) => void): void;
                 /**Unsubscribes from an event that was previously registered with subscribe(). This stops a client from receiving the event. */
-                unsubscribe(event: string, callback: Function): void;
+                unsubscribe(event: string, callback: (data: any) => void): void;
                 /**Sends the event to all subscribed clients */
                 emit(event: string, data: any): void;
                 /**Registers the client as a listener for event subscriptions made by other clients. This is useful to create "active" data providers - processes that only send events if clients are actually interested in them. You can find more about listening in the events tutorial
@@ -250,16 +251,16 @@ declare namespace deepstreamIO {
 
         interface Presence {
                 /**Subscribes to presence events. Callback will receive the username of the newly added client*/
-                subscribe(callback: Function): void;
+                subscribe(callback: (username: string, isLoggedIn:boolean) => void): void;
                 /**Removes a previously registered presence callback*/
-                unsubscribe(callback: Function): void;
+                unsubscribe(callback: (username: string, isLoggedIn:boolean) => void): void;
                 /**Queries for currently connected clients*/
-                getAll(callback: Function): void;
+                getAll(callback: (usernames: Array<string>) => void): void;
         }
         
         interface EventEmitter {
                 /**Subscribe to an event. */
-                on(type: string, callback: Function): void;
+                on(type: string, callback: (error: string, ...args: Array<any>) => void): void;
                 /**Unsubscribes from an event by:
         - removing a specific callback when called with both arguments.
         deepstream.off( 'error', errorCallback )
@@ -267,9 +268,9 @@ declare namespace deepstreamIO {
         deepstream.off( 'error' )
         - removing all listeners for all events if called without arguments.
         deepstream.off() */
-                off(type?: string, callback?: Function): void;
+                off(type?: string, callback?: (error: string, ...args: Array<any>) => void): void;
                 /** Register a one-time listener for an event. The listener will be removed immediately after its first execution. */
-                once(type: string, callback: Function): void;
+                once(type: string, callback: (error: string, ...args: Array<any>) => void): void;
                 /**Emits an event. */
                 emit(event: string, arguments?: any): void;
                 /**Returns an array of listeners that are registered for the event. */
@@ -283,7 +284,7 @@ declare namespace deepstreamIO {
 
         interface Client extends EventEmitter {
 
-                login(authParams?: {}, callback?: Function): Client;
+                login(authParams?: {}, callback?: (success: boolean, data: any) => void): Client;
                 /**Closes the connection to the server. */
                 close(): void;
                 /**Returns the current connectionState. Please find a list of available connectionStates here. */
