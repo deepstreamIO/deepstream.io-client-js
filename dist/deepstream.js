@@ -1,5 +1,7 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.deepstream = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
+},{}],2:[function(_dereq_,module,exports){
+
 /**
  * Expose `Emitter`.
  */
@@ -184,8 +186,6 @@ Emitter.prototype.hasListeners = function(event){
 Emitter.prototype.eventNames = function(){
   return this._callbacks ? Object.keys(this._callbacks) : [];
 }
-
-},{}],2:[function(_dereq_,module,exports){
 
 },{}],3:[function(_dereq_,module,exports){
 // shim for using process in browser
@@ -2105,7 +2105,7 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"./utils/ack-timeout-registry":27,"component-emitter2":1}],11:[function(_dereq_,module,exports){
+},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"./utils/ack-timeout-registry":27,"component-emitter2":2}],11:[function(_dereq_,module,exports){
 'use strict';
 
 exports.CONNECTION_STATE = {};
@@ -2619,7 +2619,7 @@ EventHandler.prototype._resubscribe = function () {
 
 module.exports = EventHandler;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":1}],15:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":2}],15:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -3166,7 +3166,7 @@ Connection.prototype._clearReconnect = function () {
 module.exports = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":2}],16:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":1}],16:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -3534,7 +3534,7 @@ PresenceHandler.prototype._resubscribe = function () {
 
 module.exports = PresenceHandler;
 
-},{"../constants/constants":11,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../utils/resubscribe-notifier":29,"component-emitter2":2}],19:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable prefer-rest-params, prefer-spread */
 
@@ -3717,7 +3717,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function (methodName) {
 
 module.exports = AnonymousRecord;
 
-},{"./record":23,"component-emitter2":1}],20:[function(_dereq_,module,exports){
+},{"./record":23,"component-emitter2":2}],20:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -4266,7 +4266,7 @@ List.prototype._getStructure = function () {
 
 module.exports = List;
 
-},{"../constants/constants":11,"./record":23,"component-emitter2":1}],22:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"./record":23,"component-emitter2":2}],22:[function(_dereq_,module,exports){
 'use strict';
 
 var Record = _dereq_('./record');
@@ -4596,7 +4596,7 @@ RecordHandler.prototype._removeRecord = function (recordName) {
 
 module.exports = RecordHandler;
 
-},{"../constants/constants":11,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter2":1}],23:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter2":2}],23:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable prefer-spread, prefer-rest-params */
 
@@ -5283,7 +5283,7 @@ Record.prototype._destroy = function () {
 
 module.exports = Record;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":2}],24:[function(_dereq_,module,exports){
 'use strict';
 
 var C = _dereq_('../constants/constants');
@@ -5911,7 +5911,7 @@ AckTimeoutRegistry.prototype._onConnectionStateChanged = function (connectionSta
 
 module.exports = AckTimeoutRegistry;
 
-},{"../constants/constants":11,"component-emitter2":1}],28:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"component-emitter2":2}],28:[function(_dereq_,module,exports){
 'use strict';
 
 var C = _dereq_('../constants/constants');

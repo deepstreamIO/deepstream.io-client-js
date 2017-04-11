@@ -1,3 +1,11 @@
+## [2.1.4] - 2017-04-11
+
+### Enhancements
+- Tightened up typescript callback interfaces by [@EnigmaCurry](@EnigmaCurry)
+
+### Small Fixes
+- Using main file as `dist/deepstream.js` over `src/client.js`
+
 ## [2.1.3] - 2017-04-08
 
 ### Enhancements
