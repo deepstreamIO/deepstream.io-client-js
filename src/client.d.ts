@@ -1,312 +1,286 @@
-declare namespace deepstreamIO {
+declare namespace deepstream {
 
-        enum ConnectionState {
-                CLOSED, AWAITING_CONNECTION, CHALLENGING, AWAITING_AUTHENTICATION, AUTHENTICATING, OPEN, ERROR, RECONNECTING
-        }
+	type Static = {
+		(url: string, options?: ClientOptions): Client;
+	} & Enums
 
-        enum Event {
-                TOO_MANY_AUTH_ATTEMPTS, INVALID_AUTH_MSG, NOT_AUTHENTICATED, CONNECTION_ERROR, MESSAGE_PERMISSION_ERROR, MESSAGE_PARSE_ERROR, MESSAGE_DENIED, LISTENER_EXISTS, NOT_LISTENING, IS_CLOSED, ACK_TIMEOUT, RESPONSE_TIMEOUT, DELETE_TIMEOUT, UNSOLICITED_MESSAGE, RECORD_NOT_FOUND, VERSION_EXISTS, UNKNOWN_CALLEE
-        }
+	interface ConnectionState {
+		CLOSED: 'CLOSED'
+		AWAITING_CONNECTION: 'AWAITING_CONNECTION'
+		CHALLENGING: 'CHALLENGING'
+		AWAITING_AUTHENTICATION: 'AWAITING_AUTHENTICATION'
+		AUTHENTICATING: 'AUTHENTICATING'
+		OPEN: 'OPEN'
+		ERROR: 'ERROR'
+		RECONNECTING: 'RECONNECTING'
+	}
 
-        enum MergeStrategy {
+	interface Types {
+		STRING: 'S'
+		OBJECT: 'O'
+		NUMBER: 'N'
+		NULL: 'L'
+		TRUE: 'T'
+		FALSE: 'F'
+		UNDEFINED: 'U'
+	}
 
-        }
+	interface Topic {
+		CONNECTION: 'C'
+		AUTH: 'A'
+		ERROR: 'X'
+		EVENT: 'E'
+		RECORD: 'R'
+		RPC: 'P'
+		PRESENCE: 'U'
+		PRIVATE: 'PRIVATE/'
+	}
 
-        interface Options {
-                /**
-                 *A global merge strategy that is applied whenever two clients write to the same record at the same time. Can be overwritten on a per record level. Default merge strategies are exposed by the client constructor. It's also possible to write custom merge strategies as functions. You can find more on handling data conflicts here
-        Type: Function
-        Default: MERGE_STRATEGIES.REMOTE_WINS
-                 */
-                mergeStrategy?: MergeStrategy;
-                /**Specifies the number of milliseconds by which the time until the next reconnection attempt will be incremented after every unsuccessful attempt.
-        E.g.for 1500: if the connection is lost,the client will attempt to reconnect immediately, if that fails it will try again after 1.5 seconds, if that fails it will try again after 3 seconds and so on...
-        Type: Number
-        Default: 4000 */
-                reconnectIntervalIncrement?: number;
-                /**The number of reconnection attempts until the client gives up and declares the connection closed.
-        Type: Number
-        Default: 5 */
-                maxReconnectAttempts?: number;
-                /**The number of milliseconds after which a RPC will error if no Ack-message has been received.
-        Type: Number
-        Default: 6000 */
-                rpcAckTimeout?: number;
-                /**The number of milliseconds after which a RPC will error if no response-message has been received.
-        Type: Number
-        Default: 10000
-         */
-                rpcResponseTimeout?: number;
-                /**The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/listening to a record or event before an error is thrown.
-        Type: Number
-        Default: 2000 */
-                subscriptionTimeout?: number;
-                /**If your app sends a large number of messages in quick succession, the deepstream client will try to split them into smaller packets and send these every ms. This parameter specifies the number of messages after which deepstream sends the packet and queues the remaining messages. Set to Infinity to turn the feature off.
-        Type: Number
-        Default: 100 */
-                maxMessagesPerPacket?: number;
-                /**Please see description for maxMessagesPerPacket. Sets the time in ms.
-        Type: Number
-        Default: 16 */
-                timeBetweenSendingQueuedPackages?: number;
-                /**The number of milliseconds from the moment client.record.getRecord() is called until an error is thrown since no ack message has been received.
-        Type: Number
-        Default: 1000 */
-                recordReadAckTimeout?: number;
-                /**The number of milliseconds from the moment client.record.getRecord() is called until an error is thrown since no data has been received.
-        Type: Number
-        Default: 3000 */
-                recordReadTimeout?: number;
-                /**The number of milliseconds from the moment record.delete() is called until an error is thrown since no delete ack message has been received. Please take into account that the deletion is only complete after the record has been deleted from both cache and storage.
-        Type: Number
-        Default: 3000 */
-                recordDeleteTimeout?: number;
-                /**Whether the client should try to upgrade the transport from long-polling to something better, e.g. WebSocket.
-        Type: Boolean
-        Default: true */
-                upgrade?: boolean;
-                /**Forces JSONP for polling transport.
-        Type: Boolean
-        Default: false */
-                forceJSONP?: boolean;
-                /**Determines whether to use JSONP when necessary for polling. If disabled (by settings to false) an error will be emitted (saying "No transports available") if no other transports are available. If another transport is available for opening a connection (e.g. WebSocket) that transport will be used instead.
-        Type: Boolean
-        Default: true */
-                jsonp?: boolean;
-                /**Forces base 64 encoding for polling transport even when XHR2 responseType is available and WebSocket even if the used standard supports binary.
-        Type: Boolean
-        Default: false */
-                forceBase64?: boolean;
-                /**Enable Cross Domain Requests for IE8 to avoid loading the bar flashing click sounds. Default to false because Cross Domain Requests can't send cookies.
-        Type: Boolean
-        Default: false */
-                enablesXDR?: boolean;
-                /**Whether to add the timestamp with each transport request. Note: this is ignored if the browser is IE or Android, in which case requests are always stamped.
-        Type: Boolean
-        Default: false
-         */
-                timestampRequests?: boolean;
-                /**The GET parameter key to use for the timestamp.
-        Type: String
-        Default: t */
-                timestampParam?: string;
-                /**The path to connect to for browser connections.
-        Type: String
-        Default: /deepstream */
-                path?: string;
-                /**A list of transports to try (in order). Engine.io always attempts to connect directly with the first one, provided the feature detection test for it passes.
-        Type: Array
-        Default: ['polling', 'websocket'] */
-                transports?: string[];
-                /**If true and if the previous websocket connection to the server succeeded, the connection attempt will bypass the normal upgrade process and will initially try websocket. A connection attempt following a transport error will use the normal upgrade process. It is recommended you turn this on only when using SSL/TLS connections, or if you know that your network does not block websockets.
-        Type: Boolean
-        Default: false */
-                rememberUpgrade?: boolean;
-        }
+	interface Events {
+		CONNECTION_ERROR: 'connectionError'
+		CONNECTION_STATE_CHANGED: 'connectionStateChanged'
+		MAX_RECONNECTION_ATTEMPTS_REACHED: 'MAX_RECONNECTION_ATTEMPTS_REACHED'
+		CONNECTION_AUTHENTICATION_TIMEOUT: 'CONNECTION_AUTHENTICATION_TIMEOUT'
+		ACK_TIMEOUT: 'ACK_TIMEOUT'
+		NO_RPC_PROVIDER: 'NO_RPC_PROVIDER'
+		RESPONSE_TIMEOUT: 'RESPONSE_TIMEOUT'
+		DELETE_TIMEOUT: 'DELETE_TIMEOUT'
+		UNSOLICITED_MESSAGE: 'UNSOLICITED_MESSAGE'
+		MESSAGE_DENIED: 'MESSAGE_DENIED'
+		MESSAGE_PARSE_ERROR: 'MESSAGE_PARSE_ERROR'
+		VERSION_EXISTS: 'VERSION_EXISTS'
+		NOT_AUTHENTICATED: 'NOT_AUTHENTICATED'
+		MESSAGE_PERMISSION_ERROR: 'MESSAGE_PERMISSION_ERROR'
+		LISTENER_EXISTS: 'LISTENER_EXISTS'
+		NOT_LISTENING: 'NOT_LISTENING'
+		TOO_MANY_AUTH_ATTEMPTS: 'TOO_MANY_AUTH_ATTEMPTS'
+		IS_CLOSED: 'IS_CLOSED'
+		RECORD_NOT_FOUND: 'RECORD_NOT_FOUND'
+		NOT_SUBSCRIBED: 'NOT_SUBSCRIBED'
+	}
 
+	interface Actions {
+		PING: 'PI'
+		PONG: 'PO'
+		ACK: 'A'
+		REDIRECT: 'RED'
+		CHALLENGE: 'CH'
+		CHALLENGE_RESPONSE: 'CHR'
+		READ: 'R'
+		CREATE: 'C'
+		UPDATE: 'U'
+		PATCH: 'P'
+		DELETE: 'D'
+		SUBSCRIBE: 'S'
+		UNSUBSCRIBE: 'US'
+		HAS: 'H'
+		SNAPSHOT: 'SN'
+		INVOKE: 'I'
+		SUBSCRIPTION_FOR_PATTERN_FOUND: 'SP'
+		SUBSCRIPTION_FOR_PATTERN_REMOVED: 'SR'
+		SUBSCRIPTION_HAS_PROVIDER: 'SH'
+		LISTEN: 'L'
+		UNLISTEN: 'UL'
+		LISTEN_ACCEPT: 'LA'
+		LISTEN_REJECT: 'LR'
+		PROVIDER_UPDATE: 'PU'
+		QUERY: 'Q'
+		CREATEORREAD: 'CR'
+		EVENT: 'EVT'
+		ERROR: 'E'
+		REQUEST: 'REQ'
+		RESPONSE: 'RES'
+		REJECTION: 'REJ'
+		PRESENCE_JOIN: 'PNJ'
+		PRESENCE_LEAVE: 'PNL'
+		WRITE_ACKNOWLEDGEMENT: 'WA'
+	}
 
+	interface CallState {
+		INITIAL: 'INITIAL'
+		CONNECTING: 'CONNECTING'
+		ESTABLISHED: 'ESTABLISHED'
+		ACCEPTED: 'ACCEPTED'
+		DECLINED: 'DECLINED'
+		ENDED: 'ENDED'
+		ERROR: 'ERROR'
+	}
 
-        interface Record extends EventEmitter {
-                name: string;
-                usages: number;
-                isReady: boolean;
-                hasProvider: boolean;
-                isDestroyed: boolean;
-                /**Immediately executes the callback if the record is ready. Otherwise, it registers it as a callback for the ready event. */
-                whenReady(callback: Function): void;
-                /**Used to set the record's data and can be called with a value. A path can optionally be included. */
-                set(path: string, value: any, callback?: (error: string) => void): void;
-                set(value: any, callback?: (error: string) => void): void;
-                /**Used to return the record's data but if called without an argument, will return all the data. get() can also be used to retrive a specific part by defining a path string. If the part can not be found, undefined will be returned. */
-                get(path?: string): any;
-                /**Registers that a function will be performed whenever the record's value changes. All of the record's data can be subscribed to by providing a callback function or when changes are performed to a specific path within the record.
-        Optional: Passing true will execute the callback immediately with the record's current value.
-        Listening to any changes on the record: */
-                subscribe(path: string, callback: Function, trggerNow?: boolean): void;
-                /**Registers that a function will be performed whenever the record's value changes. All of the record's data can be subscribed to by providing a callback function or when changes are performed to a specific path within the record.
-        Optional: Passing true will execute the callback immediately with the record's current value.
-        Listening to any changes on the record: */
-                subscribe(callback: Function, trggerNow?: boolean): void;
-                /**Removes a subscription previous made using record.subscribe(). Defining a path with unsubscribe removes that specific path, or with a callback, can remove it from generic subscriptions.
-        Info:
-        unsubscribe is entirely a client-side operation. To notify the server that the app would no longer interested in the record, use discard() instead.
-        Important:
-        It is important to unsubscribe all callbacks that are registered when discarding a record. Just calling discard does not guarantee that callbacks will not be called.*/
-                unsubscribe(path: string, callback: Function): void;
-                /**Removes a subscription previous made using record.subscribe() or all subscriptions if callback is null. Defining a path with unsubscribe removes that specific path, or with a callback, can remove it from generic subscriptions.
-        Info:
-        unsubscribe is entirely a client-side operation. To notify the server that the app would no longer interested in the record, use discard() instead.
-        Important:
-        It is important to unsubscribe all callbacks that are registered when discarding a record. Just calling discard does not guarantee that callbacks will not be called.*/
-                unsubscribe(callback?: Function): void;
-                /**Removes all change listerners and notifies the server that client no longer wants updates for this record if your application no longer requires the record. */
-                discard(): void;
-                /**This permanently deletes the record on the server for all users. */
-                delete(): void;
-        }
-        interface List extends EventEmitter {
-                name: string;
-                usages: number;
-                isReady: boolean;
-                /**Invokes callback once the list has been loaded. This might happen synchronously if the list is already available or asynchronously if the list still needs to be retrieved. Some methods, e.g. addEntry() or setEntries() or subscribe() can be used before the list is ready. */
-                whenReady(callback: Function): void;
-                /**Returns false if the list has entries or true if it doesn't. */
-                isEmpty(): boolean;
-                /**Returns an array of the current entries in the list. */
-                getEntries(): string[];
-                /**Sets the contents of the list to the provided array of record names. To add or remove specific entries use addEntry() or removeEntry() respectively. */
-                setEntries(entries: string[]): void;
-                /**Adds a new record name to the list. */
-                addEntry(entry: string, index?: number): void;
-                /**Removes an entry from the list. removeEntry will not throw any error if the entry doesn't exist. */
-                removeEntry(entry: string, index?: number): void;
-                /**Registers a function that will be invoked whenever any changes to the list's contents occur. Optionally you can also pass true to execute the callback function straight away with the list's current entries. */
-                subscribe(callback: Function, trggerNow?: boolean): void;
-                /**Removes a subscription that was previously made using list.subscribe() or all subscriptions if callback is null.
-        Please Note: unsubscribe is purely a client side operation. To notify the server that the app no longer requires updates for this list use discard(). */
-                unsubscribe(callback?: Function): void;
-                /**Removes all change listeners and notifies the server that the client is no longer interested in updates for this list. */
-                discard(): void;
-                /**Deletes the list on the server. This action deletes the list for all users from both cache and storage and is irreversible. */
-                delete(): void;
-        }
+	interface Constants {
+		CONNECTION_STATE: ConnectionState
+		MESSAGE_SEPERATOR: '\u001e'
+		MESSAGE_PART_SEPERATOR: '\u001f'
+		TYPES: Types
+		TOPIC: Topic
+		EVENT: Events
+		ACTIONS: Actions
+		CALL_STATE: CallState
+	}
 
-        interface RPCResponse {
-                /**
-                 *Succesfully complete a remote procedure call and sends data back to the requesting client.
-        data can be any kind of serializable data, e.g. Objects, Numbers, Booleans or Strings
-        If autoAck is disabled and the response is sent before the ack message, the request will still be completed and the ack message will be ignored.
-                 */
-                send(data: any): void;
-                /**
-                 *Rejects the request. Rejections are not errors, but merely a means of saying "I'm busy at the moment, try another client". Upon receiving a rejection deepstream will try to re-route the request to another provider for the same RPC. If there are no more providers left to try, deepstream will send a NO_RPC_PROVIDER error to the client.
-                 */
-                reject(): void;
-                /**
-                 *Send an error to the client. errorMsg will be received as the first argument to the callback registered with client.rpc.make(). This will complete the RPC.
-                 */
-                error(errorMsg: string): void;
-                /**
-                 *Explicitly acknowledges the receipt of a request.
-        This is usually done automatically, but can also be performed explicitly by setting response.autoAck = false and calling ack() later. This is useful when a client needs to perform an asynchronous operation to determine if it will accept or reject the request.
-        Info
-        
-        Requests count as completed once send() or error() was called. Calling ack() after that won't do anything.
-                 */
-                ack(): void;
-        }
+	interface MergeStrategies {
+		REMOTE_WINS(record, remoteValue, remoteVersion, callback): void
+		LOCAL_WINS(record, remoteValue, remoteVersion, callback): void
+	}
 
-        interface RecordStatic {
-                /** Get a record. */
-                getRecord(path: string): Record;
-                /** Get a snapshot of a record without livecycle or subscribtions */
-                snapshot(name: string, callback: (error: string, data: any) => void): void;
-                /** Get a list of record names */
-                getList(oath: string): List;
-                /** An AnonymousRecord is a record that can change its name. It acts as a wrapper around an actual record that can be swapped out for another one whilst keeping all bindings intact. */
-                getAnonymousRecord(): Record;
-                /** Check if a record exists and run a callback that contains an error argument and a boolean to indicate whether or not the record exists in deepstream. */
-                has(name: string, callback: (error: string, hasRecord: boolean) => void): void;
-                /** Listen for record subscriptions made by other clients. */
-                listen(pattern: string, callback: (match: string, isSubscribed: boolean, response: any) => void): void;
-                /** Removes a listener that was previously registered using listen() */
-                unlisten(pattern: string): void;
-        }
+	class Enums {
+		CONSTANTS: Constants
+		MERGE_STRATEGIES: MergeStrategies
+	}
 
-        interface EventStatic {
-                /**Subscribes to an event. Callback will receive the data passed to emit() */
-                subscribe(event: string, callback: Function): void;
-                /**Unsubscribes from an event that was previously registered with subscribe(). This stops a client from receiving the event. */
-                unsubscribe(event: string, callback: Function): void;
-                /**Sends the event to all subscribed clients */
-                emit(event: string, data: any): void;
-                /**Registers the client as a listener for event subscriptions made by other clients. This is useful to create "active" data providers - processes that only send events if clients are actually interested in them. You can find more about listening in the events tutorial
-        The callback is invoked with three arguments:
-        - eventName: The name of the event that has been matched against the provided pattern
-        - isSubscribed: A boolean indicating whether the event is subscribed or unsubscribed
-        - response: contains two functions (accept and reject), one of them needs to be called */
-                listen(pattern: RegExp, callback: Function): void;
-                /**This removes a previously registered listening pattern and the user will no longer be listening for active/inactive subscriptions. */
-                unlisten(pattern: RegExp): void;
-        }
+	type Params = { [key: string]: any }
+	type Event = string | symbol
+	type EventCallbackFn<T> = (...args: Array<T>) => void;
+	type PresenceHandlerFn = (username: string, isLoggedIn: boolean) => void
 
-        interface RPCStatic {
-                /** Registers the client as a provider for incoming RPCs of a specific name. The callback will be invoked when another client client.rpc.make().*/
-                provide(name: string, callback: (data:any, response: RPCResponse) => void): void;
-                /**Removes the client as a provider previously registered using provide(). */
-                unprovide(name: string): void;
-                /**
-                 * Executes a remote procedure call. callback will be invoked with the returned result or with an error if the RPC failed.
-                 */
-                make(name: string, data: any, callback: (error: string, result: any) => void): void;
-        }
+	class Emitter extends Enums {
+		addEventListener<T>(event: Event, fn: EventCallbackFn<T>): this;
+		emit<T>(event: Event, fn?: EventCallbackFn<T>): this;
+		eventNames(): Array<Event>;
+		hasListeners(event: Event): boolean;
+		listeners(event: Event): Array<Listener>;
+		off<T>(event?: Event, fn?: EventCallbackFn<T>): this;
+		on<T>(event: Event, fn: EventCallbackFn<T>): this;
+		once<T>(event: Event, fn: EventCallbackFn<T>): this;
+		removeAllListeners<T>(event?: Event, fn?: EventCallbackFn<T>): this;
+		removeEventListener<T>(event?: Event, fn?: EventCallbackFn<T>): this;
+		removeListener<T>(event?: Event, fn?: EventCallbackFn<T>): this;
+	}
 
-        interface Presence {
-                /**Subscribes to presence events. Callback will receive the username of the newly added client*/
-                subscribe(callback: Function): void;
-                /**Removes a previously registered presence callback*/
-                unsubscribe(callback: Function): void;
-                /**Queries for currently connected clients*/
-                getAll(callback: Function): void;
-        }
-        
-        interface EventEmitter {
-                /**Subscribe to an event. */
-                on(type: string, callback: Function): void;
-                /**Unsubscribes from an event by:
-        - removing a specific callback when called with both arguments.
-        deepstream.off( 'error', errorCallback )
-        - removing all listeners for an event when only called with an event.
-        deepstream.off( 'error' )
-        - removing all listeners for all events if called without arguments.
-        deepstream.off() */
-                off(type?: string, callback?: Function): void;
-                /** Register a one-time listener for an event. The listener will be removed immediately after its first execution. */
-                once(type: string, callback: Function): void;
-                /**Emits an event. */
-                emit(event: string, arguments?: any): void;
-                /**Returns an array of listeners that are registered for the event. */
-                listeners(event: string): any[];
-                /**Returns true if there are listeners registered for that event. */
-                hasListeners(event: string): boolean;
-                /**Authenticates the client against the server. To learn more about how authentication works, please have a look at the Security Overview.
-                 *Callback will be called with: success (Boolean), data (Object).
-                 */
-        }
+	interface ClientOptions {
+		heartbeatInterval?: number;
+		maxMessagesPerPacket?: number;
+		maxReconnectAttempts?: number;
+		maxReconnectInterval?: number;
+		nodeSocketOptions?: any;
+		path?: string;
+		reconnectIntervalIncrement?: number;
+		recordDeepCopy?: boolean;
+		recordDeleteTimeout?: number;
+		recordReadAckTimeout?: number;
+		recordReadTimeout?: number;
+		rpcAckTimeout?: number;
+		rpcResponseTimeout?: number;
+		subscriptionTimeout?: number;
+		timeBetweenSendingQueuedPackages?: number;
+		mergeStrategy?: MergeStrategies;
+	}
 
-        interface Client extends EventEmitter {
+	class Client extends Emitter {
+		event: EventHandler
+		rpc: RpcHandler
+		record: RecordHandler
+		presence: PresenceHandler
+		close(): void;
+		getConnectionState(): ConnectionState;
+		getUid(): string;
+		login<P, D>(authParams: P, callback?: (success: boolean, data: D) => void): this;
+	}
 
-                login(authParams?: {}, callback?: Function): Client;
-                /**Closes the connection to the server. */
-                close(): void;
-                /**Returns the current connectionState. Please find a list of available connectionStates here. */
-                getConnectionState(): ConnectionState;
-                /**Returnes a unique id. The uid starts with a Base64 encoded timestamp to allow for semi-sequentual ordering and ends with a random string. */
-                getUid(): string;
+	class EventHandler extends EventEmitter {
+		emit<T>(name: Event, data: T): void;
+		listen<T>(pattern: RegExp, callback: EventCallbackFn<T>): void;
+		subscribe<T>(name: Event, callback: EventCallbackFn<T>): void;
+		unlisten(pattern: RegExp): void;
+		unsubscribe<T>(name: Event, callback?: EventCallbackFn<T>): void;
+	}
 
-                record: RecordStatic;
+	class Connection {
+		authenticate<P, T>(authParams: P, callback: EventCallbackFn<T>): void;
+		close(): void;
+		getState(): ConnectionState;
+		send(message: string): void;
+		sendMsg<T>(topic: Topic, action: Actions, data: T): void;
+	}
 
-                event: EventStatic;
-                
-                presence: Presence;
+	class MessageParser {
+		convertTyped<T>(value: string, client: Client): T;
+		parse(message: string, client: Client): Array<any>;
+	}
 
-                rpc: RPCStatic;
-        }
+	class PresenceHandler {
+		getAll(callback: (clients: Array<string>) => void): void;
+		subscribe(callback: PresenceHandlerFn): void;
+		unsubscribe(callback: PresenceHandlerFn): void;
+	}
 
-        interface deepstreamQuarantine extends Client {
+	class AnonymousRecord extends EventEmitter {
+		get<T>(path: Array<string>): T;
+		setName(recordName: string): void;
+		subscribe<T>(args: EventCallbackFn<T>): void;
+		unsubscribe<T>(args: EventCallbackFn<T>): void;
+	}
 
-        }
-        interface deepstreamStatic {
-                CONSTANTS: {
-                        [key: string]: string
-                }
-                MERGE_STRATEGIES: {
+	class List extends Record {
+		addEntry(entry: string, index: number): void;
+		getEntries(): Array<string>;
+		isEmpty(): boolean;
+		removeEntry(entry: string, index?: number): void;
+		setEntries(entries: Array<string>): void;
+	}
 
-                }
-                (url: string, options?: Options): deepstreamQuarantine;
-        }
+	class RecordHandler {
+		getAnonymousRecord(): AnonymousRecord;
+		getList<T>(name: string, options: Params & T): List;
+		getRecord<T>(name: string, recordOptions: Params & T): Record;
+		has<T>(name: string, callback: EventCallbackFn<T>): void;
+		listen<T>(pattern: RegExp, callback: EventCallbackFn<T>): void;
+		snapshot<T>(name: string, callback: EventCallbackFn<T>): void;
+		unlisten(pattern: RegExp): void;
+	}
+
+	class Record {
+		delete(): void;
+		discard(): void;
+		get<T>(path: string): T;
+		set<P, D, T>(pathOrData: P, dataOrCallback: D, callback: EventCallbackFn<T>, args: T[]): void;
+		setMergeStrategy(mergeStrategy: MergeStrategies): void;
+		subscribe<T>(path: string, callback: EventCallbackFn<T>, triggerNow?: boolean, args: T[]): void;
+		unsubscribe<P, T>(pathOrCallback: P, callback: EventCallbackFn<T>, args: T[]): void;
+		whenReady<T>(callback: EventCallbackFn<T>): void;
+	}
+
+	class RpcHandler {
+		make<D, T>(name: string, data: D, callback: EventCallbackFn<T>): void;
+		provide<T>(name: string, callback: EventCallbackFn<T>): void;
+		unprovide(name: string): void;
+	}
+
+	class RpcResponse {
+		ack(): void;
+		error(errorMsg: string): void;
+		reject(): void;
+		send<D>(data: D): void;
+	}
+
+	class Rpc {
+		ack(): void;
+		error(timeout: string): void;
+		respond<D>(data: D): void;
+	}
+
+	class AckTimeoutRegistry {
+		add(timeout: string): number;
+		clear<D>(message: D): void;
+		remove(timeout: string): void;
+	}
+
+	class Listener {
+		accept(name: string): void;
+		destroy(): void;
+		reject(name: string): void;
+		sendDestroy(): void;
+	}
+
+	class SingleNotifier {
+		hasRequest(name: string): void;
+		recieve<D>(name: string, error: string, data: D): void;
+		request<T>(name: string, callback: EventCallbackFn<T>): void;
+	}
+
 }
+
 declare module 'deepstream.io-client-js' {
-        var deepstream: deepstreamIO.deepstreamStatic;
-        export = deepstream;
+	var deepstream: deepstream.Static;
+	export = deepstream;
 }
+
