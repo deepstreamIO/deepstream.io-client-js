@@ -167,12 +167,15 @@ module.exports = function () {
     })
   })
 
-  this.Then(/^(.+) is told that the record "([^"]*)" experienced error "([^"]*)" while setting$/, (clientExpression, recordName, errorMessage) => {
-    getRecordData(clientExpression, recordName).forEach((recordData) => {
-      sinon.assert.calledOnce(recordData.setCallback)
-      sinon.assert.calledWith(recordData.setCallback, errorMessage)
-      recordData.setCallback.reset()
-    })
+  this.Then(/^(.+) is told that the record "([^"]*)" experienced error "([^"]*)" while setting$/, (clientExpression, recordName, errorMessage, done) => {
+    setTimeout(() => {
+      getRecordData(clientExpression, recordName).forEach((recordData) => {
+        sinon.assert.calledOnce(recordData.setCallback)
+        sinon.assert.calledWith(recordData.setCallback, errorMessage)
+        recordData.setCallback.reset()
+      })
+      done()
+    }, 100)
   })
 
   this.Given(/^(.+) requests? a snapshot of record "([^"]*)"$/, (clientExpression, recordName, done) => {
