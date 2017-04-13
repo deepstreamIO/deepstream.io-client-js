@@ -10,6 +10,7 @@
   "scripts": {
     "precommit": "npm run lint && npm run unit",
     "commitmsg": "validate-commit-msg",
+    "wle": "find src | xargs dos2unix",
     "all": "npm t && npm run e2e && npm run specs",
     "lint": "node_modules/.bin/eslint src/",
     "test": "jasmine JASMINE_CONFIG_PATH=jasmine.json",

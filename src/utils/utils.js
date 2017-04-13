@@ -175,38 +175,6 @@ exports.setInterval = function (callback, intervalDuration) {
 }
 
 /**
- * This method is used to break up long running operations and run a callback function immediately
- * after the browser has completed other operations such as events and display updates.
- *
- * @param {Function} callback        the function that will be called after the given time
- * @param {...*}     param1, ..., paramN additional parameters which are passed through to the
- *                                     callback
- *
- * @public
- */
-exports.requestIdleCallback = (!exports.isNode &&
-  window.requestIdleCallback &&
-  window.requestIdleCallback.bind(window)) ||
-  function (cb) {
-    const start = Date.now()
-    return setTimeout(() => {
-      cb({
-        didTimeout: false,
-        timeRemaining () {
-          return Math.max(0, 50 - (Date.now() - start))
-        }
-      })
-    }, 1)
-  }
-
-exports.cancelIdleCallback = (!exports.isNode &&
-  window.cancelIdleCallback &&
-  window.cancelIdleCallback.bind(window)) ||
-  function (id) {
-    clearTimeout(id)
-  }
-
-/**
  * Used to see if a protocol is specified within the url
  * @type {RegExp}
  */
@@ -244,6 +212,28 @@ exports.parseUrl = function (initialURl, defaultPath) {
   serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath
   return URL.format(serverUrl)
 }
+
+exports.requestIdleCallback = (!exports.isNode &&
+  window.requestIdleCallback &&
+  window.requestIdleCallback.bind(window)) ||
+  function (cb) {
+    const start = Date.now()
+    return setTimeout(() => {
+      cb({
+        didTimeout: false,
+        timeRemaining () {
+          return Math.max(0, 50 - (Date.now() - start))
+        }
+      })
+    }, 1)
+  }
+
+exports.cancelIdleCallback = (!exports.isNode &&
+  window.cancelIdleCallback &&
+  window.cancelIdleCallback.bind(window)) ||
+  function (id) {
+    clearTimeout(id)
+  }
 
 /**
  * Returns true is the connection state is OPEN
