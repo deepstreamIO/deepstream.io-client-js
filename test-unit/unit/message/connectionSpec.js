@@ -468,7 +468,7 @@ describe('reach the max reconnect attempts and consider the maxReconnectInterval
     expect(connection.getState()).toBe('RECONNECTING')
     expect(connection._endpoint.getCallsToOpen()).toBe(0)
 
-    clientMock.on(C.MAX_RECONNECTION_ATTEMPTS_REACHED, () => {
+    clientMock.on(C.EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED, () => {
       process.nextTick(done)
     })
 
