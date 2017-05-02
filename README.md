@@ -4,6 +4,8 @@ deepstream.io-client-js [![Build Status](https://travis-ci.org/deepstreamIO/deep
 
 =======================
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/deepstreamIO/deepstream.io-client-js.svg)](https://greenkeeper.io/)
+
 The Browser / Node Client for [deepstream.io](http://deepstream.io/)
 
 ## Documentation
