@@ -191,7 +191,7 @@ declare namespace deepstreamIO {
                  *Explicitly acknowledges the receipt of a request.
         This is usually done automatically, but can also be performed explicitly by setting response.autoAck = false and calling ack() later. This is useful when a client needs to perform an asynchronous operation to determine if it will accept or reject the request.
         Info
-        
+
         Requests count as completed once send() or error() was called. Calling ack() after that won't do anything.
                  */
                 ack(): void;
@@ -203,7 +203,7 @@ declare namespace deepstreamIO {
                 /** Reject the response */
                 reject(): void;
         }
-  
+
         interface RecordStatic {
                 /** Get a record. */
                 getRecord(path: string): Record;
@@ -257,7 +257,7 @@ declare namespace deepstreamIO {
                 /**Queries for currently connected clients*/
                 getAll(callback: (usernames: Array<string>) => void): void;
         }
-        
+
         interface EventEmitter {
                 /**Subscribe to an event. */
                 on(type: string, callback: (error: string, ...args: Array<any>) => void): void;
@@ -285,6 +285,7 @@ declare namespace deepstreamIO {
         interface Client extends EventEmitter {
 
                 login(authParams?: {}, callback?: (success: boolean, data: any) => void): Client;
+                login(callback: (success: boolean, data: any) => void): Client;
                 /**Closes the connection to the server. */
                 close(): void;
                 /**Returns the current connectionState. Please find a list of available connectionStates here. */
@@ -295,7 +296,7 @@ declare namespace deepstreamIO {
                 record: RecordStatic;
 
                 event: EventStatic;
-                
+
                 presence: Presence;
 
                 rpc: RPCStatic;
