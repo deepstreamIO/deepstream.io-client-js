@@ -19,8 +19,9 @@ ConnectionMock.prototype.getState = function () {
   return this.state
 }
 
-ConnectionMock.prototype.authenticate = function () {
-
+ConnectionMock.prototype.authenticate = function (authParams, callback) {
+  this.lastAuthParams = authParams
+  this.lastAuthCallback = callback
 }
 
 module.exports = ConnectionMock

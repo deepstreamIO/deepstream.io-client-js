@@ -37,4 +37,36 @@ describe('connects', () => {
     expect(deepstream.MERGE_STRATEGIES).toEqual(require('../../src/constants/merge-strategies'))
     expect(client.MERGE_STRATEGIES).toEqual(require('../../src/constants/merge-strategies'))
   })
+
+  it('allows login without auth params or callback', () => {
+    client._connection.lastAuthParams = undefined
+    client.login()
+    expect(client._connection.lastAuthParams).toEqual({})
+  })
+
+  it('allows login with just auth params', () => {
+    client._connection.lastAuthParams = undefined
+    const params = { foo: 'bar' }
+    client.login(params)
+    expect(client._connection.lastAuthParams).toEqual(params)
+  })
+
+  it('allows login with just a callback', () => {
+    client._connection.lastAuthParams = undefined
+    client._connection.lastAuthCallback = undefined
+    const callback = () => {}
+    client.login(callback)
+    expect(client._connection.lastAuthParams).toEqual({})
+    expect(client._connection.lastAuthCallback).toEqual(callback)
+  })
+
+  it('allows login with auth params and a callback', () => {
+    client._connection.lastAuthParams = undefined
+    client._connection.lastAuthCallback = undefined
+    const params = { some: 'data' }
+    const callback = () => {}
+    client.login(params, callback)
+    expect(client._connection.lastAuthParams).toEqual(params)
+    expect(client._connection.lastAuthCallback).toEqual(callback)
+  })
 })
