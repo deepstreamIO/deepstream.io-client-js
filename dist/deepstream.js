@@ -358,6 +358,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
@@ -1916,8 +1920,12 @@ Emitter(Client.prototype); // eslint-disable-line
  * @public
  * @returns {Client}
  */
-Client.prototype.login = function (authParams, callback) {
-  this._connection.authenticate(authParams || {}, callback);
+Client.prototype.login = function (authParamsOrCallback, callback) {
+  if (typeof authParamsOrCallback === 'function') {
+    this._connection.authenticate({}, authParamsOrCallback);
+  } else {
+    this._connection.authenticate(authParamsOrCallback || {}, callback);
+  }
   return this;
 };
 

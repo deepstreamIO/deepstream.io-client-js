@@ -76,8 +76,12 @@ Emitter(Client.prototype); // eslint-disable-line
  * @public
  * @returns {Client}
  */
-Client.prototype.login = function (authParams, callback) {
-  this._connection.authenticate(authParams || {}, callback);
+Client.prototype.login = function (authParamsOrCallback, callback) {
+  if (typeof authParamsOrCallback === 'function') {
+    this._connection.authenticate({}, authParamsOrCallback);
+  } else {
+    this._connection.authenticate(authParamsOrCallback || {}, callback);
+  }
   return this;
 };
 

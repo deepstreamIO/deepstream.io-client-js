@@ -1,3 +1,9 @@
+## [2.1.5] - 2017-05-03
+
+### Bug Fixes
+- Calling login() with a callback (but no auth data) now behaves as you would expect.
+- Fix issue where client did not emit `MAX_RECONNECTION_ATTEMPTS_REACHED` event by [@rbarroetavena](@rbarroetavena).
+
 ## [2.1.4] - 2017-04-11
 
 ### Enhancements
