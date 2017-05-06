@@ -1,8 +1,34 @@
+// 
+
 declare namespace deepstream {
 
+	interface ClientOptions {
+		heartbeatInterval?: number
+		maxMessagesPerPacket?: number
+		maxReconnectAttempts?: number
+		maxReconnectInterval?: number
+		nodeSocketOptions?: any
+		path?: string
+		reconnectIntervalIncrement?: number
+		recordDeepCopy?: boolean
+		recordDeleteTimeout?: number
+		recordReadAckTimeout?: number
+		recordReadTimeout?: number
+		rpcAckTimeout?: number
+		rpcResponseTimeout?: number
+		subscriptionTimeout?: number
+		timeBetweenSendingQueuedPackages?: number
+		mergeStrategy?: MergeStrategies
+	}
+
 	type Static = {
-		(url: string, options?: ClientOptions): Client;
+		(url: string, options?: ClientOptions): Client
 	} & Enums
+
+	type Enums = {
+		CONSTANTS: Constants
+		MERGE_STRATEGIES: MergeStrategies
+	}
 
 	interface ConnectionState {
 		CLOSED: 'CLOSED'
@@ -122,165 +148,166 @@ declare namespace deepstream {
 		LOCAL_WINS(record, remoteValue, remoteVersion, callback): void
 	}
 
-	class Enums {
-		CONSTANTS: Constants
-		MERGE_STRATEGIES: MergeStrategies
-	}
-
 	type Params = { [key: string]: any }
-	type Event = string | symbol
-	type EventCallbackFn<T> = (...args: Array<T>) => void;
-	type PresenceHandlerFn = (username: string, isLoggedIn: boolean) => void
-
-	class Emitter extends Enums {
-		addEventListener<T>(event: Event, fn: EventCallbackFn<T>): this;
-		emit<T>(event: Event, fn?: EventCallbackFn<T>): this;
-		eventNames(): Array<Event>;
-		hasListeners(event: Event): boolean;
-		listeners(event: Event): Array<Listener>;
-		off<T>(event?: Event, fn?: EventCallbackFn<T>): this;
-		on<T>(event: Event, fn: EventCallbackFn<T>): this;
-		once<T>(event: Event, fn: EventCallbackFn<T>): this;
-		removeAllListeners<T>(event?: Event, fn?: EventCallbackFn<T>): this;
-		removeEventListener<T>(event?: Event, fn?: EventCallbackFn<T>): this;
-		removeListener<T>(event?: Event, fn?: EventCallbackFn<T>): this;
-	}
-
-	interface ClientOptions {
-		heartbeatInterval?: number;
-		maxMessagesPerPacket?: number;
-		maxReconnectAttempts?: number;
-		maxReconnectInterval?: number;
-		nodeSocketOptions?: any;
-		path?: string;
-		reconnectIntervalIncrement?: number;
-		recordDeepCopy?: boolean;
-		recordDeleteTimeout?: number;
-		recordReadAckTimeout?: number;
-		recordReadTimeout?: number;
-		rpcAckTimeout?: number;
-		rpcResponseTimeout?: number;
-		subscriptionTimeout?: number;
-		timeBetweenSendingQueuedPackages?: number;
-		mergeStrategy?: MergeStrategies;
-	}
+	type EventCallbackFn<T> = (...args: Array<T>) => void
+	type DsRegExp = string | RegExp
 
 	class Client extends Emitter {
+		CONSTANTS: Constants
+		MERGE_STRATEGIES: MergeStrategies
 		event: EventHandler
 		rpc: RpcHandler
 		record: RecordHandler
 		presence: PresenceHandler
-		close(): void;
-		getConnectionState(): ConnectionState;
-		getUid(): string;
-		login<P, D>(authParams: P, callback?: (success: boolean, data: D) => void): this;
+		_connection: Connection
+		close(): void
+		getConnectionState(): string
+		getUid(): string
+		login<P, D>(authParams: P, callback?: (success: boolean, data: D) => void): this
+		on(event: 'error', callback: (error: string, event: string, topic: string) => void): this
+		on(event: 'connectionStateChanged', callback: (state: string) => void): this
 	}
 
-	class EventHandler extends EventEmitter {
-		emit<T>(name: Event, data: T): void;
-		listen<T>(pattern: RegExp, callback: EventCallbackFn<T>): void;
-		subscribe<T>(name: Event, callback: EventCallbackFn<T>): void;
-		unlisten(pattern: RegExp): void;
-		unsubscribe<T>(name: Event, callback?: EventCallbackFn<T>): void;
-	}
-
-	class Connection {
-		authenticate<P, T>(authParams: P, callback: EventCallbackFn<T>): void;
-		close(): void;
-		getState(): ConnectionState;
-		send(message: string): void;
-		sendMsg<T>(topic: Topic, action: Actions, data: T): void;
-	}
-
-	class MessageParser {
-		convertTyped<T>(value: string, client: Client): T;
-		parse(message: string, client: Client): Array<any>;
+	class EventHandler {
+		emit(event: string | symbol, ...args: any[]): boolean
+		emit<T>(name: string, data: T): void
+		listen<T>(pattern: DsRegExp, callback: EventCallbackFn<T>): void
+		subscribe<T>(name: string, callback: EventCallbackFn<T>): void
+		unlisten(pattern: DsRegExp): void
+		unsubscribe<T>(name: string, callback?: EventCallbackFn<T>): void
 	}
 
 	class PresenceHandler {
-		getAll(callback: (clients: Array<string>) => void): void;
-		subscribe(callback: PresenceHandlerFn): void;
-		unsubscribe(callback: PresenceHandlerFn): void;
-	}
-
-	class AnonymousRecord extends EventEmitter {
-		get<T>(path: Array<string>): T;
-		setName(recordName: string): void;
-		subscribe<T>(args: EventCallbackFn<T>): void;
-		unsubscribe<T>(args: EventCallbackFn<T>): void;
+		getAll(callback: (clients: Array<string>) => void): void
+		subscribe(callback: (username: string, isLoggedIn: boolean) => void): void
+		unsubscribe(callback: (username: string, isLoggedIn: boolean) => void): void
 	}
 
 	class List extends Record {
-		addEntry(entry: string, index: number): void;
-		getEntries(): Array<string>;
-		isEmpty(): boolean;
-		removeEntry(entry: string, index?: number): void;
-		setEntries(entries: Array<string>): void;
+		addEntry(entry: string, index: number): void
+		getEntries(): Array<string>
+		isEmpty(): boolean
+		removeEntry(entry: string, index?: number): void
+		setEntries(entries: Array<string>): void
 	}
 
 	class RecordHandler {
-		getAnonymousRecord(): AnonymousRecord;
-		getList<T>(name: string, options: Params & T): List;
-		getRecord<T>(name: string, recordOptions: Params & T): Record;
-		has<T>(name: string, callback: EventCallbackFn<T>): void;
-		listen<T>(pattern: RegExp, callback: EventCallbackFn<T>): void;
-		snapshot<T>(name: string, callback: EventCallbackFn<T>): void;
-		unlisten(pattern: RegExp): void;
+		getAnonymousRecord<T>(): AnonymousRecord<T>
+		getList(name: string, options?: any): List
+		getRecord<T>(name: string): Record<T>
+		has<T>(name: string, callback: EventCallbackFn<T>): void
+		listen<T>(pattern: DsRegExp, callback: EventCallbackFn<T>): void
+		snapshot<T>(name: string, callback: EventCallbackFn<T>): void
+		unlisten(pattern: DsRegExp): void
 	}
 
-	class Record {
-		delete(): void;
-		discard(): void;
-		get<T>(path: string): T;
-		set<P, D, T>(pathOrData: P, dataOrCallback: D, callback: EventCallbackFn<T>, args: T[]): void;
-		setMergeStrategy(mergeStrategy: MergeStrategies): void;
-		subscribe<T>(path: string, callback: EventCallbackFn<T>, triggerNow?: boolean, args: T[]): void;
-		unsubscribe<P, T>(pathOrCallback: P, callback: EventCallbackFn<T>, args: T[]): void;
-		whenReady<T>(callback: EventCallbackFn<T>): void;
+	class Emitter {
+		addEventListener<T>(event: string, fn: EventCallbackFn<T>): this
+		emit<T>(event: string, fn?: EventCallbackFn<T>): this
+		eventNames(): Array<string>
+		hasListeners(event?: string): boolean
+		listeners(event?: string): Array<Listener>
+		off<T>(event?: string, fn?: EventCallbackFn<T>): this
+		on<T>(event: string, fn: EventCallbackFn<T>): this
+		once<T>(event: string, fn: EventCallbackFn<T>): this
+		removeAllListeners<T>(event?: string, fn?: EventCallbackFn<T>): this
+		removeEventListener<T>(event?: string, fn?: EventCallbackFn<T>): this
+		removeListener<T>(event?: string, fn?: EventCallbackFn<T>): this
+	}
+
+	class Record<T> extends Emitter {
+		name: string
+		usages: number
+		isReady: boolean
+		hasProvider: boolean
+		isDestroyed: boolean
+
+		delete(): void
+		discard(): void
+		setMergeStrategy(mergeStrategy: MergeStrategies): void
+		whenReady(callback: (record: Record<T>) => void): void
+
+		get(path?: string): T
+
+		set(data: T): void
+		set(data: T, callback?: (error: string) => void): void
+		set(path: string, value: any): void
+		set(path: string, value: any, callback?: (error: string) => void): void
+
+		subscribe(callback: (data: T) => void, triggerNow?: boolean): void
+		subscribe(path: string, callback: (data: T) => void, triggerNow?: boolean): void
+
+		unsubscribe(path?: string): void
+		unsubscribe(callback: Function): void
+		unsubscribe(path: string, callback: Function): void
+	}
+
+	class AnonymousRecord<T> extends Record<T> {
+		setName(recordName: string): void
 	}
 
 	class RpcHandler {
-		make<D, T>(name: string, data: D, callback: EventCallbackFn<T>): void;
-		provide<T>(name: string, callback: EventCallbackFn<T>): void;
-		unprovide(name: string): void;
+		make<B, R>(name: string, body: B, callback: (error: string, response: R) => void): void
+		provide<B, R>(name: string, callback: (body: B, response: RpcResponse<R>) => void): void
+		unprovide(name: string): void
 	}
 
-	class RpcResponse {
-		ack(): void;
-		error(errorMsg: string): void;
-		reject(): void;
-		send<D>(data: D): void;
+	class RpcResponse<R> {
+		ack(): void
+		error(errorMsg: string | Error): void
+		reject(): void
+		send(response?: R): void
 	}
 
 	class Rpc {
-		ack(): void;
-		error(timeout: string): void;
-		respond<D>(data: D): void;
+		ack(): void
+		error(timeout: string): void
+		respond<D>(data: D): void
+	}
+
+	class Connection {
+		authenticate<P, T>(authParams: P, callback: EventCallbackFn<T>): void
+		close(): void
+		getState(): string
+		send(message: string): void
+		sendMsg<T>(topic: Topic, action: Actions, data: T): void
+	}
+
+	class MessageParser {
+		convertTyped<T>(value: string, client: Client): T
+		parse(message: string, client: Client): Array<any>
 	}
 
 	class AckTimeoutRegistry {
-		add(timeout: string): number;
-		clear<D>(message: D): void;
-		remove(timeout: string): void;
+		add(timeout: string): number
+		clear<D>(message: D): void
+		remove(timeout: string): void
 	}
 
 	class Listener {
-		accept(name: string): void;
-		destroy(): void;
-		reject(name: string): void;
-		sendDestroy(): void;
+		accept(name: string): void
+		destroy(): void
+		reject(name: string): void
+		sendDestroy(): void
 	}
 
 	class SingleNotifier {
-		hasRequest(name: string): void;
-		recieve<D>(name: string, error: string, data: D): void;
-		request<T>(name: string, callback: EventCallbackFn<T>): void;
+		hasRequest(name: string): void
+		recieve<D>(name: string, error: string, data: D): void
+		request<T>(name: string, callback: EventCallbackFn<T>): void
+	}
+	
+	interface PermissionMessage {
+		raw: string
+		topic: string
+		action: string
+		data: Array<string>
 	}
 
 }
 
 declare module 'deepstream.io-client-js' {
-	var deepstream: deepstream.Static;
-	export = deepstream;
+	var deepstream: deepstream.Static
+	export = deepstream
 }
 
