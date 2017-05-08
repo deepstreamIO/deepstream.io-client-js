@@ -263,8 +263,8 @@ Connection.prototype._checkHeartBeat = function () {
 
   if (Date.now() - this._lastHeartBeat > heartBeatTolerance) {
     clearInterval(this._heartbeatInterval);
-    this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, 'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds');
     this._endpoint.close();
+    this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, 'heartbeat not received in the last ' + heartBeatTolerance + ' milliseconds');
   }
 };
 
