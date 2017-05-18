@@ -37,6 +37,10 @@
 		"only-allows-purchase-of-products-in-stock/$purchaseId": {
 			"create": true,
 			"write": "_('item/' + data.itemId ).stock > 0"
+		},
+		"only-a-can-read-and-create": {
+			"create": "user.id === 'A'",
+			"read": "user.id === 'A'"
 		}
 	},
 	"event": {

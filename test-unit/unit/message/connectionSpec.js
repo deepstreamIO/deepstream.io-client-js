@@ -650,12 +650,11 @@ describe('splits messages into smaller packets', () => {
   })
 
   it('sends buffered messages that are buffered when messageQueue exceeds maxMessagesPerPacket', (done) => {
-
     sendMessages(connection, 9, 17)
 
     let expectedMessages = [
-        msg('E|EVT|w|12+'),
-        msg('E|EVT|w|13+E|EVT|w|14+E|EVT|w|15+E|EVT|w|16+')
+        msg('E|EVT|w|10+E|EVT|w|11+E|EVT|w|12+E|EVT|w|13+E|EVT|w|14+'),
+        msg('E|EVT|w|15+E|EVT|w|16+')
       ],
       currentlyExpectedMessage = 0
 
