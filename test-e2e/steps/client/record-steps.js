@@ -17,7 +17,8 @@ function getListData(expression, listName) {
 module.exports = function () {
 
   this.When(/(.+) gets? the record "([^"]*)"$/, (clientExpression, recordName, done) => {
-    clientHandler.getClients(clientExpression).forEach((client) => {
+    const clients = clientHandler.getClients(clientExpression)
+    clients.forEach((client) => {
       const recordData = {
         record: client.client.record.getRecord(recordName),
         discardCallback: sinon.spy(),
@@ -31,7 +32,7 @@ module.exports = function () {
       recordData.record.on('delete', recordData.deleteCallback)
       client.record.records[recordName] = recordData
     })
-    setTimeout(done, utils.defaultDelay)
+    setTimeout(done, utils.defaultDelay * clients.length * 10)
   })
 
   this.When(/(.+) sets the merge strategy to (remote|local)$/, (clientExpression, recordName, done) => {
