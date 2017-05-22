@@ -359,14 +359,8 @@ Record.prototype._$onMessage = function (message) {
   } else if (message.action === C.ACTIONS.UPDATE || message.action === C.ACTIONS.PATCH) {
     this._applyUpdate(message, this._client)
   } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
-    const versions = JSON.parse(message.data[1])
-    for (let i = 0; i < versions.length; i++) {
-      const callback = this._writeCallbacks[versions[i]]
-      if (callback !== undefined) {
-        callback(messageParser.convertTyped(message.data[2], this._client))
-        delete this._writeCallbacks[versions[i]]
-      }
-    }
+    Record._handleWriteAcknowledgements(message, this._writeCallbacks, this._client)
+
   } else if (message.data[0] === C.EVENT.VERSION_EXISTS) {
     // Otherwise it should be an error, and dealt with accordingly
     this._recoverRecord(message.data[2], JSON.parse(message.data[3]), message)
@@ -376,6 +370,17 @@ Record.prototype._$onMessage = function (message) {
     const hasProvider = messageParser.convertTyped(message.data[1], this._client)
     this.hasProvider = hasProvider
     this.emit('hasProviderChanged', hasProvider)
+  }
+}
+
+Record._handleWriteAcknowledgements = function (message, callbacks, client) {
+  const versions = JSON.parse(message.data[1])
+  for (let i = 0; i < versions.length; i++) {
+    const callback = callbacks[versions[i]]
+    if (callback !== undefined) {
+      callback(messageParser.convertTyped(message.data[2], client))
+      delete callbacks[versions[i]]
+    }
   }
 }
 
