@@ -360,7 +360,6 @@ Record.prototype._$onMessage = function (message) {
     this._applyUpdate(message, this._client)
   } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
     Record._handleWriteAcknowledgements(message, this._writeCallbacks, this._client)
-
   } else if (message.data[0] === C.EVENT.VERSION_EXISTS) {
     // Otherwise it should be an error, and dealt with accordingly
     this._recoverRecord(message.data[2], JSON.parse(message.data[3]), message)

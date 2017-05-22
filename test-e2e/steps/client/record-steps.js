@@ -153,6 +153,36 @@ module.exports = function () {
     setTimeout(done, utils.defaultDelay)
   })
 
+  this.When(/^(.+) sets? the record "([^"]*)" without being subscribed with data '([^']+)'$/, (clientExpression, recordName, data, done) => {
+    const clients = clientHandler.getClients(clientExpression)
+    clients.forEach((client) => {
+      client.client.record.setData(recordName, utils.parseData(data))
+    })
+    setTimeout(done, utils.defaultDelay * clients.length)
+  })
+
+  this.When(/^(.+) sets? the record "([^"]*)" without being subscribed with data '([^']+)' and requires write acknowledgement$/, (clientExpression, recordName, data, done) => {
+    const clients = clientHandler.getClients(clientExpression)
+    clients.forEach((client) => {
+      if (!client.record.writeAcks) {
+        client.record.writeAcks = {}
+      }
+      client.record.writeAcks[recordName] = sinon.spy()
+      client.client.record.setData(recordName, utils.parseData(data), client.record.writeAcks[recordName])
+    })
+    setTimeout(done, utils.defaultDelay * clients.length)
+  })
+
+  this.When(
+    /^(.+) sets? the record "([^"]*)" without being subscribed with path "([^"]*)" and data '([^']+)'$/,
+    (clientExpression, recordName, path, data, done) => {
+    const clients = clientHandler.getClients(clientExpression)
+    clients.forEach((client) => {
+      client.client.record.setData(recordName, path, utils.parseData(data))
+    })
+    setTimeout(done, utils.defaultDelay * clients.length)
+  })
+
   this.When(/^(.+) sets? the record "([^"]*)" and path "([^"]*)" with data '([^']+)'$/, (clientExpression, recordName, path, data, done) => {
     getRecordData(clientExpression, recordName).forEach((recordData) => {
       if (recordData.setCallback) { recordData.record.set(path, utils.parseData(data), recordData.setCallback) } else { recordData.record.set(path, utils.parseData(data)) }
@@ -162,9 +192,16 @@ module.exports = function () {
 
   this.Then(/^(.+) is told that the record "([^"]*)" was set without error$/, (clientExpression, recordName) => {
     getRecordData(clientExpression, recordName).forEach((recordData) => {
+      if (!recordData) return
       sinon.assert.calledOnce(recordData.setCallback)
       sinon.assert.calledWith(recordData.setCallback, null)
       recordData.setCallback.reset()
+    })
+    clientHandler.getClients(clientExpression).forEach((client) => {
+      if (!client.record.writeAcks) return
+      sinon.assert.calledOnce(client.record.writeAcks[recordName])
+      sinon.assert.calledWith(client.record.writeAcks[recordName], null)
+      client.record.writeAcks[recordName].reset()
     })
   })
 

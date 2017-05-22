@@ -266,11 +266,13 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
   const recordData = path
     ? [recordName, -1, path, messageBuilder.typed(data)]
     : [recordName, -1, data]
+  const config = {}
   if (cb) {
-    recordData.push({ writeSuccess: true })
+    config.writeSuccess = true
     this._writeCallbacks[recordName] = {}
     this._writeCallbacks[recordName][-1] = cb
   }
+  recordData.push(config)
   this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.CREATEANDUPDATE, recordData)
 }
 
@@ -341,25 +343,20 @@ RecordHandler.prototype._$handle = function (message) {
   if (this._records[name]) {
     processed = true
     this._records[name]._$onMessage(message)
-  }
 
-  if (message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest(name)) {
+  } else if (message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest(name)) {
     processed = true
     this._snapshotRegistry.recieve(name, null, JSON.parse(message.data[2]))
-  }
 
-  if (message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest(name)) {
+  } else if (message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest(name)) {
     processed = true
     this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]))
-  }
 
-  if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
+  } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
     processed = true
     Record._handleWriteAcknowledgements(message, this._writeCallbacks[name], this._client)
-  }
 
-
-  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN &&
+  } else if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN &&
     this._listener[name] && this._listener[name].destroyPending
   ) {
     processed = true
