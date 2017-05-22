@@ -7,6 +7,7 @@ const Listener = require('../utils/listener')
 const SingleNotifier = require('../utils/single-notifier')
 const C = require('../constants/constants')
 const messageParser = require('../message/message-parser')
+const messageBuilder = require('../message/message-builder')
 const EventEmitter = require('component-emitter2')
 
 /**
@@ -24,6 +25,7 @@ const RecordHandler = function (options, connection, client) {
   this._records = {}
   this._lists = {}
   this._listener = {}
+  this._writeCallbacks = {}
   this._destroyEventEmitter = new EventEmitter()
 
   this._hasRegistry = new SingleNotifier(
@@ -214,6 +216,65 @@ RecordHandler.prototype.has = function (name, callback) {
 }
 
 /**
+ * Allows setting a record without being subscribed to it.
+ * @param {[type]}   recordName [description]
+ * @param {[type]}   version    [description]
+ * @param {[type]}   path       [description]
+ * @param {[type]}   data       [description]
+ * @param {Function} callback   [description]
+ */
+RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallback, callback) {
+  let path
+  let data
+  let cb
+  let valid = false
+
+  if (arguments.length === 4) {
+    // setData(recordName, path, data, cb)
+    path = pathOrData
+    data = dataOrCallback
+    cb = callback
+    valid = true
+  } else if (arguments.length === 3) {
+    if (typeof pathOrData === 'string' && typeof dataOrCallback !== 'function') {
+      // setData(recordName, path, data)
+      path = pathOrData
+      data = dataOrCallback
+      valid = true
+    } else if (typeof pathOrData === 'object' && typeof dataOrCallback === 'function') {
+      // setData(recordName, data, callback)
+      path = null
+      data = pathOrData
+      cb = dataOrCallback
+      valid = true
+    }
+  } else if (arguments.length === 2 && typeof pathOrData === 'object') {
+    // setData(recordName, data)
+    path = null
+    data = pathOrData
+    valid = true
+  }
+
+  if (!valid) {
+    throw new Error('incorrect arguments used: records must exist as objects at the root level')
+  }
+
+  if (this._records[recordName]) {
+    throw new Error('record data should be set via the record instance itself: Record.setData')
+  }
+
+  const recordData = path
+    ? [recordName, -1, path, messageBuilder.typed(data)]
+    : [recordName, -1, data]
+  if (cb) {
+    recordData.push({ writeSuccess: true })
+    this._writeCallbacks[recordName] = {}
+    this._writeCallbacks[recordName][-1] = cb
+  }
+  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.CREATEANDUPDATE, recordData)
+}
+
+/**
  * Will be called by the client for incoming messages on the RECORD topic
  *
  * @param   {Object} message parsed and validated deepstream message
@@ -291,6 +352,12 @@ RecordHandler.prototype._$handle = function (message) {
     processed = true
     this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]))
   }
+
+  if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
+    processed = true
+    Record._handleWriteAcknowledgements(message, this._writeCallbacks[name], this._client)
+  }
+
 
   if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN &&
     this._listener[name] && this._listener[name].destroyPending
