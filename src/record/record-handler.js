@@ -216,12 +216,19 @@ RecordHandler.prototype.has = function (name, callback) {
 }
 
 /**
- * Allows setting a record without being subscribed to it.
- * @param {[type]}   recordName [description]
- * @param {[type]}   version    [description]
- * @param {[type]}   path       [description]
- * @param {[type]}   data       [description]
- * @param {Function} callback   [description]
+ * Allows setting the data for a record without being subscribed to it. If
+ * the client is subscribed to the record locally, the update will be proxied
+ * through the record object like a normal call to Record.set. Otherwise a force
+ * write will be performed that overwrites any remote data.
+ *
+ * @param {String} recordName the name of the record to write to
+ * @param {String|Object} pathOrData either the path to write data to or the data to
+ *                                   set the record to
+ * @param {Object|Primitive|Function} dataOrCallback either the data to write to the
+ *                                                   record or a callback function
+ *                                                   indicating write success
+ * @param {Function} callback if provided this will be called with the result of the
+ *                            write
  */
 RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallback, callback) {
   let path
@@ -250,7 +257,6 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
     }
   } else if (arguments.length === 2 && typeof pathOrData === 'object') {
     // setData(recordName, data)
-    path = null
     data = pathOrData
     valid = true
   }
@@ -260,20 +266,28 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
   }
 
   if (this._records[recordName]) {
-    throw new Error('record data should be set via the record instance itself: Record.setData')
+    if (path && cb) {
+      this._records[recordName].set(path, data, cb)
+    } else if (path) {
+      this._records[recordName].set(path, data)
+    } else if (cb) {
+      this._records[recordName].set(data, cb)
+    } else {
+      this._records[recordName].set(data)
+    }
+  } else {
+    const recordData = path
+      ? [recordName, -1, path, messageBuilder.typed(data)]
+      : [recordName, -1, data]
+    const config = {}
+    if (cb) {
+      config.writeSuccess = true
+      this._writeCallbacks[recordName] = {}
+      this._writeCallbacks[recordName][-1] = cb
+    }
+    recordData.push(config)
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.CREATEANDUPDATE, recordData)
   }
-
-  const recordData = path
-    ? [recordName, -1, path, messageBuilder.typed(data)]
-    : [recordName, -1, data]
-  const config = {}
-  if (cb) {
-    config.writeSuccess = true
-    this._writeCallbacks[recordName] = {}
-    this._writeCallbacks[recordName][-1] = cb
-  }
-  recordData.push(config)
-  this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.CREATEANDUPDATE, recordData)
 }
 
 /**
