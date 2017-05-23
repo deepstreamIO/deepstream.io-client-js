@@ -265,15 +265,16 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
     throw new Error('incorrect arguments used: records must exist as objects at the root level')
   }
 
-  if (this._records[recordName]) {
+  const record = this._records[recordName]
+  if (record) {
     if (path && cb) {
-      this._records[recordName].set(path, data, cb)
+      record.set(path, data, cb)
     } else if (path) {
-      this._records[recordName].set(path, data)
+      record.set(path, data)
     } else if (cb) {
-      this._records[recordName].set(data, cb)
+      record.set(data, cb)
     } else {
-      this._records[recordName].set(data)
+      record.set(data)
     }
   } else {
     const recordData = path
