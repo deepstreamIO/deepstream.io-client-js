@@ -1,5 +1,7 @@
 deepstream.io-client-js
 =======================
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/deepstreamIO/deepstream.io-client-js.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/deepstreamIO/deepstream.io-client-js.svg?branch=master)](https://travis-ci.org/deepstreamIO/deepstream.io-client-js) [![Coverage Status](https://coveralls.io/repos/github/deepstreamIO/deepstream.io-client-js/badge.svg?branch=master)](https://coveralls.io/github/deepstreamIO/deepstream.io-client-js?branch=master) [![npm version](https://badge.fury.io/js/deepstream.io.svg)](http://badge.fury.io/js/deepstream.io-client-js) [![Bower version](https://badge.fury.io/bo/deepstream.io-client-js.svg)](http://badge.fury.io/bo/deepstream.io-client-js)
 [![dependencies Status](https://david-dm.org/deepstreamIO/deepstream.io-client-js/status.svg)](https://david-dm.org/deepstreamIO/deepstream.io-client-js)
 [![devDependencies Status](https://david-dm.org/deepstreamIO/deepstream.io-client-js/dev-status.svg)](https://david-dm.org/deepstreamIO/deepstream.io-client-js?type=dev)
