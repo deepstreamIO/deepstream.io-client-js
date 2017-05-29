@@ -1,3 +1,11 @@
+## [2.2.0] - 2017-05-29
+
+### Features
+- Clients are now able to perform and upsert operation `CU` (create and update) via `RecordHandler.setData`. This allows writing to records while not subscribed to them locally
+
+## Fixes
+- Heartbeat timeout now emits the reconnect event
+
 ## [2.1.5] - 2017-05-03
 
 ### Bug Fixes
