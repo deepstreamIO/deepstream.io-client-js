@@ -355,11 +355,13 @@ RecordHandler.prototype._$handle = function (message) {
 
   let processed = false
 
-  if (this._records[name]) {
+  const record = this._records[name]
+  if (record) {
     processed = true
-    this._records[name]._$onMessage(message)
+    record._$onMessage(message)
+  }
 
-  } else if (message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest(name)) {
+  if (message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest(name)) {
     processed = true
     this._snapshotRegistry.recieve(name, null, JSON.parse(message.data[2]))
 
@@ -367,7 +369,7 @@ RecordHandler.prototype._$handle = function (message) {
     processed = true
     this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]))
 
-  } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT) {
+  } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT && !record) {
     processed = true
     Record._handleWriteAcknowledgements(message, this._writeCallbacks[name], this._client)
 
