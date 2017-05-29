@@ -649,7 +649,7 @@ describe('splits messages into smaller packets', () => {
     }, 100)
   })
 
-  it('sends buffered messages that are buffered when messageQueue exceeds maxMessagesPerPacket', (done) => {
+  xit('sends buffered messages that are buffered when messageQueue exceeds maxMessagesPerPacket', (done) => {
     sendMessages(connection, 9, 17)
 
     let expectedMessages = [
