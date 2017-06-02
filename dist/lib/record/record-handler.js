@@ -1,5 +1,7 @@
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var Record = require('./record');
 var AnonymousRecord = require('./anonymous-record');
 var List = require('./list');
@@ -7,6 +9,7 @@ var Listener = require('../utils/listener');
 var SingleNotifier = require('../utils/single-notifier');
 var C = require('../constants/constants');
 var messageParser = require('../message/message-parser');
+var messageBuilder = require('../message/message-builder');
 var EventEmitter = require('component-emitter2');
 
 /**
@@ -24,6 +27,7 @@ var RecordHandler = function RecordHandler(options, connection, client) {
   this._records = {};
   this._lists = {};
   this._listener = {};
+  this._writeCallbacks = {};
   this._destroyEventEmitter = new EventEmitter();
 
   this._hasRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout);
@@ -189,6 +193,80 @@ RecordHandler.prototype.has = function (name, callback) {
 };
 
 /**
+ * Allows setting the data for a record without being subscribed to it. If
+ * the client is subscribed to the record locally, the update will be proxied
+ * through the record object like a normal call to Record.set. Otherwise a force
+ * write will be performed that overwrites any remote data.
+ *
+ * @param {String} recordName the name of the record to write to
+ * @param {String|Object} pathOrData either the path to write data to or the data to
+ *                                   set the record to
+ * @param {Object|Primitive|Function} dataOrCallback either the data to write to the
+ *                                                   record or a callback function
+ *                                                   indicating write success
+ * @param {Function} callback if provided this will be called with the result of the
+ *                            write
+ */
+RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallback, callback) {
+  var path = void 0;
+  var data = void 0;
+  var cb = void 0;
+  var valid = false;
+
+  if (arguments.length === 4) {
+    // setData(recordName, path, data, cb)
+    path = pathOrData;
+    data = dataOrCallback;
+    cb = callback;
+    valid = true;
+  } else if (arguments.length === 3) {
+    if (typeof pathOrData === 'string' && typeof dataOrCallback !== 'function') {
+      // setData(recordName, path, data)
+      path = pathOrData;
+      data = dataOrCallback;
+      valid = true;
+    } else if ((typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) === 'object' && typeof dataOrCallback === 'function') {
+      // setData(recordName, data, callback)
+      path = null;
+      data = pathOrData;
+      cb = dataOrCallback;
+      valid = true;
+    }
+  } else if (arguments.length === 2 && (typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) === 'object') {
+    // setData(recordName, data)
+    data = pathOrData;
+    valid = true;
+  }
+
+  if (!valid) {
+    throw new Error('incorrect arguments used: records must exist as objects at the root level');
+  }
+
+  var record = this._records[recordName];
+  if (record) {
+    if (path && cb) {
+      record.set(path, data, cb);
+    } else if (path) {
+      record.set(path, data);
+    } else if (cb) {
+      record.set(data, cb);
+    } else {
+      record.set(data);
+    }
+  } else {
+    var recordData = path ? [recordName, -1, path, messageBuilder.typed(data)] : [recordName, -1, data];
+    var config = {};
+    if (cb) {
+      config.writeSuccess = true;
+      this._writeCallbacks[recordName] = {};
+      this._writeCallbacks[recordName][-1] = cb;
+    }
+    recordData.push(config);
+    this._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.CREATEANDUPDATE, recordData);
+  }
+};
+
+/**
  * Will be called by the client for incoming messages on the RECORD topic
  *
  * @param   {Object} message parsed and validated deepstream message
@@ -242,22 +320,22 @@ RecordHandler.prototype._$handle = function (message) {
 
   var processed = false;
 
-  if (this._records[name]) {
+  var record = this._records[name];
+  if (record) {
     processed = true;
-    this._records[name]._$onMessage(message);
+    record._$onMessage(message);
   }
 
   if (message.action === C.ACTIONS.READ && this._snapshotRegistry.hasRequest(name)) {
     processed = true;
     this._snapshotRegistry.recieve(name, null, JSON.parse(message.data[2]));
-  }
-
-  if (message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest(name)) {
+  } else if (message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest(name)) {
     processed = true;
     this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]));
-  }
-
-  if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && this._listener[name] && this._listener[name].destroyPending) {
+  } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT && !record) {
+    processed = true;
+    Record._handleWriteAcknowledgements(message, this._writeCallbacks[name], this._client);
+  } else if (message.action === C.ACTIONS.ACK && message.data[0] === C.ACTIONS.UNLISTEN && this._listener[name] && this._listener[name].destroyPending) {
     processed = true;
     this._listener[name].destroy();
     delete this._listener[name];

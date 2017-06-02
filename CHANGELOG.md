@@ -1,3 +1,8 @@
+## [2.2.1] - 2017-06-02
+
+### Fixes
+- Update `dist/` files correctly
+
 ## [2.2.0] - 2017-05-29
 
 ### Features
