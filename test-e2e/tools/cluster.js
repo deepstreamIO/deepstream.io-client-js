@@ -1,7 +1,6 @@
 'use strict'
 
 const DeepstreamServer = require('deepstream.io')
-const RedisConnector = require('deepstream.io-msg-redis')
 
 const util = require('util')
 const EventEmitter = require('events').EventEmitter
@@ -64,6 +63,7 @@ Cluster.prototype._startServer = function (port, done) {
     clusterNodeInactiveTimeout : 200,
     lockTimeout                : 1000,
     shuffleListenProviders     : false,
+    rpcTimeout: 30,
 
     showLogo : false,
     stopped  : this._checkStopped.bind(this),

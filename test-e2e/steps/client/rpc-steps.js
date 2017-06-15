@@ -30,6 +30,9 @@ module.exports = function () {
         client.rpc.provides.alwaysReject()
         response.reject()
       },
+      neverRespond: (client) => {
+        client.rpc.provides.neverRespond()
+      },
       clientBRejects: (client, data, response) => {
         client.rpc.provides.clientBRejects()
         if (client.name === 'B') {
@@ -70,12 +73,15 @@ module.exports = function () {
     })
   })
 
-  this.Then(/(.+) receives? a response for RPC "([^"]*)" with error "([^"]*)"$/, (clientExpression, rpc, error) => {
-    clientHandler.getClients(clientExpression).forEach((client) => {
-      sinon.assert.calledOnce(client.rpc.callbacks[rpc])
-      sinon.assert.calledWith(client.rpc.callbacks[rpc], error)
-      client.rpc.callbacks[rpc].reset()
-    })
+  this.Then(/(.+) (eventually )?receives? a response for RPC "([^"]*)" with error "([^"]*)"$/, (clientExpression, eventually, rpc, error, done) => {
+    setTimeout(() => {
+      clientHandler.getClients(clientExpression).forEach((client) => {
+        sinon.assert.calledOnce(client.rpc.callbacks[rpc])
+        sinon.assert.calledWith(client.rpc.callbacks[rpc], error)
+        client.rpc.callbacks[rpc].reset()
+        done()
+      })
+    }, eventually ? 150 : 0)
   })
 
   this.Then(/(.+) RPCs? "([^"]*)" (?:is|are) (never called|called (?:once|(\d+) times?))$/, (clientExpression, rpc, times, nTimes) => {
