@@ -144,8 +144,8 @@ declare namespace deepstream {
 	}
 
 	interface MergeStrategies {
-		REMOTE_WINS(record, remoteValue, remoteVersion, callback): void
-		LOCAL_WINS(record, remoteValue, remoteVersion, callback): void
+		REMOTE_WINS: (record, remoteValue, remoteVersion, callback) => void
+		LOCAL_WINS: (record, remoteValue, remoteVersion, callback) => void
 	}
 
 	type Params = { [key: string]: any }
@@ -169,12 +169,13 @@ declare namespace deepstream {
 	}
 
 	class EventHandler {
+		_emitter: { _callbacks: { [name: string]: Array<Function> } }
 		emit(event: string | symbol, ...args: any[]): boolean
 		emit<T>(name: string, data: T): void
 		listen<T>(pattern: DsRegExp, callback: EventCallbackFn<T>): void
 		subscribe<T>(name: string, callback: EventCallbackFn<T>): void
 		unlisten(pattern: DsRegExp): void
-		unsubscribe<T>(name: string, callback?: EventCallbackFn<T>): void
+		unsubscribe(name: string, callback?: Function): void
 	}
 
 	class PresenceHandler {
@@ -183,8 +184,9 @@ declare namespace deepstream {
 		unsubscribe(callback: (username: string, isLoggedIn: boolean) => void): void
 	}
 
-	class List extends Record {
-		addEntry(entry: string, index: number): void
+	class List<T> extends Record<T> {
+		whenReady(callback: (record: List<T>) => void): void
+		addEntry(entry: string, index?: number): void
 		getEntries(): Array<string>
 		isEmpty(): boolean
 		removeEntry(entry: string, index?: number): void
@@ -193,8 +195,9 @@ declare namespace deepstream {
 
 	class RecordHandler {
 		getAnonymousRecord<T>(): AnonymousRecord<T>
-		getList(name: string, options?: any): List
+		getList<T>(name: string, options?: any): List<T>
 		getRecord<T>(name: string): Record<T>
+		setRecord<T, D>(name: string, data: D, callback?: EventCallbackFn<T>): void
 		has<T>(name: string, callback: EventCallbackFn<T>): void
 		listen<T>(pattern: DsRegExp, callback: EventCallbackFn<T>): void
 		snapshot<T>(name: string, callback: EventCallbackFn<T>): void
@@ -202,6 +205,7 @@ declare namespace deepstream {
 	}
 
 	class Emitter {
+		_callbacks: { [key: string]: Array<Function> }
 		addEventListener<T>(event: string, fn: EventCallbackFn<T>): this
 		emit<T>(event: string, fn?: EventCallbackFn<T>): this
 		eventNames(): Array<string>
@@ -215,12 +219,19 @@ declare namespace deepstream {
 		removeListener<T>(event?: string, fn?: EventCallbackFn<T>): this
 	}
 
+	interface Subscription<T> {
+		callback: (data: T) => void
+		triggerNow: boolean
+	}
 	class Record<T> extends Emitter {
 		name: string
 		usages: number
 		isReady: boolean
 		hasProvider: boolean
 		isDestroyed: boolean
+
+		_eventEmitter: Emitter
+		_subscriptions: Array<Subscription<T>>
 
 		delete(): void
 		discard(): void
@@ -231,8 +242,8 @@ declare namespace deepstream {
 
 		set(data: T): void
 		set(data: T, callback?: (error: string) => void): void
-		set(path: string, value: any): void
-		set(path: string, value: any, callback?: (error: string) => void): void
+		set<V>(path: string, value: V): void
+		set<V>(path: string, value: V, callback?: (error: string) => void): void
 
 		subscribe(callback: (data: T) => void, triggerNow?: boolean): void
 		subscribe(path: string, callback: (data: T) => void, triggerNow?: boolean): void
@@ -296,7 +307,7 @@ declare namespace deepstream {
 		recieve<D>(name: string, error: string, data: D): void
 		request<T>(name: string, callback: EventCallbackFn<T>): void
 	}
-	
+
 	interface PermissionMessage {
 		raw: string
 		topic: string
