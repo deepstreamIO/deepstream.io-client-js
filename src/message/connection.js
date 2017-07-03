@@ -322,7 +322,7 @@ Connection.prototype._onError = function (error) {
     } else {
       try {
         msg = JSON.stringify(error)
-      } catch(e) {
+      } catch (e) {
         msg = error.toString()
       }
     }

@@ -60,9 +60,9 @@ module.exports = function () {
       const callback = client.rpc.callbacks[rpc] = sinon.spy()
       client.client.rpc.make(rpc, JSON.parse(args), (a, b) => {
         callback(a, b && b.toString())
+        setTimeout(done, utils.defaultDelay)
       })
     })
-    setTimeout(done, utils.defaultDelay)
   })
 
   this.Then(/(.+) receives? a response for RPC "([^"]*)" with data ("[^"]*"|\d+|\{.*\})$/, (clientExpression, rpc, data) => {
