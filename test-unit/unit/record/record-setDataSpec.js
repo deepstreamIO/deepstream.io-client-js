@@ -58,6 +58,10 @@ describe('RecordHandler.setData', () => {
     expect(() => { recordHandler.setData('testRecord', null, () => {}) }).toThrow()
   })
 
+  it('throws error for an empty path', () => {
+    expect(() => { recordHandler.setData('testRecord', '', 'data') }).toThrow()
+  })
+
   it('throws error for string record data', () => {
     expect(() => { recordHandler.setData('testRecord', 'Some String') }).toThrow()
   })
