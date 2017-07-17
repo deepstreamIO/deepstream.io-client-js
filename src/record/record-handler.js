@@ -272,7 +272,7 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
     throw new Error('invalid argument: callback')
   }
 
-  if (path && typeof path !== 'string') {
+  if (path && (typeof path !== 'string' || path.length === 0)) {
     throw new Error('invalid argument: path')
   }
 
