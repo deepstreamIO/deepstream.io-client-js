@@ -185,7 +185,11 @@ RecordHandler.prototype.unlisten = function (pattern) {
  */
 RecordHandler.prototype.snapshot = function (name, callback) {
   if (typeof name !== 'string' || name.length === 0) {
-    throw new Error('invalid argument name')
+    throw new Error('invalid argument: name')
+  }
+
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument: callback')
   }
 
   if (this._records[name] && this._records[name].isReady) {
@@ -205,7 +209,11 @@ RecordHandler.prototype.snapshot = function (name, callback) {
  */
 RecordHandler.prototype.has = function (name, callback) {
   if (typeof name !== 'string' || name.length === 0) {
-    throw new Error('invalid argument name')
+    throw new Error('invalid argument: name')
+  }
+
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument: callback')
   }
 
   if (this._records[name]) {
@@ -234,35 +242,42 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
   let path
   let data
   let cb
-  let valid = false
 
   if (arguments.length === 4) {
     // setData(recordName, path, data, cb)
     path = pathOrData
     data = dataOrCallback
     cb = callback
-    valid = true
   } else if (arguments.length === 3) {
-    if (typeof pathOrData === 'string' && typeof dataOrCallback !== 'function') {
+    if (typeof dataOrCallback !== 'function') {
       // setData(recordName, path, data)
       path = pathOrData
       data = dataOrCallback
-      valid = true
-    } else if (typeof pathOrData === 'object' && typeof dataOrCallback === 'function') {
+    } else {
       // setData(recordName, data, callback)
       path = null
       data = pathOrData
       cb = dataOrCallback
-      valid = true
     }
-  } else if (arguments.length === 2 && typeof pathOrData === 'object') {
+  } else if (arguments.length === 2) {
     // setData(recordName, data)
     data = pathOrData
-    valid = true
   }
 
-  if (!valid) {
-    throw new Error('incorrect arguments used: records must exist as objects at the root level')
+  if (typeof recordName !== 'string' || recordName.length === 0) {
+    throw new Error('invalid argument: recordName')
+  }
+
+  if (callback && typeof callback !== 'function') {
+    throw new Error('invalid argument: callback')
+  }
+
+  if (path && typeof path !== 'string') {
+    throw new Error('invalid argument: path')
+  }
+
+  if (!path && (data === null || typeof data !== 'object')) {
+    throw new Error('invalid argument: data must be an object when no path is provided')
   }
 
   const record = this._records[recordName]
