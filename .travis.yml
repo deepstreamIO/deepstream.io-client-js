@@ -19,7 +19,7 @@ script:
       npm run lint;
     fi
   - npm run reporter
-  - npm run e2e
+  - npm run unit
   - npm run specs
   - npm run build
 

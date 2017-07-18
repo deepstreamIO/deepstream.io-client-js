@@ -23,7 +23,6 @@
     "test-node",
     "test-page",
     "test-unit",
-    "test-e2e",
     ".travis.yml",
     "Gruntfile.js",
     "karma.conf.js"
