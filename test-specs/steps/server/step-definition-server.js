@@ -1,5 +1,7 @@
 'use strict'
 
+const { Before, After, Given, When, Then } = require('cucumber')
+
 const config = require('../config')
 const check = require('../helper').check
 
@@ -38,28 +40,27 @@ var convertChars = function (input) {
     .replace(new RegExp(String.fromCharCode(30), 'g'), '+')
 }
 
-module.exports = function () {
 
-  this.Given(/the test server is ready/, (callback) => {
+  Given(/the test server is ready/, (callback) => {
     server = firstServer
     server.whenReady(callback)
   })
 
-  this.Given(/the second test server is ready/, (callback) => {
+  Given(/the second test server is ready/, (callback) => {
     secondaryServer.whenReady(callback)
   })
 
-  this.Given(/the client is on the second server/, () => {
+  Given(/the client is on the second server/, () => {
     server = secondaryServer
   })
 
-  this.Given(/^the server resets its message count$/, (callback) => {
+  Given(/^the server resets its message count$/, (callback) => {
     server.lastMessage = null
     server.allMessages = []
     callback()
   })
 
-  this.When(/^the server sends the message (.*)$/, (message, callback) => {
+  When(/^the server sends the message (.*)$/, (message, callback) => {
     if (message.indexOf('<UID>') !== -1 && uid) {
       message = message.replace('<UID>', uid)
     }
@@ -77,11 +78,11 @@ module.exports = function () {
 .messageWaitTime * 2)
   })
 
-  this.When(/^the connection to the server is lost$/, (callback) => {
+  When(/^the connection to the server is lost$/, (callback) => {
     server.stop(callback)
   })
 
-  this.When(/^the connection to the server is reestablished$/, (callback) => {
+  When(/^the connection to the server is reestablished$/, (callback) => {
     function hasAClient() {
       setTimeout(() => {
         if (server.connections.length > 0) {
@@ -94,23 +95,23 @@ module.exports = function () {
     server.whenReady(hasAClient, 100)
   })
 
-  this.Then(/^no message was send to the server$/, (callback) => {
+  Then(/^no message was send to the server$/, (callback) => {
     check('last received message', null, convertChars(server.lastMessage), callback)
   })
 
-  this.Then(/^the server has (\d*) active connections$/, (connectionCount, callback) => {
+  Then(/^the server has (\d*) active connections$/, (connectionCount, callback) => {
     check('active connections', Number(connectionCount), server.connections.length, callback)
   })
 
-  this.Then(/^the second server has (\d*) active connections$/, (connectionCount, callback) => {
+  Then(/^the second server has (\d*) active connections$/, (connectionCount, callback) => {
     check('active connections', Number(connectionCount), secondaryServer.connections.length, callback)
   })
 
-  this.Then(/^the last message the server recieved is (.*)$/, (message, callback) => {
+  Then(/^the last message the server recieved is (.*)$/, (message, callback) => {
     callback(matchMessage(server.lastMessage, message))
   })
 
-  this.Then(/^the server received the message (.*)$/, (message, callback) => {
+  Then(/^the server received the message (.*)$/, (message, callback) => {
     let matchFound = false
     for (let i = 0; i < server.allMessages.length && !matchFound; i++) {
       matchFound = !matchMessage(server.allMessages[i], message)
@@ -118,7 +119,7 @@ module.exports = function () {
     callback(!matchFound && (`No match for message ${message} found. Current messages: ${server.allMessages}`))
   })
 
-  this.Then(/^the server didn't receive the message (.*)$/, (message, callback) => {
+  Then(/^the server didn't receive the message (.*)$/, (message, callback) => {
     let matchFound = false
     for (let i = 0; i < server.allMessages.length && !matchFound; i++) {
       matchFound = matchMessage(server.allMessages[i], message)
@@ -126,12 +127,12 @@ module.exports = function () {
     callback(!matchFound && (`Match for message ${message} found. Current messages: ${server.allMessages}`))
   })
 
-  this.Then(/^the server has received (\d*) messages$/, (numberOfMessages, callback) => {
+  Then(/^the server has received (\d*) messages$/, (numberOfMessages, callback) => {
     check('number of received messages', Number(numberOfMessages), server.allMessages.length, callback)
   })
 
-  this.Then(/^the server did not recieve any messages$/, (callback) => {
+  Then(/^the server did not recieve any messages$/, (callback) => {
     check('number of received messages', 0, server.allMessages.length, callback)
   })
 
-}
+

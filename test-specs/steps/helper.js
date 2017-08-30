@@ -3,7 +3,7 @@
 const sinon = require('sinon')
 
 exports.check = function (type, expected, actual, callback, dontCallbackOnSuccess) {
-  if (sinon.deepEqual(expected, actual)) {
+  if (JSON.stringify(expected) === JSON.stringify(actual)) {
     if (dontCallbackOnSuccess !== true && callback) {
       callback()
     }
@@ -15,6 +15,4 @@ exports.check = function (type, expected, actual, callback, dontCallbackOnSucces
   } else {
     return error
   }
-
-
 }
