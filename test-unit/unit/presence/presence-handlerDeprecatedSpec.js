@@ -8,7 +8,7 @@ let PresenceHandler = require('../../../src/presence/presence-handler'),
   C = require('../../../src/constants/constants'),
   options = {}
 
-describe('presence handler', () => {
+describe('presence handler deprecated', () => {
   let presenceHandler,
     callback = jasmine.createSpy('presenceCallback')
 
@@ -21,26 +21,15 @@ describe('presence handler', () => {
     presenceHandler = new PresenceHandler(options, connectionMock, mockClient)
   })
 
-  it('subscribes to presence with user a', (done) => {
-    presenceHandler.subscribe('userA', callback)
-    setTimeout(() => {
-      expect(connectionMock.lastSendMessage).toBe(msg('U|S|1|["userA"]+'))
-      done()
-    }, 1)
+  it('subscribes to presence', () => {
+    presenceHandler.subscribe(callback)
+    expect(connectionMock.lastSendMessage).toBe(msg('U|S|S+'))
   })
 
-  it('subscribes to presence with user b', (done) => {
-    presenceHandler.subscribe('userB', callback)
-    setTimeout(() => {
-      expect(connectionMock.lastSendMessage).toBe(msg('U|S|2|["userB"]+'))
-      done()
-    }, 1)
-  })
-
-  it('emits an error if no ack message is received for userB presence subscription', (done) => {
+  it('emits an error if no ack message is received for presence subscription', (done) => {
     expect(mockClient.lastError).toBe(null)
     setTimeout(() => {
-      const errorParams = ['U', 'ACK_TIMEOUT', 'No ACK message received in time for 2']
+      const errorParams = ['U', 'ACK_TIMEOUT', 'No ACK message received in time for S']
       expect(mockClient.lastError).toEqual(errorParams)
       mockClient.lastError = null
       done()
@@ -52,60 +41,48 @@ describe('presence handler', () => {
     presenceHandler._$handle({
       topic: 'U',
       action: 'PNJ',
-      data: ['userA']
+      data: ['Homer']
     })
-	  expect(callback).toHaveBeenCalledWith(true, 'userA')
+	    expect(callback).toHaveBeenCalledWith('Homer', true)
   })
 
   it('notified when client logs out', () => {
     presenceHandler._$handle({
       topic: 'U',
       action: 'PNL',
-      data: ['userB']
+      data: ['Marge']
     })
-	 expect(callback).toHaveBeenCalledWith(false, 'userB')
+	    expect(callback).toHaveBeenCalledWith('Marge', false)
   })
 
   it('queries for clients', () => {
-	    presenceHandler.getAll(['userA','userB'], callback)
-	    expect(connectionMock.lastSendMessage).toBe(msg('U|Q|3|["userA","userB"]+'))
+	    presenceHandler.getAll(callback)
+	    expect(connectionMock.lastSendMessage).toBe(msg('U|Q|Q+'))
   })
 
   it('receives data for query', () => {
-    presenceHandler._$handle({
+	    presenceHandler._$handle({
       topic: 'U',
       action: 'Q',
-      data: [3, '{"userA": true, "userB": false }']
+      data: ['Marge', 'Homer', 'Bart']
     })
-	 expect(callback).toHaveBeenCalledWith({'userA': true, 'userB': false })
+	    expect(callback).toHaveBeenCalledWith(['Marge', 'Homer', 'Bart'])
   })
 
-  it('unsubscribes to client logins', (done) => {
-    presenceHandler.unsubscribe('userA', callback)
-        setTimeout(() => {
-    expect(connectionMock.lastSendMessage).toBe(msg('U|US|4|["userA"]+'))
-      done()
-    }, 1)
+  it('unsubscribes to client logins', () => {
+    presenceHandler.unsubscribe(callback)
+    expect(connectionMock.lastSendMessage).toBe(msg('U|US|US+'))
   })
 
   it('emits an error if no ack message is received for presence unsubscribes', (done) => {
     expect(mockClient.lastError).toBe(null)
     setTimeout(() => {
-      const errorParams = ['U', 'ACK_TIMEOUT', 'No ACK message received in time for 4']
+      const errorParams = ['U', 'ACK_TIMEOUT', 'No ACK message received in time for US']
       expect(mockClient.lastError).toEqual(errorParams)
       mockClient.lastError = null
       done()
     }, 20)
   })
-
-  xit('receives ack for unsubscribe', () => {
-    presenceHandler._$handle({
-      topic: 'U',
-      action: 'A',
-      data: ['US']
-    })
-    expect(connectionMock.lastSendMessage).toBeNull()
-  }).pend('Throws unsolicitated error message since timeout has been cleared')
 
   it('not notified of future actions', () => {
     expect(callback).not.toHaveBeenCalled()
@@ -123,10 +100,10 @@ describe('presence handler', () => {
    })
 	    expect(callback).not.toHaveBeenCalled()
 
-    presenceHandler._$handle({
+	    presenceHandler._$handle({
       topic: 'U',
       action: 'Q',
-      data: [1, {'userA': true, 'userB': false }]
+      data: ['Marge', 'Homer', 'Bart']
     })
 	    expect(callback).not.toHaveBeenCalled()
   })
