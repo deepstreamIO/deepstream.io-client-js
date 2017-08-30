@@ -1,5 +1,7 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.deepstream = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 
+},{}],2:[function(_dereq_,module,exports){
+
 /**
  * Expose `Emitter`.
  */
@@ -185,8 +187,6 @@ Emitter.prototype.eventNames = function(){
   return this._callbacks ? Object.keys(this._callbacks) : [];
 }
 
-},{}],2:[function(_dereq_,module,exports){
-
 },{}],3:[function(_dereq_,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
@@ -358,6 +358,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
@@ -2109,7 +2113,7 @@ createDeepstream.MERGE_STRATEGIES = MS;
 
 module.exports = createDeepstream;
 
-},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"./utils/ack-timeout-registry":27,"component-emitter2":1}],11:[function(_dereq_,module,exports){
+},{"./constants/constants":11,"./constants/merge-strategies":12,"./default-options":13,"./event/event-handler":14,"./message/connection":15,"./presence/presence-handler":18,"./record/record-handler":22,"./rpc/rpc-handler":24,"./utils/ack-timeout-registry":27,"component-emitter2":2}],11:[function(_dereq_,module,exports){
 'use strict';
 
 exports.CONNECTION_STATE = {};
@@ -2203,7 +2207,6 @@ exports.ACTIONS.RESPONSE = 'RES';
 exports.ACTIONS.REJECTION = 'REJ';
 exports.ACTIONS.PRESENCE_JOIN = 'PNJ';
 exports.ACTIONS.PRESENCE_LEAVE = 'PNL';
-exports.ACTIONS.QUERY = 'Q';
 exports.ACTIONS.WRITE_ACKNOWLEDGEMENT = 'WA';
 
 exports.CALL_STATE = {};
@@ -2624,7 +2627,7 @@ EventHandler.prototype._resubscribe = function () {
 
 module.exports = EventHandler;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":1}],15:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/resubscribe-notifier":29,"component-emitter2":2}],15:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
@@ -2938,7 +2941,11 @@ Connection.prototype._onError = function (error) {
     if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
       msg = 'Can\'t connect! Deepstream server unreachable on ' + _this._originalUrl;
     } else {
-      msg = error.toString();
+      try {
+        msg = JSON.stringify(error);
+      } catch (e) {
+        msg = error.toString();
+      }
     }
     _this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg);
   }, 1);
@@ -3171,7 +3178,7 @@ Connection.prototype._clearReconnect = function () {
 module.exports = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":2}],16:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":1}],16:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -3405,9 +3412,30 @@ module.exports = new MessageParser();
 },{"../constants/constants":11}],18:[function(_dereq_,module,exports){
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 var EventEmitter = _dereq_('component-emitter2');
 var C = _dereq_('../constants/constants');
 var ResubscribeNotifier = _dereq_('../utils/resubscribe-notifier');
+
+function validateArguments(userId, callback, defaultAction) {
+  if (typeof userId === 'function' && callback === undefined) {
+    callback = userId; // eslint-disable-line
+    userId = defaultAction; // eslint-disable-line
+  } else {
+    userId = [userId]; // eslint-disable-line
+  }
+
+  if (callback !== undefined && typeof callback !== 'function') {
+    throw new Error('invalid argument callback');
+  }
+
+  return { userId: userId, callback: callback };
+}
 
 /**
  * The main class for presence in deepstream
@@ -3422,124 +3450,210 @@ var ResubscribeNotifier = _dereq_('../utils/resubscribe-notifier');
  * @constructor
  * @public
  */
-var PresenceHandler = function PresenceHandler(options, connection, client) {
-  this._options = options;
-  this._connection = connection;
-  this._client = client;
-  this._emitter = new EventEmitter();
-  this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
-  this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resubscribe.bind(this));
-};
+module.exports = function () {
+  function PresenceHandler(options, connection, client) {
+    _classCallCheck(this, PresenceHandler);
 
-/**
- * Queries for clients logged into deepstream.
- *
- * @param   {Function} callback Will be invoked with an array of clients
- *
- * @public
- * @returns {void}
- */
-PresenceHandler.prototype.getAll = function (callback) {
-  if (!this._emitter.hasListeners(C.ACTIONS.QUERY)) {
-    // At least one argument is required for a message to be permissionable
-    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [C.ACTIONS.QUERY]);
+    this._options = options;
+    this._connection = connection;
+    this._client = client;
+    this._queryEmitter = new EventEmitter();
+    this._subscribeEmitter = new EventEmitter();
+    this._ackTimeoutRegistry = client._$getAckTimeoutRegistry();
+    this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resubscribe.bind(this));
+    this._counter = 1;
+
+    this._flush = this._flush.bind(this);
+    this._flushTimeout = null;
+    this._pendingSubscribes = {};
+    this._pendingUnsubscribes = {};
   }
-  this._emitter.once(C.ACTIONS.QUERY, callback);
-};
+  /**
+   * Queries for clients logged into deepstream.
+   *
+   * @param   {Function} callback Will be invoked with an array of clients
+   *
+   * @public
+   * @returns {void}
+   */
 
-/**
- * Subscribes to client logins or logouts in deepstream
- *
- * @param   {Function} callback Will be invoked with the username of a client,
- *                              and a boolean to indicate if it was a login or
- *                              logout event
- * @public
- * @returns {void}
- */
-PresenceHandler.prototype.subscribe = function (callback) {
-  if (callback !== undefined && typeof callback !== 'function') {
-    throw new Error('invalid argument callback');
-  }
 
-  if (!this._emitter.hasListeners(C.TOPIC.PRESENCE)) {
-    this._ackTimeoutRegistry.add({
-      topic: C.TOPIC.PRESENCE,
-      action: C.ACTIONS.SUBSCRIBE,
-      name: C.TOPIC.PRESENCE
-    });
-    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [C.ACTIONS.SUBSCRIBE]);
-  }
+  _createClass(PresenceHandler, [{
+    key: 'getAll',
+    value: function getAll(users, callback) {
+      if (typeof users === 'function') {
+        this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [C.ACTIONS.QUERY]);
+        this._queryEmitter.once(C.ACTIONS.QUERY, users);
+      } else {
+        var queryId = this._counter++;
+        this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.QUERY, [queryId, users]);
+        this._queryEmitter.once(queryId, callback);
+      }
+    }
 
-  this._emitter.on(C.TOPIC.PRESENCE, callback);
-};
+    /**
+     * Subscribes to client logins or logouts in deepstream
+     *
+     * @param   {Function} callback Will be invoked with the username of a client,
+     *                              and a boolean to indicate if it was a login or
+     *                              logout event
+     * @public
+     * @returns {void}
+     */
 
-/**
- * Removes a callback for a specified presence event
- *
- * @param   {Function} callback The callback to unregister via {PresenceHandler#unsubscribe}
- *
- * @public
- * @returns {void}
- */
-PresenceHandler.prototype.unsubscribe = function (callback) {
-  if (callback !== undefined && typeof callback !== 'function') {
-    throw new Error('invalid argument callback');
-  }
+  }, {
+    key: 'subscribe',
+    value: function subscribe(userId, callback) {
+      var args = validateArguments(userId, callback, C.ACTIONS.SUBSCRIBE);
+      if (!this._subscribeEmitter.hasListeners(args.userId)) {
+        if (args.userId === C.ACTIONS.SUBSCRIBE) {
+          this._sendGlobalSubscription(C.ACTIONS.SUBSCRIBE);
+          this._subscribeEmitter.on(C.ACTIONS.SUBSCRIBE, args.callback);
+        } else {
+          delete this._pendingUnsubscribes[args.userId];
+          this._pendingSubscribes[args.userId] = true;
+          if (!this._flushTimeout) {
+            this._flushTimeout = setTimeout(this._flush, 0);
+          }
+          this._subscribeEmitter.on(args.userId, args.callback);
+        }
+      }
+    }
 
-  this._emitter.off(C.TOPIC.PRESENCE, callback);
+    /**
+     * Removes a callback for a specified presence event
+     *
+     * @param   {Function} callback The callback to unregister via {PresenceHandler#unsubscribe}
+     *
+     * @public
+     * @returns {void}
+     */
 
-  if (!this._emitter.hasListeners(C.TOPIC.PRESENCE)) {
-    this._ackTimeoutRegistry.add({
-      topic: C.TOPIC.PRESENCE,
-      action: C.ACTIONS.UNSUBSCRIBE,
-      name: C.TOPIC.PRESENCE
-    });
-    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.UNSUBSCRIBE, [C.ACTIONS.UNSUBSCRIBE]);
-  }
-};
+  }, {
+    key: 'unsubscribe',
+    value: function unsubscribe(userId, callback) {
+      var args = validateArguments(userId, callback, C.ACTIONS.UNSUBSCRIBE);
 
-/**
- * Handles incoming messages from the server
- *
- * @param   {Object} message parsed deepstream message
- *
- * @package private
- * @returns {void}
- */
-PresenceHandler.prototype._$handle = function (message) {
-  if (message.action === C.ACTIONS.ERROR && message.data[0] === C.EVENT.MESSAGE_DENIED) {
-    this._ackTimeoutRegistry.remove(C.TOPIC.PRESENCE, message.data[1]);
-    message.processedError = true;
-    this._client._$onError(C.TOPIC.PRESENCE, C.EVENT.MESSAGE_DENIED, message.data[1]);
-  } else if (message.action === C.ACTIONS.ACK) {
-    this._ackTimeoutRegistry.clear(message);
-  } else if (message.action === C.ACTIONS.PRESENCE_JOIN) {
-    this._emitter.emit(C.TOPIC.PRESENCE, message.data[0], true);
-  } else if (message.action === C.ACTIONS.PRESENCE_LEAVE) {
-    this._emitter.emit(C.TOPIC.PRESENCE, message.data[0], false);
-  } else if (message.action === C.ACTIONS.QUERY) {
-    this._emitter.emit(C.ACTIONS.QUERY, message.data);
-  } else {
-    this._client._$onError(C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action);
-  }
-};
+      if (args.userId === C.ACTIONS.UNSUBSCRIBE) {
+        this._subscribeEmitter.off(C.ACTIONS.SUBSCRIBE, args.callback);
+      } else {
+        this._subscribeEmitter.off(args.userId, args.callback);
+      }
 
-/**
- * Resubscribes to presence subscription when connection is lost
- *
- * @package private
- * @returns {void}
- */
-PresenceHandler.prototype._resubscribe = function () {
-  var callbacks = this._emitter._callbacks;
-  if (callbacks && callbacks[C.TOPIC.PRESENCE]) {
-    this._connection.sendMsg(C.TOPIC.PRESENCE, C.ACTIONS.SUBSCRIBE, [C.ACTIONS.SUBSCRIBE]);
-  }
-};
+      if (!this._subscribeEmitter.hasListeners(args.userId)) {
+        if (args.userId === C.ACTIONS.UNSUBSCRIBE) {
+          this._sendGlobalSubscription(C.ACTIONS.UNSUBSCRIBE);
+        } else {
+          delete this._pendingSubscribes[args.userId];
+          this._pendingUnsubscribes[args.userId] = true;
+          if (!this._flushTimeout) {
+            this._flushTimeout = setTimeout(this._flush, 0);
+          }
+        }
+      }
+    }
 
-module.exports = PresenceHandler;
+    /**
+     * Handles incoming messages from the server
+     *
+     * @param   {Object} message parsed deepstream message
+     *
+     * @package private
+     * @returns {void}
+     */
 
-},{"../constants/constants":11,"../utils/resubscribe-notifier":29,"component-emitter2":1}],19:[function(_dereq_,module,exports){
+  }, {
+    key: '_$handle',
+    value: function _$handle(message) {
+      if (message.action === C.ACTIONS.ERROR && message.data[0] === C.EVENT.MESSAGE_DENIED) {
+        this._ackTimeoutRegistry.remove(C.TOPIC.PRESENCE, message.data[1]);
+        message.processedError = true;
+        this._client._$onError(C.TOPIC.PRESENCE, C.EVENT.MESSAGE_DENIED, message.data[1]);
+      } else if (message.action === C.ACTIONS.ACK) {
+        this._ackTimeoutRegistry.clear(message);
+      } else if (message.action === C.ACTIONS.PRESENCE_JOIN) {
+        this._subscribeEmitter.emit(C.ACTIONS.SUBSCRIBE, message.data[0], true);
+        this._subscribeEmitter.emit(message.data[0], true, message.data[0]);
+      } else if (message.action === C.ACTIONS.PRESENCE_LEAVE) {
+        this._subscribeEmitter.emit(C.ACTIONS.SUBSCRIBE, message.data[0], false);
+        this._subscribeEmitter.emit(message.data[0], false, message.data[0]);
+      } else if (message.action === C.ACTIONS.QUERY) {
+        try {
+          var data = JSON.parse(message.data[1]);
+          if ((typeof data === 'undefined' ? 'undefined' : _typeof(data)) === 'object') {
+            this._queryEmitter.emit(message.data[0], data);
+            return;
+          }
+        } catch (e) {
+          // not json, old event
+        }
+        this._queryEmitter.emit(C.ACTIONS.QUERY, message.data);
+      } else {
+        this._client._$onError(C.TOPIC.PRESENCE, C.EVENT.UNSOLICITED_MESSAGE, message.action);
+      }
+    }
+
+    /**
+     * Resubscribes to presence subscription when connection is lost
+     *
+     * @package private
+     * @returns {void}
+     */
+
+  }, {
+    key: '_resubscribe',
+    value: function _resubscribe() {
+      var callbacks = Object.keys(this._subscribeEmitter._callbacks || {});
+      if (callbacks.indexOf(C.ACTIONS.SUBSCRIBE) > -1) {
+        callbacks.splice(callbacks.indexOf(C.ACTIONS.SUBSCRIBE), 1);
+        this._sendGlobalSubscription(C.ACTIONS.SUBSCRIBE);
+      }
+      if (callbacks.length > 0) {
+        this._sendSubscriptionBulk(C.ACTIONS.SUBSCRIBE, callbacks);
+      }
+    }
+  }, {
+    key: '_flush',
+    value: function _flush() {
+      var pendingSubscribes = Object.keys(this._pendingSubscribes);
+      if (pendingSubscribes.length > 0) {
+        this._sendSubscriptionBulk(C.ACTIONS.SUBSCRIBE, pendingSubscribes);
+        this._pendingSubscribes = {};
+      }
+      var pendingUnsubscribes = Object.keys(this._pendingUnsubscribes);
+      if (pendingUnsubscribes.length > 0) {
+        this._sendSubscriptionBulk(C.ACTIONS.UNSUBSCRIBE, pendingUnsubscribes);
+        this._pendingUnsubscribes = {};
+      }
+      this._flushTimeout = null;
+    }
+  }, {
+    key: '_sendSubscriptionBulk',
+    value: function _sendSubscriptionBulk(action, names) {
+      var correlationId = this._counter++;
+      this._ackTimeoutRegistry.add({
+        topic: C.TOPIC.PRESENCE,
+        action: action,
+        name: correlationId
+      });
+      this._connection.sendMsg(C.TOPIC.PRESENCE, action, [correlationId, names]);
+    }
+  }, {
+    key: '_sendGlobalSubscription',
+    value: function _sendGlobalSubscription(action) {
+      this._ackTimeoutRegistry.add({
+        topic: C.TOPIC.PRESENCE,
+        action: action,
+        name: action
+      });
+      this._connection.sendMsg(C.TOPIC.PRESENCE, action, [action]);
+    }
+  }]);
+
+  return PresenceHandler;
+}();
+
+},{"../constants/constants":11,"../utils/resubscribe-notifier":29,"component-emitter2":2}],19:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable prefer-rest-params, prefer-spread */
 
@@ -3722,7 +3836,7 @@ AnonymousRecord.prototype._callMethodOnRecord = function (methodName) {
 
 module.exports = AnonymousRecord;
 
-},{"./record":23,"component-emitter2":1}],20:[function(_dereq_,module,exports){
+},{"./record":23,"component-emitter2":2}],20:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -4271,7 +4385,7 @@ List.prototype._getStructure = function () {
 
 module.exports = List;
 
-},{"../constants/constants":11,"./record":23,"component-emitter2":1}],22:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"./record":23,"component-emitter2":2}],22:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -4436,7 +4550,11 @@ RecordHandler.prototype.unlisten = function (pattern) {
  */
 RecordHandler.prototype.snapshot = function (name, callback) {
   if (typeof name !== 'string' || name.length === 0) {
-    throw new Error('invalid argument name');
+    throw new Error('invalid argument: name');
+  }
+
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument: callback');
   }
 
   if (this._records[name] && this._records[name].isReady) {
@@ -4456,7 +4574,11 @@ RecordHandler.prototype.snapshot = function (name, callback) {
  */
 RecordHandler.prototype.has = function (name, callback) {
   if (typeof name !== 'string' || name.length === 0) {
-    throw new Error('invalid argument name');
+    throw new Error('invalid argument: name');
+  }
+
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument: callback');
   }
 
   if (this._records[name]) {
@@ -4485,35 +4607,42 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
   var path = void 0;
   var data = void 0;
   var cb = void 0;
-  var valid = false;
 
   if (arguments.length === 4) {
     // setData(recordName, path, data, cb)
     path = pathOrData;
     data = dataOrCallback;
     cb = callback;
-    valid = true;
   } else if (arguments.length === 3) {
-    if (typeof pathOrData === 'string' && typeof dataOrCallback !== 'function') {
+    if (typeof dataOrCallback !== 'function') {
       // setData(recordName, path, data)
       path = pathOrData;
       data = dataOrCallback;
-      valid = true;
-    } else if ((typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) === 'object' && typeof dataOrCallback === 'function') {
+    } else {
       // setData(recordName, data, callback)
       path = null;
       data = pathOrData;
       cb = dataOrCallback;
-      valid = true;
     }
-  } else if (arguments.length === 2 && (typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) === 'object') {
+  } else if (arguments.length === 2) {
     // setData(recordName, data)
     data = pathOrData;
-    valid = true;
   }
 
-  if (!valid) {
-    throw new Error('incorrect arguments used: records must exist as objects at the root level');
+  if (typeof recordName !== 'string' || recordName.length === 0) {
+    throw new Error('invalid argument: recordName');
+  }
+
+  if (callback && typeof callback !== 'function') {
+    throw new Error('invalid argument: callback');
+  }
+
+  if (path && (typeof path !== 'string' || path.length === 0)) {
+    throw new Error('invalid argument: path');
+  }
+
+  if (!path && (data === null || (typeof data === 'undefined' ? 'undefined' : _typeof(data)) !== 'object')) {
+    throw new Error('invalid argument: data must be an object when no path is provided');
   }
 
   var record = this._records[recordName];
@@ -4679,7 +4808,7 @@ RecordHandler.prototype._removeRecord = function (recordName) {
 
 module.exports = RecordHandler;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter2":1}],23:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/listener":28,"../utils/single-notifier":30,"./anonymous-record":19,"./list":21,"./record":23,"component-emitter2":2}],23:[function(_dereq_,module,exports){
 'use strict';
 /* eslint-disable prefer-spread, prefer-rest-params */
 
@@ -5370,7 +5499,7 @@ Record.prototype._destroy = function () {
 
 module.exports = Record;
 
-},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":1}],24:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../message/message-builder":16,"../message/message-parser":17,"../utils/resubscribe-notifier":29,"../utils/utils":31,"./json-path":20,"component-emitter2":2}],24:[function(_dereq_,module,exports){
 'use strict';
 
 var C = _dereq_('../constants/constants');
@@ -5998,7 +6127,7 @@ AckTimeoutRegistry.prototype._onConnectionStateChanged = function (connectionSta
 
 module.exports = AckTimeoutRegistry;
 
-},{"../constants/constants":11,"component-emitter2":1}],28:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"component-emitter2":2}],28:[function(_dereq_,module,exports){
 'use strict';
 
 var C = _dereq_('../constants/constants');
