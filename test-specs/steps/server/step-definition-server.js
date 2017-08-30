@@ -1,6 +1,11 @@
 'use strict'
 
-const { Before, After, Given, When, Then } = require('cucumber')
+const cucumber = require('cucumber')
+const Before = cucumber.Before
+const After = cucumber.After
+const Given = cucumber.Given
+const When = cucumber.When
+const Then = cucumber.Then
 
 const config = require('../config')
 const check = require('../helper').check
