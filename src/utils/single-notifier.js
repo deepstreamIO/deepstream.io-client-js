@@ -46,12 +46,12 @@ SingleNotifier.prototype.hasRequest = function (name) {
  * and multiplex the response
  *
  * @param {String} name An identifier for the request, e.g. a record name
-
+ * @param {Object} response An object with property `callback` or `resolve` and `reject`
  *
  * @public
  * @returns {void}
  */
-SingleNotifier.prototype.request = function (name, callback) {
+SingleNotifier.prototype.request = function (name, response) {
   if (!this._requests[name]) {
     this._requests[name] = []
     this._connection.sendMsg(this._topic, this._action, [name])
@@ -65,7 +65,7 @@ SingleNotifier.prototype.request = function (name, callback) {
     timeout: this._timeoutDuration,
     callback: this._onResponseTimeout
   })
-  this._requests[name].push({ callback, ackId })
+  this._requests[name].push({ response, ackId })
 }
 
 /**
@@ -92,7 +92,15 @@ SingleNotifier.prototype.recieve = function (name, error, data) {
     this._ackTimeoutRegistry.remove({
       ackId: entry.ackId
     })
-    entry.callback(error, data)
+    if (entry.callback) {
+      entry.callback(error, data)
+      return
+    }
+    if (error) {
+      entry.reject(data)
+    } else {
+      entry.resolve(data)
+    }
   }
   delete this._requests[name]
 }

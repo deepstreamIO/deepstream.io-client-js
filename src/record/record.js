@@ -108,6 +108,22 @@ Record.prototype.get = function (path) {
   return jsonPath.get(this._$data, path, this._options.recordDeepCopy)
 }
 
+Record.prototype.setWithAck = function (pathOrData, dataOrCallback, callback) {
+  if (callback) {
+    this.set(pathOrData, dataOrCallback, callback)
+  } else {
+    return new Promise((resolve, reject) => {
+      this.set(pathOrData, dataOrCallback, (error) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve()
+        }
+      })
+    })
+  }
+}
+
 /**
  * Sets the value of either the entire dataset
  * or of a specific path within the record
@@ -332,9 +348,17 @@ Record.prototype.delete = function () {
  */
 Record.prototype.whenReady = function (callback) {
   if (this.isReady === true) {
-    callback(this)
-  } else {
+    if (callback) {
+      callback(this)
+      return
+    } else {
+      return Promise.resolve(this)
+    }
+  }
+  if (callback) {
     this.once('ready', callback.bind(this, this))
+  } else {
+    return new Promise(resolve => this.once('ready', resolve.bind(this, this)))
   }
 }
 

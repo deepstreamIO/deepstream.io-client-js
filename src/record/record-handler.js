@@ -188,14 +188,20 @@ RecordHandler.prototype.snapshot = function (name, callback) {
     throw new Error('invalid argument: name')
   }
 
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument: callback')
-  }
-
   if (this._records[name] && this._records[name].isReady) {
-    callback(null, this._records[name].get())
+    if (callback) {
+      callback(null, this._records[name].get())
+      return
+    } else {
+      return Promise.resolve(this._records[name].get())
+    }
+  }
+  if (callback) {
+    this._snapshotRegistry.request(name, { callback })
   } else {
-    this._snapshotRegistry.request(name, callback)
+    return new Promise((resolve, reject) => {
+      this._snapshotRegistry.request(name, { resolve, reject })
+    })
   }
 }
 
@@ -217,9 +223,20 @@ RecordHandler.prototype.has = function (name, callback) {
   }
 
   if (this._records[name]) {
-    callback(null, true)
+    if (callback) {
+      callback(null, true)
+      return
+    } else {
+      return Promise.resolve(true)
+    }
+  }
+
+  if (callback) {
+    this._hasRegistry.request(name, { callback })
   } else {
-    this._hasRegistry.request(name, callback)
+    return new Promise((resolve, reject) => {
+      this._hasRegistry.request(name, { resolve, reject })
+    })
   }
 }
 
@@ -285,11 +302,11 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
     if (path && cb) {
       record.set(path, data, cb)
     } else if (path) {
-      record.set(path, data)
+      return record.set(path, data)
     } else if (cb) {
       record.set(data, cb)
     } else {
-      record.set(data)
+      return record.set(data)
     }
   } else {
     const recordData = path
