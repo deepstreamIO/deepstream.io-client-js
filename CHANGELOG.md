@@ -1,3 +1,18 @@
+## [2.3.0] - 2017-09-25
+
+### Features
+
+- the presence feature can now be used on a per user basis. The online status of individual users can be queried for as well as subscribed to. Check out the tutorial on our website [here](https://deepstreamhub.com/tutorials/guides/presence/)
+
+### Improvements
+
+- error messages are now stringified to better display information [#386](https://github.com/deepstreamIO/deepstream.io-client-js/pull/386) courtesy of [@SejH](@SejH)
+- improved handling of parameters in calls to `client.record.setData`
+
+### Miscellaneous
+
+- moved e2e steps into [deepstream.io](https://github.com/deepstreamIO/deepstream.io) repository
+
 ## [2.2.1] - 2017-06-02
 
 ### Fixes
