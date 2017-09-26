@@ -92,14 +92,14 @@ SingleNotifier.prototype.recieve = function (name, error, data) {
     this._ackTimeoutRegistry.remove({
       ackId: entry.ackId
     })
-    if (entry.callback) {
-      entry.callback(error, data)
+    if (entry.response.callback) {
+      entry.response.callback(error, data)
       return
     }
     if (error) {
-      entry.reject(data)
+      entry.response.reject(data)
     } else {
-      entry.resolve(data)
+      entry.response.resolve(data)
     }
   }
   delete this._requests[name]

@@ -108,18 +108,28 @@ Record.prototype.get = function (path) {
   return jsonPath.get(this._$data, path, this._options.recordDeepCopy)
 }
 
+/**
+ * Wrapper function around the record.set that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String|Object}   pathOrData     the path or data to write to the record
+ * @param {Object|Function}   dataOrCallback the data to write to the record or the write
+ *                                  acknowledgement callback
+ * @param {Function} callback       the callback with the result of the write
+ * @returns {Promise} if a callback is omitted a Promise is returned with the result of the write
+ */
 Record.prototype.setWithAck = function (pathOrData, dataOrCallback, callback) {
-  if (callback) {
+  if (pathOrData && dataOrCallback && callback) {
     this.set(pathOrData, dataOrCallback, callback)
+  } else if (pathOrData && typeof dataOrCallback === 'function') {
+    this.set(pathOrData, dataOrCallback)
+  } else if (pathOrData && typeof dataOrCallback === 'object') {
+    return new Promise((resolve, reject) => {
+      this.set(pathOrData, dataOrCallback, error => error === null ? resolve() : reject(error))
+    })
   } else {
     return new Promise((resolve, reject) => {
-      this.set(pathOrData, dataOrCallback, (error) => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve()
-        }
-      })
+      this.set(pathOrData, error => error === null ? resolve() : reject(error))
     })
   }
 }
@@ -351,9 +361,8 @@ Record.prototype.whenReady = function (callback) {
     if (callback) {
       callback(this)
       return
-    } else {
-      return Promise.resolve(this)
     }
+    return Promise.resolve(this)
   }
   if (callback) {
     this.once('ready', callback.bind(this, this))

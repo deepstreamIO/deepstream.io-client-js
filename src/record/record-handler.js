@@ -188,13 +188,13 @@ RecordHandler.prototype.snapshot = function (name, callback) {
     throw new Error('invalid argument: name')
   }
 
-  if (this._records[name] && this._records[name].isReady) {
+  const record = this._records[name]
+  if (record && record.isReady) {
     if (callback) {
-      callback(null, this._records[name].get())
+      callback(null, record.get())
       return
-    } else {
-      return Promise.resolve(this._records[name].get())
     }
+    return Promise.resolve(record.get())
   }
   if (callback) {
     this._snapshotRegistry.request(name, { callback })
@@ -226,9 +226,8 @@ RecordHandler.prototype.has = function (name, callback) {
     if (callback) {
       callback(null, true)
       return
-    } else {
-      return Promise.resolve(true)
     }
+    return Promise.resolve(true)
   }
 
   if (callback) {
@@ -236,6 +235,50 @@ RecordHandler.prototype.has = function (name, callback) {
   } else {
     return new Promise((resolve, reject) => {
       this._hasRegistry.request(name, { resolve, reject })
+    })
+  }
+}
+
+/**
+ * A wrapper function around setData. The function works exactly
+ * the same however when a callback is omitted a Promise will be
+ * returned.
+ *
+ * @param {String}          recordName     the name of the record to set
+ * @param {String|Object}   pathOrData     the path to set or the data to write
+ * @param {Object|Function} dataOrCallback the data to write or the write acknowledgement
+ *                                         callback
+ * @param {Function}        callback       the callback that will be called with the result
+ *                                         of the write
+ * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
+ *                    with the result of the write
+ */
+RecordHandler.prototype.setDataWithAck = function (
+  recordName,
+  pathOrData,
+  dataOrCallback,
+  callback
+) {
+  if (dataOrCallback && callback) {
+    this.setData(recordName, pathOrData, dataOrCallback, callback)
+  } else if (typeof pathOrData === 'object' && dataOrCallback) {
+    this.setData(recordName, pathOrData, dataOrCallback)
+  } else if (pathOrData && dataOrCallback) {
+    return new Promise((resolve, reject) => {
+      this.setData(
+        recordName,
+        pathOrData,
+        dataOrCallback,
+        error => error === null ? resolve() : reject(error)
+      )
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.setData(
+        recordName,
+        pathOrData,
+        error => error === null ? resolve() : reject(error)
+      )
     })
   }
 }
@@ -302,11 +345,11 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
     if (path && cb) {
       record.set(path, data, cb)
     } else if (path) {
-      return record.set(path, data)
+      record.set(path, data)
     } else if (cb) {
       record.set(data, cb)
     } else {
-      return record.set(data)
+      record.set(data)
     }
   } else {
     const recordData = path
