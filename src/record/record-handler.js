@@ -478,6 +478,10 @@ RecordHandler.prototype._$handle = function (message) {
     processed = true
     this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]))
 
+  } else if (message.action === C.ACTIONS.HEAD && this._headRegistry.hasRequest(name)) {
+    processed = true
+    this._headRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]))
+
   } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT && !record) {
     processed = true
     Record._handleWriteAcknowledgements(message, this._writeCallbacks[name], this._client)
