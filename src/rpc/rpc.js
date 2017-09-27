@@ -16,9 +16,9 @@ const messageParser = require('../message/message-parser')
  *
  * @constructor
  */
-const Rpc = function (name, callback, options, client) {
+const Rpc = function (name, response, options, client) {
   this._options = options
-  this._callback = callback
+  this._response = response
   this._client = client
   this._ackTimeoutRegistry = client._$getAckTimeoutRegistry()
   this._ackTimeout = this._ackTimeoutRegistry.add({
@@ -61,7 +61,11 @@ Rpc.prototype.ack = function () {
  */
 Rpc.prototype.respond = function (data) {
   const convertedData = messageParser.convertTyped(data, this._client)
-  this._callback(null, convertedData)
+  if (this._response.callback) {
+    this._response.callback(null, convertedData)
+  } else {
+    this._response.resolve(convertedData)
+  }
   this._complete()
 }
 
@@ -77,7 +81,11 @@ Rpc.prototype.respond = function (data) {
  * @returns {void}
  */
 Rpc.prototype.error = function (timeout) {
-  this._callback(timeout.event || timeout)
+  if (this._response.callback) {
+    this._response.callback(timeout.event || timeout)
+  } else {
+    this._response.reject(timeout.event || timeout)
+  }
   this._complete()
 }
 

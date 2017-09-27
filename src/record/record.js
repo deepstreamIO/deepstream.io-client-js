@@ -109,6 +109,32 @@ Record.prototype.get = function (path) {
 }
 
 /**
+ * Wrapper function around the record.set that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String|Object}   pathOrData     the path or data to write to the record
+ * @param {Object|Function}   dataOrCallback the data to write to the record or the write
+ *                                  acknowledgement callback
+ * @param {Function} callback       the callback with the result of the write
+ * @returns {Promise} if a callback is omitted a Promise is returned with the result of the write
+ */
+Record.prototype.setWithAck = function (pathOrData, dataOrCallback, callback) {
+  if (pathOrData && dataOrCallback && callback) {
+    this.set(pathOrData, dataOrCallback, callback)
+  } else if (pathOrData && typeof dataOrCallback === 'function') {
+    this.set(pathOrData, dataOrCallback)
+  } else if (pathOrData && typeof dataOrCallback === 'object') {
+    return new Promise((resolve, reject) => {
+      this.set(pathOrData, dataOrCallback, error => error === null ? resolve() : reject(error))
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.set(pathOrData, error => error === null ? resolve() : reject(error))
+    })
+  }
+}
+
+/**
  * Sets the value of either the entire dataset
  * or of a specific path within the record
  * and submits the changes to the server
@@ -332,9 +358,16 @@ Record.prototype.delete = function () {
  */
 Record.prototype.whenReady = function (callback) {
   if (this.isReady === true) {
-    callback(this)
-  } else {
+    if (callback) {
+      callback(this)
+      return
+    }
+    return Promise.resolve(this)
+  }
+  if (callback) {
     this.once('ready', callback.bind(this, this))
+  } else {
+    return new Promise(resolve => this.once('ready', resolve.bind(this, this)))
   }
 }
 

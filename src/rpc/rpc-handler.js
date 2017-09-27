@@ -108,15 +108,18 @@ RpcHandler.prototype.make = function (name, data, callback) {
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error('invalid argument name')
   }
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument callback')
-  }
 
   const uid = this._client.getUid()
   const typedData = messageBuilder.typed(data)
 
-  this._rpcs[uid] = new Rpc(name, callback, this._options, this._client)
   this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REQUEST, [name, uid, typedData])
+  if (callback && typeof callback === 'function') {
+    this._rpcs[uid] = new Rpc(name, { callback }, this._options, this._client)
+  } else {
+    return new Promise((resolve, reject) => {
+      this._rpcs[uid] = new Rpc(name, { resolve, reject }, this._options, this._client)
+    })
+  }
 }
 
 /**

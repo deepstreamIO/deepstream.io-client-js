@@ -188,14 +188,20 @@ RecordHandler.prototype.snapshot = function (name, callback) {
     throw new Error('invalid argument: name')
   }
 
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument: callback')
+  const record = this._records[name]
+  if (record && record.isReady) {
+    if (callback) {
+      callback(null, record.get())
+      return
+    }
+    return Promise.resolve(record.get())
   }
-
-  if (this._records[name] && this._records[name].isReady) {
-    callback(null, this._records[name].get())
+  if (callback) {
+    this._snapshotRegistry.request(name, { callback })
   } else {
-    this._snapshotRegistry.request(name, callback)
+    return new Promise((resolve, reject) => {
+      this._snapshotRegistry.request(name, { resolve, reject })
+    })
   }
 }
 
@@ -217,9 +223,63 @@ RecordHandler.prototype.has = function (name, callback) {
   }
 
   if (this._records[name]) {
-    callback(null, true)
+    if (callback) {
+      callback(null, true)
+      return
+    }
+    return Promise.resolve(true)
+  }
+
+  if (callback) {
+    this._hasRegistry.request(name, { callback })
   } else {
-    this._hasRegistry.request(name, callback)
+    return new Promise((resolve, reject) => {
+      this._hasRegistry.request(name, { resolve, reject })
+    })
+  }
+}
+
+/**
+ * A wrapper function around setData. The function works exactly
+ * the same however when a callback is omitted a Promise will be
+ * returned.
+ *
+ * @param {String}          recordName     the name of the record to set
+ * @param {String|Object}   pathOrData     the path to set or the data to write
+ * @param {Object|Function} dataOrCallback the data to write or the write acknowledgement
+ *                                         callback
+ * @param {Function}        callback       the callback that will be called with the result
+ *                                         of the write
+ * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
+ *                    with the result of the write
+ */
+RecordHandler.prototype.setDataWithAck = function (
+  recordName,
+  pathOrData,
+  dataOrCallback,
+  callback
+) {
+  if (dataOrCallback && callback) {
+    this.setData(recordName, pathOrData, dataOrCallback, callback)
+  } else if (typeof pathOrData === 'object' && dataOrCallback) {
+    this.setData(recordName, pathOrData, dataOrCallback)
+  } else if (pathOrData && dataOrCallback) {
+    return new Promise((resolve, reject) => {
+      this.setData(
+        recordName,
+        pathOrData,
+        dataOrCallback,
+        error => error === null ? resolve() : reject(error)
+      )
+    })
+  } else {
+    return new Promise((resolve, reject) => {
+      this.setData(
+        recordName,
+        pathOrData,
+        error => error === null ? resolve() : reject(error)
+      )
+    })
   }
 }
 
