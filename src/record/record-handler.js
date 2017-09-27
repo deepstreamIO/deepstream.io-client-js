@@ -42,6 +42,13 @@ const RecordHandler = function (options, connection, client) {
     C.ACTIONS.SNAPSHOT,
     this._options.recordReadTimeout
   )
+  this._headRegistry = new SingleNotifier(
+    client,
+    connection,
+    C.TOPIC.RECORD,
+    C.ACTIONS.HEAD,
+    this._options.recordReadTimeout
+  )
 }
 
 /**
@@ -218,10 +225,6 @@ RecordHandler.prototype.has = function (name, callback) {
     throw new Error('invalid argument: name')
   }
 
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument: callback')
-  }
-
   if (this._records[name]) {
     if (callback) {
       callback(null, true)
@@ -235,6 +238,37 @@ RecordHandler.prototype.has = function (name, callback) {
   } else {
     return new Promise((resolve, reject) => {
       this._hasRegistry.request(name, { resolve, reject })
+    })
+  }
+}
+
+/**
+ * Allows the user to query for the version number of a record.
+ *
+ * @param   {String}  name the unique name of the record
+ * @param   {Function}  callback
+ *
+ * @public
+ */
+RecordHandler.prototype.head = function (name, callback) {
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument: name')
+  }
+
+  const record = this._records[name]
+  if (record && record.isReady) {
+    if (callback) {
+      callback(null, record.version)
+      return
+    }
+    return Promise.resolve(record.version)
+  }
+
+  if (callback) {
+    this._headRegistry.request(name, { callback })
+  } else {
+    return new Promise((resolve, reject) => {
+      this._headRegistry.request(name, { resolve, reject })
     })
   }
 }
