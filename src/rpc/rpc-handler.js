@@ -104,7 +104,7 @@ RpcHandler.prototype.unprovide = function (name) {
  * @public
  * @returns {void}
  */
-RpcHandler.prototype.make = function (name, data, callback) {
+RpcHandler.prototype.make = function (name, data, callback) { // eslint-disable-line
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error('invalid argument name')
   }

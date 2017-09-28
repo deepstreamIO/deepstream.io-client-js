@@ -105,18 +105,24 @@ RpcHandler.prototype.unprovide = function (name) {
  * @returns {void}
  */
 RpcHandler.prototype.make = function (name, data, callback) {
+  var _this = this;
+
+  // eslint-disable-line
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error('invalid argument name');
-  }
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument callback');
   }
 
   var uid = this._client.getUid();
   var typedData = messageBuilder.typed(data);
 
-  this._rpcs[uid] = new Rpc(name, callback, this._options, this._client);
   this._connection.sendMsg(C.TOPIC.RPC, C.ACTIONS.REQUEST, [name, uid, typedData]);
+  if (callback && typeof callback === 'function') {
+    this._rpcs[uid] = new Rpc(name, { callback: callback }, this._options, this._client);
+  } else {
+    return new Promise(function (resolve, reject) {
+      _this._rpcs[uid] = new Rpc(name, { resolve: resolve, reject: reject }, _this._options, _this._client);
+    });
+  }
 };
 
 /**

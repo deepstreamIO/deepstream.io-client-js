@@ -1,5 +1,5 @@
 'use strict';
-/* eslint-disable prefer-spread, prefer-rest-params */
+/* eslint-disable prefer-spread, prefer-rest-params, consistent-return, no-confusing-arrow */
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -107,6 +107,38 @@ Record.prototype.setMergeStrategy = function (mergeStrategy) {
  */
 Record.prototype.get = function (path) {
   return jsonPath.get(this._$data, path, this._options.recordDeepCopy);
+};
+
+/**
+ * Wrapper function around the record.set that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String|Object}   pathOrData     the path or data to write to the record
+ * @param {Object|Function}   dataOrCallback the data to write to the record or the write
+ *                                  acknowledgement callback
+ * @param {Function} callback       the callback with the result of the write
+ * @returns {Promise} if a callback is omitted a Promise is returned with the result of the write
+ */
+Record.prototype.setWithAck = function (pathOrData, dataOrCallback, callback) {
+  var _this = this;
+
+  if (pathOrData && dataOrCallback && callback) {
+    this.set(pathOrData, dataOrCallback, callback);
+  } else if (pathOrData && typeof dataOrCallback === 'function') {
+    this.set(pathOrData, dataOrCallback);
+  } else if (pathOrData && (typeof dataOrCallback === 'undefined' ? 'undefined' : _typeof(dataOrCallback)) === 'object') {
+    return new Promise(function (resolve, reject) {
+      _this.set(pathOrData, dataOrCallback, function (error) {
+        return error === null ? resolve() : reject(error);
+      });
+    });
+  } else {
+    return new Promise(function (resolve, reject) {
+      _this.set(pathOrData, function (error) {
+        return error === null ? resolve() : reject(error);
+      });
+    });
+  }
 };
 
 /**
@@ -220,7 +252,7 @@ Record.prototype.set = function (pathOrData, dataOrCallback, callback) {
  */
 // eslint-disable-next-line
 Record.prototype.subscribe = function (path, callback, triggerNow) {
-  var _this = this;
+  var _this2 = this;
 
   var args = this._normalizeArguments(arguments);
 
@@ -237,8 +269,8 @@ Record.prototype.subscribe = function (path, callback, triggerNow) {
 
   if (args.triggerNow) {
     this.whenReady(function () {
-      _this._eventEmitter.on(args.path, args.callback);
-      args.callback(_this.get(args.path));
+      _this2._eventEmitter.on(args.path, args.callback);
+      args.callback(_this2.get(args.path));
     });
   } else {
     this._eventEmitter.on(args.path, args.callback);
@@ -288,21 +320,21 @@ Record.prototype.unsubscribe = function (pathOrCallback, callback) {
  * @returns {void}
  */
 Record.prototype.discard = function () {
-  var _this2 = this;
+  var _this3 = this;
 
   if (this._checkDestroyed('discard')) {
     return;
   }
   this.whenReady(function () {
-    _this2.usages--;
-    if (_this2.usages <= 0) {
-      _this2.emit('destroyPending');
-      _this2._discardTimeout = _this2._ackTimeoutRegistry.add({
+    _this3.usages--;
+    if (_this3.usages <= 0) {
+      _this3.emit('destroyPending');
+      _this3._discardTimeout = _this3._ackTimeoutRegistry.add({
         topic: C.TOPIC.RECORD,
-        name: _this2.name,
+        name: _this3.name,
         action: C.ACTIONS.UNSUBSCRIBE
       });
-      _this2._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [_this2.name]);
+      _this3._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.UNSUBSCRIBE, [_this3.name]);
     }
   });
 };
@@ -314,21 +346,21 @@ Record.prototype.discard = function () {
  * @returns {void}
  */
 Record.prototype.delete = function () {
-  var _this3 = this;
+  var _this4 = this;
 
   if (this._checkDestroyed('delete')) {
     return;
   }
   this.whenReady(function () {
-    _this3.emit('destroyPending');
-    _this3._deleteAckTimeout = _this3._ackTimeoutRegistry.add({
+    _this4.emit('destroyPending');
+    _this4._deleteAckTimeout = _this4._ackTimeoutRegistry.add({
       topic: C.TOPIC.RECORD,
-      name: _this3.name,
+      name: _this4.name,
       action: C.ACTIONS.DELETE,
       event: C.EVENT.DELETE_TIMEOUT,
-      timeout: _this3._options.recordDeleteTimeout
+      timeout: _this4._options.recordDeleteTimeout
     });
-    _this3._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.DELETE, [_this3.name]);
+    _this4._connection.sendMsg(C.TOPIC.RECORD, C.ACTIONS.DELETE, [_this4.name]);
   });
 };
 
@@ -342,10 +374,21 @@ Record.prototype.delete = function () {
  * @returns {void}
  */
 Record.prototype.whenReady = function (callback) {
+  var _this5 = this;
+
   if (this.isReady === true) {
-    callback(this);
-  } else {
+    if (callback) {
+      callback(this);
+      return;
+    }
+    return Promise.resolve(this);
+  }
+  if (callback) {
     this.once('ready', callback.bind(this, this));
+  } else {
+    return new Promise(function (resolve) {
+      return _this5.once('ready', resolve.bind(_this5, _this5));
+    });
   }
 };
 

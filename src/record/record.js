@@ -1,5 +1,5 @@
 'use strict'
-/* eslint-disable prefer-spread, prefer-rest-params */
+/* eslint-disable prefer-spread, prefer-rest-params, consistent-return, no-confusing-arrow */
 
 const jsonPath = require('./json-path')
 const ResubscribeNotifier = require('../utils/resubscribe-notifier')

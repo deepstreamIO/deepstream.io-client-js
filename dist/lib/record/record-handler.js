@@ -1,4 +1,5 @@
 'use strict';
+/* eslint-disable consistent-return, no-confusing-arrow */
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -32,6 +33,7 @@ var RecordHandler = function RecordHandler(options, connection, client) {
 
   this._hasRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout);
   this._snapshotRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout);
+  this._headRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.HEAD, this._options.recordReadTimeout);
 };
 
 /**
@@ -161,18 +163,26 @@ RecordHandler.prototype.unlisten = function (pattern) {
  * @public
  */
 RecordHandler.prototype.snapshot = function (name, callback) {
+  var _this = this;
+
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error('invalid argument: name');
   }
 
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument: callback');
+  var record = this._records[name];
+  if (record && record.isReady) {
+    if (callback) {
+      callback(null, record.get());
+      return;
+    }
+    return Promise.resolve(record.get());
   }
-
-  if (this._records[name] && this._records[name].isReady) {
-    callback(null, this._records[name].get());
+  if (callback) {
+    this._snapshotRegistry.request(name, { callback: callback });
   } else {
-    this._snapshotRegistry.request(name, callback);
+    return new Promise(function (resolve, reject) {
+      _this._snapshotRegistry.request(name, { resolve: resolve, reject: reject });
+    });
   }
 };
 
@@ -185,18 +195,95 @@ RecordHandler.prototype.snapshot = function (name, callback) {
  * @public
  */
 RecordHandler.prototype.has = function (name, callback) {
+  var _this2 = this;
+
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error('invalid argument: name');
   }
 
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument: callback');
+  if (this._records[name]) {
+    if (callback) {
+      callback(null, true);
+      return;
+    }
+    return Promise.resolve(true);
   }
 
-  if (this._records[name]) {
-    callback(null, true);
+  if (callback) {
+    this._hasRegistry.request(name, { callback: callback });
   } else {
-    this._hasRegistry.request(name, callback);
+    return new Promise(function (resolve, reject) {
+      _this2._hasRegistry.request(name, { resolve: resolve, reject: reject });
+    });
+  }
+};
+
+/**
+ * Allows the user to query for the version number of a record.
+ *
+ * @param   {String}  name the unique name of the record
+ * @param   {Function}  callback
+ *
+ * @public
+ */
+RecordHandler.prototype.head = function (name, callback) {
+  var _this3 = this;
+
+  if (typeof name !== 'string' || name.length === 0) {
+    throw new Error('invalid argument: name');
+  }
+
+  var record = this._records[name];
+  if (record && record.isReady) {
+    if (callback) {
+      callback(null, record.version);
+      return;
+    }
+    return Promise.resolve(record.version);
+  }
+
+  if (callback) {
+    this._headRegistry.request(name, { callback: callback });
+  } else {
+    return new Promise(function (resolve, reject) {
+      _this3._headRegistry.request(name, { resolve: resolve, reject: reject });
+    });
+  }
+};
+
+/**
+ * A wrapper function around setData. The function works exactly
+ * the same however when a callback is omitted a Promise will be
+ * returned.
+ *
+ * @param {String}          recordName     the name of the record to set
+ * @param {String|Object}   pathOrData     the path to set or the data to write
+ * @param {Object|Function} dataOrCallback the data to write or the write acknowledgement
+ *                                         callback
+ * @param {Function}        callback       the callback that will be called with the result
+ *                                         of the write
+ * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
+ *                    with the result of the write
+ */
+RecordHandler.prototype.setDataWithAck = function (recordName, pathOrData, dataOrCallback, callback) {
+  var _this4 = this;
+
+  if (dataOrCallback && callback) {
+    this.setData(recordName, pathOrData, dataOrCallback, callback);
+  } else if ((typeof pathOrData === 'undefined' ? 'undefined' : _typeof(pathOrData)) === 'object' && dataOrCallback) {
+    this.setData(recordName, pathOrData, dataOrCallback);
+  } else if (pathOrData && dataOrCallback) {
+    return new Promise(function (resolve, reject) {
+      _this4.setData(recordName, pathOrData, dataOrCallback, function (error) {
+        return error === null ? resolve() : reject(error);
+      });
+    });
+  } else {
+    return new Promise(function (resolve, reject) {
+      _this4.setData(recordName, pathOrData, function (error) {
+        return error === null ? resolve() : reject(error);
+      });
+    });
   }
 };
 
@@ -292,7 +379,7 @@ RecordHandler.prototype.setData = function (recordName, pathOrData, dataOrCallba
 RecordHandler.prototype._$handle = function (message) {
   var name = void 0;
 
-  if (message.action === C.ACTIONS.ERROR && message.data[0] !== C.EVENT.VERSION_EXISTS && message.data[0] !== C.ACTIONS.SNAPSHOT && message.data[0] !== C.ACTIONS.HAS && message.data[0] !== C.EVENT.MESSAGE_DENIED) {
+  if (message.action === C.ACTIONS.ERROR && message.data[0] !== C.EVENT.VERSION_EXISTS && message.data[0] !== C.ACTIONS.SNAPSHOT && message.data[0] !== C.ACTIONS.HAS && message.data[0] !== C.ACTIONS.HEAD && message.data[0] !== C.EVENT.MESSAGE_DENIED) {
     message.processedError = true;
     this._client._$onError(C.TOPIC.RECORD, message.data[0], message.data[1]);
     return;
@@ -326,7 +413,13 @@ RecordHandler.prototype._$handle = function (message) {
 
     if (message.data[0] === C.ACTIONS.HAS) {
       message.processedError = true;
-      this._snapshotRegistry.recieve(name, message.data[2]);
+      this._hasRegistry.recieve(name, message.data[2]);
+      return;
+    }
+
+    if (message.data[0] === C.ACTIONS.HEAD) {
+      message.processedError = true;
+      this._headRegistry.recieve(name, message.data[2]);
       return;
     }
   } else {
@@ -346,7 +439,10 @@ RecordHandler.prototype._$handle = function (message) {
     this._snapshotRegistry.recieve(name, null, JSON.parse(message.data[2]));
   } else if (message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest(name)) {
     processed = true;
-    this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]));
+    this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1], this._client));
+  } else if (message.action === C.ACTIONS.HEAD && this._headRegistry.hasRequest(name)) {
+    processed = true;
+    this._headRegistry.recieve(name, null, Number(message.data[1]));
   } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT && !record) {
     processed = true;
     Record._handleWriteAcknowledgements(message, this._writeCallbacks[name], this._client);

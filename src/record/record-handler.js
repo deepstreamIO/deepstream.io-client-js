@@ -1,4 +1,5 @@
 'use strict'
+/* eslint-disable consistent-return, no-confusing-arrow */
 
 const Record = require('./record')
 const AnonymousRecord = require('./anonymous-record')
