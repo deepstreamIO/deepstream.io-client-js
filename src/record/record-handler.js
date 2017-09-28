@@ -415,6 +415,7 @@ RecordHandler.prototype._$handle = function (message) {
     (message.data[0] !== C.EVENT.VERSION_EXISTS &&
       message.data[0] !== C.ACTIONS.SNAPSHOT &&
       message.data[0] !== C.ACTIONS.HAS &&
+      message.data[0] !== C.ACTIONS.HEAD &&
       message.data[0] !== C.EVENT.MESSAGE_DENIED
     )
   ) {
@@ -454,7 +455,13 @@ RecordHandler.prototype._$handle = function (message) {
 
     if (message.data[0] === C.ACTIONS.HAS) {
       message.processedError = true
-      this._snapshotRegistry.recieve(name, message.data[2])
+      this._hasRegistry.recieve(name, message.data[2])
+      return
+    }
+
+    if (message.data[0] === C.ACTIONS.HEAD) {
+      message.processedError = true
+      this._headRegistry.recieve(name, message.data[2])
       return
     }
 
@@ -476,11 +483,11 @@ RecordHandler.prototype._$handle = function (message) {
 
   } else if (message.action === C.ACTIONS.HAS && this._hasRegistry.hasRequest(name)) {
     processed = true
-    this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]))
+    this._hasRegistry.recieve(name, null, messageParser.convertTyped(message.data[1], this._client))
 
   } else if (message.action === C.ACTIONS.HEAD && this._headRegistry.hasRequest(name)) {
     processed = true
-    this._headRegistry.recieve(name, null, messageParser.convertTyped(message.data[1]))
+    this._headRegistry.recieve(name, null, Number(message.data[1]))
 
   } else if (message.action === C.ACTIONS.WRITE_ACKNOWLEDGEMENT && !record) {
     processed = true
