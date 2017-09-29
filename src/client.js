@@ -86,6 +86,25 @@ Client.prototype.login = function (authParamsOrCallback, callback) {
 }
 
 /**
+ * Wrapper function around client.login(), behaves exactly the same
+ * however it returns a promise that is resolved with client data on
+ * successful login and rejected with the error message when login fails.
+ *
+ * @param   {Object}   authParams JSON.serializable authentication data
+ *
+ * @public
+ * @returns {Promise} result of the login operation
+ */
+Client.prototype.loginAsync = function (authParams) {
+  return new Promise((resolve, reject) => {
+    this._connection.authenticate(authParams || {}, (success, data) => {
+      if (success) resolve(data)
+      else reject(data)
+    })
+  })
+}
+
+/**
  * Closes the connection to the server.
  *
  * @public
