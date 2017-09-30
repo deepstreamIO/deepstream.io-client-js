@@ -3,7 +3,7 @@
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket;
-var NodeWebSocket = require('ws');
+var NodeWebSocket = require('uws');
 var messageParser = require('./message-parser');
 var messageBuilder = require('./message-builder');
 var utils = require('../utils/utils');

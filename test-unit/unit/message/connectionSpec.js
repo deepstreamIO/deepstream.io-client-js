@@ -5,7 +5,7 @@
 let proxyquire = require('proxyquire').noCallThru(),
   C = require('../../../src/constants/constants'),
   WebsocketMock = require('../../mocks/transport/websocket-mock'),
-  Connection = proxyquire('../../../src/message/connection', { ws: WebsocketMock }),
+  Connection = proxyquire('../../../src/message/connection', { uws: WebsocketMock }),
   clientMock = new (require('../../mocks/client-mock'))(),
   msg = require('../../test-helper/test-helper').msg,
   url = 'somehost:4444',

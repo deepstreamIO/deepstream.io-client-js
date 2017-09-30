@@ -26,17 +26,13 @@
     "type": "git",
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
-  "optionalDependencies": {
-    "utf-8-validate": "^3.0.3",
-    "bufferutil": "^3.0.2"
-  },
   "dependencies": {
     "component-emitter2": "^1.3.5",
-    "ws": "^3.1.0"
+    "uws": "^8.14.1"
   },
   "browser": {
     "net": false,
-    "ws": false
+    "uws": false
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

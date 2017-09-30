@@ -1,7 +1,7 @@
 'use strict'
 
 const BrowserWebSocket = global.WebSocket || global.MozWebSocket
-const NodeWebSocket = require('ws')
+const NodeWebSocket = require('uws')
 const messageParser = require('./message-parser')
 const messageBuilder = require('./message-builder')
 const utils = require('../utils/utils')
