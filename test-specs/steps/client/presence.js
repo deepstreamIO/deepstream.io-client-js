@@ -75,7 +75,7 @@ const subscribeCallback = sinon.spy()
     } catch (e) {
       sinon.assert.calledWith(subscribeCallback, username, true)
     }
-    // sinon.assert.calledOnce(subscribeCallback)
+    sinon.assert.calledOnce(subscribeCallback)
     subscribeCallback.reset()
   })
 
@@ -85,7 +85,7 @@ const subscribeCallback = sinon.spy()
     } catch (e) {
       sinon.assert.calledWith(subscribeCallback, username, false)
     }
-    // sinon.assert.calledOnce(subscribeCallback)
+    sinon.assert.calledOnce(subscribeCallback)
     subscribeCallback.reset()
   })
 

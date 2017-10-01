@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
+    "grunt": "^1.0.1",
     "babel-preset-es2015": "^6.24.1",
     "babelify": "^7.3.0",
     "coveralls": "^2.13.1",
@@ -47,7 +48,6 @@
     "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "derequire": "^2.0.6",
     "eslint-config-deepstream": "^2.2.1",
-    "grunt": "^1.0.1",
     "grunt-browserify": "^5.2.0",
     "grunt-cli": "^1.2.0",
     "grunt-contrib-uglify": "^3.0.1",

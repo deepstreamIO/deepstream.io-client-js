@@ -37,9 +37,7 @@ Given(/^the client is initialised$/, (callback) => {
     recordReadAckTimeout: 200,
     recordReadTimeout: 400,
     recordDeleteTimeout: 100,
-    rpcResponseTimeout: 200,
-    maxReconnectAttempts: 999,
-    maxReconnectInterval: 500
+    rpcResponseTimeout: 200
   })
   global.dsClient.on('error', function () {
     errors.push(arguments)
@@ -101,7 +99,7 @@ Then(/^the client throws a "(\w*)" error with message "(.*)"$/, (error, errorMes
   }
 
   error = check('last error', error, lastErrorArgs[1])
-  errorMessage = check('last error message', lastErrorArgs[0], errorMessage)
+  errorMessage = check('last error message', errorMessage, lastErrorArgs[0])
   if (error || errorMessage) {
     callback(`${error} ${errorMessage}`)
     return

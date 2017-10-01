@@ -78,7 +78,9 @@ var convertChars = function (input) {
     message = message.replace(/\+/g, String.fromCharCode(30))
 
     server.send(message)
-    setTimeout(callback, config.messageWaitTime * 2)
+    setTimeout(callback, config
+
+.messageWaitTime * 2)
   })
 
   When(/^the connection to the server is lost$/, (callback) => {
@@ -95,7 +97,7 @@ var convertChars = function (input) {
         }
       }, 250)
     }
-    server.whenReady(hasAClient)
+    server.whenReady(hasAClient, 100)
   })
 
   Then(/^no message was send to the server$/, (callback) => {

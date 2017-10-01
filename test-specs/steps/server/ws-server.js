@@ -1,9 +1,8 @@
 'use strict'
 
 const http = require('http')
-const ws = require('uws')
+const ws = require('ws')
 const config = require('../config')
-const EventEmitter = require('events').EventEmitter
 
 function WSServer(port) {
   this.server
@@ -13,7 +12,6 @@ function WSServer(port) {
 
   this.allMessages = []
   this.lastMessage = null
-  this.emitter = new EventEmitter()
 
   this.port = port || config.testServerPort
 }
@@ -40,18 +38,21 @@ WSServer.prototype.whenReady = function (callback) {
   if (this.isReady) {
     callback()
   } else {
-    this.emitter.once('ready', callback)
+    this.httpServer.once('listening', callback)
   }
 }
 
 WSServer.prototype.start = function () {
+  this.httpServer = http.createServer()
+  this.httpServer.listen(this.port, config.testServerHost)
+
   this.server = new ws.Server({
     server: this.httpServer,
     perMessageDeflate: false,
-    path: '/deepstream',
-    port: this.port
-  }, this.onListening.bind(this))
+    path: '/deepstream'
+  })
   this.server.on('connection', this.bindSocket.bind(this))
+  this.httpServer.once('listening', this.onListening.bind(this))
 }
 
 WSServer.prototype.stop = function (callback) {
@@ -65,8 +66,9 @@ WSServer.prototype.stop = function (callback) {
   })
 
   this.server.close()
+  this.httpServer.close(callback)
+
   this.server = null
-  setTimeout(callback, 3000)
 }
 
 WSServer.prototype.bindSocket = function (socket) {
@@ -93,7 +95,6 @@ WSServer.prototype.onIncomingMessage = function (message) {
 
 WSServer.prototype.onListening = function () {
   this.isReady = true
-  this.emitter.emit('ready')
 }
 
 module.exports = WSServer
