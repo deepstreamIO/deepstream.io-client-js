@@ -154,7 +154,7 @@ Connection.prototype.close = function () {
  * @returns {void}
  */
 Connection.prototype._createEndpoint = function () {
-  this._endpoint = BrowserWebSocket ? new BrowserWebSocket(this._url) : new NodeWebSocket(this._url, this._options.nodeSocketOptions || {});
+  this._endpoint = BrowserWebSocket ? new BrowserWebSocket(this._url) : new NodeWebSocket(this._url, this._options.nodeSocketOptions);
 
   this._endpoint.onopen = this._onOpen.bind(this);
   this._endpoint.onerror = this._onError.bind(this);
@@ -299,22 +299,22 @@ Connection.prototype._onError = function (error) {
   var _this = this;
 
   clearInterval(this._heartbeatInterval);
+  this._setState(C.CONNECTION_STATE.ERROR);
+
   /*
    * If the implementation isn't listening on the error event this will throw
    * an error. So let's defer it to allow the reconnection to kick in.
    */
   setTimeout(function () {
     var msg = void 0;
-    if (error.message === 'uWs client connection error') {
+    if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
       msg = 'Can\'t connect! Deepstream server unreachable on ' + _this._originalUrl;
-      _this._tryReconnect();
     } else {
       try {
         msg = JSON.stringify(error);
       } catch (e) {
         msg = error.toString();
       }
-      _this._setState(C.CONNECTION_STATE.ERROR);
     }
     _this._client._$onError(C.TOPIC.CONNECTION, C.EVENT.CONNECTION_ERROR, msg);
   }, 1);
@@ -503,6 +503,7 @@ Connection.prototype._tryReconnect = function () {
   if (this._reconnectTimeout !== null) {
     return;
   }
+
   if (this._reconnectionAttempt < this._options.maxReconnectAttempts) {
     this._setState(C.CONNECTION_STATE.RECONNECTING);
     this._reconnectTimeout = setTimeout(this._tryOpen.bind(this), Math.min(this._options.maxReconnectInterval, this._options.reconnectIntervalIncrement * this._reconnectionAttempt));
