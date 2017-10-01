@@ -3,7 +3,7 @@
 
 let proxyquire = require('proxyquire'),
   WebsocketMock = require('../../mocks/transport/websocket-mock'),
-  Connection = proxyquire('../../../src/message/connection', { uws: WebsocketMock }),
+  Connection = proxyquire('../../../src/message/connection', { ws: WebsocketMock }),
   deepstream = proxyquire('../../../src/client', { './message/connection': Connection }),
   msg = require('../../test-helper/test-helper').msg
 

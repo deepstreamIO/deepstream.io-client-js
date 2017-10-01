@@ -1930,26 +1930,6 @@ Client.prototype.login = function (authParamsOrCallback, callback) {
 };
 
 /**
- * Wrapper function around client.login(), behaves exactly the same
- * however it returns a promise that is resolved with client data on
- * successful login and rejected with the error message when login fails.
- *
- * @param   {Object}   authParams JSON.serializable authentication data
- *
- * @public
- * @returns {Promise} result of the login operation
- */
-Client.prototype.loginAsync = function (authParams) {
-  var _this = this;
-
-  return new Promise(function (resolve, reject) {
-    _this._connection.authenticate(authParams || {}, function (success, data) {
-      if (success) resolve(data);else reject(data);
-    });
-  });
-};
-
-/**
  * Closes the connection to the server.
  *
  * @public
@@ -2655,7 +2635,7 @@ module.exports = EventHandler;
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var BrowserWebSocket = global.WebSocket || global.MozWebSocket;
-var NodeWebSocket = _dereq_('uws');
+var NodeWebSocket = _dereq_('ws');
 var messageParser = _dereq_('./message-parser');
 var messageBuilder = _dereq_('./message-builder');
 var utils = _dereq_('../utils/utils');
@@ -3199,7 +3179,7 @@ Connection.prototype._clearReconnect = function () {
 module.exports = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"uws":1}],16:[function(_dereq_,module,exports){
+},{"../constants/constants":11,"../utils/utils":31,"./message-builder":16,"./message-parser":17,"ws":1}],16:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };

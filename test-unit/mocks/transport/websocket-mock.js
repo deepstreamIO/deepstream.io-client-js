@@ -17,8 +17,6 @@ const WebsocketMock = function (url) {
   this.lastSendMessage = null
   this.messages = []
   count++
-
-  this.OPEN = 1
 }
 
 util.inherits(WebsocketMock, events.EventEmitter)
