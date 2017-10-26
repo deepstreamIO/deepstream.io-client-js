@@ -78,10 +78,13 @@ List.prototype.isEmpty = function () {
 /**
  * Updates the list with a new set of entries
  *
- * @public
  * @param {Array} entries
+ * @param {Function} [callback]
+ *
+ * @public
+ * @returns {void}
  */
-List.prototype.setEntries = function (entries) {
+List.prototype.setEntries = function (entries, callback) {
   const errorMsg = 'entries must be an array of record names'
   let i
 
@@ -99,9 +102,37 @@ List.prototype.setEntries = function (entries) {
     this._queuedMethods.push(this.setEntries.bind(this, entries))
   } else {
     this._beforeChange()
-    this._record.set(entries)
+
+    if (callback) {
+      this._record.set(entries, callback)
+    } else {
+      this._record.set(entries)
+    }
+
     this._afterChange()
   }
+}
+
+/**
+ * Wrapper function around the list.setEntries that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {Array} entries
+ * @param {Function} callback
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.setEntriesWithAck = function (entries, callback) {
+  if (callback) {
+    return this.setEntries(entries, callback)
+  }
+  return new Promise((resolve, reject) => {
+    this.setEntries(entries, error => (
+      error === null ? resolve() : reject(error)
+    ))
+  })
 }
 
 /**

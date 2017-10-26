@@ -6,13 +6,14 @@ let List = require('../../../src/record/list'),
   ClientMock = require('../../mocks/client-mock'),
   ConnectionMock = require('../../mocks/message/connection-mock'),
   msg = require('../../test-helper/test-helper').msg,
-  options = {}
+  options = { recordReadAckTimeout: 100, recordReadTimeout: 200 }
 
 describe('lists contain arrays of record names', () => {
   let list,
     recordHandler = new RecordHandler(options, new ConnectionMock(), new ClientMock()),
     readyCallback = jasmine.createSpy('ready'),
-    changeCallback = jasmine.createSpy('change')
+    changeCallback = jasmine.createSpy('change'),
+    setCallback = jasmine.createSpy('set')
 
   it('creates the list', () => {
     list = new List(recordHandler, 'someList', {})
@@ -126,5 +127,16 @@ describe('lists contain arrays of record names', () => {
     list._record.isReady = true
     list._onReady()
     expect(list.getEntries()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('sets the entire list with callback', () => {
+    expect(list.setEntriesWithAck(['u', 'v'], setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|18|["u","v"]|{"writeSuccess":true}+'))
+  })
+
+  it('sets the entire list with promise', () => {
+    const promise = list.setEntriesWithAck(['v', 'w'])
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|19|["v","w"]|{"writeSuccess":true}+'))
   })
 })
