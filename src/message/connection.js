@@ -459,6 +459,8 @@ Connection.prototype._handleAuthResponse = function (message) {
       }
 
       return
+    } else if (message.data[0] === C.EVENT.ALREADY_AUTHENTICATED) {
+      this._client._$onError(C.TOPIC.ERROR, C.EVENT.ALREADY_AUTHENTICATED, 'this client\'s connection is already authenticated')
     } else {
       this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION)
     }
