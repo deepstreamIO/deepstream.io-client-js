@@ -139,12 +139,20 @@ List.prototype.setEntriesWithAck = function (entries, callback) {
  * Removes an entry from the list
  *
  * @param {String} entry
- * @param {Number} [index]
+ * @param {Number} [indexOrCallback]
+ * @param {Function} [callback]
  *
  * @public
  * @returns {void}
  */
-List.prototype.removeEntry = function (entry, index) {
+List.prototype.removeEntry = function (entry, indexOrCallback, callback) {
+  let index = indexOrCallback
+  let cb = callback
+  if (typeof indexOrCallback === 'function') {
+    cb = indexOrCallback
+    index = undefined
+  }
+
   if (this._record.isReady === false) {
     this._queuedMethods.push(this.removeEntry.bind(this, entry, index))
     return
@@ -161,8 +169,40 @@ List.prototype.removeEntry = function (entry, index) {
     }
   }
   this._beforeChange()
-  this._record.set(entries)
+
+  if (cb) {
+    this._record.set(entries, cb)
+  } else {
+    this._record.set(entries)
+  }
+
   this._afterChange()
+}
+
+/**
+ * Wrapper function around the list.removeEntry that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String} entry
+ * @param {Number|Function} [indexOrCallback]
+ * @param {Function} [callback]
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.removeEntryWithAck = function (entry, indexOrCallback, callback) {
+  if (typeof indexOrCallback === 'number' && callback) {
+    return this.removeEntry(entry, indexOrCallback, callback)
+  }
+  if (typeof indexOrCallback === 'function') {
+    return this.removeEntry(entry, indexOrCallback)
+  }
+  return new Promise((resolve, reject) => {
+    this.removeEntry(entry, indexOrCallback, error => (
+      error === null ? resolve() : reject(error)
+    ))
+  })
 }
 
 /**

@@ -161,4 +161,26 @@ describe('lists contain arrays of record names', () => {
     expect(promise instanceof Promise).toBe(true)
     expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|23|["t","u","v","w","x","y"]|{"writeSuccess":true}+'))
   })
+
+  it('removes an entry from the list with a callback', () => {
+    expect(list.removeEntryWithAck('x', setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|24|["t","u","v","w","y"]|{"writeSuccess":true}+'))
+  })
+
+  it('removes an entry from the list with a promise', () => {
+    const promise = list.removeEntryWithAck('y')
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|25|["t","u","v","w"]|{"writeSuccess":true}+'))
+  })
+
+  it('removes an entry from the list on an explicit index with a callback', () => {
+    expect(list.removeEntryWithAck('t', 0, setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|26|["u","v","w"]|{"writeSuccess":true}+'))
+  })
+
+  it('removes an entry from the list on an explicit index with a promise', () => {
+    const promise = list.removeEntryWithAck('w', 2)
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|27|["u","v"]|{"writeSuccess":true}+'))
+  })
 })
