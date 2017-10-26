@@ -99,16 +99,14 @@ List.prototype.setEntries = function (entries, callback) {
   }
 
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.setEntries.bind(this, entries))
+    this._queuedMethods.push(this.setEntries.bind(this, entries, callback))
   } else {
     this._beforeChange()
-
     if (callback) {
       this._record.set(entries, callback)
     } else {
       this._record.set(entries)
     }
-
     this._afterChange()
   }
 }
@@ -154,7 +152,7 @@ List.prototype.removeEntry = function (entry, indexOrCallback, callback) {
   }
 
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.removeEntry.bind(this, entry, index))
+    this._queuedMethods.push(this.removeEntry.bind(this, entry, index, cb))
     return
   }
 
@@ -168,14 +166,13 @@ List.prototype.removeEntry = function (entry, indexOrCallback, callback) {
       entries.push(currentEntries[i])
     }
   }
-  this._beforeChange()
 
+  this._beforeChange()
   if (cb) {
     this._record.set(entries, cb)
   } else {
     this._record.set(entries)
   }
-
   this._afterChange()
 }
 
@@ -228,7 +225,7 @@ List.prototype.addEntry = function (entry, indexOrCallback, callback) {
   }
 
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.addEntry.bind(this, entry, index))
+    this._queuedMethods.push(this.addEntry.bind(this, entry, index, cb))
     return
   }
 
@@ -239,14 +236,13 @@ List.prototype.addEntry = function (entry, indexOrCallback, callback) {
   } else {
     entries.push(entry)
   }
-  this._beforeChange()
 
+  this._beforeChange()
   if (cb) {
     this._record.set(entries, cb)
   } else {
     this._record.set(entries)
   }
-
   this._afterChange()
 }
 
