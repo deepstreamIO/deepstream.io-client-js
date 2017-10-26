@@ -139,4 +139,26 @@ describe('lists contain arrays of record names', () => {
     expect(promise instanceof Promise).toBe(true)
     expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|19|["v","w"]|{"writeSuccess":true}+'))
   })
+
+  it('adds an entry to the end of list with a callback', () => {
+    expect(list.addEntryWithAck('x', setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|20|["v","w","x"]|{"writeSuccess":true}+'))
+  })
+
+  it('adds an entry to the end of list with a promise', () => {
+    const promise = list.addEntryWithAck('y')
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|21|["v","w","x","y"]|{"writeSuccess":true}+'))
+  })
+
+  it('adds an entry to the list on an explicit index with a callback', () => {
+    expect(list.addEntryWithAck('u', 0, setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|22|["u","v","w","x","y"]|{"writeSuccess":true}+'))
+  })
+
+  it('adds an entry to the list at an explicit index with promise', () => {
+    const promise = list.addEntryWithAck('t', 0)
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|23|["t","u","v","w","x","y"]|{"writeSuccess":true}+'))
+  })
 })
