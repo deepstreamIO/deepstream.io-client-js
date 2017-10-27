@@ -254,6 +254,9 @@ Connection.prototype._queueNextPacket = function () {
  * @returns {void}
  */
 Connection.prototype._sendAuthParams = function () {
+  if (this._state === C.CONNECTION_STATE.AUTHENTICATING) {
+    return
+  }
   this._setState(C.CONNECTION_STATE.AUTHENTICATING)
   const authMessage = messageBuilder.getMsg(C.TOPIC.AUTH, C.ACTIONS.REQUEST, [this._authParams])
   this._submit(authMessage)
