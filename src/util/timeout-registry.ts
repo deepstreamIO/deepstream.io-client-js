@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
-import * as EventEmitter from 'component-emitter'
+import * as EventEmitter from 'component-emitter2'
 
 export interface Timeout {
     event?: EVENT

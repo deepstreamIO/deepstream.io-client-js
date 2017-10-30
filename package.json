@@ -13,7 +13,8 @@
     "clean": "rimraf dist",
     "lint": "tslint test/**/*.ts src/**/*.ts -t verbose",
     "lint:fix": "tslint --fix test/**/*.t src/**/*.ts -t verbose",
-    "test": "npm run tsc && mocha dist/test --recursive --reporter dot"
+    "test": "npm run tsc && mocha dist/test --recursive --reporter dot",
+    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot"
   },
   "repository": {
     "type": "git",
@@ -44,6 +45,7 @@
     "babel-preset-stage-0": "^6.24.1",
     "chai": "^4.1.2",
     "coveralls": "^3.0.0",
+    "istanbul": "^0.4.5",
     "mocha": "^4.0.1",
     "rimraf": "^2.6.2",
     "sinon": "^4.0.1",
