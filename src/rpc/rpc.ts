@@ -8,7 +8,7 @@ import { TOPIC, RPC_ACTION, EVENT } from '../constants'
  * is to encapsulate the logic around timeouts and to convert the
  * incoming response data
  */
-export class Rpc {
+export class RPC {
     private services: Services
     private options: Options
     private name: string
@@ -54,10 +54,17 @@ export class Rpc {
 
     /**
      * Called once a response message is received from the server.
-     * Converts the typed data and completes the request
      */
-    public respond (message: Message) {
-      this.response.callback(null, message.parsedData)
+    public respond (data: any) {
+      this.response.callback(null, data)
+      this.complete()
+    }
+
+    /**
+     * Called once an error is received from the server.
+     */
+    public error (data: any) {
+      this.response.callback(data, data)
       this.complete()
     }
 

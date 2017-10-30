@@ -9,7 +9,7 @@ import { TOPIC, RPC_ACTION, EVENT } from '../constants'
  * is to encapsulate the logic around timeouts and to convert the
  * incoming response data
  */
-export class Rpc {
+export class RPCResponse {
     private services: Services
     private options: Options
     private name: string
@@ -18,9 +18,9 @@ export class Rpc {
     private isComplete: boolean
     private autoAccept: boolean
 
-    constructor (name: string, correlationId: any, options: Options, services: Services) {
-        this.name = name
-        this.correlationId = correlationId
+    constructor (message: Message, options: Options, services: Services) {
+        this.name = message.name as string
+        this.correlationId = message.correlationId as string
         this.options = options
         this.services = services
         this.isAccepted = false
