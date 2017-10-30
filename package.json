@@ -3,24 +3,17 @@
   "version": "2.3.0",
   "description": "the javascript client for deepstream.io",
   "main": "dist/lib/client.js",
-  "types": "src/client.d.ts",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "precommit": "npm run lint && npm run unit",
-    "commitmsg": "validate-commit-msg",
-    "all": "npm t && npm run specs",
-    "lint": "node_modules/.bin/eslint src/",
-    "test": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
-    "reporter": "istanbul cover jasmine-runner.js",
-    "coverage": "istanbul cover node_modules/jasmine/bin/jasmine.js JASMINE_CONFIG_PATH=jasmine.json",
-    "watch": "watch \"npm test\" ./src ./test-unit",
-    "unit": "jasmine JASMINE_CONFIG_PATH=jasmine.json",
-    "unit::watch": "watch \"npm run unit\" ./src ./test-unit",
-    "webpack": "webpack --progress test-page-webpack/index.js test-page-webpack/dist/build.js",
-    "specs": "node ./node_modules/cucumber/bin/cucumber.js test-specs --require ./test-specs/steps",
-    "build": "./node_modules/.bin/babel src -d dist/lib --presets es2015 && ./node_modules/.bin/grunt build"
+    "tsc": "rm -rf dist && tsc",
+    "build": "webpack",
+    "rebuild": "rimraf dist && webpack",
+    "clean": "rimraf dist",
+    "lint": "tslint test/**/*.ts src/**/*.ts -t verbose",
+    "lint:fix": "tslint --fix test/**/*.t src/**/*.ts -t verbose",
+    "test": "npm run tsc && mocha dist/test --recursive --reporter dot"
   },
   "repository": {
     "type": "git",
@@ -32,33 +25,31 @@
   },
   "dependencies": {
     "component-emitter2": "^1.3.5",
-    "ws": "^3.1.0"
+    "ws": "^3.2.0"
   },
   "browser": {
     "net": false,
     "ws": false
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "grunt": "^1.0.1",
+    "@types/chai": "^4.0.4",
+    "@types/mocha": "^2.2.43",
+    "@types/node": "^8.0.46",
+    "@types/sinon": "^2.3.7",
+    "@types/ws": "^3.2.0",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-polyfill": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
-    "babelify": "^7.3.0",
-    "coveralls": "^2.13.1",
-    "cucumber": "^3.0.1",
-    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
-    "derequire": "^2.0.6",
-    "eslint-config-deepstream": "^2.2.1",
-    "grunt-browserify": "^5.2.0",
-    "grunt-cli": "^1.2.0",
-    "grunt-contrib-uglify": "^3.0.1",
-    "husky": "^0.14.3",
-    "istanbul": "^0.4.5",
-    "jasmine": "^2.8.0",
-    "jasmine-spec-reporter": "^4.2.1",
-    "proxyquire": "1.8.0",
-    "sinon": "^3.2.1",
-    "validate-commit-msg": "^2.14.0",
-    "watch": "^1.0.2"
+    "babel-preset-stage-0": "^6.24.1",
+    "chai": "^4.1.2",
+    "coveralls": "^3.0.0",
+    "mocha": "^4.0.1",
+    "rimraf": "^2.6.2",
+    "sinon": "^4.0.1",
+    "ts-loader": "^3.0.5",
+    "typescript": "^2.5.3",
+    "webpack": "^3.8.1"
   },
   "author": "deepstreamHub GmbH",
   "license": "Apache-2.0",

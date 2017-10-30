@@ -2,3 +2,6 @@
 	path = test-specs/features
 	url = https://github.com/deepstreamIO/deepstream.io-client-specs.git
 
+[submodule "protocol/text"]
+	path = protocol/text
+	url = git@github.com:deepstreamIO/deepstream.io-protocol-text.git
