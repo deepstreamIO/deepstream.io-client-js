@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTION, EVENT } from '../constants'
-import { Listener, ListenCallback } from '../util/listener'
+import { Listener, ListenCallback } from '../util/listenerm'
 import * as Emitter from 'component-emitter2'
 
 export class EventHandler {
@@ -100,25 +100,25 @@ public emit (name: string, data: any): void {
  * is useful to create "active" data providers, e.g. providers that only provide
  * data for a particular event if a user is actually interested in it
  */
-  public listen (pattern: string, callback: ListenCallback) {
-    if (typeof pattern !== 'string' || pattern.length === 0) {
-      throw new Error('invalid argument pattern')
-    }
-    if (typeof callback !== 'function') {
-      throw new Error('invalid argument callback')
-    }
-    this.listeners.listen(pattern, callback)
+public listen (pattern: string, callback: ListenCallback) {
+  if (typeof pattern !== 'string' || pattern.length === 0) {
+    throw new Error('invalid argument pattern')
   }
+  if (typeof callback !== 'function') {
+    throw new Error('invalid argument callback')
+  }
+  this.listeners.listen(pattern, callback)
+}
 
-  /**
-   * Removes a listener that was previously registered with listenForSubscriptions
-   */
-    public unlisten (pattern: string) {
-    if (typeof pattern !== 'string' || pattern.length === 0) {
-      throw new Error('invalid argument pattern')
-    }
-    this.listeners.unlisten(pattern)
+/**
+ * Removes a listener that was previously registered with listenForSubscriptions
+ */
+  public unlisten (pattern: string) {
+  if (typeof pattern !== 'string' || pattern.length === 0) {
+    throw new Error('invalid argument pattern')
   }
+  this.listeners.unlisten(pattern)
+}
 
   /**
  * Handles incoming messages from the server
