@@ -13,8 +13,8 @@
     "clean": "rimraf dist",
     "lint": "tslint test/**/*.ts src/**/*.ts -t verbose",
     "lint:fix": "tslint --fix test/**/*.t src/**/*.ts -t verbose",
-    "test": "npm run tsc && mocha dist/test --recursive --reporter dot",
-    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot"
+    "test": "npm run tsc && mocha dist/test --recursive --reporter dot --require source-map-support/register",
+    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot --require source-map-support/register"
   },
   "repository": {
     "type": "git",
@@ -49,6 +49,7 @@
     "mocha": "^4.0.1",
     "rimraf": "^2.6.2",
     "sinon": "^4.0.1",
+    "source-map-support": "^0.5.0",
     "ts-loader": "^3.0.5",
     "typescript": "^2.5.3",
     "webpack": "^3.8.1"
