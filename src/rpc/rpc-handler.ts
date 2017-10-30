@@ -5,13 +5,11 @@ import * as Emitter from 'component-emitter2'
 
 export class RPCHandler {
   private services: Services
-  private emitter: Emitter
   private options: Options
 
   constructor (services: Services, options: Options) {
     this.services = services
     this.options = options
-    this.emitter = new Emitter()
   }
 
   // tslint:disable-next-line:no-empty

@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTION, EVENT } from '../constants'
-import { Listener, ListenCallback } from '../util/listener'
+import { Listener, ListenCallback } from '../util/listeners'
 import * as Emitter from 'component-emitter2'
 
 export class EventHandler {
@@ -77,11 +77,11 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
     }
   }
 
-/**
- * Emits an event locally and sends a message to the server to
- * broadcast the event to the other connected clients
- */
-public emit (name: string, data: any): void {
+  /**
+   * Emits an event locally and sends a message to the server to
+   * broadcast the event to the other connected clients
+   */
+  public emit (name: string, data: any): void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
@@ -125,8 +125,8 @@ public emit (name: string, data: any): void {
  */
 private handle (message: Message): void {
     if (message.isAck) {
-        this.services.timeoutRegistry.remove(message)
-        return
+      this.services.timeoutRegistry.remove(message)
+      return
     }
 
     if (message.action === EVENT_ACTION.EMIT) {
@@ -144,7 +144,10 @@ private handle (message: Message): void {
         return
     }
 
-    if (message.action === EVENT_ACTION.NOT_SUBSCRIBED) {
+    if (
+      message.action === EVENT_ACTION.NOT_SUBSCRIBED ||
+      message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS
+    ) {
         this.services.logger.warn(message)
         return
     }
@@ -159,9 +162,9 @@ private handle (message: Message): void {
     const callbacks = this.emitter._callbacks
     for (const name in callbacks) {
       this.services.connection.sendMessage({
-          topic: TOPIC.EVENT,
-          action: EVENT_ACTION.SUBSCRIBE,
-          name
+        topic: TOPIC.EVENT,
+        action: EVENT_ACTION.SUBSCRIBE,
+        name
       })
     }
   }

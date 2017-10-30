@@ -1,11 +1,13 @@
-import { EventEmitter } from 'events'
 // tslint:disable:no-empty
-import { mock } from 'sinon'
+import { EventEmitter } from 'events'
+import { mock, stub } from 'sinon'
+import { TimerRegistry } from '../src/util/timer-registry'
 
 export const getServicesMock = () => {
   let handle: Function | null = null
   const connection = {
       sendMessage: () => {},
+      getConnectionState: stub(),
       registerHandler: (topic: any, callback: Function) => {
         handle = callback
       }
@@ -26,6 +28,8 @@ export const getServicesMock = () => {
   loggerMock.expects('warn').never()
   loggerMock.expects('error').never()
 
+  const timerRegistry = new TimerRegistry()
+
   return {
     connection,
     connectionMock,
@@ -33,6 +37,7 @@ export const getServicesMock = () => {
     timeoutRegistryMock,
     logger,
     loggerMock,
+    timerRegistry,
     getHandle: (): Function | null => handle
   }
 }
