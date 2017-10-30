@@ -11,15 +11,12 @@ export const getServicesMock = () => {
       }
   }
   const connectionMock = mock(connection)
-  connectionMock.expects('sendMessage').never()
 
   const timeoutRegistry = {
       add: () => {},
       remove: () => {}
   }
   const timeoutRegistryMock = mock(timeoutRegistry)
-  timeoutRegistryMock.expects('add').never()
-  timeoutRegistryMock.expects('remove').never()
 
   const logger = {
       warn: () => {},

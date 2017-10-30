@@ -77,7 +77,7 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
     }
   }
 
-  /**
+/**
  * Emits an event locally and sends a message to the server to
  * broadcast the event to the other connected clients
  */
