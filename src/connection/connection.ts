@@ -2,23 +2,20 @@ import { TOPIC, CONNECTION_STATE, EVENT, AUTH_ACTION, CONNECTION_ACTION } from '
 import { StateMachine } from '../util/state-machine'
 import { Services } from '../client'
 import { Options } from '../client-options'
+import { Socket } from './socket-factory'
 import * as NodeWebSocket from 'ws'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
 
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
 
-const parseMessage = (rawMessage: string) => []
-const buildMessage = (message: Message, isAck: boolean) => ''
-
 const enum TRANSITIONS {
   CONNECT = 'connect',
   CHALLENGE = 'challenge',
   AUTHENTICATE = 'authenticate',
   RECONNECT = 'reconnect',
-  ACCEPTED = 'accepted',
-  CHALLENGING = 'challenging',
-  CHALLENGE_REJECTED = 'challenge-rejected',
+  CHALLENGE_ACCEPTED = 'accepted',
+  CHALLENGE_DENIED = 'challenge-denied',
   CONNECTION_REDIRECTED = 'redirected',
   TOO_MANY_AUTH_ATTEMPTS = 'too-many-auth-attempts',
   CLOSE = 'close',
@@ -27,7 +24,7 @@ const enum TRANSITIONS {
   ERROR = 'error'
 }
 
-export class Connection extends Emitter {
+export class Connection {
   private services: Services
   private options: Options
   private stateMachine: StateMachine
@@ -38,16 +35,14 @@ export class Connection extends Emitter {
   private deliberateClose: boolean
   private heartbeatInterval: number
   private lastHeartBeat: number
-  private endpoint: WebSocket | NodeWebSocket
+  private endpoint: Socket
   private emitter: Emitter
   private handlers: Map<TOPIC, Function>
 
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
 
-  
   constructor (services: Services, options: Options, url: string, emitter: Emitter) {
-    super()
     this.options = options
     this.services = services
     this.authParams = null
@@ -59,12 +54,18 @@ export class Connection extends Emitter {
       this.services.logger,
       {
         init: CONNECTION_STATE.CLOSED,
+        onStateChanged: (newState: string) => {
+          emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
+        },
         transitions: [
           { name: TRANSITIONS.CONNECT, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
-          { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
+          { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.CHALLENGING },
+          { name: TRANSITIONS.CHALLENGE_DENIED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.CHALLENGE_DENIED },
+          { name: TRANSITIONS.CHALLENGE_ACCEPTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
           { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATING },
           { name: TRANSITIONS.UNSUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
           { name: TRANSITIONS.SUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.OPEN },
+          { name: TRANSITIONS.CLOSE, from: CONNECTION_STATE.OPEN, to: CONNECTION_STATE.CLOSED },
           { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.ERROR },
         ]
       }
@@ -79,7 +80,7 @@ export class Connection extends Emitter {
   }
 
   public sendMessage (message: Message): void {
-    this.endpoint.send(buildMessage(message, false))
+    this.endpoint.sendParsedMessage(message)
   }
 
   /**
@@ -143,7 +144,7 @@ export class Connection extends Emitter {
     this.endpoint.onopen = this.onOpen.bind(this)
     this.endpoint.onerror = this.onError.bind(this)
     this.endpoint.onclose = this.onClose.bind(this)
-    this.endpoint.onmessage = this.onMessage.bind(this)
+    this.endpoint.onparsedmessages = this.onMessages.bind(this)
   }
 
   /********************************
@@ -158,10 +159,11 @@ export class Connection extends Emitter {
   private onOpen (): void {
     this.clearReconnect()
     this.lastHeartBeat = Date.now()
-    this.heartbeatInterval = utils.setInterval(
-      this.checkHeartBeat.bind(this),
-      this.options.heartbeatInterval
-    )
+    this.heartbeatInterval = this.services.timerRegistry.add({
+      duration: this.options.heartbeatInterval,
+      callback: this.checkHeartBeat,
+      context: this
+    })
     this.stateMachine.transition(TRANSITIONS.CONNECT)
   }
 
@@ -218,9 +220,7 @@ export class Connection extends Emitter {
   /**
    * Callback for messages received on the connection.
    */
-  private onMessage (rawMessage: string): void {
-    const parsedMessages: Array<Message> = parseMessage(rawMessage)
-
+  private onMessages (parsedMessages: Array<Message>): void {
     for (let i = 0; i < parsedMessages.length; i++) {
       const message = parsedMessages[i] as Message
       if (message === null) {
@@ -344,12 +344,12 @@ export class Connection extends Emitter {
     }
 
     if (message.action === CONNECTION_ACTION.ACCEPT) {
-      this.stateMachine.transition(TRANSITIONS.ACCEPTED)
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE_ACCEPTED)
       return
     }
 
     if (message.action === CONNECTION_ACTION.CHALLENGE) {
-      this.stateMachine.transition(TRANSITIONS.CHALLENGING)
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE)
       this.sendMessage({
         topic: TOPIC.CONNECTION,
         action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
@@ -359,7 +359,7 @@ export class Connection extends Emitter {
     }
 
     if (message.action === CONNECTION_ACTION.REJECTION) {
-      this.stateMachine.transition(TRANSITIONS.CHALLENGE_REJECTED)
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE_DENIED)
       this.close()
       return
     }
