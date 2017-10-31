@@ -45,6 +45,7 @@ export class Connection extends Emitter {
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
 
+  
   constructor (services: Services, options: Options, url: string, emitter: Emitter) {
     super()
     this.options = options
@@ -70,6 +71,7 @@ export class Connection extends Emitter {
     )
     this.originalUrl = utils.parseUrl(url, this.options.path)
     this.url = this.originalUrl
+    this.createEndpoint()
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {
@@ -136,7 +138,7 @@ export class Connection extends Emitter {
    * was initialised with.
    */
   private createEndpoint (): void {
-    this.endpoint = new NodeWebSocket(this.url, this.options.nodeSocketOptions)
+    this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions)
 
     this.endpoint.onopen = this.onOpen.bind(this)
     this.endpoint.onerror = this.onError.bind(this)

@@ -61,9 +61,9 @@ Default: /deepstream */
      */
     maxReconnectInterval: number,
     /**
-     * Options for a nodeJS WebSocket connection
+     * Options for the provided socket factory
      */
-    nodeSocketOptions: any
+    socketOptions: any
 }
 
 export const DefaultOptions: Options = {
@@ -79,5 +79,5 @@ export const DefaultOptions: Options = {
     recordDeleteTimeout: 15000,
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,
-    nodeSocketOptions: null
+    socketOptions: null
 }
