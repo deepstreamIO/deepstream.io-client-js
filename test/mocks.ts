@@ -26,7 +26,7 @@ export const getServicesMock = () => {
   }
   const loggerMock = mock(logger)
   loggerMock.expects('warn').never()
-  loggerMock.expects('error').never()
+  // loggerMock.expects('error').never()
 
   const timerRegistry = new TimerRegistry()
 
@@ -66,6 +66,7 @@ export const getServicesMock = () => {
     timeoutRegistryMock,
     logger,
     loggerMock,
+    getLogger: (): any => ({ logger, loggerMock}),
     timerRegistry,
     getHandle: (): Function | null => handle,
     verify: () => {
