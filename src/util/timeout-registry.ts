@@ -1,6 +1,13 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { EVENT, CONNECTION_STATE, RPC_ACTION, RECORD_ACTION } from '../constants'
+import { EVENT, CONNECTION_STATE } from '../constants'
+import { 
+  TOPIC, 
+  RECORD_ACTIONS as RECORD_ACTION,
+  RPC_ACTIONS as RPC_ACTION,
+  Message
+} from '../../binary-protocol/src/message-constants'
+
 import * as EventEmitter from 'component-emitter2'
 
 export interface Timeout {

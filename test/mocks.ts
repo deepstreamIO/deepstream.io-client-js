@@ -1,7 +1,8 @@
 // tslint:disable:no-empty
 import { EventEmitter } from 'events'
-import { mock, stub } from 'sinon'
+import { mock, stub, SinonMock, SinonStub } from 'sinon'
 import { TimerRegistry } from '../src/util/timer-registry'
+import { Message } from '../binary-protocol/src/message-constants'
 
 export const getServicesMock = () => {
   let handle: Function | null = null

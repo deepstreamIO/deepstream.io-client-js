@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { nextTick } from '../util/utils'
-import { TOPIC, RPC_ACTION, EVENT } from '../constants'
+import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
 
 /**
  * This class represents a single remote procedure
@@ -18,7 +18,7 @@ export class RPCResponse {
     private isComplete: boolean
     private autoAccept: boolean
 
-    constructor (message: Message, options: Options, services: Services) {
+    constructor (message: RPCMessage, options: Options, services: Services) {
         this.name = message.name as string
         this.correlationId = message.correlationId as string
         this.options = options

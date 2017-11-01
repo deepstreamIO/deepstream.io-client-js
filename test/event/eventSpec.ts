@@ -1,7 +1,9 @@
 import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { getServicesMock } from '../mocks'
-import { TOPIC, EVENT, EVENT_ACTION } from '../../src/constants'
+import { EVENT } from '../../src/constants'
+import { TOPIC, EVENT_ACTIONS as EVENT_ACTION } from '../../binary-protocol/src/message-constants'
+
 import { DefaultOptions } from '../../src/client-options'
 import { EventHandler } from '../../src/event/event-handler'
 

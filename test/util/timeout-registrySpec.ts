@@ -2,7 +2,8 @@ import { TimeoutRegistry } from '../../src/util/timeout-registry'
 import * as sinon from 'sinon'
 import { getServicesMock } from '../mocks'
 import { DefaultOptions, Options } from '../../src/client-options'
-import { TOPIC, EVENT, EVENT_ACTION, RPC_ACTION, CONNECTION_STATE } from '../../src/constants'
+import { EVENT, CONNECTION_STATE } from '../../src/constants'
+import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, RPC_ACTIONS as RPC_ACTION } from '../../binary-protocol/src/message-constants'
 
 describe('timeout registry', () => {
     let timeoutRegistry: TimeoutRegistry
