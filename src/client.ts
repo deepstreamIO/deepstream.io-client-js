@@ -51,4 +51,15 @@ export default class Client extends EventEmitter {
     return CONNECTION_STATE.OPEN
   }
 
+  /**
+  * Returns a random string. The first block of characters
+  * is a timestamp, in order to allow databases to optimize for semi-
+  * sequentuel numberings
+  */
+  public getUid (): string {
+    const timestamp = (new Date()).getTime().toString(36)
+    const randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '')
+
+    return `${timestamp}-${randomString}`
+  }
 }

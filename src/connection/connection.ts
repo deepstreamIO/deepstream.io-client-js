@@ -20,7 +20,10 @@ const enum TRANSITIONS {
   CHALLENGE_REJECTED = 'challenge-rejected',
   CONNECTION_REDIRECTED = 'redirected',
   TOO_MANY_AUTH_ATTEMPTS = 'too-many-auth-attempts',
-  CLOSE = 'close'
+  CLOSE = 'close',
+  UNSUCCESFUL_LOGIN = 'unsuccesful-login',
+  SUCCESFUL_LOGIN = 'succesful-login',
+  ERROR = 'error'
 }
 
 export class Connection extends Emitter {
@@ -57,7 +60,10 @@ export class Connection extends Emitter {
         transitions: [
           { name: TRANSITIONS.CONNECT, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
-          { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
+          { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATING },
+          { name: TRANSITIONS.UNSUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
+          { name: TRANSITIONS.SUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.OPEN },
+          { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.ERROR },
         ]
       }
     )
@@ -70,7 +76,7 @@ export class Connection extends Emitter {
   }
 
   public sendMessage (message: Message): void {
-      this.endpoint.send(buildMessage(message, false))
+    this.endpoint.send(buildMessage(message, false))
   }
 
   /**
@@ -165,7 +171,7 @@ export class Connection extends Emitter {
    */
   private onError (error: NodeJS.ErrnoException) {
     clearInterval(this.heartbeatInterval)
-    this.stateMachine.transition('error')
+    this.stateMachine.transition(TRANSITIONS.ERROR)
 
     /*
      * If the implementation isn't listening on the error event this will throw
@@ -210,7 +216,7 @@ export class Connection extends Emitter {
    * Callback for messages received on the connection.
    */
   private onMessage (rawMessage: string): void {
-    const parsedMessages = parseMessage(rawMessage)
+    const parsedMessages: Array<Message> = parseMessage(rawMessage)
 
     for (let i = 0; i < parsedMessages.length; i++) {
       const message = parsedMessages[i] as Message
@@ -383,13 +389,13 @@ export class Connection extends Emitter {
     }
 
     if (message.action === AUTH_ACTION.AUTH_UNSUCCESSFUL) {
-      this.deliberateClose = true
+      this.stateMachine.transition(TRANSITIONS.UNSUCCESFUL_LOGIN)
       this.authCallback(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
       return
     }
 
     if (message.action === AUTH_ACTION.AUTH_SUCCESSFUL) {
-      this.stateMachine.transition('open')
+      this.stateMachine.transition(TRANSITIONS.SUCCESFUL_LOGIN)
       this.authCallback(true, message.parsedData)
       return
     }

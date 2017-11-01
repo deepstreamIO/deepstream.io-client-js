@@ -1,10 +1,11 @@
 import { EVENT } from '../constants'
 
 export class StateMachine {
-  private transitions: any
-  private logger: any
   public state: any
   public inEndState: boolean
+
+  private transitions: any
+  private logger: any
 
   constructor (logger: any, stateMachine: any) {
     this.inEndState = false

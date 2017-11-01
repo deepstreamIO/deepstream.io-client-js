@@ -28,23 +28,10 @@ export class Listener {
     }
 
     public listen (pattern: string, callback: ListenCallback): void {
-      if (this.listeners.has(pattern)) {
-        this.services.logger.warn({
-          topic: TOPIC.EVENT,
-          action: EVENT_ACTION.LISTENER_EXISTS,
-          name: pattern
-        })
-        return
-      }
-      this.listeners.set(pattern, callback)
-
+        this.listeners.set(pattern, callback)
     }
 
     public unlisten (pattern: string): void {
         this.listeners.delete(pattern)
-    }
-
-    private sendListen () {
-
     }
 }
