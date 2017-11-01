@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTION, EVENT } from '../constants'
-import { Listener, ListenCallback } from '../util/listeners'
+import { Listener, ListenCallback } from '../util/listener'
 import * as Emitter from 'component-emitter2'
 
 export class EventHandler {
