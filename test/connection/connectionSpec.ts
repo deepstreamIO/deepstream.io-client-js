@@ -6,7 +6,13 @@ import { Services } from '../../src/client'
 import { Connection } from '../../src/connection/connection'
 import { getServicesMock } from '../mocks'
 import { Options, DefaultOptions } from '../../src/client-options'
-import { EVENT, CONNECTION_STATE, TOPIC, CONNECTION_ACTION, AUTH_ACTION, EVENT_ACTION } from '../../src/constants'
+import {EVENT, CONNECTION_STATE } from '../../src/constants'
+import { 
+    TOPIC, 
+    CONNECTION_ACTIONS as CONNECTION_ACTION, 
+    AUTH_ACTIONS as AUTH_ACTION, 
+    EVENT_ACTIONS as EVENT_ACTION 
+} from '../../binary-protocol/src/message-constants'
 
 import * as Emitter from 'component-emitter2'
 

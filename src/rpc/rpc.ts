@@ -1,6 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RPC_ACTION, EVENT } from '../constants'
+import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
 
 /**
  * This class represents a single remote procedure
@@ -74,7 +74,7 @@ export class RPC {
      * if a response arrives later on it will be ignored / cause an
      * UNSOLICITED_MESSAGE error
      */
-    private onTimeout (event: EVENT, message: Message) {
+    private onTimeout (event: RPC_ACTION, message: RPCMessage) {
       this.response.callback(event)
       this.complete()
     }

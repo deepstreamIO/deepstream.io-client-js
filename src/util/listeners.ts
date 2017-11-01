@@ -1,4 +1,5 @@
-import { TOPIC, EVENT_ACTION, RECORD_ACTION, EVENT } from '../constants'
+import { TOPIC, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
+
 import { Services } from '../client'
 
 export interface ListenResponse {
