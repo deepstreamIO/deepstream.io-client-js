@@ -2,13 +2,14 @@ import { TOPIC, CONNECTION_STATE, EVENT, AUTH_ACTION, CONNECTION_ACTION } from '
 import { StateMachine } from '../util/state-machine'
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { parse as parseMessage } from '../../protocol/text/src/message-parser'
-import { getMessage as buildMessage } from '../../protocol/text/src/message-builder'
 import * as NodeWebSocket from 'ws'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
 
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
+
+const parseMessage = (rawMessage: string) => []
+const buildMessage = (message: Message, isAck: boolean) => ''
 
 const enum TRANSITIONS {
   CONNECT = 'connect',
@@ -159,7 +160,7 @@ export class Connection extends Emitter {
       this.checkHeartBeat.bind(this),
       this.options.heartbeatInterval
     )
-    this.stateMachine.transition('connect')
+    this.stateMachine.transition(TRANSITIONS.CONNECT)
   }
 
   /**
