@@ -5,6 +5,7 @@ export class StateMachine {
   public inEndState: boolean
 
   private transitions: any
+  private stateMachine: any
   private logger: any
 
   constructor (logger: any, stateMachine: any) {
@@ -12,6 +13,7 @@ export class StateMachine {
     this.logger = logger
     this.transitions = stateMachine.transitions
     this.state = stateMachine.init
+    this.stateMachine = stateMachine
   }
 
   /**
@@ -24,8 +26,14 @@ export class StateMachine {
       if (transitionName === transition.name && this.state === transition.from) {
         // found transition
         this.onTransition(transition)
+        const oldState = this.state
         this.state = transition.to
-        transition.handler.call(this)
+        if (this.stateMachine.onStateChanged) {
+          this.stateMachine.onStateChanged(this.state, oldState)
+        }
+        if (transition.handler) {
+          transition.handler.call(this)
+        }
         return
       }
     }
