@@ -25,12 +25,22 @@ describe('connection', () => {
     const url = 'wss://localhost:6020/deepstream'
     const authData = { password: '123456' }
     const clientData = { name: 'elton' }
+
     const heartbeatInterval = 50
     const heartBeatTolerance = heartbeatInterval * 2
 
+    const reconnectIntervalIncrement = 50
+    const maxReconnectAttempts = 3
+    const maxReconnectInterval = 50
+
     beforeEach(() => {
         services = getServicesMock()
-        options = Object.assign(DefaultOptions, { heartbeatInterval })
+        options = Object.assign(DefaultOptions, {
+            heartbeatInterval,
+            reconnectIntervalIncrement,
+            maxReconnectAttempts,
+            maxReconnectInterval
+        })
         emitter = new Emitter()
         emitterMock = mock(emitter)
         connection = new Connection(services as any, options, url, emitter)
@@ -137,6 +147,24 @@ describe('connection', () => {
         await sendInvalidAuth()
         await receiveAuthRejectResponse()
         // await closeConnection()
+    })
+
+    it.skip('reaches max reconnection attempts considering the max reconnections interval #reconnect', async () => {
+        await awaitConnectionAck()
+        await receiveChallengeRequest()
+        await sendChallengeResponse()
+        await receiveChallengeAccept()
+
+        await loseConnection()
+        await BBPromise.delay(0)
+
+        await loseConnection()
+        await BBPromise.delay(50)
+
+        await loseConnection()
+        await BBPromise.delay(100)
+
+        // await expectNReconnectAttempts(3)
     })
 
     async function openConnection () {
@@ -427,5 +455,13 @@ describe('connection', () => {
         assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
 
         await BBPromise.delay(2)
+    }
+
+    async function expectNReconnectAttempts (reconnectAttempts: number) {
+        socketMock
+            .expects('onopen')
+            .exactly(reconnectAttempts)
+
+        await BBPromise.delay(0)
     }
 })
