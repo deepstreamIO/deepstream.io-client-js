@@ -26,12 +26,13 @@ describe('connection', () => {
     const authData = { password: '123456' }
     const clientData = { name: 'elton' }
 
-    const heartbeatInterval = 50
-    const heartBeatTolerance = heartbeatInterval * 2
+    const heartbeatInterval = 15
+    const initialUrl = 'wss://localhost:6020/deepstream'
+    const otherUrl = 'wss://otherhost:6020/deepstream'
 
-    const reconnectIntervalIncrement = 50
+    const reconnectIntervalIncrement = 10
     const maxReconnectAttempts = 3
-    const maxReconnectInterval = 50
+    const maxReconnectInterval = 30
 
     beforeEach(() => {
         services = getServicesMock()
@@ -43,10 +44,8 @@ describe('connection', () => {
         })
         emitter = new Emitter()
         emitterMock = mock(emitter)
-        connection = new Connection(services as any, options, url, emitter)
-        const socketService = services.getSocket()
-        socket = socketService.socket
-        socketMock = socketService.socketMock
+        connection = new Connection(services as any, options, initialUrl, emitter)
+        getSocketMock()
         const loggerService = services.getLogger()
         logger = loggerService.logger,
         loggerMock = loggerService.loggerMock
@@ -68,6 +67,7 @@ describe('connection', () => {
         await receiveAuthResponse()
         await sendMessage()
         await closeConnection()
+        await recieveConnectionClose()
     })
 
     it('send ping when pong received across all states #heartbeat', async () => {
@@ -76,22 +76,29 @@ describe('connection', () => {
         receivePing()
     })
 
-    it.skip('miss heartbeat once #heartbeat', async () => {
+    it('miss heartbeat once #heartbeat', async () => {
         await openConnection()
-        await BBPromise.delay(50)
+        await BBPromise.delay(heartbeatInterval * 1.5)
+        // verify no errors in afterAll
     })
 
-    it.skip('miss a heartbeat twice and receive error #heartbeat', async () => {
+    it('connection - miss a heartbeat twice and receive error', async () => {
+        loggerMock
+          .expects('error')
+          .once()
+          .withExactArgs(
+              { topic: TOPIC.CONNECTION },
+              EVENT.HEARTBEAT_TIMEOUT
+          )
+
         await openConnection()
-        await BBPromise.delay(50)
-        await receiveConnectionError()
+        await BBPromise.delay(heartbeatInterval * 3)
     })
 
-    it.skip('redirect #redirect', async () => {
+    it('connection - redirect', async () => {
         await awaitConnectionAck()
         await receiveChallengeRequest()
         await sendChallengeResponse()
-        await receiveChallengeAccept()
         await receiveRedirect()
 
         await openConnectionToRedirectedServer()
@@ -101,19 +108,16 @@ describe('connection', () => {
         await receiveChallengeAccept()
         await loseConnection()
         await reconnectToInitialServer()
-        await receiveChallengeRequest()
-        await sendChallengeResponse()
-        await receiveChallengeAccept()
+        // await receiveChallengeRequest()
+        // await sendChallengeResponse()
+        // await receiveChallengeAccept()
     })
 
-    it.skip('redirect reject #redirect', async () => {
+    it('connection - reject', async () => {
         await awaitConnectionAck()
         await receiveChallengeRequest()
-        await sendInvalidResponseChallenge()
+        await sendChallengeResponse()
         await receiveChallengeReject()
-        await loseConnection()
-        await sendAuth()
-        await connectionClosedError()
     })
 
     it('handles authentication rejections #auth', async () => {
@@ -126,6 +130,7 @@ describe('connection', () => {
         await sendAuth() // authenticate with different data
         await receiveAuthResponse()
         await closeConnection()
+        await recieveConnectionClose()
 
         socketMock.restore()
 
@@ -136,6 +141,7 @@ describe('connection', () => {
         await sendAuth()
         await receiveAuthResponse()
         await closeConnection()
+        await recieveConnectionClose()
     })
 
     it('handles bad authentication data #auth', async () => {
@@ -150,21 +156,24 @@ describe('connection', () => {
     })
 
     it.skip('reaches max reconnection attempts considering the max reconnections interval #reconnect', async () => {
+        emitterMock
+          .expects('emit')
+          .once()
+          .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+
         await awaitConnectionAck()
         await receiveChallengeRequest()
         await sendChallengeResponse()
         await receiveChallengeAccept()
 
-        await loseConnection()
+        await receiveConnectionError()
         await BBPromise.delay(0)
 
-        await loseConnection()
-        await BBPromise.delay(50)
+        await receiveConnectionError()
+        await BBPromise.delay(10)
 
-        await loseConnection()
-        await BBPromise.delay(100)
-
-        // await expectNReconnectAttempts(3)
+        await receiveConnectionError()
+        await BBPromise.delay(20)
     })
 
     async function openConnection () {
@@ -177,6 +186,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_CONNECTION)
 
+        expect(socket.url).to.equal(initialUrl)
         socket.simulateOpen()
         await BBPromise.delay(0)
     }
@@ -203,16 +213,6 @@ describe('connection', () => {
                 action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
                 parsedData: url
             }])
-
-        await BBPromise.delay(0)
-    }
-
-    async function sendInvalidResponseChallenge () {
-        socket.simulateMessages([{
-            topic: TOPIC.CONNECTION,
-            action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
-            url: `${url}.xyz+?`
-        }])
 
         await BBPromise.delay(0)
     }
@@ -316,9 +316,31 @@ describe('connection', () => {
     async function closeConnection () {
         emitterMock.expects('emit')
             .once()
-            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CLOSED)
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CLOSING)
+
+        socketMock
+            .expects('sendParsedMessage')
+            .once()
+            .withExactArgs({
+                topic: TOPIC.CONNECTION,
+                action: CONNECTION_ACTION.CLOSING
+            })
 
         connection.close()
+        await BBPromise.delay(0)
+    }
+
+    async function recieveConnectionClose () {
+        emitterMock.expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CLOSED)
+
+        socket.simulateMessages([{
+            topic: TOPIC.CONNECTION,
+            action: CONNECTION_ACTION.CLOSED
+        }])
+
+        socket.simulateRemoteClose()
         await BBPromise.delay(0)
     }
 
@@ -346,10 +368,11 @@ describe('connection', () => {
             .withExactArgs(
             { topic: TOPIC.CONNECTION },
             EVENT.CONNECTION_ERROR,
-            `heartbeat not received in the last ${heartBeatTolerance} milliseconds`
-            )
+            JSON.stringify({ code: 1234 })
+        )
 
-        await BBPromise.delay(0)
+        socket.simulateError()
+        await BBPromise.delay(5)
     }
 
     async function receiveRedirect () {
@@ -358,14 +381,10 @@ describe('connection', () => {
             .once()
             .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.REDIRECTING)
 
-        socketMock
-            .expects('onclose')
-            .once()
-
         socket.simulateMessages([{
             topic: TOPIC.CONNECTION,
             action: CONNECTION_ACTION.REDIRECT,
-            data: 'wss://westcoast-server:6020'
+            data: otherUrl
         }])
 
         await BBPromise.delay(0)
@@ -377,8 +396,9 @@ describe('connection', () => {
             .once()
             .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_CONNECTION)
 
+        getSocketMock()
+        expect(socket.url).to.equal(otherUrl)
         socket.simulateOpen()
-
         await BBPromise.delay(0)
     }
 
@@ -405,18 +425,13 @@ describe('connection', () => {
         emitterMock
             .expects('emit')
             .once()
-            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CLOSED)
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
 
         socket.close()
         await BBPromise.delay(0)
     }
 
     async function reconnectToInitialServer () {
-        emitterMock
-            .expects('emit')
-            .once()
-            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
-
         socketMock
             .expects('onopen')
             .once()
@@ -430,6 +445,7 @@ describe('connection', () => {
                 parsedData: url
             })
 
+        socket.simulateOpen()
         await BBPromise.delay(0)
     }
 
@@ -457,11 +473,18 @@ describe('connection', () => {
         await BBPromise.delay(2)
     }
 
-    async function expectNReconnectAttempts (reconnectAttempts: number) {
-        socketMock
-            .expects('onopen')
-            .exactly(reconnectAttempts)
+    function losesConnection () {
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
 
-        await BBPromise.delay(0)
+        socket.simulateRemoteClose()
+    }
+
+    function getSocketMock () {
+        const socketService = services.getSocket()
+        socket = socketService.socket
+        socketMock = socketService.socketMock
     }
 })

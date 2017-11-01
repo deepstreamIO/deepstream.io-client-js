@@ -10,7 +10,7 @@ import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
 
 const enum TRANSITIONS {
-  CONNECT = 'connect',
+  CONNECTED = 'connected',
   CHALLENGE = 'challenge',
   AUTHENTICATE = 'authenticate',
   RECONNECT = 'reconnect',
@@ -19,9 +19,12 @@ const enum TRANSITIONS {
   CONNECTION_REDIRECTED = 'redirected',
   TOO_MANY_AUTH_ATTEMPTS = 'too-many-auth-attempts',
   CLOSE = 'close',
+  CLOSED = 'closed',
   UNSUCCESFUL_LOGIN = 'unsuccesful-login',
   SUCCESFUL_LOGIN = 'succesful-login',
-  ERROR = 'error'
+  ERROR = 'error',
+  LOST = 'connection-lost',
+  CONNECTION_AUTHENTICATION_TIMEOUT = 'connection-authentication-timeout'
 }
 
 export class Connection {
@@ -32,7 +35,6 @@ export class Connection {
   private authCallback: AuthenticationCallback
   private originalUrl: string
   private url: string
-  private deliberateClose: boolean
   private heartbeatInterval: number
   private lastHeartBeat: number
   private endpoint: Socket
@@ -48,25 +50,34 @@ export class Connection {
     this.authParams = null
     // tslint:disable-next-line:no-empty
     this.authCallback = () => {}
-    this.deliberateClose = false
     this.emitter = emitter
     this.stateMachine = new StateMachine(
       this.services.logger,
       {
         init: CONNECTION_STATE.CLOSED,
-        onStateChanged: (newState: string) => {
+        onStateChanged: (newState: string, oldState: string) => {
+          if (newState === oldState) {
+            return
+          }
           emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
         },
         transitions: [
-          { name: TRANSITIONS.CONNECT, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.REDIRECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.CHALLENGING },
+          { name: TRANSITIONS.CONNECTION_REDIRECTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.REDIRECTING },
           { name: TRANSITIONS.CHALLENGE_DENIED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.CHALLENGE_DENIED },
           { name: TRANSITIONS.CHALLENGE_ACCEPTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
           { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATING },
           { name: TRANSITIONS.UNSUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
           { name: TRANSITIONS.SUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.OPEN },
-          { name: TRANSITIONS.CLOSE, from: CONNECTION_STATE.OPEN, to: CONNECTION_STATE.CLOSED },
-          { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.ERROR },
+          { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
+          { name: TRANSITIONS.RECONNECT, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.CLOSED, from: CONNECTION_STATE.CLOSING, to: CONNECTION_STATE.CLOSED },
+          { name: TRANSITIONS.ERROR, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.LOST, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.CLOSE, to: CONNECTION_STATE.CLOSING },
         ]
       }
     )
@@ -97,17 +108,21 @@ export class Connection {
       throw new Error('invalid argument authParams')
     }
 
+    if (
+      this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+    ) {
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
+      return
+    }
+
     this.authParams = authParams
     if (callback) {
       this.authCallback = callback
     }
 
-    if (this.stateMachine.inEndState) {
-      if (this.deliberateClose) {
-        this.createEndpoint()
-      } else {
-        this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
-      }
+    if (this.stateMachine.state === CONNECTION_STATE.CLOSED) {
+      this.createEndpoint()
       return
     }
 
@@ -125,13 +140,15 @@ export class Connection {
 
   /**
    * Closes the connection. Using this method
-   * sets a _deliberateClose flag that will prevent the client from
-   * reconnecting.
+   * will prevent the client from reconnecting.
    */
   public close (): void {
-    clearInterval(this.heartbeatInterval)
-    this.deliberateClose = true
-    this.endpoint.close()
+    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.sendMessage({
+      topic: TOPIC.CONNECTION,
+      action: CONNECTION_ACTION.CLOSING
+    })
+    this.stateMachine.transition(TRANSITIONS.CLOSE)
   }
 
   /**
@@ -159,12 +176,8 @@ export class Connection {
   private onOpen (): void {
     this.clearReconnect()
     this.lastHeartBeat = Date.now()
-    this.heartbeatInterval = this.services.timerRegistry.add({
-      duration: this.options.heartbeatInterval,
-      callback: this.checkHeartBeat,
-      context: this
-    })
-    this.stateMachine.transition(TRANSITIONS.CONNECT)
+    this.checkHeartBeat()
+    this.stateMachine.transition(TRANSITIONS.CONNECTED)
   }
 
   /**
@@ -175,9 +188,6 @@ export class Connection {
    * invoked.
    */
   private onError (error: NodeJS.ErrnoException) {
-    clearInterval(this.heartbeatInterval)
-    this.stateMachine.transition(TRANSITIONS.ERROR)
-
     /*
      * If the implementation isn't listening on the error event this will throw
      * an error. So let's defer it to allow the reconnection to kick in.
@@ -195,6 +205,10 @@ export class Connection {
       }
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.CONNECTION_ERROR, msg)
     }, 1)
+
+    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.stateMachine.transition(TRANSITIONS.ERROR)
+    this.tryReconnect()
   }
 
   /**
@@ -206,15 +220,27 @@ export class Connection {
    * strategy.
    */
   private onClose (): void {
-    clearInterval(this.heartbeatInterval)
+    this.services.timerRegistry.remove(this.heartbeatInterval)
 
     if (this.stateMachine.state === CONNECTION_STATE.REDIRECTING) {
       this.createEndpoint()
-    } else if (this.deliberateClose === true) {
-      this.stateMachine.transition(TRANSITIONS.CLOSE)
-    } else {
-      this.tryReconnect()
+      return
     }
+
+    if (
+      this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+    ) {
+      return
+    }
+
+    if (this.stateMachine.state === CONNECTION_STATE.CLOSING) {
+      this.stateMachine.transition(TRANSITIONS.CLOSED)
+      return
+    }
+
+    this.stateMachine.transition(TRANSITIONS.LOST)
+    this.tryReconnect()
   }
 
   /**
@@ -254,16 +280,17 @@ export class Connection {
     const heartBeatTolerance = this.options.heartbeatInterval * 2
 
     if (Date.now() - this.lastHeartBeat > heartBeatTolerance) {
-      clearInterval(this.heartbeatInterval)
+      this.services.timerRegistry.remove(this.heartbeatInterval)
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.HEARTBEAT_TIMEOUT)
       this.endpoint.close()
-      this.services.logger.error(
-        {
-        topic: TOPIC.CONNECTION
-        },
-        EVENT.CONNECTION_ERROR,
-        `heartbeat not received in the last ${heartBeatTolerance} milliseconds`
-      )
+      return
     }
+
+    this.heartbeatInterval = this.services.timerRegistry.add({
+      duration: this.options.heartbeatInterval,
+      callback: this.checkHeartBeat,
+      context: this
+    })
   }
 
  /**
@@ -300,7 +327,9 @@ export class Connection {
    * Attempts to open a errourosly closed connection
    */
   private tryOpen (): void {
-    this.url = this.originalUrl
+    if (this.stateMachine.state !== CONNECTION_STATE.REDIRECTING) {
+      this.url = this.originalUrl
+    }
     this.createEndpoint()
     this.reconnectTimeout = null
   }
@@ -360,7 +389,7 @@ export class Connection {
 
     if (message.action === CONNECTION_ACTION.REJECTION) {
       this.stateMachine.transition(TRANSITIONS.CHALLENGE_DENIED)
-      this.close()
+      this.endpoint.close()
       return
     }
 
@@ -372,8 +401,8 @@ export class Connection {
     }
 
     if (message.action === CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT) {
-      this.deliberateClose = true
       this.services.logger.error(message)
+      this.stateMachine.transition(TRANSITIONS.CONNECTION_AUTHENTICATION_TIMEOUT)
       return
     }
   }
@@ -386,7 +415,6 @@ export class Connection {
    */
   private handleAuthResponse (message: Message): void {
     if (message.action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
-      this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS)
       return
     }
