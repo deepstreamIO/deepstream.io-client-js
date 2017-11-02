@@ -34,7 +34,7 @@ const enum TRANSITIONS {
   SUCCESFUL_LOGIN = 'succesful-login',
   ERROR = 'error',
   LOST = 'connection-lost',
-  CONNECTION_AUTHENTICATION_TIMEOUT = 'connection-authentication-timeout'
+  AUTHENTICATION_TIMEOUT = 'authentication-timeout'
 }
 
 export class Connection {
@@ -84,6 +84,7 @@ export class Connection {
           { name: TRANSITIONS.UNSUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
           { name: TRANSITIONS.SUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.OPEN },
           { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
+          { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
           { name: TRANSITIONS.RECONNECT, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.RECONNECTING },
           { name: TRANSITIONS.CLOSED, from: CONNECTION_STATE.CLOSING, to: CONNECTION_STATE.CLOSED },
           { name: TRANSITIONS.ERROR, to: CONNECTION_STATE.RECONNECTING },
@@ -410,9 +411,9 @@ export class Connection {
       return
     }
 
-    if (message.action === CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT) {
+    if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
       this.services.logger.error(message)
-      this.stateMachine.transition(TRANSITIONS.CONNECTION_AUTHENTICATION_TIMEOUT)
+      this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
       return
     }
   }
