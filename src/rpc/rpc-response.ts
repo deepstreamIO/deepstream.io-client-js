@@ -16,7 +16,8 @@ export class RPCResponse {
     private correlationId: string
     private isAccepted: boolean
     private isComplete: boolean
-    private autoAccept: boolean
+
+    public autoAccept: boolean
 
     constructor (message: RPCMessage, options: Options, services: Services) {
         this.name = message.name as string
