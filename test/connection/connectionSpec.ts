@@ -129,6 +129,35 @@ describe('connection', () => {
     await receiveChallengeReject()
   })
 
+  it('handles authentication when challenge was denied', async () => {
+    loggerMock
+      .expects('error')
+      .once()
+      .withArgs(
+        { topic: TOPIC.CONNECTION },
+        EVENT.IS_CLOSED
+      )
+
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+        EVENT.CONNECTION_STATE_CHANGED,
+        CONNECTION_STATE.CHALLENGE_DENIED
+      )
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeReject()
+
+    connection.authenticate(authData, authCallback)
+
+    assert(authCallback.called === false)
+
+    await BBPromise.delay(10)
+  })
+
   it('handles successful authentication', async () => {
     await awaitConnectionAck()
     await receiveChallengeRequest()
@@ -203,6 +232,19 @@ describe('connection', () => {
     // try to reconnect fourth time (try to surpass the allowed max, fail)
     await receiveConnectionError()
     await BBPromise.delay(30)
+  })
+
+  it('tries to reconnect if the connection drops unexpectedly', async () => {
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await receiveConnectionError()
   })
 
   async function openConnection () {
