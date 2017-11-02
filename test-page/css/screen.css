@@ -1,0 +1,158 @@
+*{
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+}
+
+body{
+	background: #eee;
+}
+
+#wrapper{
+	margin: 10px auto;
+	width: 600px;
+	background: #fff;
+	padding: 10px;
+}
+
+*{
+	font: 12px Arial, sans-serif;
+}
+
+fieldset{
+	border: 1px solid #ccc;
+	padding: 10px;
+	margin-bottom: 10px;
+}
+
+legend{
+	background: #fff;
+	padding: 0 10px;
+	color: #ccc;
+}
+
+li{
+	margin: 5px 0;
+	clear: left;
+}
+
+label{
+	width: 150px;
+	display: block;
+	float: left;
+}
+
+
+button{
+	background: #4BBAF5;
+	display: block;
+	width: 100%;
+	border: none;
+	padding: 10px 0;
+	color: #fff;
+	font-weight: bold;
+	position: relative;
+	cursor: pointer;
+	margin-top: 10px;
+	box-shadow: 2px 2px 2px rgba( 0,0, 0,0.2);
+}
+
+button:hover{
+	background: #1DA6F5;
+}
+
+button:active{
+	top: 1px;
+	box-shadow: none;
+}
+
+button.half{
+	width: 48%;
+	float:left;
+}
+
+button.inline{
+	display: inline-block;
+	margin: 0;
+	width: auto;
+	padding: 2px 5px;
+}
+
+button.block{
+	display: block;
+	float: left;
+	margin-right: 10px;
+}
+
+button.half:first-child{
+	margin-right: 4%;
+}
+
+button[disabled],
+button:disabled{
+	background: #ddd;
+	box-shadow: none;
+	cursor: none;
+}
+
+b{
+	font-weight: bold;
+}
+
+.button-group{
+	clear: both;
+}
+
+.input-with-label{
+	float: left;
+	width: 150px;
+	margin: 0 5px 5px 0;
+}
+
+.input-with-label.quarter{
+	float: left;
+	width: 70px;
+	margin: 0 10px 5px 0;
+}
+
+.input-with-label.quarter input{
+	width: 70px;
+}
+
+.input-with-label div{
+	padding: 2px;
+}
+
+.input-with-label label{
+	display: block;
+	font-size: 9px;
+	color: #aaa;
+}
+
+.input-with-label:last-child{
+	margin-right: 0;
+}
+
+.event-list{
+	float: left;
+}
+
+.event > div{
+	float: left;
+	width: 60px;
+	min-height: 1px
+}
+
+.event .received-events{
+	width: 200px;
+}
+
+.clickable{
+	color: #4BBAF5;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.clickable:hover{
+	color: #1DA6F5;
+}

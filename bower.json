@@ -19,8 +19,12 @@
   "ignore": [
     "**/.*",
     "node_modules",
+    "bower_components",
+    "test-node",
     "test-page",
-    "test",
+    "test-unit",
     ".travis.yml",
+    "Gruntfile.js",
+    "karma.conf.js"
   ]
 }
