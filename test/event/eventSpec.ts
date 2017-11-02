@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import * as sinon from 'sinon'
-import { getServicesMock } from '../mocks'
+import { getServicesMock, getListenerMock } from '../mocks'
 import { EVENT } from '../../src/constants'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION } from '../../binary-protocol/src/message-constants'
 
@@ -9,6 +9,7 @@ import { EventHandler } from '../../src/event/event-handler'
 
 describe('event handler', () => {
   let services: any
+  let listener: any
   let eventHandler: EventHandler
   let handle: Function
   let spy: sinon.SinonSpy
@@ -16,7 +17,8 @@ describe('event handler', () => {
 
   beforeEach(() => {
     services = getServicesMock()
-    eventHandler = new EventHandler(services, DefaultOptions)
+    listener = getListenerMock()
+    eventHandler = new EventHandler(services, DefaultOptions, listener.listener)
     handle = services.getHandle()
     spy = sinon.spy()
   })
@@ -25,6 +27,22 @@ describe('event handler', () => {
     services.connectionMock.verify()
     services.loggerMock.verify()
     services.timeoutRegistryMock.verify()
+    listener.listenerMock.verify()
+  })
+
+  it('validates parameters on subscribe, unsubscribe and emit', () => {
+    expect(eventHandler.subscribe.bind(eventHandler, '', () => {})).to.throw()
+    expect(eventHandler.subscribe.bind(eventHandler, 1, () => {})).to.throw()
+    expect(eventHandler.subscribe.bind(eventHandler, 'event', null)).to.throw()
+
+    expect(eventHandler.unsubscribe.bind(eventHandler, '', () => {})).to.throw()
+    expect(eventHandler.unsubscribe.bind(eventHandler, 1, () => {})).to.throw()
+    expect(eventHandler.unsubscribe.bind(eventHandler, 'event', null)).to.throw()
+    expect(eventHandler.unsubscribe.bind(eventHandler, null)).to.throw()
+
+    expect(eventHandler.emit.bind(eventHandler, '', () => {})).to.throw()
+    expect(eventHandler.emit.bind(eventHandler, 1, () => {})).to.throw()
+    expect(eventHandler.emit.bind(eventHandler, null, () => {})).to.throw()
   })
 
   it('emits an event it has no listeners for', () => {
@@ -257,6 +275,54 @@ describe('event handler', () => {
     })
   })
 
+  it('listens for pattern', () => {
+    const pattern = '.*'
+    const callback = () => {}
+    listener.listenerMock
+      .expects('listen')
+      .once()
+      .withExactArgs(pattern, callback)
+
+    eventHandler.listen(pattern, callback)
+  })
+
+  it('unlistens a pattern', () => {
+    const pattern = '.*'
+    listener.listenerMock
+      .expects('unlisten')
+      .once()
+      .withExactArgs(pattern)
+
+    eventHandler.unlisten(pattern)
+  })
+
+  it('it forwards listeners\' messages to listeners', () => {
+    const subscriptionFoundMsg = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND,
+      name: '.*',
+      subscription: 'subscription'
+    }
+    const subscriptionRemovedMsg = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+      name: '.*',
+      subscription: 'subscription'
+    }
+
+    listener.listenerMock
+      .expects('handle')
+      .once()
+      .withExactArgs(subscriptionFoundMsg)
+    listener.listenerMock
+      .expects('handle')
+      .once()
+      .withExactArgs(subscriptionRemovedMsg)
+
+    handle(subscriptionFoundMsg)
+    handle(subscriptionRemovedMsg)
+  })
+
   it('logs an error event for unsolicited event messages', () => {
     services.loggerMock
       .expects('error')
@@ -271,4 +337,5 @@ describe('event handler', () => {
       action: -1
     })
   })
+
 })
