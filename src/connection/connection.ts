@@ -70,6 +70,7 @@ export class Connection {
           if (newState === oldState) {
             return
           }
+          console.log(oldState, '>>>', newState)
           emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
         },
         transitions: [
