@@ -188,6 +188,47 @@ describe('connection', () => {
     assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
   })
 
+  it('handles authenticating too may times', async () => {
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+        EVENT.CONNECTION_STATE_CHANGED,
+        CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+    )
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await sendAuth()
+    await receiveTooManyAuthAttempts()
+  })
+
+  it('handles authentication timeout', async () => {
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+        EVENT.CONNECTION_STATE_CHANGED,
+        CONNECTION_STATE.AUTHENTICATION_TIMEOUT
+    )
+
+    loggerMock
+      .expects('error')
+      .once()
+      .withExactArgs(
+        { topic: TOPIC.CONNECTION },
+        EVENT.AUTHENTICATION_TIMEOUT
+    )
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await receiveAuthenticationTimeout()
+  })
+
   it('try to authenticate with invalid data and receive error', async () => {
     await awaitConnectionAck()
     await receiveChallengeRequest()
@@ -529,6 +570,24 @@ describe('connection', () => {
     assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
 
     await BBPromise.delay(2)
+  }
+
+  async function receiveTooManyAuthAttempts () {
+    socket.simulateMessages([{
+      topic: TOPIC.AUTH,
+      action: AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS
+    }])
+
+    await BBPromise.delay(0)
+  }
+
+  async function receiveAuthenticationTimeout () {
+    socket.simulateMessages([{
+      topic: TOPIC.CONNECTION,
+      action: CONNECTION_ACTION.AUTHENTICATION_TIMEOUT
+    }])
+
+    await BBPromise.delay(0)
   }
 
   function losesConnection () {
