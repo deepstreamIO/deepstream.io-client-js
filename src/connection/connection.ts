@@ -1,6 +1,6 @@
 import { CONNECTION_STATE, EVENT } from '../constants'
-import { 
-  TOPIC, 
+import {
+  TOPIC,
   CONNECTION_ACTIONS as CONNECTION_ACTION,
   RPC_ACTIONS as RPC_ACTION,
   EVENT_ACTIONS as EVENT_ACTION,
@@ -8,7 +8,7 @@ import {
   AUTH_ACTIONS as AUTH_ACTION,
   Message
 } from '../../binary-protocol/src/message-constants'
-  
+
 import { StateMachine } from '../util/state-machine'
 import { Services } from '../client'
 import { Options } from '../client-options'
@@ -115,7 +115,6 @@ export class Connection {
    * @param   {Function} callback   A callback that will be invoked with the authenticationr result
    */
   public authenticate (authParams: object = {}, callback: AuthenticationCallback | null = null): void {
-    console.log(authParams)
     if (typeof authParams !== 'object') {
       throw new Error('invalid argument authParams')
     }
@@ -316,7 +315,6 @@ export class Connection {
     if (this.reconnectTimeout !== null) {
       return
     }
-
     if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
       this.stateMachine.transition(TRANSITIONS.RECONNECT)
       this.reconnectTimeout = setTimeout(
@@ -330,9 +328,9 @@ export class Connection {
       return
     }
 
+    this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
     this.clearReconnect()
     this.close()
-    this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
   }
 
   /**

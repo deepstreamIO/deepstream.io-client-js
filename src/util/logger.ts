@@ -1,6 +1,6 @@
 import { EVENT } from '../constants'
-import { 
-    TOPIC, 
+import {
+    TOPIC,
     RECORD_ACTIONS as RECORD_ACTION,
     EVENT_ACTIONS as EVENT_ACTION,
     RPC_ACTIONS as RPC_ACTION,

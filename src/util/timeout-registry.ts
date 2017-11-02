@@ -1,8 +1,8 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
-import { 
-  TOPIC, 
+import {
+  TOPIC,
   RECORD_ACTIONS as RECORD_ACTION,
   RPC_ACTIONS as RPC_ACTION,
   Message
