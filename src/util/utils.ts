@@ -178,3 +178,67 @@ export const getUid = (): string => {
 
   return `${timestamp}-${randomString}`
 }
+
+export interface SetArguments { callback?: (error: string | null) => void, path?: string, data: any }
+  /**
+   * Creates a map based on the types of the provided arguments
+   */
+export const normalizeSetArguments = (args: Array<any>): SetArguments => {
+    let result
+
+    if (args.length === 1) {
+      result = { data: args[0], path: undefined, callback: undefined }
+    }
+
+    if (args.length === 2) {
+      if (typeof args[0] === 'string' && typeof args[1] === 'object') {
+        result = { path: args[0], data: args[1], callback: undefined }
+      }
+      if (typeof args[0] === 'object' && typeof args[1] === 'function') {
+        result = { path: undefined, data: args[0], callback: args[1] }
+      }
+    }
+
+    if (args.length === 3) {
+      result = { path: args[0], data: args[1], callback: args[2]}
+    }
+
+    if (result) {
+      if (result.path !== undefined && typeof result.path !== 'string' || result.path.length === 0) {
+        throw Error ('Invalid set path argument')
+      }
+      if (result.callback !== undefined && typeof result.callback !== 'function') {
+        throw Error ('Invalid set callback argument')
+      }
+      if (result.data === undefined) {
+        throw Error ('Invalid set data argument')
+      }
+      return result
+    }
+
+    throw Error ('Invalid set arguments')
+  }
+
+  /**
+   * Creates a map based on the types of the provided arguments
+   */
+export const normalizeArguments = (args: Array<any>): { callback: Function, triggerNow?: boolean, path: string, data: any } => {
+    // If arguments is already a map of normalized parameters
+    // (e.g. when called by AnonymousRecord), just return it.
+    if (args.length === 1 && typeof args[0] === 'object') {
+      return args[0]
+    }
+
+    const result = Object.create(null)
+
+    for (let i = 0; i < args.length; i++) {
+      if (typeof args[i] === 'string') {
+        result.path = args[i]
+      } else if (typeof args[i] === 'function') {
+        result.callback = args[i]
+      } else if (typeof args[i] === 'boolean') {
+        result.triggerNow = args[i]
+      }
+    }
+    return result
+  }

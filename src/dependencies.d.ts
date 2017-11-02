@@ -5,6 +5,7 @@ interface Emitter {
     emit(event: string, ...args: any[]): boolean;
     listeners(event: string): Function[];
     hasListeners(event: string): boolean;
+    eventNames (): Array<string>;
     _callbacks: Array<Function>;
 }
 

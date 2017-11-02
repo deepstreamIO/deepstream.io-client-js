@@ -9,7 +9,18 @@ export enum EVENT {
     HEARTBEAT_TIMEOUT,
     LISTENER_EXISTS,
     NOT_LISTENING,
-    CONNECTION_STATE_CHANGED = 'onConnectionStateChanged'
+    RECORD_ALREADY_DESTROYED,
+    RECORD_DELETE_TIMEOUT,
+    RECORD_READY = 'ready',
+    RECORD_DELETED = 'delete',
+    RECORD_VERSION_EXISTS = 'versionExists',
+    RECORD_HAS_PROVIDER_CHANGED = 'hasProviderChanged',
+    CONNECTION_STATE_CHANGED = 'onConnectionStateChanged',
+    RECORD_STATE_CHANGED = 'onRecordStateChanged',
+
+    ENTRY_ADDED_EVENT = 'entry-added',
+    ENTRY_REMOVED_EVENT = 'entry-removed',
+    ENTRY_MOVED_EVENT = 'entry-moved'
 }
 
 export enum CONNECTION_STATE {

@@ -19,7 +19,7 @@ export class StateMachine {
   /**
    * Try to perform a state change
    */
-  public transition (transitionName: string): void {
+  public transition (transitionName: any): void {
     let transition
     for (let i = 0; i < this.transitions.length; i++) {
       transition = this.transitions[i]
