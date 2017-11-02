@@ -7,6 +7,8 @@ export enum EVENT {
     ACK_TIMEOUT,
     UNKNOWN_CORRELATION_ID,
     HEARTBEAT_TIMEOUT,
+    LISTENER_EXISTS,
+    NOT_LISTENING,
     CONNECTION_STATE_CHANGED = 'onConnectionStateChanged'
 }
 

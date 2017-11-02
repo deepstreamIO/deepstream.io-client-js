@@ -2,7 +2,7 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
-import { Listener, ListenCallback } from '../util/listeners'
+import { Listener, ListenCallback } from '../util/listener'
 import * as Emitter from 'component-emitter2'
 
 export class EventHandler {
@@ -11,11 +11,11 @@ export class EventHandler {
   private listeners: Listener
   private options: Options
 
-  constructor (services: Services, options: Options) {
+  constructor (services: Services, options: Options, listeners?: Listener) {
     this.options = options
     this.services = services
+    this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()
-    this.listeners = new Listener(TOPIC.EVENT, services)
     this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
   }
 
@@ -49,7 +49,7 @@ export class EventHandler {
  * that the client is unsubscribed as a listener
  */
 public unsubscribe (name: string, callback: (data: any) => void): void {
-    if (typeof name !== 'string' || name.length === 0) {
+    if (!name || typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
     if (callback !== undefined && typeof callback !== 'function') {
@@ -101,25 +101,16 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
  * is useful to create "active" data providers, e.g. providers that only provide
  * data for a particular event if a user is actually interested in it
  */
-  public listen (pattern: string, callback: ListenCallback) {
-    if (typeof pattern !== 'string' || pattern.length === 0) {
-      throw new Error('invalid argument pattern')
-    }
-    if (typeof callback !== 'function') {
-      throw new Error('invalid argument callback')
-    }
-    this.listeners.listen(pattern, callback)
-  }
+public listen (pattern: string, callback: ListenCallback) {
+  this.listeners.listen(pattern, callback)
+}
 
-  /**
-   * Removes a listener that was previously registered with listenForSubscriptions
-   */
-    public unlisten (pattern: string) {
-    if (typeof pattern !== 'string' || pattern.length === 0) {
-      throw new Error('invalid argument pattern')
-    }
-    this.listeners.unlisten(pattern)
-  }
+/**
+ * Removes a listener that was previously registered
+ */
+public unlisten (pattern: string) {
+  this.listeners.unlisten(pattern)
+}
 
   /**
  * Handles incoming messages from the server
@@ -151,6 +142,14 @@ private handle (message: EventMessage): void {
     ) {
         this.services.logger.warn(message)
         return
+    }
+
+    if (
+      message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
+      message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
+    ) {
+      this.listeners.handle(message)
+      return
     }
 
     this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
