@@ -1,6 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RPC_ACTION, EVENT } from '../constants'
+import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+import { EVENT } from '../constants'
 import { RPC } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
 import { getUid } from '../util/utils'
@@ -126,7 +127,7 @@ export class RPCHandler {
    * is present (which shouldn't really happen, but might be the result of a race condition
    * if this client sends a unprovide message whilst an incoming request is already in flight)
    */
-  private respondToRpc (message: Message) {
+  private respondToRpc (message: RPCMessage) {
     const provider = this.providers.get(name)
     if (provider) {
       provider(message.data, new RPCResponse(message, this.options, this.services))
@@ -144,7 +145,7 @@ export class RPCHandler {
    * Distributes incoming messages from the server
    * based on their action
    */
-  private handle (message: Message): void {
+  private handle (message: RPCMessage): void {
     // RPC Requests
     if (message.action === RPC_ACTION.REQUEST) {
       this.respondToRpc(message)
@@ -189,7 +190,7 @@ export class RPCHandler {
     }
   }
 
-  private getRPC (message: Message): RPC | undefined {
+  private getRPC (message: RPCMessage): RPC | undefined {
     const rpc = this.rpcs.get(message.correlationId as string)
     if (rpc === undefined) {
       this.services.logger.error(message, EVENT.UNKNOWN_CORRELATION_ID)
