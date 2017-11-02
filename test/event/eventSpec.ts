@@ -30,6 +30,21 @@ describe('event handler', () => {
     listener.listenerMock.verify()
   })
 
+  it('validates parameters on subscribe, unsubscribe and emit', () => {
+    expect(eventHandler.subscribe.bind(eventHandler, '', () => {})).to.throw()
+    expect(eventHandler.subscribe.bind(eventHandler, 1, () => {})).to.throw()
+    expect(eventHandler.subscribe.bind(eventHandler, 'event', null)).to.throw()
+
+    expect(eventHandler.unsubscribe.bind(eventHandler, '', () => {})).to.throw()
+    expect(eventHandler.unsubscribe.bind(eventHandler, 1, () => {})).to.throw()
+    expect(eventHandler.unsubscribe.bind(eventHandler, 'event', null)).to.throw()
+    expect(eventHandler.unsubscribe.bind(eventHandler, null)).to.throw()
+
+    expect(eventHandler.emit.bind(eventHandler, '', () => {})).to.throw()
+    expect(eventHandler.emit.bind(eventHandler, 1, () => {})).to.throw()
+    expect(eventHandler.emit.bind(eventHandler, null, () => {})).to.throw()
+  })
+
   it('emits an event it has no listeners for', () => {
     services.connectionMock
       .expects('sendMessage')

@@ -49,7 +49,7 @@ export class EventHandler {
  * that the client is unsubscribed as a listener
  */
 public unsubscribe (name: string, callback: (data: any) => void): void {
-    if (typeof name !== 'string' || name.length === 0) {
+    if (!name || typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
     if (callback !== undefined && typeof callback !== 'function') {
