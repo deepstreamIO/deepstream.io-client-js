@@ -1,7 +1,8 @@
 import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { getServicesMock } from '../mocks'
-import { TOPIC, EVENT, EVENT_ACTION, RECORD_ACTION } from '../../src/constants'
+import { TOPIC, EVENT_ACTIONS, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
+import { EVENT } from '../../src/constants'
 import { DefaultOptions } from '../../src/client-options'
 import { Listener, ListenCallback, ListenResponse } from '../../src/util/listener'
 
@@ -39,7 +40,7 @@ describe('listener', () => {
   it('sends event listen message', () => {
     const message = {
       topic: TOPIC.EVENT,
-      action: EVENT_ACTION.LISTEN,
+      action: EVENT_ACTIONS.LISTEN,
       name: pattern
     }
     services.connectionMock
@@ -59,7 +60,7 @@ describe('listener', () => {
     listener = new Listener(TOPIC.RECORD, services)
     const message = {
       topic: TOPIC.RECORD,
-      action: RECORD_ACTION.LISTEN,
+      action: RECORD_ACTIONS.LISTEN,
       name: pattern
     }
     services.connectionMock
@@ -88,7 +89,7 @@ describe('listener', () => {
         .once()
         .withExactArgs({
           topic: TOPIC.EVENT,
-          action: EVENT_ACTION.LISTENER_EXISTS,
+          action: EVENT.LISTENER_EXISTS,
           name: pattern
         })
 
@@ -98,7 +99,7 @@ describe('listener', () => {
     it('sends unlisten message when unlistened', () => {
       const message = {
         topic: TOPIC.EVENT,
-        action: EVENT_ACTION.UNLISTEN,
+        action: EVENT_ACTIONS.UNLISTEN,
         name: pattern
       }
       services.connectionMock
@@ -120,7 +121,7 @@ describe('listener', () => {
         .once()
         .withExactArgs({
           topic: TOPIC.EVENT,
-          action: EVENT_ACTION.NOT_LISTENING,
+          action: EVENT.NOT_LISTENING,
           name: pattern
         })
 
@@ -131,7 +132,7 @@ describe('listener', () => {
     it('logs unsolicited message if an unknown message is recieved', () => {
       const message = {
         topic: TOPIC.EVENT,
-        action:EVENT_ACTION.EMIT,
+        action:EVENT_ACTIONS.EMIT,
         name: pattern,
         subscription
       }
@@ -149,7 +150,7 @@ describe('listener', () => {
       beforeEach(()=> {
         listener.handle({
           topic: TOPIC.EVENT,
-          action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND,
+          action:EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND,
           name: pattern,
           subscription
         })
@@ -168,7 +169,7 @@ describe('listener', () => {
           .once()
           .withExactArgs({
             topic: TOPIC.EVENT,
-            action: EVENT_ACTION.LISTEN_ACCEPT,
+            action: EVENT_ACTIONS.LISTEN_ACCEPT,
             name: pattern,
             subscription
           })
@@ -182,7 +183,7 @@ describe('listener', () => {
           .once()
           .withExactArgs({
             topic: TOPIC.EVENT,
-            action: EVENT_ACTION.LISTEN_REJECT,
+            action: EVENT_ACTIONS.LISTEN_REJECT,
             name: pattern,
             subscription
           })
@@ -197,7 +198,7 @@ describe('listener', () => {
 
         listener.handle({
           topic: TOPIC.EVENT,
-          action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+          action:EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED,
           name: pattern,
           subscription
         })
@@ -212,7 +213,7 @@ describe('listener', () => {
         response.accept()
         const message = {
           topic: TOPIC.EVENT,
-          action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+          action:EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED,
           name: pattern,
           subscription
         }

@@ -106,7 +106,7 @@ public listen (pattern: string, callback: ListenCallback) {
 }
 
 /**
- * Removes a listener that was previously registered with listenForSubscriptions
+ * Removes a listener that was previously registered
  */
 public unlisten (pattern: string) {
   this.listeners.unlisten(pattern)

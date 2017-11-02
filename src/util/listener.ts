@@ -1,4 +1,5 @@
-import { TOPIC, EVENT_ACTION, RECORD_ACTION, EVENT } from '../constants'
+import { TOPIC, EVENT_ACTIONS, RECORD_ACTIONS, EventMessage, RecordMessage } from '../../binary-protocol/src/message-constants'
+import { EVENT } from '../../src/constants'
 import { Services } from '../client'
 
 export interface ListenResponse {
@@ -23,9 +24,9 @@ export class Listener {
     this.stopCallbacks = new Map<string, Function>()
 
     if (topic === TOPIC.RECORD) {
-      this.actions = RECORD_ACTION
+      this.actions = RECORD_ACTIONS
     } else if (topic === TOPIC.EVENT) {
-      this.actions = EVENT_ACTION
+      this.actions = EVENT_ACTIONS
     }
   }
 
@@ -40,7 +41,7 @@ export class Listener {
     if (this.listeners.has(pattern)) {
       this.services.logger.warn({
         topic: this.topic,
-        action: this.actions.LISTENER_EXISTS,
+        action: EVENT.LISTENER_EXISTS,
         name: pattern
       })
       return
@@ -58,7 +59,7 @@ export class Listener {
     if (!this.listeners.has(pattern)) {
       this.services.logger.warn({
         topic: this.topic,
-        action: this.actions.NOT_LISTENING,
+        action: EVENT.NOT_LISTENING,
         name: pattern
       })
       return
@@ -126,7 +127,7 @@ export class Listener {
     this.stopCallbacks.set(subscription, callback)
   }
 
-  public handle (message: Message) {
+  public handle (message: EventMessage | RecordMessage) {
     if (message.action === this.actions.SUBSCRIPTION_FOR_PATTERN_FOUND) {
       const listener = this.listeners.get(message.name as string)
       if (listener) {
