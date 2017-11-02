@@ -1,4 +1,6 @@
 [submodule "test-specs/features"]
 	path = test-specs/features
 	url = https://github.com/deepstreamIO/deepstream.io-client-specs.git
-
+[submodule "binary-protocol"]
+	path = binary-protocol
+	url = https://github.com/deepstreamIO/urp-js.git
