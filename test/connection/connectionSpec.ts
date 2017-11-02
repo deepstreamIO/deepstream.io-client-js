@@ -243,7 +243,7 @@ describe('connection', () => {
 
         socket.simulateMessages([{
             topic: TOPIC.CONNECTION,
-            action: CONNECTION_ACTION.REJECTION
+            action: CONNECTION_ACTION.REJECT
         }])
 
         await BBPromise.delay(0)

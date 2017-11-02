@@ -19,7 +19,7 @@ export interface Services {
   socketFactory: SocketFactory
 }
 
-export default class Client extends EventEmitter {
+export class Client extends EventEmitter {
   public event: EventHandler
   public rpc: RPCHandler
   public record: RecordHandler
@@ -55,6 +55,10 @@ export default class Client extends EventEmitter {
     return CONNECTION_STATE.OPEN
   }
 
+  public close (): void {
+    this.services.connection.close()
+  }
+
   /**
   * Returns a random string. The first block of characters
   * is a timestamp, in order to allow databases to optimize for semi-
@@ -67,3 +71,7 @@ export default class Client extends EventEmitter {
     return `${timestamp}-${randomString}`
   }
 }
+
+export default function deepstream (url: string, options: any): Client {
+  return new Client(url, options)
+} 
