@@ -6,7 +6,6 @@ import { TOPIC, EVENT_ACTIONS as EVENT_ACTION } from '../../binary-protocol/src/
 
 import { DefaultOptions } from '../../src/client-options'
 import { EventHandler } from '../../src/event/event-handler'
-import { Listener } from '../../src/util/listener'
 
 describe('event handler', () => {
   let services: any
