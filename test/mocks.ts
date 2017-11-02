@@ -1,7 +1,8 @@
 // tslint:disable:no-empty
 import { EventEmitter } from 'events'
-import { mock, stub } from 'sinon'
+import { mock, stub, SinonMock, SinonStub } from 'sinon'
 import { TimerRegistry } from '../src/util/timer-registry'
+import { Message } from '../binary-protocol/src/message-constants'
 
 export const getServicesMock = () => {
   let handle: Function | null = null
@@ -32,28 +33,35 @@ export const getServicesMock = () => {
 
   // tslint:disable-next-line
   class Socket {
+    public url: string
+    constructor (url: string) {
+      this.url = url
+    }
     public sendParsedMessage (message: Message): void {}
     public onparsedmessages (message: Array<Message>): void {}
     public onopen (): void {}
     public onerror (): void {}
     public onclose (): void {}
+    public close (): void {
+      process.nextTick(this.onclose)
+    }
+    public simulateRemoteClose (): void {
+      this.close()
+    }
     public simulateOpen (): void {
       process.nextTick(this.onopen)
     }
     public simulateError (): void {
-      process.nextTick(this.onerror)
+      process.nextTick(this.onerror.bind(null, { code: 1234 }))
     }
     public simulateMessages (messages: Array<Message>): void {
       process.nextTick(this.onparsedmessages.bind(this, messages))
-    }
-    public close () {
-      process.nextTick(this.onclose)
     }
   }
 
   let socket: Socket
   const socketFactory = (url: string, options: object): any => {
-    socket = new Socket()
+    socket = new Socket(url)
     return socket
   }
 

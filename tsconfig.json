@@ -6,8 +6,8 @@
     "sourceMap": true,
     "allowJs": false,
     "strictNullChecks": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
     "declaration": true
   },
   "files": [
@@ -17,7 +17,6 @@
     "./src/dependencies.d.ts"
   ],
   "include": [
-    "protocol/**/*",
     "src/**/*",
     "test/**/*",
     "package.json"

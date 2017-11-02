@@ -1,12 +1,18 @@
 import { Promise as BBPromise } from 'bluebird'
-import { expect } from 'chai'
+import { expect, assert } from 'chai'
 import { mock, spy, stub } from 'sinon'
 
 import { Services } from '../../src/client'
 import { Connection } from '../../src/connection/connection'
 import { getServicesMock } from '../mocks'
 import { Options, DefaultOptions } from '../../src/client-options'
-import {EVENT, CONNECTION_STATE, TOPIC, CONNECTION_ACTION, AUTH_ACTION, EVENT_ACTION} from '../../src/constants'
+import {EVENT, CONNECTION_STATE } from '../../src/constants'
+import { 
+    TOPIC, 
+    CONNECTION_ACTIONS as CONNECTION_ACTION, 
+    AUTH_ACTIONS as AUTH_ACTION, 
+    EVENT_ACTIONS as EVENT_ACTION 
+} from '../../binary-protocol/src/message-constants'
 
 import * as Emitter from 'component-emitter2'
 
@@ -22,20 +28,30 @@ describe('connection', () => {
     let loggerMock: sinon.SinonMock
     let authCallback: sinon.SinonSpy
 
+    const url = 'wss://localhost:6020/deepstream'
     const authData = { password: '123456' }
     const clientData = { name: 'elton' }
-    const heartbeatInterval = 50
-    const heartBeatTolerance = heartbeatInterval * 2
+
+    const heartbeatInterval = 15
+    const initialUrl = 'wss://localhost:6020/deepstream'
+    const otherUrl = 'wss://otherhost:6020/deepstream'
+
+    const reconnectIntervalIncrement = 10
+    const maxReconnectAttempts = 3
+    const maxReconnectInterval = 30
 
     beforeEach(() => {
         services = getServicesMock()
-        options = Object.assign(DefaultOptions, { heartbeatInterval })
+        options = Object.assign(DefaultOptions, {
+            heartbeatInterval,
+            reconnectIntervalIncrement,
+            maxReconnectAttempts,
+            maxReconnectInterval
+        })
         emitter = new Emitter()
         emitterMock = mock(emitter)
-        connection = new Connection(services as any, options, 'localhost:6020', emitter)
-        const socketService = services.getSocket()
-        socket = socketService.socket
-        socketMock = socketService.socketMock
+        connection = new Connection(services as any, options, initialUrl, emitter)
+        getSocketMock()
         const loggerService = services.getLogger()
         logger = loggerService.logger,
         loggerMock = loggerService.loggerMock
@@ -48,7 +64,7 @@ describe('connection', () => {
         loggerMock.verify()
     })
 
-    it('supports happiest path', async () => {
+    it('supports happiest path #happy', async () => {
         await awaitConnectionAck()
         await receiveChallengeRequest()
         await sendChallengeResponse()
@@ -57,30 +73,38 @@ describe('connection', () => {
         await receiveAuthResponse()
         await sendMessage()
         await closeConnection()
+        await recieveConnectionClose()
     })
 
-    it('connection - send ping when pong received across all states', async () => {
+    it('send ping when pong received across all states #heartbeat', async () => {
         await openConnection()
         sendPong()
         receivePing()
     })
 
-    it('connection - miss heartbeat once', async () => {
+    it('miss heartbeat once #heartbeat', async () => {
         await openConnection()
-        await BBPromise.delay(50)
+        await BBPromise.delay(heartbeatInterval * 1.5)
+        // verify no errors in afterAll
     })
 
     it('connection - miss a heartbeat twice and receive error', async () => {
+        loggerMock
+          .expects('error')
+          .once()
+          .withExactArgs(
+              { topic: TOPIC.CONNECTION },
+              EVENT.HEARTBEAT_TIMEOUT
+          )
+
         await openConnection()
-        await BBPromise.delay(50)
-        await receiveConnectionError()
+        await BBPromise.delay(heartbeatInterval * 3)
     })
 
-    it.skip('connection - redirect @redirect', async () => {
+    it('connection - redirect', async () => {
         await awaitConnectionAck()
         await receiveChallengeRequest()
         await sendChallengeResponse()
-        await receiveChallengeAccept()
         await receiveRedirect()
 
         await openConnectionToRedirectedServer()
@@ -88,28 +112,74 @@ describe('connection', () => {
         await receiveChallengeRequest()
         await sendChallengeResponse()
         await receiveChallengeAccept()
-
-        // await loseConnection()
-        // await openConnection()
+        await loseConnection()
+        await reconnectToInitialServer()
+        // await receiveChallengeRequest()
+        // await sendChallengeResponse()
+        // await receiveChallengeAccept()
     })
 
-    it.skip('connection - handles authentication rejections', async () => {
+    it('connection - reject', async () => {
+        await awaitConnectionAck()
+        await receiveChallengeRequest()
+        await sendChallengeResponse()
+        await receiveChallengeReject()
+    })
+
+    it('handles authentication rejections #auth', async () => {
         await awaitConnectionAck()
         await receiveChallengeRequest()
         await sendChallengeResponse()
         await receiveChallengeAccept()
         await sendAuth()
         await receiveAuthRejectResponse()
-        // authData = {} // different data
-        await sendAuth()
+        await sendAuth() // authenticate with different data
         await receiveAuthResponse()
         await closeConnection()
-        // authData = {} // different data
-        await awaitConnectionAck()
+        await recieveConnectionClose()
+
+        socketMock.restore()
+
+        await awaitConnectionAck() // authenticate with a new connection
         await receiveChallengeRequest()
         await sendChallengeResponse()
         await receiveChallengeAccept()
         await sendAuth()
+        await receiveAuthResponse()
+        await closeConnection()
+        await recieveConnectionClose()
+    })
+
+    it('handles bad authentication data #auth', async () => {
+        await awaitConnectionAck()
+        await receiveChallengeRequest()
+        await sendChallengeResponse()
+        await receiveChallengeAccept()
+        await sendInvalidAuthClient()
+        await sendInvalidAuth()
+        await receiveAuthRejectResponse()
+        // await closeConnection()
+    })
+
+    it.skip('reaches max reconnection attempts considering the max reconnections interval #reconnect', async () => {
+        emitterMock
+          .expects('emit')
+          .once()
+          .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+
+        await awaitConnectionAck()
+        await receiveChallengeRequest()
+        await sendChallengeResponse()
+        await receiveChallengeAccept()
+
+        await receiveConnectionError()
+        await BBPromise.delay(0)
+
+        await receiveConnectionError()
+        await BBPromise.delay(10)
+
+        await receiveConnectionError()
+        await BBPromise.delay(20)
     })
 
     async function openConnection () {
@@ -122,6 +192,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_CONNECTION)
 
+        expect(socket.url).to.equal(initialUrl)
         socket.simulateOpen()
         await BBPromise.delay(0)
     }
@@ -135,15 +206,20 @@ describe('connection', () => {
             topic: TOPIC.CONNECTION,
             action: CONNECTION_ACTION.CHALLENGE
         }])
+
         await BBPromise.delay(0)
     }
 
     async function sendChallengeResponse () {
-        socket.simulateMessages([{
-            topic: TOPIC.CONNECTION,
-            action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
-            data: 'localhost'
-        }])
+        socketMock
+            .expects('sendParsedMessage')
+            .once()
+            .withExactArgs([{
+                topic: TOPIC.CONNECTION,
+                action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
+                parsedData: url
+            }])
+
         await BBPromise.delay(0)
     }
 
@@ -156,6 +232,20 @@ describe('connection', () => {
             topic: TOPIC.CONNECTION,
             action: CONNECTION_ACTION.ACCEPT
         }])
+
+        await BBPromise.delay(0)
+    }
+
+    async function receiveChallengeReject () {
+        emitterMock.expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CHALLENGE_DENIED)
+
+        socket.simulateMessages([{
+            topic: TOPIC.CONNECTION,
+            action: CONNECTION_ACTION.REJECTION
+        }])
+
         await BBPromise.delay(0)
     }
 
@@ -177,6 +267,35 @@ describe('connection', () => {
         await BBPromise.delay(0)
     }
 
+    async function sendInvalidAuthClient () {
+        expect(() => {
+            connection.authenticate('Bad Auth Data' as any, authCallback)
+        }).to.throw('invalid argument authParams')
+
+        assert(authCallback.called === false)
+
+        await BBPromise.delay(0)
+    }
+
+    async function sendInvalidAuth () {
+        emitterMock.expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AUTHENTICATING)
+
+        socketMock
+            .expects('sendParsedMessage')
+            .once()
+            .withExactArgs({
+                topic: TOPIC.AUTH,
+                action: AUTH_ACTION.REQUEST,
+                parsedData: {_username: 'invalid'} // assume this is invalid
+            })
+
+        connection.authenticate({_username: 'invalid'}, authCallback)
+
+        await BBPromise.delay(0)
+    }
+
     async function receiveAuthResponse () {
         emitterMock.expects('emit')
             .once()
@@ -187,10 +306,11 @@ describe('connection', () => {
             action: AUTH_ACTION.AUTH_SUCCESSFUL,
             parsedData: clientData
         }])
+
         await BBPromise.delay(0)
     }
 
-    async function sendMessage ()  {
+    async function sendMessage () {
         socket.simulateMessages([{
             topic: TOPIC.EVENT,
             action: EVENT_ACTION.EMIT,
@@ -202,9 +322,31 @@ describe('connection', () => {
     async function closeConnection () {
         emitterMock.expects('emit')
             .once()
-            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CLOSED)
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CLOSING)
+
+        socketMock
+            .expects('sendParsedMessage')
+            .once()
+            .withExactArgs({
+                topic: TOPIC.CONNECTION,
+                action: CONNECTION_ACTION.CLOSING
+            })
 
         connection.close()
+        await BBPromise.delay(0)
+    }
+
+    async function recieveConnectionClose () {
+        emitterMock.expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CLOSED)
+
+        socket.simulateMessages([{
+            topic: TOPIC.CONNECTION,
+            action: CONNECTION_ACTION.CLOSED
+        }])
+
+        socket.simulateRemoteClose()
         await BBPromise.delay(0)
     }
 
@@ -230,12 +372,13 @@ describe('connection', () => {
             .expects('error')
             .once()
             .withExactArgs(
-                { topic: TOPIC.CONNECTION },
-                EVENT.CONNECTION_ERROR,
-                `heartbeat not received in the last ${heartBeatTolerance} milliseconds`
-            )
+            { topic: TOPIC.CONNECTION },
+            EVENT.CONNECTION_ERROR,
+            JSON.stringify({ code: 1234 })
+        )
 
-        await BBPromise.delay(0)
+        socket.simulateError()
+        await BBPromise.delay(5)
     }
 
     async function receiveRedirect () {
@@ -244,14 +387,10 @@ describe('connection', () => {
             .once()
             .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.REDIRECTING)
 
-        socketMock
-            .expects('onclose')
-            .once()
-
         socket.simulateMessages([{
             topic: TOPIC.CONNECTION,
             action: CONNECTION_ACTION.REDIRECT,
-            data: 'wss://localhost:6020'
+            data: otherUrl
         }])
 
         await BBPromise.delay(0)
@@ -263,17 +402,95 @@ describe('connection', () => {
             .once()
             .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_CONNECTION)
 
+        getSocketMock()
+        expect(socket.url).to.equal(otherUrl)
         socket.simulateOpen()
-
         await BBPromise.delay(0)
     }
 
     async function receiveAuthRejectResponse () {
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_AUTHENTICATION)
+
         socket.simulateMessages([{
             topic: TOPIC.AUTH,
             action: AUTH_ACTION.AUTH_UNSUCCESSFUL,
-            data: AUTH_ACTION.INVALID_MESSAGE_DATA,
-
+            parsedData: AUTH_ACTION.INVALID_MESSAGE_DATA
         }])
+
+        await BBPromise.delay(10)
+
+        assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }))
+
+        await BBPromise.delay(0)
+    }
+
+    async function loseConnection () {
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+
+        socket.close()
+        await BBPromise.delay(0)
+    }
+
+    async function reconnectToInitialServer () {
+        socketMock
+            .expects('onopen')
+            .once()
+
+        socketMock
+            .expects('sendParsedMessage')
+            .once()
+            .withExactArgs({
+                topic: TOPIC.CONNECTION,
+                action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
+                parsedData: url
+            })
+
+        socket.simulateOpen()
+        await BBPromise.delay(0)
+    }
+
+    async function connectionClosedError () {
+        loggerMock
+            .expects('error')
+            .once()
+            .withExactArgs({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
+
+        await BBPromise.delay(0)
+    }
+
+    async function receiveInvalidParseError () {
+
+        socket.simulateMessages([{
+            topic: TOPIC.AUTH,
+            action: AUTH_ACTION.INVALID_MESSAGE_DATA,
+            data: 'invalid authentication message'
+        }])
+
+        await BBPromise.delay(0)
+
+        assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
+
+        await BBPromise.delay(2)
+    }
+
+    function losesConnection () {
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+
+        socket.simulateRemoteClose()
+    }
+
+    function getSocketMock () {
+        const socketService = services.getSocket()
+        socket = socketService.socket
+        socketMock = socketService.socketMock
     }
 })

@@ -23,9 +23,7 @@ export class StateMachine {
     let transition
     for (let i = 0; i < this.transitions.length; i++) {
       transition = this.transitions[i]
-      if (transitionName === transition.name && this.state === transition.from) {
-        // found transition
-        this.onTransition(transition)
+      if (transitionName === transition.name && (this.state === transition.from || !transition.from)) {
         const oldState = this.state
         this.state = transition.to
         if (this.stateMachine.onStateChanged) {
@@ -39,13 +37,6 @@ export class StateMachine {
     }
     const details = JSON.stringify({ transition: transitionName, state: this.state })
     throw new Error(`Invalid state transition: ${details}`)
-  }
-
-  /**
-   * Log state transitions for debugging.
-   */
-  // tslint:disable-next-line:no-empty
-  private onTransition (transition: any): void {
   }
 
 }

@@ -1,6 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, EVENT_ACTION, EVENT } from '../constants'
+import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
+import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
 import * as Emitter from 'component-emitter2'
 
@@ -114,7 +115,7 @@ public unlisten (pattern: string) {
   /**
  * Handles incoming messages from the server
  */
-private handle (message: Message): void {
+private handle (message: EventMessage): void {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
       return

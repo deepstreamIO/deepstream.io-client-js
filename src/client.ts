@@ -28,7 +28,7 @@ export default class Client extends EventEmitter {
   private services: Services
   private options: Options
 
-  constructor (url: string, options: any) {
+  constructor (url: string, options: any = {}) {
     super ()
 
     this.options = DefaultOptions
@@ -37,8 +37,8 @@ export default class Client extends EventEmitter {
     services.logger = new Logger()
     services.timerRegistry = new TimerRegistry()
     services.ackTimeoutRegistry = new TimeoutRegistry(services, DefaultOptions)
-    services.connection = new Connection(services, DefaultOptions, url, this)
     services.socketFactory = options.socketFactory || socketFactory
+    services.connection = new Connection(services, DefaultOptions, url, this)
     this.services = services as Services
 
     this.event = new EventHandler(this.services, this.options)

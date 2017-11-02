@@ -1,6 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, PRESENCE_ACTION, EVENT } from '../constants'
+import { TOPIC, PRESENCE_ACTIONS as PRESENCE_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+
 import * as Emitter from 'component-emitter2'
 
 export class PresenceHandler {
