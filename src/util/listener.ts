@@ -4,7 +4,7 @@ import { Services } from '../client'
 export interface ListenResponse {
   accept: () => void
   reject: (reason?: string) => void
-  onStop: (subscriptionName: string, callback: Function) => void
+  onStop: (callback: (subscriptionName: string) => void) => void
 }
 
 export type ListenCallback = (subscriptionName: string, listenResponse: ListenResponse) => void
@@ -30,6 +30,13 @@ export class Listener {
   }
 
   public listen (pattern: string, callback: ListenCallback): void {
+    if (typeof pattern !== 'string' || pattern.length === 0) {
+      throw new Error('invalid argument pattern')
+    }
+    if (typeof callback !== 'function') {
+      throw new Error('invalid argument callback')
+    }
+
     if (this.listeners.has(pattern)) {
       this.services.logger.warn({
         topic: this.topic,
@@ -44,6 +51,10 @@ export class Listener {
   }
 
   public unlisten (pattern: string): void {
+    if (typeof pattern !== 'string' || pattern.length === 0) {
+      throw new Error('invalid argument pattern')
+    }
+
     if (!this.listeners.has(pattern)) {
       this.services.logger.warn({
         topic: this.topic,
@@ -116,25 +127,25 @@ export class Listener {
   }
 
   public handle (message: Message) {
-    const pattern = message.name as string
     if (message.action === this.actions.SUBSCRIPTION_FOR_PATTERN_FOUND) {
-      const listener = this.listeners.get(pattern)
+      const listener = this.listeners.get(message.name as string)
       if (listener) {
         listener(
           message.subscription as string, {
-            accept: this.accept.bind(this, pattern, message.subscription),
-            reject: this.reject.bind(this, pattern, message.subscription),
-            onStop: this.stop.bind(this, pattern, message.subscription)
+            accept: this.accept.bind(this, message.name, message.subscription),
+            reject: this.reject.bind(this, message.name, message.subscription),
+            onStop: this.stop.bind(this, message.subscription)
           }
         )
       }
       return
-    } else if (message.action === this.actions.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
+    }
+
+    if (message.action === this.actions.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
       const stopCallback = this.stopCallbacks.get(message.subscription as string)
       if (stopCallback) {
-        stopCallback()
-      } else {
-          // warn no stop callback provided ?
+        stopCallback(message.subscription)
+        this.stopCallbacks.delete(message.subscription as string)
       }
       return
     }

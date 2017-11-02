@@ -76,3 +76,16 @@ export const getServicesMock = () => {
     }
   }
 }
+
+export const getListenerMock = () => {
+  const listener = {
+    listen: () => {},
+    unlisten: () => {},
+    handle : () => {}
+  }
+  const listenerMock = mock(listener)
+  return {
+    listener,
+    listenerMock
+  }
+}

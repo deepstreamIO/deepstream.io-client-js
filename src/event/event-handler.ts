@@ -10,11 +10,11 @@ export class EventHandler {
   private listeners: Listener
   private options: Options
 
-  constructor (services: Services, options: Options) {
+  constructor (services: Services, options: Options, listeners?: Listener) {
     this.options = options
     this.services = services
+    this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()
-    this.listeners = new Listener(TOPIC.EVENT, services)
     this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
   }
 
@@ -101,12 +101,6 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
  * data for a particular event if a user is actually interested in it
  */
 public listen (pattern: string, callback: ListenCallback) {
-  if (typeof pattern !== 'string' || pattern.length === 0) {
-    throw new Error('invalid argument pattern')
-  }
-  if (typeof callback !== 'function') {
-    throw new Error('invalid argument callback')
-  }
   this.listeners.listen(pattern, callback)
 }
 
@@ -114,9 +108,6 @@ public listen (pattern: string, callback: ListenCallback) {
  * Removes a listener that was previously registered with listenForSubscriptions
  */
 public unlisten (pattern: string) {
-  if (typeof pattern !== 'string' || pattern.length === 0) {
-    throw new Error('invalid argument pattern')
-  }
   this.listeners.unlisten(pattern)
 }
 
@@ -157,6 +148,7 @@ private handle (message: Message): void {
       message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
     ) {
       this.listeners.handle(message)
+      return
     }
 
     this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)

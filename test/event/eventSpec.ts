@@ -1,12 +1,14 @@
 import { expect } from 'chai'
 import * as sinon from 'sinon'
-import { getServicesMock } from '../mocks'
+import { getServicesMock, getListenerMock } from '../mocks'
 import { TOPIC, EVENT, EVENT_ACTION } from '../../src/constants'
 import { DefaultOptions } from '../../src/client-options'
 import { EventHandler } from '../../src/event/event-handler'
+import { Listener } from '../../src/util/listener'
 
 describe('event handler', () => {
   let services: any
+  let listener: any
   let eventHandler: EventHandler
   let handle: Function
   let spy: sinon.SinonSpy
@@ -14,7 +16,8 @@ describe('event handler', () => {
 
   beforeEach(() => {
     services = getServicesMock()
-    eventHandler = new EventHandler(services, DefaultOptions)
+    listener = getListenerMock()
+    eventHandler = new EventHandler(services, DefaultOptions, listener.listener)
     handle = services.getHandle()
     spy = sinon.spy()
   })
@@ -23,6 +26,7 @@ describe('event handler', () => {
     services.connectionMock.verify()
     services.loggerMock.verify()
     services.timeoutRegistryMock.verify()
+    listener.listenerMock.verify()
   })
 
   it('emits an event it has no listeners for', () => {
@@ -255,6 +259,54 @@ describe('event handler', () => {
     })
   })
 
+  it('listens for pattern', () => {
+    const pattern = '.*'
+    const callback = () => {}
+    listener.listenerMock
+      .expects('listen')
+      .once()
+      .withExactArgs(pattern, callback)
+
+    eventHandler.listen(pattern, callback)
+  })
+
+  it('unlistens a pattern', () => {
+    const pattern = '.*'
+    listener.listenerMock
+      .expects('unlisten')
+      .once()
+      .withExactArgs(pattern)
+
+    eventHandler.unlisten(pattern)
+  })
+
+  it('it forwards listeners\' messages to listeners', () => {
+    const subscriptionFoundMsg = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND,
+      name: '.*',
+      subscription: 'subscription'
+    }
+    const subscriptionRemovedMsg = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+      name: '.*',
+      subscription: 'subscription'
+    }
+
+    listener.listenerMock
+      .expects('handle')
+      .once()
+      .withExactArgs(subscriptionFoundMsg)
+    listener.listenerMock
+      .expects('handle')
+      .once()
+      .withExactArgs(subscriptionRemovedMsg)
+
+    handle(subscriptionFoundMsg)
+    handle(subscriptionRemovedMsg)
+  })
+
   it('logs an error event for unsolicited event messages', () => {
     services.loggerMock
       .expects('error')
@@ -269,4 +321,5 @@ describe('event handler', () => {
       action: -1
     })
   })
+
 })

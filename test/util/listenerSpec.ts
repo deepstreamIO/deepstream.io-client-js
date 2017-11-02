@@ -1,27 +1,22 @@
 import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { getServicesMock } from '../mocks'
-import { TOPIC, EVENT, EVENT_ACTION } from '../../src/constants'
+import { TOPIC, EVENT, EVENT_ACTION, RECORD_ACTION } from '../../src/constants'
 import { DefaultOptions } from '../../src/client-options'
 import { Listener, ListenCallback, ListenResponse } from '../../src/util/listener'
 
-describe.only('listener', () => {
+describe('listener', () => {
   let services: any
   let listener: Listener
 
   let listenResponse: ListenResponse
-  let listenCallbackMock: sinon.SinonMock
+  let listenCallback: sinon.SinonStub
 
   const pattern = '.*'
   const subscription = 'subscription'
 
-  function listenCallback (subscription: string, response: ListenResponse): void {
-    console.log('calleed')
-    listenResponse = response
-  }
-
   beforeEach(() => {
-    listenCallbackMock = sinon.mock({ listenCallback })
+    listenCallback = sinon.stub()
     services = getServicesMock()
     listener = new Listener(TOPIC.EVENT, services)
   })
@@ -30,13 +25,41 @@ describe.only('listener', () => {
     services.connectionMock.verify()
     services.loggerMock.verify()
     services.timeoutRegistryMock.verify()
-    listenCallbackMock.verify()
   })
 
-  it('sends listen message', () => {
+  it('validates parameters on listen and unlisten', () => {
+    expect(listener.listen.bind(listener, '', listenCallback)).to.throw()
+    expect(listener.listen.bind(listener, 1, listenCallback)).to.throw()
+    expect(listener.listen.bind(listener, pattern, null)).to.throw()
+
+    expect(listener.unlisten.bind(listener, '')).to.throw()
+    expect(listener.unlisten.bind(listener, 1)).to.throw()
+  })
+
+  it('sends event listen message', () => {
     const message = {
       topic: TOPIC.EVENT,
       action: EVENT_ACTION.LISTEN,
+      name: pattern
+    }
+    services.connectionMock
+      .expects('sendMessage')
+      .once()
+      .withExactArgs(message)
+
+    services.timeoutRegistryMock
+      .expects('add')
+      .once()
+      .withExactArgs({ message })
+
+    listener.listen(pattern, listenCallback)
+  })
+
+  it('sends record listen message', () => {
+    listener = new Listener(TOPIC.RECORD, services)
+    const message = {
+      topic: TOPIC.RECORD,
+      action: RECORD_ACTION.LISTEN,
       name: pattern
     }
     services.connectionMock
@@ -105,44 +128,101 @@ describe.only('listener', () => {
       listener.unlisten(pattern)
     })
 
-    it('calls listener when subscription for pattern', () => {
-      listenCallbackMock
-        .expects('listenCallback')
-        .once()
-        //.withArgs(subscription, listenResponse)
-
-      listener.handle({
+    it('logs unsolicited message if an unknown message is recieved', () => {
+      const message = {
         topic: TOPIC.EVENT,
-        action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND,
+        action:EVENT_ACTION.EMIT,
         name: pattern,
         subscription
+      }
+      services.loggerMock
+        .expects('error')
+        .once()
+        .withExactArgs(message, EVENT.UNSOLICITED_MESSAGE)
+
+      listener.handle(message)
     })
-//      listenResponse.accept()
+
+    describe('gets a subscription for pattern found', () => {
+      let response: ListenResponse
+
+      beforeEach(()=> {
+        listener.handle({
+          topic: TOPIC.EVENT,
+          action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND,
+          name: pattern,
+          subscription
+        })
+
+        response = listenCallback.lastCall.args[1]
+      })
+
+      it ('calls the listen callback', () => {
+        sinon.assert.calledOnce(listenCallback)
+        sinon.assert.calledWithExactly(listenCallback, subscription, sinon.match.any)
+      })
+
+      it('responds with accept', () => {
+        services.connectionMock
+          .expects('sendMessage')
+          .once()
+          .withExactArgs({
+            topic: TOPIC.EVENT,
+            action: EVENT_ACTION.LISTEN_ACCEPT,
+            name: pattern,
+            subscription
+          })
+
+        response.accept()
+      })
+
+      it('responds with reject', () => {
+        services.connectionMock
+          .expects('sendMessage')
+          .once()
+          .withExactArgs({
+            topic: TOPIC.EVENT,
+            action: EVENT_ACTION.LISTEN_REJECT,
+            name: pattern,
+            subscription
+          })
+
+        response.reject()
+      })
+
+      it('calls onStop subscription for pattern removed', () => {
+        const closeSpy = sinon.spy()
+        response.onStop(closeSpy)
+        response.accept()
+
+        listener.handle({
+          topic: TOPIC.EVENT,
+          action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+          name: pattern,
+          subscription
+        })
+
+        sinon.assert.calledOnce(closeSpy)
+        sinon.assert.calledWithExactly(closeSpy, subscription)
+      })
+
+      it('deletes onStop callback once called', () => {
+        const closeSpy = sinon.spy()
+        response.onStop(closeSpy)
+        response.accept()
+        const message = {
+          topic: TOPIC.EVENT,
+          action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+          name: pattern,
+          subscription
+        }
+
+        listener.handle(message)
+        listener.handle(message)
+
+        sinon.assert.calledOnce(closeSpy)
+        sinon.assert.calledWithExactly(closeSpy, subscription)
+      })
     })
   })
-
-  // describe('when pattern is found or removed', () => {
-  //   let spy: sinon.SinonSpy
-  //   beforeEach(() => {
-  //     spy = sinon.spy()
-  //     listener.listen(pattern, spy)
-  //     services.connectionMock.restore()
-  //     services.timeoutRegistryMock.restore()
-  //   })
-
-
-
-  //   it('calls listener when subscription for pattern removed', () => {
-  //     listener.handle({
-  //       topic: TOPIC.EVENT,
-  //       action:EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED,
-  //       name: pattern,
-  //       subscription
-  //     })
-
-  //     sinon.assert.calledOnce(spy)
-  //     //sinon.assert.calledWithExactly(spy, subscription, 3)
-  //   })
-  // })
-
 })
