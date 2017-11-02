@@ -4,6 +4,7 @@ import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
 import { Connection, AuthenticationCallback } from './connection/connection'
+import { socketFactory, SocketFactory } from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler } from './record/record-handler'
@@ -14,18 +15,20 @@ export interface Services {
   logger: Logger
   connection: Connection
   timeoutRegistry: TimeoutRegistry,
-  timerRegistry: TimerRegistry
+  timerRegistry: TimerRegistry,
+  socketFactory: SocketFactory
 }
 
 export default class Client extends EventEmitter {
-  private services: Services
-  private options: Options
   public event: EventHandler
   public rpc: RPCHandler
   public record: RecordHandler
   public presence: PresenceHandler
 
-  constructor (url: string) {
+  private services: Services
+  private options: Options
+
+  constructor (url: string, options: any = {}) {
     super ()
 
     this.options = DefaultOptions
@@ -34,6 +37,7 @@ export default class Client extends EventEmitter {
     services.logger = new Logger()
     services.timerRegistry = new TimerRegistry()
     services.ackTimeoutRegistry = new TimeoutRegistry(services, DefaultOptions)
+    services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, DefaultOptions, url, this)
     this.services = services as Services
 
@@ -51,4 +55,15 @@ export default class Client extends EventEmitter {
     return CONNECTION_STATE.OPEN
   }
 
+  /**
+  * Returns a random string. The first block of characters
+  * is a timestamp, in order to allow databases to optimize for semi-
+  * sequentuel numberings
+  */
+  public getUid (): string {
+    const timestamp = (new Date()).getTime().toString(36)
+    const randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '')
+
+    return `${timestamp}-${randomString}`
+  }
 }

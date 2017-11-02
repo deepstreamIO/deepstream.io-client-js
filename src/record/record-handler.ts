@@ -1,6 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RECORD_ACTION, EVENT } from '../constants'
+import { TOPIC, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
+
 import * as Emitter from 'component-emitter2'
 
 export class RecordHandler {

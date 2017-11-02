@@ -1,9 +1,18 @@
-import { TOPIC, CONNECTION_STATE, EVENT, AUTH_ACTION, CONNECTION_ACTION } from '../constants'
+import { CONNECTION_STATE, EVENT } from '../constants'
+import {
+  TOPIC,
+  CONNECTION_ACTIONS as CONNECTION_ACTION,
+  RPC_ACTIONS as RPC_ACTION,
+  EVENT_ACTIONS as EVENT_ACTION,
+  RECORD_ACTIONS as RECORD_ACTION,
+  AUTH_ACTIONS as AUTH_ACTION,
+  Message
+} from '../../binary-protocol/src/message-constants'
+
 import { StateMachine } from '../util/state-machine'
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { parse as parseMessage } from '../../protocol/text/src/message-parser'
-import { getMessage as buildMessage } from '../../protocol/text/src/message-builder'
+import { Socket } from './socket-factory'
 import * as NodeWebSocket from 'ws'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
@@ -11,19 +20,24 @@ import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
 
 const enum TRANSITIONS {
-  CONNECT = 'connect',
+  CONNECTED = 'connected',
   CHALLENGE = 'challenge',
   AUTHENTICATE = 'authenticate',
   RECONNECT = 'reconnect',
-  ACCEPTED = 'accepted',
-  CHALLENGING = 'challenging',
-  CHALLENGE_REJECTED = 'challenge-rejected',
+  CHALLENGE_ACCEPTED = 'accepted',
+  CHALLENGE_DENIED = 'challenge-denied',
   CONNECTION_REDIRECTED = 'redirected',
   TOO_MANY_AUTH_ATTEMPTS = 'too-many-auth-attempts',
-  CLOSE = 'close'
+  CLOSE = 'close',
+  CLOSED = 'closed',
+  UNSUCCESFUL_LOGIN = 'unsuccesful-login',
+  SUCCESFUL_LOGIN = 'succesful-login',
+  ERROR = 'error',
+  LOST = 'connection-lost',
+  CONNECTION_AUTHENTICATION_TIMEOUT = 'connection-authentication-timeout'
 }
 
-export class Connection extends Emitter {
+export class Connection {
   private services: Services
   private options: Options
   private stateMachine: StateMachine
@@ -31,10 +45,9 @@ export class Connection extends Emitter {
   private authCallback: AuthenticationCallback
   private originalUrl: string
   private url: string
-  private deliberateClose: boolean
   private heartbeatInterval: number
   private lastHeartBeat: number
-  private endpoint: WebSocket | NodeWebSocket
+  private endpoint: Socket
   private emitter: Emitter
   private handlers: Map<TOPIC, Function>
 
@@ -42,27 +55,46 @@ export class Connection extends Emitter {
   private reconnectionAttempt: number
 
   constructor (services: Services, options: Options, url: string, emitter: Emitter) {
-    super()
     this.options = options
     this.services = services
     this.authParams = null
+    this.handlers = new Map()
     // tslint:disable-next-line:no-empty
     this.authCallback = () => {}
-    this.deliberateClose = false
     this.emitter = emitter
     this.stateMachine = new StateMachine(
       this.services.logger,
       {
         init: CONNECTION_STATE.CLOSED,
+        onStateChanged: (newState: string, oldState: string) => {
+          if (newState === oldState) {
+            return
+          }
+          emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
+        },
         transitions: [
-          { name: TRANSITIONS.CONNECT, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
-          { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
-          { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.REDIRECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.CHALLENGING },
+          { name: TRANSITIONS.CONNECTION_REDIRECTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.REDIRECTING },
+          { name: TRANSITIONS.CHALLENGE_DENIED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.CHALLENGE_DENIED },
+          { name: TRANSITIONS.CHALLENGE_ACCEPTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
+          { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATING },
+          { name: TRANSITIONS.UNSUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
+          { name: TRANSITIONS.SUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.OPEN },
+          { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
+          { name: TRANSITIONS.RECONNECT, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.CLOSED, from: CONNECTION_STATE.CLOSING, to: CONNECTION_STATE.CLOSED },
+          { name: TRANSITIONS.ERROR, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.LOST, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.CLOSE, to: CONNECTION_STATE.CLOSING },
         ]
       }
     )
     this.originalUrl = utils.parseUrl(url, this.options.path)
     this.url = this.originalUrl
+    this.createEndpoint()
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {
@@ -70,7 +102,7 @@ export class Connection extends Emitter {
   }
 
   public sendMessage (message: Message): void {
-      this.endpoint.send(buildMessage(message, false))
+    this.endpoint.sendParsedMessage(message)
   }
 
   /**
@@ -87,17 +119,21 @@ export class Connection extends Emitter {
       throw new Error('invalid argument authParams')
     }
 
+    if (
+      this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+    ) {
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
+      return
+    }
+
     this.authParams = authParams
     if (callback) {
       this.authCallback = callback
     }
 
-    if (this.stateMachine.inEndState) {
-      if (this.deliberateClose) {
-        this.createEndpoint()
-      } else {
-        this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
-      }
+    if (this.stateMachine.state === CONNECTION_STATE.CLOSED) {
+      this.createEndpoint()
       return
     }
 
@@ -115,13 +151,15 @@ export class Connection extends Emitter {
 
   /**
    * Closes the connection. Using this method
-   * sets a _deliberateClose flag that will prevent the client from
-   * reconnecting.
+   * will prevent the client from reconnecting.
    */
   public close (): void {
-    clearInterval(this.heartbeatInterval)
-    this.deliberateClose = true
-    this.endpoint.close()
+    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.sendMessage({
+      topic: TOPIC.CONNECTION,
+      action: CONNECTION_ACTION.CLOSING
+    })
+    this.stateMachine.transition(TRANSITIONS.CLOSE)
   }
 
   /**
@@ -129,12 +167,12 @@ export class Connection extends Emitter {
    * was initialised with.
    */
   private createEndpoint (): void {
-    this.endpoint = new NodeWebSocket(this.url, this.options.nodeSocketOptions)
+    this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions)
 
     this.endpoint.onopen = this.onOpen.bind(this)
     this.endpoint.onerror = this.onError.bind(this)
     this.endpoint.onclose = this.onClose.bind(this)
-    this.endpoint.onmessage = this.onMessage.bind(this)
+    this.endpoint.onparsedmessages = this.onMessages.bind(this)
   }
 
   /********************************
@@ -149,11 +187,8 @@ export class Connection extends Emitter {
   private onOpen (): void {
     this.clearReconnect()
     this.lastHeartBeat = Date.now()
-    this.heartbeatInterval = utils.setInterval(
-      this.checkHeartBeat.bind(this),
-      this.options.heartbeatInterval
-    )
-    this.stateMachine.transition('connect')
+    this.checkHeartBeat()
+    this.stateMachine.transition(TRANSITIONS.CONNECTED)
   }
 
   /**
@@ -164,9 +199,6 @@ export class Connection extends Emitter {
    * invoked.
    */
   private onError (error: NodeJS.ErrnoException) {
-    clearInterval(this.heartbeatInterval)
-    this.stateMachine.transition('error')
-
     /*
      * If the implementation isn't listening on the error event this will throw
      * an error. So let's defer it to allow the reconnection to kick in.
@@ -184,6 +216,10 @@ export class Connection extends Emitter {
       }
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.CONNECTION_ERROR, msg)
     }, 1)
+
+    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.stateMachine.transition(TRANSITIONS.ERROR)
+    this.tryReconnect()
   }
 
   /**
@@ -195,23 +231,33 @@ export class Connection extends Emitter {
    * strategy.
    */
   private onClose (): void {
-    clearInterval(this.heartbeatInterval)
+    this.services.timerRegistry.remove(this.heartbeatInterval)
 
     if (this.stateMachine.state === CONNECTION_STATE.REDIRECTING) {
       this.createEndpoint()
-    } else if (this.deliberateClose === true) {
-      this.stateMachine.transition(TRANSITIONS.CLOSE)
-    } else {
-      this.tryReconnect()
+      return
     }
+
+    if (
+      this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+    ) {
+      return
+    }
+
+    if (this.stateMachine.state === CONNECTION_STATE.CLOSING) {
+      this.stateMachine.transition(TRANSITIONS.CLOSED)
+      return
+    }
+
+    this.stateMachine.transition(TRANSITIONS.LOST)
+    this.tryReconnect()
   }
 
   /**
    * Callback for messages received on the connection.
    */
-  private onMessage (rawMessage: string): void {
-    const parsedMessages = parseMessage(rawMessage)
-
+  private onMessages (parsedMessages: Array<Message>): void {
     for (let i = 0; i < parsedMessages.length; i++) {
       const message = parsedMessages[i] as Message
       if (message === null) {
@@ -245,16 +291,17 @@ export class Connection extends Emitter {
     const heartBeatTolerance = this.options.heartbeatInterval * 2
 
     if (Date.now() - this.lastHeartBeat > heartBeatTolerance) {
-      clearInterval(this.heartbeatInterval)
+      this.services.timerRegistry.remove(this.heartbeatInterval)
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.HEARTBEAT_TIMEOUT)
       this.endpoint.close()
-      this.services.logger.error(
-        {
-        topic: TOPIC.CONNECTION
-        },
-        EVENT.CONNECTION_ERROR,
-        `heartbeat not received in the last ${heartBeatTolerance} milliseconds`
-      )
+      return
     }
+
+    this.heartbeatInterval = this.services.timerRegistry.add({
+      duration: this.options.heartbeatInterval,
+      callback: this.checkHeartBeat,
+      context: this
+    })
   }
 
  /**
@@ -268,7 +315,6 @@ export class Connection extends Emitter {
     if (this.reconnectTimeout !== null) {
       return
     }
-
     if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
       this.stateMachine.transition(TRANSITIONS.RECONNECT)
       this.reconnectTimeout = setTimeout(
@@ -282,16 +328,18 @@ export class Connection extends Emitter {
       return
     }
 
+    this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
     this.clearReconnect()
     this.close()
-    this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
   }
 
   /**
    * Attempts to open a errourosly closed connection
    */
   private tryOpen (): void {
-    this.url = this.originalUrl
+    if (this.stateMachine.state !== CONNECTION_STATE.REDIRECTING) {
+      this.url = this.originalUrl
+    }
     this.createEndpoint()
     this.reconnectTimeout = null
   }
@@ -335,12 +383,12 @@ export class Connection extends Emitter {
     }
 
     if (message.action === CONNECTION_ACTION.ACCEPT) {
-      this.stateMachine.transition(TRANSITIONS.ACCEPTED)
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE_ACCEPTED)
       return
     }
 
     if (message.action === CONNECTION_ACTION.CHALLENGE) {
-      this.stateMachine.transition(TRANSITIONS.CHALLENGING)
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE)
       this.sendMessage({
         topic: TOPIC.CONNECTION,
         action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
@@ -349,9 +397,9 @@ export class Connection extends Emitter {
       return
     }
 
-    if (message.action === CONNECTION_ACTION.REJECTION) {
-      this.stateMachine.transition(TRANSITIONS.CHALLENGE_REJECTED)
-      this.close()
+    if (message.action === CONNECTION_ACTION.REJECT) {
+      this.stateMachine.transition(TRANSITIONS.CHALLENGE_DENIED)
+      this.endpoint.close()
       return
     }
 
@@ -363,8 +411,8 @@ export class Connection extends Emitter {
     }
 
     if (message.action === CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT) {
-      this.deliberateClose = true
       this.services.logger.error(message)
+      this.stateMachine.transition(TRANSITIONS.CONNECTION_AUTHENTICATION_TIMEOUT)
       return
     }
   }
@@ -377,19 +425,18 @@ export class Connection extends Emitter {
    */
   private handleAuthResponse (message: Message): void {
     if (message.action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
-      this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS)
       return
     }
 
     if (message.action === AUTH_ACTION.AUTH_UNSUCCESSFUL) {
-      this.deliberateClose = true
+      this.stateMachine.transition(TRANSITIONS.UNSUCCESFUL_LOGIN)
       this.authCallback(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
       return
     }
 
     if (message.action === AUTH_ACTION.AUTH_SUCCESSFUL) {
-      this.stateMachine.transition('open')
+      this.stateMachine.transition(TRANSITIONS.SUCCESFUL_LOGIN)
       this.authCallback(true, message.parsedData)
       return
     }

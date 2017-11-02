@@ -166,3 +166,15 @@ export const parseUrl = (initialURl: string, defaultPath: string): string => {
   serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath
   return URL.format(serverUrl)
 }
+
+/**
+* Returns a random string. The first block of characters
+* is a timestamp, in order to allow databases to optimize for semi-
+* sequentuel numberings
+*/
+export const getUid = (): string => {
+  const timestamp = (new Date()).getTime().toString(36)
+  const randomString = (Math.random() * 10000000000000000).toString(36).replace('.', '')
+
+  return `${timestamp}-${randomString}`
+}

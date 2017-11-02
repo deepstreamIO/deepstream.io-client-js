@@ -1,12 +1,19 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
+import {
+  TOPIC,
+  RECORD_ACTIONS as RECORD_ACTION,
+  RPC_ACTIONS as RPC_ACTION,
+  Message
+} from '../../binary-protocol/src/message-constants'
+
 import * as EventEmitter from 'component-emitter2'
 
 export interface Timeout {
-    event?: EVENT
+    event?: EVENT | RPC_ACTION | RECORD_ACTION
     message: Message,
-    callback?: Function,
+    callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void,
     duration?: number
 }
 
@@ -25,7 +32,7 @@ interface InternalTimeout {
 export class TimeoutRegistry extends EventEmitter {
     private options: Options
     private services: Services
-    private register: Map<number | string, InternalTimeout>
+    private register: Map<number, InternalTimeout>
     private counter: number
 
     constructor (services: Services, options: Options) {
@@ -43,6 +50,9 @@ export class TimeoutRegistry extends EventEmitter {
       if (timeout.duration === undefined) {
         timeout.duration = this.options.subscriptionTimeout
       }
+      if (timeout.event === undefined) {
+        timeout.event = EVENT.ACK_TIMEOUT
+      }
 
       if (this.services.connection.getConnectionState() !== CONNECTION_STATE.OPEN || timeout.duration < 1) {
         return -1
@@ -50,17 +60,20 @@ export class TimeoutRegistry extends EventEmitter {
 
       this.remove(timeout.message)
 
-      const timerId = this.services.timerRegistry.add({
-        callback: timeout.callback ? timeout.callback : this.onTimeout,
-        duration: timeout.duration,
+      const internalTimeout: InternalTimeout = Object.assign({}, {
+        timerId: -1,
+        uniqueName: this.getUniqueName(timeout.message),
+        event: timeout.event
+      }, { timeout })
+
+      internalTimeout.timerId = this.services.timerRegistry.add({
         context: this,
-        data: timeout
+        callback: this.onTimeout,
+        duration: timeout.duration,
+        data: internalTimeout
       })
-      this.register.set(timerId, Object.assign({}, {
-        timerId,
-        uniqueName: this.getUniqueName(timeout.message)
-      }, { timeout }))
-      return timerId
+      this.register.set(internalTimeout.timerId, internalTimeout)
+      return internalTimeout.timerId
   }
 
   /**
@@ -68,10 +81,11 @@ export class TimeoutRegistry extends EventEmitter {
    */
   public remove (message: Message): void {
     const uniqueName = this.getUniqueName(message)
-    const timer = this.register.get(uniqueName)
-    if (timer) {
-      clearTimeout(timer.timerId)
-      this.register.delete(uniqueName)
+    for (const [timerId, timeout] of this.register) {
+      if (timeout.uniqueName === uniqueName) {
+        clearTimeout(timerId)
+        this.register.delete(timerId)
+      }
     }
   }
 
@@ -93,7 +107,7 @@ export class TimeoutRegistry extends EventEmitter {
     const timeout = internalTimeout.timeout
 
     if (timeout.callback) {
-      timeout.callback(timeout)
+      timeout.callback(timeout.event as EVENT, timeout.message)
     } else {
       this.services.logger.warn(timeout.message, timeout.event)
     }
@@ -113,6 +127,7 @@ export class TimeoutRegistry extends EventEmitter {
     if (connectionState !== CONNECTION_STATE.OPEN) {
       for (const [ timerId, timer ] of this.register) {
         clearTimeout(timer.timerId)
+        this.register.delete(timer.timerId)
       }
     }
   }
