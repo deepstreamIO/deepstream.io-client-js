@@ -412,7 +412,7 @@ export class Connection {
     }
 
     if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
-      this.services.logger.error(message)
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.AUTHENTICATION_TIMEOUT)
       this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
       return
     }
