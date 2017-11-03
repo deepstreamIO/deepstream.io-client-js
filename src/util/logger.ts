@@ -25,9 +25,6 @@ export class Logger {
 
     public error (message: { topic: TOPIC } | Message, event?: EVENT| EVENT_ACTION | RECORD_ACTION | RPC_ACTION | CONNECTION_ACTION, log?: string): void {
         // tslint:disable-next-line:no-console
-        // console.error(message, event, log)
-        
-
         if (message.topic === TOPIC.CONNECTION && (message as Message).action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
             console.log(TOPIC[TOPIC.CONNECTION], CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT], log)
             this.emitter.emit(
@@ -36,6 +33,7 @@ export class Logger {
                 CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT],
                 TOPIC[TOPIC.CONNECTION]
             )
+            return
         } else if (message.topic === TOPIC.AUTH && (message as Message).action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
             console.log(TOPIC[TOPIC.AUTH], AUTH_ACTION[AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS], log)
             this.emitter.emit(
@@ -44,6 +42,7 @@ export class Logger {
                 AUTH_ACTION[AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS],
                 TOPIC[TOPIC.AUTH]
             )
+            return
         } else if (message.topic === TOPIC.CONNECTION && event === EVENT.IS_CLOSED) {
             console.log(TOPIC[TOPIC.CONNECTION], EVENT[EVENT.IS_CLOSED], log)
             this.emitter.emit(
@@ -52,6 +51,8 @@ export class Logger {
                 EVENT[EVENT.IS_CLOSED],
                 TOPIC[TOPIC.CONNECTION]
             )
+            return
         }
+        console.error(message, event, log)        
     }
 }

@@ -184,8 +184,7 @@ describe('connection', () => {
     await receiveChallengeAccept()
     await sendAuth()
     await receiveAuthRejectResponse()
-
-    assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
+    expect(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })).to.be.true
   })
 
   it('handles authenticating too may times', async () => {
@@ -214,13 +213,13 @@ describe('connection', () => {
         CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     )
 
-    loggerMock
-      .expects('error')
-      .once()
-      .withExactArgs(
-        { topic: TOPIC.CONNECTION },
-        EVENT.AUTHENTICATION_TIMEOUT
-    )
+    // loggerMock
+    //   .expects('error')
+    //   .once()
+    //   .withExactArgs(
+    //     { topic: TOPIC.CONNECTION },
+    //     EVENT.AUTHENTICATION_TIMEOUT
+    // )
 
     await awaitConnectionAck()
     await receiveChallengeRequest()
