@@ -15,7 +15,7 @@ script:
   - if [ "$TRAVIS_NODE_VERSION" ~= "8" ]; then
       npm run lint;
     fi
-  - npm run coverage
+  - npm run test:coverage
 
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
 

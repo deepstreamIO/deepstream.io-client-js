@@ -193,15 +193,15 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
 
     if (args.length === startIndex + 2) {
       if (typeof args[startIndex] === 'string' && typeof args[startIndex + 1] === 'object') {
-        result = { path: args[startIndex], data: args[startIndex+1], callback: undefined }
+        result = { path: args[startIndex], data: args[startIndex + 1], callback: undefined }
       }
-      if (typeof args[startIndex] === 'object' && typeof args[startIndex+1] === 'function') {
-        result = { path: undefined, data: args[startIndex], callback: args[startIndex+1] }
+      if (typeof args[startIndex] === 'object' && typeof args[startIndex + 1] === 'function') {
+        result = { path: undefined, data: args[startIndex], callback: args[startIndex + 1] }
       }
     }
 
     if (args.length === startIndex + 3) {
-      result = { path: args[startIndex+0], data: args[startIndex+1], callback: args[startIndex+2]}
+      result = { path: args[startIndex + 0], data: args[startIndex + 1], callback: args[startIndex + 2]}
     }
 
     if (result) {

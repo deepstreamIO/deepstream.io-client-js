@@ -1,5 +1,6 @@
 import { DefaultOptions, Options } from './client-options'
 import { EVENT, CONNECTION_STATE } from './constants'
+import * as C from '../binary-protocol/src/message-constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
@@ -19,7 +20,7 @@ export interface Services {
   socketFactory: SocketFactory
 }
 
-export default class Client extends EventEmitter {
+export class Client extends EventEmitter {
   public event: EventHandler
   public rpc: RPCHandler
   public record: RecordHandler
@@ -34,7 +35,7 @@ export default class Client extends EventEmitter {
     this.options = DefaultOptions
 
     const services: any = {}
-    services.logger = new Logger()
+    services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.ackTimeoutRegistry = new TimeoutRegistry(services, DefaultOptions)
     services.socketFactory = options.socketFactory || socketFactory
@@ -52,7 +53,11 @@ export default class Client extends EventEmitter {
   }
 
   public getConnectionState (): CONNECTION_STATE {
-    return CONNECTION_STATE.OPEN
+    return this.services.connection.getConnectionState()
+  }
+
+  public close (): void {
+    this.services.connection.close()
   }
 
   /**
@@ -67,3 +72,9 @@ export default class Client extends EventEmitter {
     return `${timestamp}-${randomString}`
   }
 }
+
+export function deepstream (url: string, options: any): Client {
+  return new Client(url, options)
+} 
+
+export { CONNECTION_STATE, C, EVENT }
