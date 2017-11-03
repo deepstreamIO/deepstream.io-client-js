@@ -10,15 +10,16 @@ import { RPCHandler, RPCProvider } from '../../src/rpc/rpc-handler'
 import { RPCResponse } from '../../src/rpc/rpc-response'
 import { TimeoutRegistry } from '../../src/util/timeout-registry'
 
-describe.only('RPC handler', () => {
+describe('RPC handler', () => {
   let services: any
   let rpcHandler: RPCHandler
   let handle: Function
   let rpcProviderSpy: sinon.SinonSpy
   let data: any
   const name = 'myRpc'
-  const rpcAcceptTimeout = 5
-  const options = Object.assign({}, DefaultOptions, { rpcAcceptTimeout })
+  const rpcAcceptTimeout = 3
+  const rpcResponseTimeout = 10
+  const options = Object.assign({}, DefaultOptions, { rpcAcceptTimeout, rpcResponseTimeout })
 
   beforeEach(() => {
     services = getServicesMock()
@@ -152,7 +153,8 @@ describe.only('RPC handler', () => {
     const message = {
       topic: TOPIC.RPC,
       action: RPC_ACTIONS.ACCEPT,
-      name
+      name,
+      correlationId: '123abc'
     }
     services.loggerMock
       .expects('error')
@@ -254,6 +256,18 @@ describe.only('RPC handler', () => {
       sinon.assert.notCalled(rpcResponse)
     })
 
+    it('calls rpcResponse with error when response is not sent in time', async () => {
+      handle({
+        topic: TOPIC.RPC,
+        action: RPC_ACTIONS.ACCEPT,
+        name,
+        correlationId: getLastMessageSent().correlationId
+      })
+      await BBPromise.delay(rpcResponseTimeout * 2)
+      sinon.assert.calledOnce(rpcResponse)
+      sinon.assert.calledWithExactly(rpcResponse, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT])
+    })
+
     it('handles the rpc response RESPONSE message', async () => {
       handle({
         topic: TOPIC.RPC,
@@ -263,7 +277,7 @@ describe.only('RPC handler', () => {
         parsedData: data
       })
 
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await BBPromise.delay(rpcResponseTimeout * 2)
       sinon.assert.calledOnce(rpcResponse)
       sinon.assert.calledWithExactly(rpcResponse, null, data)
     })
@@ -276,7 +290,6 @@ describe.only('RPC handler', () => {
         correlationId: getLastMessageSent().correlationId,
         parsedData: data
       })
-      await BBPromise.delay(rpcAcceptTimeout * 2)
       handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.RESPONSE,
@@ -285,7 +298,7 @@ describe.only('RPC handler', () => {
         parsedData: data
       })
 
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await BBPromise.delay(rpcResponseTimeout * 2)
       sinon.assert.calledOnce(rpcResponse)
     })
 
@@ -299,7 +312,7 @@ describe.only('RPC handler', () => {
         parsedData: error
       })
 
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await BBPromise.delay(rpcResponseTimeout * 2)
       sinon.assert.calledOnce(rpcResponse)
       sinon.assert.calledWithExactly(rpcResponse, error, error)
     })
@@ -312,7 +325,6 @@ describe.only('RPC handler', () => {
         correlationId: getLastMessageSent().correlationId,
         parsedData: data
       })
-      await BBPromise.delay(rpcAcceptTimeout * 2)
       handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.RESPONSE,
@@ -321,7 +333,7 @@ describe.only('RPC handler', () => {
         parsedData: data
       })
 
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await BBPromise.delay(rpcResponseTimeout * 2)
       sinon.assert.calledOnce(rpcResponse)
     })
   })
