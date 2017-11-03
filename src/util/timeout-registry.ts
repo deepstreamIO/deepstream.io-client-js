@@ -99,13 +99,11 @@ export class TimeoutRegistry extends EventEmitter {
 
   /**
    * Will be invoked if the timeout has occured before the ack message was received
-   *
-   * @param {Object} name The timeout object registered
    */
   private onTimeout (internalTimeout: InternalTimeout): void {
+
     this.register.delete(internalTimeout.timerId)
     const timeout = internalTimeout.timeout
-
     if (timeout.callback) {
       timeout.callback(timeout.event as EVENT, timeout.message)
     } else {

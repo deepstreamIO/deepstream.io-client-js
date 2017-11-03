@@ -41,7 +41,7 @@ export class RPCHandler {
    * numbers or implicitly JSON serialized objects will arrive in their
    * respective format as well
    */
-  public provide (name: string, callback: RPCResponse): void {
+  public provide (name: string, callback: RPCProvider): void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
@@ -90,7 +90,7 @@ export class RPCHandler {
    * @param   {Function} callback Will be invoked with the returned result or if the rpc failed
    *                              receives to arguments: error or null and the result
    */
-  public make (name: string, data: any, callback: (error: string, data: any) => void): Promise<any> | undefined {
+  public make (name: string, data: any, callback?: (error: string, data: any) => void): Promise<any> | undefined {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
@@ -128,9 +128,9 @@ export class RPCHandler {
    * if this client sends a unprovide message whilst an incoming request is already in flight)
    */
   private respondToRpc (message: RPCMessage) {
-    const provider = this.providers.get(name)
+    const provider = this.providers.get(message.name)
     if (provider) {
-      provider(message.data, new RPCResponse(message, this.options, this.services))
+      provider(message.parsedData, new RPCResponse(message, this.options, this.services))
     } else {
       this.services.connection.sendMessage({
         topic: TOPIC.RPC,
@@ -181,7 +181,7 @@ export class RPCHandler {
       if (message.action === RPC_ACTION.ACCEPT) {
         rpc.accept()
       } else if (message.action === RPC_ACTION.RESPONSE) {
-        rpc.respond(message)
+        rpc.respond(message.parsedData)
         this.rpcs.delete(message.correlationId as string)
       } else if (message.action === RPC_ACTION.REQUEST_ERROR) {
         rpc.error(message.parsedData)

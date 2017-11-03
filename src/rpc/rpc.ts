@@ -2,6 +2,8 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
 
+export type RPCMakeCallback = (error: string | null, result?: any) => void
+
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -12,11 +14,11 @@ export class RPC {
     private services: Services
     private options: Options
     private name: string
-    private response: any
+    private response: RPCMakeCallback
     private acceptTimeout: number
     private responseTimeout: number
 
-    constructor (name: string, response: any, options: Options, services: Services) {
+    constructor (name: string, response: RPCMakeCallback, options: Options, services: Services) {
         this.options = options
         this.services = services
         this.name = name
@@ -29,9 +31,10 @@ export class RPC {
               name
             },
             event: RPC_ACTION.ACCEPT_TIMEOUT,
-            duration: this.options.rpcAckTimeout,
+            duration: this.options.rpcAcceptTimeout,
             callback: this.onTimeout.bind(this)
         })
+
 
         this.responseTimeout = this.services.timeoutRegistry.add({
             message: {
@@ -56,7 +59,7 @@ export class RPC {
      * Called once a response message is received from the server.
      */
     public respond (data: any) {
-      this.response.callback(null, data)
+      this.response(null, data)
       this.complete()
     }
 
@@ -64,7 +67,7 @@ export class RPC {
      * Called once an error is received from the server.
      */
     public error (data: any) {
-      this.response.callback(data, data)
+      this.response(data, data)
       this.complete()
     }
 
@@ -75,7 +78,7 @@ export class RPC {
      * UNSOLICITED_MESSAGE error
      */
     private onTimeout (event: RPC_ACTION, message: RPCMessage) {
-      this.response.callback(event)
+      this.response(RPC_ACTION[event])
       this.complete()
     }
 

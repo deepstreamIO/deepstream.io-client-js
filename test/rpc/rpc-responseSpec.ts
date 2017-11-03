@@ -7,7 +7,7 @@ import { TOPIC, RPC_ACTIONS, RPCMessage } from '../../binary-protocol/src/messag
 import { DefaultOptions } from '../../src/client-options'
 import { RPCResponse } from '../../src/rpc/rpc-response'
 
-describe.only('RPC response', () => {
+describe('RPC response', () => {
   let services: any
   let rpcResponse: RPCResponse
   const name = 'myRPC'

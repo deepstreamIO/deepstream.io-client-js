@@ -1,14 +1,19 @@
 // tslint:disable:no-empty
 import { EventEmitter } from 'events'
 import { mock, stub, SinonMock, SinonStub } from 'sinon'
+import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
 import { Message } from '../binary-protocol/src/message-constants'
 
+let lastMessageSent: Message
+export const getLastMessageSent = () => lastMessageSent
+
 export const getServicesMock = () => {
   let handle: Function | null = null
+
   const connection = {
-      sendMessage: () => {},
-      getConnectionState: stub(),
+      sendMessage: (message) => { lastMessageSent = message },
+      getConnectionState: stub().returns(CONNECTION_STATE.OPEN),
       registerHandler: (topic: any, callback: Function) => {
         handle = callback
       }
