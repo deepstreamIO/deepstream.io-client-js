@@ -8,13 +8,13 @@ import {
 } from '../../binary-protocol/src/message-constants'
 
 export class Logger {
-    public warn (message: { topic: TOPIC } | Message, event?: EVENT | EVENT_ACTION | RECORD_ACTION | RPC_ACTION, log?: string): void {
+    public warn (message: { topic: TOPIC } | Message, event?: EVENT | EVENT_ACTION | RECORD_ACTION | RPC_ACTION, meta?: any): void {
         // tslint:disable-next-line:no-console
-        console.warn(message, event, log)
+        console.warn(message, event, meta)
     }
 
-    public error (message: { topic: TOPIC } | Message, event?: EVENT| EVENT_ACTION | RECORD_ACTION | RPC_ACTION, log?: string): void {
+    public error (message: { topic: TOPIC } | Message, event?: EVENT| EVENT_ACTION | RECORD_ACTION | RPC_ACTION, meta?: any): void {
         // tslint:disable-next-line:no-console
-        console.error(message, event, log)
+        console.error(message, event, meta)
     }
 }
