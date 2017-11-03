@@ -109,11 +109,7 @@ export class RecordCore extends Emitter {
  *                                     two arguments or the data itself
  * @param {Object} data     The data that should be stored in the record
  */
-public set (data: any, callback?: WriteAckCallback): void
-public set (path: string, data: any, callback?: WriteAckCallback): void
-  public set (...rest): void {
-    const { path, data, callback } = utils.normalizeSetArguments(rest)
-
+  public set ({ path, data, callback }: utils.RecordSetArguments): void {
     if (!path && (data === null || typeof data !== 'object')) {
       throw new Error('invalid arguments, scalar values cannot be set without path')
     }
@@ -156,18 +152,9 @@ public set (path: string, data: any, callback?: WriteAckCallback): void
   /**
    * Wrapper function around the record.set that returns a promise
    * if no callback is supplied.
-   *
-   * @param {String|Object}   pathOrData     the path or data to write to the record
-   * @param {Object|Function}   dataOrCallback the data to write to the record or the write
-   *                                  acknowledgement callback
-   * @param {Function} callback       the callback with the result of the write
    * @returns {Promise} if a callback is omitted a Promise is returned with the result of the write
    */
-  public setWithAck (data: any, callback?: (error: string) => void): Promise<void> | undefined
-  public setWithAck (path: string, data: any, callback?: (error: string) => void): Promise<void> | undefined
-  public setWithAck (...rest): Promise<void> | undefined {
-    const args = utils.normalizeSetArguments(rest)
-
+  public setWithAck (args: utils.RecordSetArguments): Promise<void> | void {
     if (!args.callback) {
       return new Promise((resolve, reject) => {
         args.callback = error => error === null ? resolve() : reject(error)
@@ -201,18 +188,8 @@ public set (path: string, data: any, callback?: WriteAckCallback): void
  *
  * If called with true for triggerNow, the callback will
  * be called immediatly with the current value
- *
- * @param   {[String]}    path      A JSON path within the record to subscribe to
- * @param   {Function}    callback         Callback function to notify on changes
- * @param   {[Boolean]}   triggerNow      A flag to specify whether the callback should
- *                                         be invoked immediatly with the current value
  */
-  public subscribe (callback: (data: any) => void, triggerNow?: boolean)
-  public subscribe (path: string, callback: (data: any) => void, triggerNow?: boolean)
-  public subscribe (rest: object)
-  public subscribe (...rest) {
-    const args = utils.normalizeArguments(rest)
-
+  public subscribe (args: utils.RecordSubscribeArguments) {
     if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
       throw new Error('invalid argument path')
     }
@@ -226,11 +203,11 @@ public set (path: string, data: any, callback?: WriteAckCallback): void
 
     if (args.triggerNow) {
       this.whenReady(() => {
-        this.emitter.on(args.path, args.callback)
+        this.emitter.on(args.path || '', args.callback)
         args.callback(this.get(args.path))
       })
     } else {
-      this.emitter.on(args.path, args.callback)
+      this.emitter.on(args.path || '', args.callback)
     }
   }
 
@@ -249,11 +226,7 @@ public set (path: string, data: any, callback?: WriteAckCallback): void
    *                                          method was passed to subscribe, the same method
    *                                          must be passed to unsubscribe as well.
    */
-  public unsubscribe (path: string, callback: (data: any) => void)
-  public unsubscribe (rest: any)
-  public unsubscribe (...rest) {
-    const args = utils.normalizeArguments(rest)
-
+  public unsubscribe (args: utils.RecordSubscribeArguments) {
     if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
       throw new Error('invalid argument path')
     }
@@ -570,7 +543,7 @@ private onRecordRecovered (
  * A quick check that's carried out by most methods that interact with the record
  * to make sure it hasn't been destroyed yet - and to handle it gracefully if it has.
  */
-  private checkDestroyed (methodName): boolean {
+  private checkDestroyed (methodName: string): boolean {
     if (this.stateMachine.inEndState) {
       this.services.logger.error(
         { topic: TOPIC.RECORD },

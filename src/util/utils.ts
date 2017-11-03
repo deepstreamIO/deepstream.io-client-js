@@ -179,28 +179,29 @@ export const getUid = (): string => {
   return `${timestamp}-${randomString}`
 }
 
-export interface SetArguments { callback?: (error: string | null) => void, path?: string, data: any }
+export interface RecordSetArguments { callback?: (error: string | null) => void, path?: string, data: any }
+export interface RecordSubscribeArguments { callback: (data: any) => void, path?: string, triggerNow?: boolean }
   /**
    * Creates a map based on the types of the provided arguments
    */
-export const normalizeSetArguments = (args: Array<any>): SetArguments => {
+export const normalizeSetArguments = (args: IArguments, startIndex: number = 0): RecordSetArguments => {
     let result
 
-    if (args.length === 1) {
-      result = { data: args[0], path: undefined, callback: undefined }
+    if (args.length === startIndex + 1) {
+      result = { data: args[startIndex], path: undefined, callback: undefined }
     }
 
-    if (args.length === 2) {
-      if (typeof args[0] === 'string' && typeof args[1] === 'object') {
-        result = { path: args[0], data: args[1], callback: undefined }
+    if (args.length === startIndex + 2) {
+      if (typeof args[startIndex] === 'string' && typeof args[startIndex + 1] === 'object') {
+        result = { path: args[startIndex], data: args[startIndex+1], callback: undefined }
       }
-      if (typeof args[0] === 'object' && typeof args[1] === 'function') {
-        result = { path: undefined, data: args[0], callback: args[1] }
+      if (typeof args[startIndex] === 'object' && typeof args[startIndex+1] === 'function') {
+        result = { path: undefined, data: args[startIndex], callback: args[startIndex+1] }
       }
     }
 
-    if (args.length === 3) {
-      result = { path: args[0], data: args[1], callback: args[2]}
+    if (args.length === startIndex + 3) {
+      result = { path: args[startIndex+0], data: args[startIndex+1], callback: args[startIndex+2]}
     }
 
     if (result) {
@@ -222,7 +223,7 @@ export const normalizeSetArguments = (args: Array<any>): SetArguments => {
   /**
    * Creates a map based on the types of the provided arguments
    */
-export const normalizeArguments = (args: Array<any>): { callback: Function, triggerNow?: boolean, path: string, data: any } => {
+export const normalizeArguments = (args: IArguments): RecordSubscribeArguments => {
     // If arguments is already a map of normalized parameters
     // (e.g. when called by AnonymousRecord), just return it.
     if (args.length === 1 && typeof args[0] === 'object') {

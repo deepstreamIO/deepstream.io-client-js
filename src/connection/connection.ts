@@ -414,7 +414,7 @@ export class Connection {
       return
     }
 
-    if (message.action === CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT) {
+    if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
       this.services.logger.error(message)
       this.stateMachine.transition(TRANSITIONS.CONNECTION_AUTHENTICATION_TIMEOUT)
       return
