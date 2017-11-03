@@ -1,11 +1,32 @@
+import * as utils from '../util/utils'
 const SPLIT_REG_EXP = /[[\]]/g
+
+/**
+* Returns the value of the path or
+* undefined if the path can't be resolved
+*/
+export function get (data: any, path: string | null, deepCopy: boolean): any {
+ const tokens = tokenize(path)
+ let value = data
+ for (let i = 0; i < tokens.length; i++) {
+   if (value === undefined) {
+     return undefined
+   }
+   if (typeof value !== 'object') {
+     throw new Error('invalid data or path')
+   }
+   value = value[tokens[i]]
+ }
+
+ return deepCopy !== false ? utils.deepCopy(value) : value
+}
 
 /**
  * This class allows to set or get specific
  * values within a json data structure using
  * string-based paths
  */
-export function setValue (root: any, path: string, value: any): void {
+export function setValue (root: any, path: string | null, value: any): any {
   const tokens = tokenize(path)
   let node = root
 
@@ -23,13 +44,18 @@ export function setValue (root: any, path: string, value: any): void {
   }
 
   node[tokens[i]] = value
+  return root
 }
 
 /**
  * Parses the path. Splits it into
  * keys for objects and indices for arrays.
  */
-function tokenize (path: string): Array<string | number> {
+function tokenize (path: string | null): Array<string | number> {
+  if (path === null) {
+    return []
+  }
+
   const tokens: Array<string | number> = []
 
   const parts = path.split('.')

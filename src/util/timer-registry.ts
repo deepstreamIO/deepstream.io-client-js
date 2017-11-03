@@ -18,4 +18,9 @@ export class TimerRegistry {
         clearTimeout(timerId)
         return true
     }
+
+    public requestIdleCallback (callback: Function): void {
+
+    }
+
 }

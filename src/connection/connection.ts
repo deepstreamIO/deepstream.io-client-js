@@ -37,6 +37,8 @@ const enum TRANSITIONS {
 }
 
 export class Connection {
+  public isConnected: boolean
+
   private services: Services
   private options: Options
   private stateMachine: StateMachine
@@ -59,6 +61,7 @@ export class Connection {
     this.services = services
     this.authParams = null
     this.handlers = new Map()
+    this.isConnected = false
     // tslint:disable-next-line:no-empty
     this.authCallback = () => {}
     this.emitter = emitter
@@ -70,6 +73,7 @@ export class Connection {
           if (newState === oldState) {
             return
           }
+          this.isConnected = newState === CONNECTION_STATE.OPEN
           emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
         },
         transitions: [

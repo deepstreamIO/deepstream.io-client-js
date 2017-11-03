@@ -1,6 +1,9 @@
 import { Record } from './record'
+import { List } from './list'
+import { AnonymousRecord } from './anonymous-record'
+import { RecordCore } from './record-core'
 
-export type MergeStrategy = (record: Record, remoteValue: object, remoteVersion: number, callback: Function) => void
+export type MergeStrategy = (record: Record | AnonymousRecord | List | RecordCore, remoteValue: object, remoteVersion: number, callback: Function) => void
 
 /**
  *  Choose the server's state over the client's
