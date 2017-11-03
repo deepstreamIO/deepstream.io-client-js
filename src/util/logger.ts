@@ -18,15 +18,15 @@ export class Logger {
         this.emitter = emitter
     }
 
-    public warn (message: { topic: TOPIC } | Message, event?: EVENT | EVENT_ACTION | RECORD_ACTION | RPC_ACTION, meta?: string): void {
+    public warn (message: { topic: TOPIC } | Message, event?: EVENT | EVENT_ACTION | RECORD_ACTION | RPC_ACTION, meta?: any): void {
         // tslint:disable-next-line:no-console
         console.warn(message, event, meta)
     }
 
-    public error (message: { topic: TOPIC } | Message, event?: EVENT| EVENT_ACTION | RECORD_ACTION | RPC_ACTION | CONNECTION_ACTION, meta?: string): void {
+    public error (message: { topic: TOPIC } | Message, event?: EVENT| EVENT_ACTION | RECORD_ACTION | RPC_ACTION | CONNECTION_ACTION, meta?: any): void {
         // tslint:disable-next-line:no-console
         if (message.topic === TOPIC.CONNECTION && (message as Message).action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
-            console.log(TOPIC[TOPIC.CONNECTION], CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT], log)
+            console.log(TOPIC[TOPIC.CONNECTION], CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT], meta)
             this.emitter.emit(
                 'error', 
                 meta,
@@ -35,7 +35,7 @@ export class Logger {
             )
             return
         } else if (message.topic === TOPIC.AUTH && (message as Message).action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
-            console.log(TOPIC[TOPIC.AUTH], AUTH_ACTION[AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS], log)
+            console.log(TOPIC[TOPIC.AUTH], AUTH_ACTION[AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS], meta)
             this.emitter.emit(
                 'error', 
                 meta,
@@ -45,7 +45,7 @@ export class Logger {
             return
         } else if (message.topic === TOPIC.CONNECTION && event === EVENT.IS_CLOSED) {
             console.log('>>>>>')
-            console.log(TOPIC[TOPIC.CONNECTION], EVENT[EVENT.IS_CLOSED], log)
+            console.log(TOPIC[TOPIC.CONNECTION], EVENT[EVENT.IS_CLOSED], meta)
             this.emitter.emit(
                 'error', 
                 meta,
