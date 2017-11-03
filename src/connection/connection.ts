@@ -125,7 +125,8 @@ export class Connection {
 
     if (
       this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
-      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS || 
+      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
       return

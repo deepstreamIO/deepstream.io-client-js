@@ -44,6 +44,7 @@ export class Logger {
             )
             return
         } else if (message.topic === TOPIC.CONNECTION && event === EVENT.IS_CLOSED) {
+            console.log('>>>>>')
             console.log(TOPIC[TOPIC.CONNECTION], EVENT[EVENT.IS_CLOSED], log)
             this.emitter.emit(
                 'error', 
