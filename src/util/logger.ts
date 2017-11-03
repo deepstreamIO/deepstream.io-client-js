@@ -28,12 +28,12 @@ export class Logger {
         // console.error(message, event, log)
         
 
-        if (message.topic === TOPIC.CONNECTION && (message as Message).action === CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT) {
-            console.log(TOPIC[TOPIC.CONNECTION], CONNECTION_ACTION[CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT], log)
+        if (message.topic === TOPIC.CONNECTION && (message as Message).action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
+            console.log(TOPIC[TOPIC.CONNECTION], CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT], log)
             this.emitter.emit(
                 'error', 
                 log,
-                CONNECTION_ACTION[CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT],
+                CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT],
                 TOPIC[TOPIC.CONNECTION]
             )
         } else if (message.topic === TOPIC.AUTH && (message as Message).action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
