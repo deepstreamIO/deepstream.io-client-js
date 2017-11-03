@@ -16,7 +16,6 @@ import { Socket } from './socket-factory'
 import * as NodeWebSocket from 'ws'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
-
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
 
 const enum TRANSITIONS {
@@ -34,7 +33,7 @@ const enum TRANSITIONS {
   SUCCESFUL_LOGIN = 'succesful-login',
   ERROR = 'error',
   LOST = 'connection-lost',
-  CONNECTION_AUTHENTICATION_TIMEOUT = 'connection-authentication-timeout'
+  AUTHENTICATION_TIMEOUT = 'authentication-timeout'
 }
 
 export class Connection {
@@ -52,6 +51,7 @@ export class Connection {
   private endpoint: Socket
   private emitter: Emitter
   private handlers: Map<TOPIC, Function>
+  private deliberateClose: boolean
 
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
@@ -83,11 +83,15 @@ export class Connection {
           { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.CHALLENGING },
           { name: TRANSITIONS.CONNECTION_REDIRECTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.REDIRECTING },
           { name: TRANSITIONS.CHALLENGE_DENIED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.CHALLENGE_DENIED },
-          { name: TRANSITIONS.CHALLENGE_ACCEPTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
+          { name: TRANSITIONS.CHALLENGE_ACCEPTED, from: CONNECTION_STATE.CHALLENGING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION, handler: this.onAwaitingAuthentication.bind(this) },
+          { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
+          { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT  },
           { name: TRANSITIONS.AUTHENTICATE, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATING },
           { name: TRANSITIONS.UNSUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.AWAITING_AUTHENTICATION },
           { name: TRANSITIONS.SUCCESFUL_LOGIN, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.OPEN },
           { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AUTHENTICATING, to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
+          { name: TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS },
+          { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
           { name: TRANSITIONS.RECONNECT, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.RECONNECTING },
           { name: TRANSITIONS.CLOSED, from: CONNECTION_STATE.CLOSING, to: CONNECTION_STATE.CLOSED },
           { name: TRANSITIONS.ERROR, to: CONNECTION_STATE.RECONNECTING },
@@ -118,30 +122,29 @@ export class Connection {
    *                E.g. { username:<String>, password:<String> }
    * @param   {Function} callback   A callback that will be invoked with the authenticationr result
    */
-  public authenticate (authParams: object = {}, callback: AuthenticationCallback | null = null): void {
+  public authenticate (authParams?: object | null, callback?: AuthenticationCallback | null): void {
     if (typeof authParams !== 'object') {
       throw new Error('invalid argument authParams')
     }
 
     if (
       this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
-      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS || 
+      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
       return
     }
 
-    this.authParams = authParams
-    if (callback) {
-      this.authCallback = callback
-    }
+    if (authParams) this.authParams = authParams
+    if (callback) this.authCallback = callback
 
-    if (this.stateMachine.state === CONNECTION_STATE.CLOSED) {
-      this.createEndpoint()
-      return
-    }
+    // if (this.stateMachine.state === CONNECTION_STATE.CLOSED && !this.endpoint) {
+    //   this.createEndpoint()
+    //   return
+    // }
 
-    if (this.stateMachine.state === CONNECTION_STATE.AWAITING_AUTHENTICATION) {
+    if (this.stateMachine.state === CONNECTION_STATE.AWAITING_AUTHENTICATION && this.authParams) {
       this.sendAuthParams()
     }
   }
@@ -244,7 +247,8 @@ export class Connection {
 
     if (
       this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
-      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
+      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
       return
     }
@@ -414,10 +418,10 @@ export class Connection {
       return
     }
 
-    if (message.action === CONNECTION_ACTION.CONNECTION_AUTHENTICATION_TIMEOUT) {
+    if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
+      this.deliberateClose = true
+      this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
       this.services.logger.error(message)
-      this.stateMachine.transition(TRANSITIONS.CONNECTION_AUTHENTICATION_TIMEOUT)
-      return
     }
   }
 
@@ -429,20 +433,26 @@ export class Connection {
    */
   private handleAuthResponse (message: Message): void {
     if (message.action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
+      this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS)
+      this.services.logger.error(message)
       return
     }
 
     if (message.action === AUTH_ACTION.AUTH_UNSUCCESSFUL) {
       this.stateMachine.transition(TRANSITIONS.UNSUCCESFUL_LOGIN)
-      this.authCallback(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
+      this.authCallback(false, { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] })
       return
     }
 
     if (message.action === AUTH_ACTION.AUTH_SUCCESSFUL) {
       this.stateMachine.transition(TRANSITIONS.SUCCESFUL_LOGIN)
-      this.authCallback(true, message.parsedData)
+      this.authCallback(true, message.parsedData || null)
       return
     }
+  }
+
+  private onAwaitingAuthentication (): void {
+    if (this.authParams) this.sendAuthParams()
   }
 }
