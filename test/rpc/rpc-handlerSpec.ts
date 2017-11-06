@@ -122,6 +122,21 @@ describe('RPC handler', () => {
     })
   })
 
+  it('handles ack messages', () => {
+    const message = {
+      topic: TOPIC.RPC,
+      action: RPC_ACTIONS.PROVIDE_ACK,
+      name,
+      isAck: true
+    }
+    services.timeoutRegistryMock
+      .expects('remove')
+      .once()
+      .withExactArgs(message)
+
+    handle(message)
+  })
+
   // it('doesn\'t send messages and warn on auth/denied errors', () => {
   //   services.connectionMock
   //     .expects('sendMessage')
