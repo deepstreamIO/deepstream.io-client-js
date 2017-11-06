@@ -15,6 +15,7 @@ import * as EventEmitter from 'component-emitter2'
 export interface RecordOfflineStore {
   get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => void
   set: (recordName: string, version: number, data: Array<string> | object, callback: ((error: string) => void)) => void
+  delete: (recordName: string, callback: ((error: string) => void)) => void
 }
 
 export interface Services {

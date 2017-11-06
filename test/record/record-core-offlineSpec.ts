@@ -10,7 +10,7 @@ import { CONNECTION_STATE } from '../../src/constants'
 import { DefaultOptions, Options } from '../../src/client-options'
 import { RecordCore, RECORD_STATE } from '../../src/record/record-core'
 
-describe.skip('record core offline', () => {
+describe('record core offline', () => {
     let whenCompleted: sinon.SinonSpy
     let recordCore: RecordCore
     let options: Options
@@ -25,6 +25,11 @@ describe.skip('record core offline', () => {
             .expects('sendMessage')
             .never()
 
+        services.storageMock
+            .expects('get')
+            .once()
+            .callsArgWith(1, name, 1, { firstname: 'wolfram' })
+
         services.connection.isConnected = false
         recordCore = new RecordCore(name, services, options, whenCompleted)
         services.storageMock.restore()
@@ -34,31 +39,7 @@ describe.skip('record core offline', () => {
         services.verify()
     })
 
-    it('attempts to read from storage if offline', () => {
-        services.storageMock
-            .expects('get')
-            .withExactArgs(name, match.func)
-
-        recordCore = new RecordCore(name, services, options, whenCompleted)
-    })
-
-    it('doesn`t set updates before ready', () => {
-        services.storageMock
-            .expects('set')
-            .never()
-
-        recordCore.set({ data: { firstname: 'Wolfram' } })
-    })
-
-    it('doesn`t send patches before ready', () => {
-        services.storageMock
-            .expects('set')
-            .never()
-
-        recordCore.set({ path: 'firstname', data: 'Wolfram' })
-    })
-
-    it('triggers ready callback on read response', () => {
+    it('triggers ready callback on load', () => {
         const readySpy = spy()
         recordCore.whenReady(this, readySpy)
 
@@ -67,89 +48,83 @@ describe.skip('record core offline', () => {
     })
 
     it('sets update messages for updates after when ready', () => {
-        recordCore.handle(READ_RESPONSE)
-
         services.storageMock
             .expects('set')
             .once()
-            .withExactArgs(name, 2, { firstname: 'Bob' })
+            .withExactArgs(name, 2, { firstname: 'Bob' }, match.func)
 
         recordCore.set({ data: { firstname: 'Bob' } })
     })
 
     it('sends patch messages for path changes after when ready', () => {
-        recordCore.handle(READ_RESPONSE)
-
         services.storageMock
             .expects('set')
             .once()
-            .withExactArgs(name, 2, { firstname: 'Bob' })
+            .withExactArgs(name, 2, { firstname: 'Bob' }, match.func)
 
         recordCore.set({ path: 'firstname', data: 'Bob' })
     })
 
-    it('responds to update write acks with an offline error', () => {
-        recordCore.handle(READ_RESPONSE)
-
+    it('responds to update write acks with an offline error', async () => {
         const ackCallback = spy()
 
         services.storageMock
             .expects('set')
             .once()
-            .withExactArgs(name, 2, { firstname: 'Bob' })
+            .withExactArgs(name, 2, { firstname: 'Bob' }, match.func)
 
         recordCore.set({ data: { firstname: 'Bob' }, callback: ackCallback })
+
+        await BBPromise.delay(0)
 
         assert.calledOnce(ackCallback)
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE)
     })
 
-    it('sends patch messages for path changes after when ready', () => {
-        recordCore.handle(READ_RESPONSE)
-
+    it('sends patch messages for path changes after when ready', async () => {
         const ackCallback = spy()
 
         services.storageMock
                     .expects('set')
                     .once()
-                    .withExactArgs(name, 2, { firstname: 'Bob' })
+                    .withExactArgs(name, 2, { firstname: 'Bob' }, match.func)
 
         recordCore.set({ path: 'firstname', data: 'Bob', callback: ackCallback })
+
+        await BBPromise.delay(0)
 
         assert.calledOnce(ackCallback)
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE)
     })
 
     it('sends erase messages for erase after when ready', () => {
-        recordCore.handle(READ_RESPONSE)
-
         const ackCallback = spy()
 
         services.storageMock
         .expects('set')
         .once()
-        .withExactArgs(name, 2, {})
+        .withExactArgs(name, 2, {}, match.func)
 
         recordCore.set({ path: 'firstname' })
     })
 
-    it('sends erase write ack messages for erase after when ready', () => {
+    it('sends erase write ack messages for erase after when ready', async () => {
         const ackCallback = spy()
-        recordCore.handle(READ_RESPONSE)
 
         services.storageMock
         .expects('set')
         .once()
-        .withExactArgs(name, 2, {})
+        .withExactArgs(name, 2, {}, match.func)
 
         recordCore.set({ path: 'firstname', callback: ackCallback })
+
+        await BBPromise.delay(0)
 
         assert.calledOnce(ackCallback)
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE)
     })
 
     it('queues discarding record when no longer needed', () => {
-        recordCore.handle(READ_RESPONSE)
         recordCore.discard()
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
@@ -159,7 +134,6 @@ describe.skip('record core offline', () => {
     })
 
     it('removes pending discard when usages increases', async () => {
-        recordCore.handle(READ_RESPONSE)
         recordCore.discard()
         recordCore.usages++
 
@@ -172,7 +146,6 @@ describe.skip('record core offline', () => {
     })
 
     it('removes record when completed', async () => {
-        recordCore.handle(READ_RESPONSE)
         recordCore.discard()
 
         await BBPromise.delay(30)
@@ -187,12 +160,10 @@ describe.skip('record core offline', () => {
     })
 
     it('sends delete when ready', async () => {
-        recordCore.handle(READ_RESPONSE)
-
         services.storageMock
         .expects('delete')
         .once()
-        .withExactArgs(name)
+        .withExactArgs(name, match.func)
 
         recordCore.delete()
 
@@ -205,16 +176,17 @@ describe.skip('record core offline', () => {
     })
 
     it('calls delete when delete is confirmed', async () => {
-        recordCore.handle(READ_RESPONSE)
-
         services.storageMock
         .expects('delete')
         .once()
+        .withExactArgs(name, match.func)
+        .callsArgWith(1, name)
 
         recordCore.delete()
 
-        // deleted
+        await BBPromise.delay(0)
 
+        // deleted
         expect(recordCore.recordState).to.equal(RECORD_STATE.DELETED)
 
         assert.calledOnce(whenCompleted)
@@ -223,13 +195,6 @@ describe.skip('record core offline', () => {
         // tslint:disable-next-line:no-unused-expression
         expect(recordCore.isReady).to.be.false
     })
-})
 
-const name = 'recordA'
-const READ_RESPONSE = {
-    topic: TOPIC.RECORD,
-    action: RECORD_ACTION.READ_RESPONSE,
-    name,
-    parsedData: {},
-    version: 1
-}
+    const name = 'recordA'
+})

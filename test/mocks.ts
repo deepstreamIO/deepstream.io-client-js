@@ -69,7 +69,8 @@ export const getServicesMock = () => {
 
   const storage = {
     get: () => {},
-    set: () => {}
+    set: () => {},
+    delete: () => {}
   }
   const storageMock = mock(storage)
 

@@ -48,6 +48,7 @@ export class RecordCore extends Emitter {
   private responseTimeout: number
   private discardTimeout: number
   private deletedTimeout: number
+  private offlineDirty: boolean
   private whenComplete: (recordName: string) => void
 
   constructor (name: string, services: Services, options: Options, whenComplete: (recordName: string) => void) {
@@ -56,9 +57,11 @@ export class RecordCore extends Emitter {
     this.options = options
     this.emitter = new Emitter()
     this.data = Object.create(null)
+    this.writeCallbacks = new Map()
     this.name = name
     this.whenComplete = whenComplete
     this.references = 1
+    this.offlineDirty = false
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
@@ -76,8 +79,8 @@ export class RecordCore extends Emitter {
         transitions: [
           { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: this.onSubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: this.onOfflineLoading.bind(this) },
-          { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY },
-          { name: RECORD_ACTION.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY },
+          { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
+          { name: RECORD_ACTION.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RECORD_ACTION.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
           { name: RECORD_ACTION.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this)  },
           { name: RECORD_ACTION.DELETE_ACK, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
@@ -161,7 +164,12 @@ export class RecordCore extends Emitter {
     }
 
     const oldValue = this.data
-    const newValue = setPath(oldValue, path || null, data)
+    let newValue
+    if (path === undefined) {
+      newValue = data
+    } else {
+      newValue = setPath(oldValue, path, data)
+    }
 
     if (oldValue === newValue) {
       if (callback) {
@@ -174,15 +182,21 @@ export class RecordCore extends Emitter {
     if (callback) {
       writeSuccess = true
       if (this.services.connection.isConnected) {
-        this.services.timerRegistry.requestIdleCallback(
-          () => callback('Connection error: error updating record as connection was closed')
-        )
-      } else {
         this.setupWriteCallback(this.version, callback)
+      } else {
+        this.services.timerRegistry.requestIdleCallback(
+          () => callback(EVENT.CLIENT_OFFLINE)
+        )
       }
     }
-    this.sendUpdate(path, data, writeSuccess)
+
     this.applyChange(newValue)
+
+    if (this.services.connection.isConnected) {
+      this.sendUpdate(path, data, writeSuccess)
+    } else {
+      this.saveUpdate()
+    }
   }
 
   /**
@@ -307,17 +321,25 @@ export class RecordCore extends Emitter {
       return
     }
     this.whenReady(this, () => {
-      const message = {
-        topic: TOPIC.RECORD,
-        action: RECORD_ACTION.DELETE,
-        name: this.name
+      if (this.services.connection.isConnected) {
+        const message = {
+          topic: TOPIC.RECORD,
+          action: RECORD_ACTION.DELETE,
+          name: this.name
+        }
+        this.deletedTimeout = this.services.timeoutRegistry.add({
+          message,
+          event: EVENT.RECORD_DELETE_TIMEOUT,
+          duration: this.options.recordDeleteTimeout
+        })
+        this.services.connection.sendMessage(message)
+      } else {
+        this.services.storage.delete(this.name, () => {
+          this.services.timerRegistry.requestIdleCallback(() => {
+            this.stateMachine.transition(RECORD_ACTION.DELETE_ACK)
+          })
+        })
       }
-      this.deletedTimeout = this.services.timeoutRegistry.add({
-        message,
-        event: EVENT.RECORD_DELETE_TIMEOUT,
-        duration: this.options.recordDeleteTimeout
-      })
-      this.services.connection.sendMessage(message)
     })
     this.stateMachine.transition(RECORD_ACTION.DELETE)
   }
@@ -376,14 +398,21 @@ export class RecordCore extends Emitter {
     })
   }
 
+  private onReady (): void {
+    this.isReady = true
+    this.emit(EVENT.RECORD_READY)
+  }
+
   private onUnsubscribed (): void {
-    const message = {
-      topic: TOPIC.RECORD,
-      action: RECORD_ACTION.UNSUBSCRIBE,
-      name: this.name
+    if (this.services.connection.isConnected) {
+      const message = {
+        topic: TOPIC.RECORD,
+        action: RECORD_ACTION.UNSUBSCRIBE,
+        name: this.name
+      }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
     }
-    this.services.timeoutRegistry.add({ message })
-    this.services.connection.sendMessage(message)
     this.destroy()
   }
 
@@ -397,8 +426,6 @@ export class RecordCore extends Emitter {
       this.version = message.version as number
       this.applyChange(setPath(this.data, null, message.parsedData))
       this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
-      this.isReady = true
-      this.emit(EVENT.RECORD_READY)
       return
     }
 
@@ -459,6 +486,14 @@ export class RecordCore extends Emitter {
         callback(error)
       }
     }
+  }
+
+  private saveUpdate (): void {
+    if (!this.offlineDirty) {
+      this.version++
+      this.offlineDirty = true
+    }
+    this.services.storage.set(this.name, this.version, this.data, () => {})
   }
 
   private sendUpdate (path: string | null = null, data: any, writeSuccess: boolean) {
