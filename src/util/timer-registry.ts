@@ -2,7 +2,7 @@ export interface Timeout {
     callback: Function,
     duration: number,
     context: any,
-    data?: object
+    data?: any
 }
 
 export class TimerRegistry {

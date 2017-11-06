@@ -179,7 +179,7 @@ export const getUid = (): string => {
   return `${timestamp}-${randomString}`
 }
 
-export interface RecordSetArguments { callback?: (error: string | null) => void, path?: string, data: any }
+export interface RecordSetArguments { callback?: (error: string | null) => void, path?: string, data?: any }
 export interface RecordSubscribeArguments { callback: (data: any) => void, path?: string, triggerNow?: boolean }
   /**
    * Creates a map based on the types of the provided arguments

@@ -44,7 +44,7 @@ export function setValue (root: any, path: string | null, value: any): any {
   }
 
   node[tokens[i]] = value
-  return root
+  return Object.assign({}, root)
 }
 
 /**

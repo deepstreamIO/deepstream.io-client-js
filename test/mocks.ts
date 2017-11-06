@@ -7,6 +7,7 @@ import { Message } from '../binary-protocol/src/message-constants'
 export const getServicesMock = () => {
   let handle: Function | null = null
   const connection = {
+      isConnected: true,
       sendMessage: () => {},
       getConnectionState: stub(),
       registerHandler: (topic: any, callback: Function) => {
@@ -17,7 +18,8 @@ export const getServicesMock = () => {
 
   const timeoutRegistry = {
       add: () => {},
-      remove: () => {}
+      remove: () => {},
+      clear: () => {}
   }
   const timeoutRegistryMock = mock(timeoutRegistry)
 
@@ -65,6 +67,12 @@ export const getServicesMock = () => {
     return socket
   }
 
+  const storage = {
+    get: () => {},
+    set: () => {}
+  }
+  const storageMock = mock(storage)
+
   return {
     socketFactory,
     getSocket: (): any => ({ socket, socketMock: mock(socket) }),
@@ -77,10 +85,13 @@ export const getServicesMock = () => {
     getLogger: (): any => ({ logger, loggerMock}),
     timerRegistry,
     getHandle: (): Function | null => handle,
+    storage,
+    storageMock,
     verify: () => {
       connectionMock.verify()
       timeoutRegistryMock.verify()
       loggerMock.verify()
+      storageMock.verify()
     }
   }
 }
