@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../mocks'
 import { EVENT } from '../../src/constants'
-import { TOPIC, RPC_ACTIONS, RPCMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RPC_ACTIONS, RPCMessage, Message } from '../../binary-protocol/src/message-constants'
 
 import { DefaultOptions, Options } from '../../src/client-options'
 import { RPCHandler, RPCProvider } from '../../src/rpc/rpc-handler'
@@ -138,7 +138,7 @@ describe('RPC handler', () => {
   })
 
   it('handles permission and message denied errors for provide and unprovide', () => {
-    const expectations = (message) => {
+    const expectations = (message: Message) => {
       services.timeoutRegistryMock
         .expects('remove')
         .once()
@@ -290,7 +290,7 @@ describe('RPC handler', () => {
 
     it('handles permission errors', async () => {
       const action = RPC_ACTIONS.MESSAGE_PERMISSION_ERROR
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action,
         name,
@@ -311,7 +311,7 @@ describe('RPC handler', () => {
 
     it('handles message denied errors', async () => {
       const action = RPC_ACTIONS.MESSAGE_DENIED
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action,
         name,
@@ -341,7 +341,7 @@ describe('RPC handler', () => {
     })
 
     it('handles the rpc response accepted message', async () => {
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.ACCEPT,
         name,
@@ -358,7 +358,7 @@ describe('RPC handler', () => {
     })
 
     it('calls rpcResponse with error when response is not sent in time', async () => {
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.ACCEPT,
         name,
@@ -377,7 +377,7 @@ describe('RPC handler', () => {
     })
 
     it('handles the rpc response RESPONSE message', async () => {
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.RESPONSE,
         name,
@@ -397,7 +397,7 @@ describe('RPC handler', () => {
     })
 
     it('doesn\'t call rpc response callback twice when handling response message', async () => {
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.RESPONSE,
         name,
@@ -418,7 +418,7 @@ describe('RPC handler', () => {
 
     it('handles the rpc response error message', async () => {
       const error = 'ERROR'
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.REQUEST_ERROR,
         name,
@@ -439,7 +439,7 @@ describe('RPC handler', () => {
 
     it('doesn\'t call rpc response callback twice when handling error message', async () => {
       const error = 'ERROR'
-      const handleMessage = correlationId => handle({
+      const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.REQUEST_ERROR,
         name,

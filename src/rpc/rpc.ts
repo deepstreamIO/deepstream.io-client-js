@@ -18,7 +18,7 @@ export class RPC {
     private acceptTimeout: number
     private responseTimeout: number
 
-    constructor (name: string, correlationId, response: RPCMakeCallback, options: Options, services: Services) {
+    constructor (name: string, correlationId: string, response: RPCMakeCallback, options: Options, services: Services) {
         this.options = options
         this.services = services
         this.name = name

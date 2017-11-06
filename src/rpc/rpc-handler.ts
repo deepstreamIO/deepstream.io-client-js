@@ -167,11 +167,11 @@ export class RPCHandler {
         return
       }
       if (message.originalAction === RPC_ACTION.REQUEST) {
-        const rpc = this.getRPC(message)
-        if (!rpc) {
+        const rpcInvalid = this.getRPC(message)
+        if (!rpcInvalid) {
           return
         }
-        rpc.error(RPC_ACTION[message.action])
+        rpcInvalid.error(RPC_ACTION[message.action])
         this.rpcs.delete(message.correlationId)
         return
       }
