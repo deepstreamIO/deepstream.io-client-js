@@ -137,31 +137,52 @@ describe('RPC handler', () => {
     handle(message)
   })
 
-  // it('doesn\'t send messages and warn on auth/denied errors', () => {
-  //   services.connectionMock
-  //     .expects('sendMessage')
-  //     .never()
-  //   services.timeoutRegistryMock
-  //     .expects('add')
-  //     .never()
-  //   services.loggerMock
-  //     .expects('warn')
-  //     .never()
-  //   services.loggerMock
-  //     .expects('error')
-  //     .never()
+  it('handles permission and message denied errors for provide and unprovide', () => {
+    const expectations = (message) => {
+      services.timeoutRegistryMock
+        .expects('remove')
+        .once()
+        .withExactArgs(message)
+      services.loggerMock
+        .expects('warn')
+        .once()
+        .withExactArgs(message)
+    }
+    const permissionErrProvidingMsg = {
+      topic: TOPIC.RPC,
+      action: RPC_ACTIONS.MESSAGE_PERMISSION_ERROR,
+      name,
+      originalAction: RPC_ACTIONS.PROVIDE
+    }
+    const permissionErrUnprovidingMsg = {
+      topic: TOPIC.RPC,
+      action: RPC_ACTIONS.MESSAGE_PERMISSION_ERROR,
+      name,
+      originalAction: RPC_ACTIONS.UNPROVIDE
+    }
+    const msgDeniedProving = {
+      topic: TOPIC.RPC,
+      action: RPC_ACTIONS.MESSAGE_DENIED,
+      name,
+      originalAction: RPC_ACTIONS.PROVIDE
+    }
+    const msgDeniedUnproving = {
+      topic: TOPIC.RPC,
+      action: RPC_ACTIONS.MESSAGE_DENIED,
+      name,
+      originalAction: RPC_ACTIONS.UNPROVIDE
+    }
 
-  //   handle({
-  //     topic: TOPIC.RPC,
-  //     action: RPC_ACTIONS.MESSAGE_PERMISSION_ERROR,
-  //     name
-  //   })
-  //   handle({
-  //     topic: TOPIC.RPC,
-  //     action: RPC_ACTIONS.MESSAGE_DENIED,
-  //     name
-  //   })
-  // })
+    expectations(permissionErrProvidingMsg)
+    expectations(permissionErrUnprovidingMsg)
+    expectations(msgDeniedProving)
+    expectations(msgDeniedUnproving)
+
+    handle(permissionErrProvidingMsg)
+    handle(permissionErrUnprovidingMsg)
+    handle(msgDeniedProving)
+    handle(msgDeniedUnproving)
+  })
 
   it('logs unknown correlation error when handling unknown rpc response', () => {
     const message = {
@@ -265,6 +286,48 @@ describe('RPC handler', () => {
         .then(rpcPromiseResponseSuccess)
         .catch(rpcPromiseResponseFail)
       correlationIdPromiseRpc = getLastMessageSent().correlationId as string
+    })
+
+    it('handles permission errors', async () => {
+      const action = RPC_ACTIONS.MESSAGE_PERMISSION_ERROR
+      const handleMessage = correlationId => handle({
+        topic: TOPIC.RPC,
+        action,
+        name,
+        originalAction: RPC_ACTIONS.REQUEST,
+        correlationId
+      })
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
+      await BBPromise.delay(rpcAcceptTimeout * 2)
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[action], RPC_ACTIONS[action])
+
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
+      sinon.assert.calledOnce(rpcPromiseResponseFail)
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[action])
+    })
+
+    it('handles message denied errors', async () => {
+      const action = RPC_ACTIONS.MESSAGE_DENIED
+      const handleMessage = correlationId => handle({
+        topic: TOPIC.RPC,
+        action,
+        name,
+        originalAction: RPC_ACTIONS.REQUEST,
+        correlationId
+      })
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
+      await BBPromise.delay(rpcAcceptTimeout * 2)
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[action], RPC_ACTIONS[action])
+
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
+      sinon.assert.calledOnce(rpcPromiseResponseFail)
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[action])
     })
 
     it('responds rpc with error when request is not accepted in time', async () => {

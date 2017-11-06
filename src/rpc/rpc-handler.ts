@@ -160,20 +160,21 @@ export class RPCHandler {
 
     // handle auth/denied subscription errors
     if (message.action === RPC_ACTION.MESSAGE_PERMISSION_ERROR || message.action === RPC_ACTION.MESSAGE_DENIED) {
-      // if (message.innerMessage.action === RPC_ACTION.SUBSCRIBE || message.innerMessage.action === RPC_ACTION.UNSUBSCRIBE) {
-      //   this.services.timeoutRegistry.remove(message)
-      //   this.rpcs.delete(message.name)
-      //   warn
-      //   return
-      // }
-      // if (message.innerMessage.action === RPC_ACTION.REQUEST) {
-      //   const rpc = this.getRPC(message)
-      //   if (!rpc) {
-      //     return
-      //   }
-      //   rpc.error(message.parsedData)
-      //   this.rpcs.delete(message.correlationId as string)
-      // }
+      if (message.originalAction === RPC_ACTION.PROVIDE || message.originalAction === RPC_ACTION.UNPROVIDE) {
+        this.services.timeoutRegistry.remove(message)
+        this.providers.delete(message.name)
+        this.services.logger.warn(message)
+        return
+      }
+      if (message.originalAction === RPC_ACTION.REQUEST) {
+        const rpc = this.getRPC(message)
+        if (!rpc) {
+          return
+        }
+        rpc.error(RPC_ACTION[message.action])
+        this.rpcs.delete(message.correlationId)
+        return
+      }
       return
     }
 
