@@ -31,13 +31,15 @@ describe('RPC response', () => {
     services.connectionMock.verify()
   })
 
-  it('doesn\'t accept automatically when autoAccept == false', () => {
+  it('doesn\'t accept automatically when autoAccept == false', (done) => {
     services.connectionMock
       .expects('sendMessage')
       .never()
+
+    process.nextTick(done)
   })
 
-  it('sends an accept message automatically when autoAccept == true ', () => {
+  it('sends an accept message automatically when autoAccept == true ', (done) => {
     services.connectionMock
       .expects('sendMessage')
       .once()
@@ -49,6 +51,7 @@ describe('RPC response', () => {
       })
 
     rpcResponse.autoAccept = true
+    process.nextTick(done)
   })
 
   it('sends an accept message manually', () => {
