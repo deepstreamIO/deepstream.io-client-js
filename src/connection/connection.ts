@@ -43,6 +43,7 @@ const enum TRANSITIONS {
 
 export class Connection {
   public isConnected: boolean
+  public emitter: Emitter
 
   private services: Services
   private options: Options
@@ -54,7 +55,6 @@ export class Connection {
   private heartbeatInterval: number
   private lastHeartBeat: number
   private endpoint: Socket
-  private emitter: Emitter
   private handlers: Map<TOPIC, Function>
   private deliberateClose: boolean
 

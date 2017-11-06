@@ -1,6 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { EVENT } from '../constants'
+import { EVENT, CONNECTION_STATE } from '../constants'
 import { MergeStrategy, REMOTE_WINS } from './merge-strategy'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
 import { get as getPath, setValue as setPath } from './json-path'
@@ -15,12 +15,16 @@ export type WriteAckCallback = (error: string | null) => void
 
 const enum RECORD_OFFLINE_ACTIONS {
   LOAD,
-  LOADED
+  LOADED,
+  RESUBSCRIBE,
+  RESUBSCRIBED,
+  INVALID_VERSION
 }
 
 export const enum RECORD_STATE {
   INITIAL,
   SUBSCRIBING,
+  RESUBSCRIBING,
   LOADING_OFFLINE,
   READY,
   MERGING,
@@ -81,13 +85,16 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: this.onOfflineLoading.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RECORD_ACTION.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
+          { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
+          { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
+          { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
           { name: RECORD_ACTION.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
           { name: RECORD_ACTION.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this)  },
           { name: RECORD_ACTION.DELETE_ACK, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
           { name: RECORD_ACTION.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
           { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_ACTION.UNSUBSCRIBE_ACK, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: this.onUnsubscribed.bind(this) },
-          { name: RECORD_ACTION.VERSION_EXISTS, from: RECORD_STATE.READY, to: RECORD_STATE.MERGING },
+          { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.READY, to: RECORD_STATE.MERGING },
         ]
       }
     )
@@ -385,6 +392,28 @@ export class RecordCore extends Emitter {
     })
   }
 
+  private onResubscribing (): void {
+    this.services.timeoutRegistry.add({
+      message: {
+        topic: TOPIC.RECORD,
+        action: RECORD_ACTION.SUBSCRIBE,
+        name: this.name,
+      }
+    })
+    this.responseTimeout = this.services.timeoutRegistry.add({
+      message: {
+        topic: TOPIC.RECORD,
+        action: RECORD_ACTION.HEAD_RESPONSE,
+        name: this.name
+      }
+    })
+    this.services.connection.sendMessage({
+      topic: TOPIC.RECORD,
+      action: RECORD_ACTION.SUBSCRIBEANDHEAD,
+      name: this.name
+    })
+  }
+
   private onOfflineLoading (): void {
     this.services.storage.get(this.name, (recordName: string, version: number, data: any) => {
       if (this.version === -1) {
@@ -423,9 +452,29 @@ export class RecordCore extends Emitter {
 
   public handle (message: RecordMessage) {
     if (message.action === RECORD_ACTION.READ_RESPONSE) {
+      if (this.stateMachine.state === RECORD_STATE.MERGING) {
+        this.recoverRecord(message.version as number, message.parsedData, message)
+        return
+      }
       this.version = message.version as number
       this.applyChange(setPath(this.data, null, message.parsedData))
       this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
+      return
+    }
+
+    if (message.action === RECORD_ACTION.HEAD_RESPONSE) {
+      if (this.version === message.version as number) {
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+        return
+      }
+      if (this.version + 1 === message.version as number) {
+        this.version = message.version as number
+        this.applyChange(setPath(this.data, null, message.parsedData))
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+        return
+      }
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
+      this.sendRead()
       return
     }
 
@@ -443,6 +492,7 @@ export class RecordCore extends Emitter {
     }
 
     if (message.action === RECORD_ACTION.VERSION_EXISTS) {
+      // what kind of message is version exists?
       // this.recoverRecord(message)
       return
     }
@@ -548,7 +598,7 @@ export class RecordCore extends Emitter {
         **/
         this.sendRead()
       } else {
-        this.recoverRecord(version, data, message)
+        this.recoverRecord(message.version, message.parsedData, message)
       }
       return
     }
