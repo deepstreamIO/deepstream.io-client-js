@@ -18,7 +18,7 @@ export class RPC {
     private acceptTimeout: number
     private responseTimeout: number
 
-    constructor (name: string, response: RPCMakeCallback, options: Options, services: Services) {
+    constructor (name: string, correlationId, response: RPCMakeCallback, options: Options, services: Services) {
         this.options = options
         this.services = services
         this.name = name
@@ -28,19 +28,20 @@ export class RPC {
             message: {
               topic: TOPIC.RPC,
               action: RPC_ACTION.ACCEPT,
-              name
+              name,
+              correlationId
             },
             event: RPC_ACTION.ACCEPT_TIMEOUT,
             duration: this.options.rpcAcceptTimeout,
             callback: this.onTimeout.bind(this)
         })
 
-
         this.responseTimeout = this.services.timeoutRegistry.add({
             message: {
               topic: TOPIC.RPC,
               action: RPC_ACTION.REQUEST,
-              name
+              name,
+              correlationId
             },
             event: RPC_ACTION.RESPONSE_TIMEOUT,
             duration: this.options.rpcResponseTimeout,

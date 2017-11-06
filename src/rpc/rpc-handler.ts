@@ -106,12 +106,12 @@ export class RPCHandler {
     })
 
     if (callback && typeof callback === 'function') {
-      this.rpcs.set(correlationId, new RPC(name, callback, this.options, this.services))
+      this.rpcs.set(correlationId, new RPC(name, correlationId, callback, this.options, this.services))
       return
     }
 
     return new Promise((resolve, reject) => {
-      this.rpcs.set(correlationId, new RPC(name, (error: string, result: any) => {
+      this.rpcs.set(correlationId, new RPC(name, correlationId, (error: string, result: any) => {
         if (error) {
           reject(error)
         } else {
@@ -161,7 +161,9 @@ export class RPCHandler {
     // handle auth/denied subscription errors
     if (message.action === RPC_ACTION.MESSAGE_PERMISSION_ERROR || message.action === RPC_ACTION.MESSAGE_DENIED) {
       // if (message.innerMessage.action === RPC_ACTION.SUBSCRIBE || message.innerMessage.action === RPC_ACTION.UNSUBSCRIBE) {
-      //   this.services.timeoutRegistry.remove(message.innerMessage)
+      //   this.services.timeoutRegistry.remove(message)
+      //   this.rpcs.delete(message.name)
+      //   warn
       //   return
       // }
       // if (message.innerMessage.action === RPC_ACTION.REQUEST) {

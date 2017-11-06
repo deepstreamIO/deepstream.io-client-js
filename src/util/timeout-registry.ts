@@ -115,7 +115,7 @@ export class TimeoutRegistry extends EventEmitter {
    * Returns a unique name from the timeout
    */
   private getUniqueName (message: Message): string {
-    return message.topic + message.action + (message.name ? message.name : '')
+    return message.topic + message.action + (message.name ? message.name : '') + (message.correlationId ? message.correlationId : '')
   }
 
   /**

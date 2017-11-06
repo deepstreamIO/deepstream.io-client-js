@@ -96,7 +96,6 @@ describe('RPC handler', () => {
 
     const promise = rpcHandler.make(name, data)
 
-    expect(promise).to.not.null
     expect(promise).to.be.a('promise')
   })
 
@@ -123,31 +122,31 @@ describe('RPC handler', () => {
     })
   })
 
-  it('doesn\'t send messages and warn on auth/denied errors', () => {
-    services.connectionMock
-      .expects('sendMessage')
-      .never()
-    services.timeoutRegistryMock
-      .expects('add')
-      .never()
-    services.loggerMock
-      .expects('warn')
-      .never()
-    services.loggerMock
-      .expects('error')
-      .never()
+  // it('doesn\'t send messages and warn on auth/denied errors', () => {
+  //   services.connectionMock
+  //     .expects('sendMessage')
+  //     .never()
+  //   services.timeoutRegistryMock
+  //     .expects('add')
+  //     .never()
+  //   services.loggerMock
+  //     .expects('warn')
+  //     .never()
+  //   services.loggerMock
+  //     .expects('error')
+  //     .never()
 
-    handle({
-      topic: TOPIC.RPC,
-      action: RPC_ACTIONS.MESSAGE_PERMISSION_ERROR,
-      name
-    })
-    handle({
-      topic: TOPIC.RPC,
-      action: RPC_ACTIONS.MESSAGE_DENIED,
-      name
-    })
-  })
+  //   handle({
+  //     topic: TOPIC.RPC,
+  //     action: RPC_ACTIONS.MESSAGE_PERMISSION_ERROR,
+  //     name
+  //   })
+  //   handle({
+  //     topic: TOPIC.RPC,
+  //     action: RPC_ACTIONS.MESSAGE_DENIED,
+  //     name
+  //   })
+  // })
 
   it('logs unknown correlation error when handling unknown rpc response', () => {
     const message = {
@@ -177,10 +176,11 @@ describe('RPC handler', () => {
         .expects('add')
         .never()
 
-      expect(rpcHandler.provide.bind(rpcHandler, name, rpcProviderSpy as RPCProvider)).to.throw()
+      expect(rpcHandler.provide.bind(rpcHandler, name, rpcProviderSpy as RPCProvider))
+        .to.throw(`RPC ${name} already registered`)
     })
 
-    it('replies requests', () => {
+    it('triggers rpc provider callback in a new request', () => {
       const message: RPCMessage = {
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.REQUEST,
@@ -226,119 +226,158 @@ describe('RPC handler', () => {
       rpcHandler.unprovide(name)
     })
 
-
   })
 
   describe('when making', () => {
-    let rpcResponse: sinon.SinonSpy
+    let rpcResponseCallback: sinon.SinonSpy
+    let promise: Promise<any>
+    let rpcPromiseResponseSuccess: sinon.SinonSpy
+    let rpcPromiseResponseFail: sinon.SinonSpy
+    let correlationIdCallbackRpc: string
+    let correlationIdPromiseRpc: string
 
     beforeEach(() => {
       services.timeoutRegistry = new TimeoutRegistry(services, options)
-      rpcResponse = sinon.spy()
-      rpcHandler.make(name, data, rpcResponse)
+
+      rpcResponseCallback = sinon.spy()
+      rpcHandler.make(name, data, rpcResponseCallback)
+      correlationIdCallbackRpc = getLastMessageSent().correlationId as string
+
+      rpcPromiseResponseSuccess = sinon.spy()
+      rpcPromiseResponseFail = sinon.spy()
+      promise = rpcHandler.make(name, data) as Promise<any>
+      promise
+        .then(rpcPromiseResponseSuccess)
+        .catch(rpcPromiseResponseFail)
+      correlationIdPromiseRpc = getLastMessageSent().correlationId as string
     })
 
-    it('calls rpcResponse with error when request is not accepted in time', async () => {
+    it('responds rpc with error when request is not accepted in time', async () => {
       await BBPromise.delay(rpcAcceptTimeout * 2)
-      sinon.assert.calledOnce(rpcResponse)
-      sinon.assert.calledWithExactly(rpcResponse, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT])
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT])
+
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
+      sinon.assert.calledOnce(rpcPromiseResponseFail)
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT])
     })
 
     it('handles the rpc response accepted message', async () => {
-      handle({
+      const handleMessage = correlationId => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.ACCEPT,
         name,
-        correlationId: getLastMessageSent().correlationId
+        correlationId
       })
-
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
       await BBPromise.delay(rpcAcceptTimeout * 2)
-      sinon.assert.notCalled(rpcResponse)
+
+      sinon.assert.notCalled(rpcResponseCallback)
+
+      sinon.assert.notCalled(rpcPromiseResponseFail)
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
     })
 
     it('calls rpcResponse with error when response is not sent in time', async () => {
-      handle({
+      const handleMessage = correlationId => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.ACCEPT,
         name,
-        correlationId: getLastMessageSent().correlationId
+        correlationId
       })
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
       await BBPromise.delay(rpcResponseTimeout * 2)
-      sinon.assert.calledOnce(rpcResponse)
-      sinon.assert.calledWithExactly(rpcResponse, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT])
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT])
+
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
+      sinon.assert.calledOnce(rpcPromiseResponseFail)
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT])
     })
 
     it('handles the rpc response RESPONSE message', async () => {
-      handle({
+      const handleMessage = correlationId => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.RESPONSE,
         name,
-        correlationId: getLastMessageSent().correlationId,
+        correlationId,
         parsedData: data
       })
-
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
       await BBPromise.delay(rpcResponseTimeout * 2)
-      sinon.assert.calledOnce(rpcResponse)
-      sinon.assert.calledWithExactly(rpcResponse, null, data)
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.calledWithExactly(rpcResponseCallback, null, data)
+
+      sinon.assert.notCalled(rpcPromiseResponseFail)
+      sinon.assert.calledOnce(rpcPromiseResponseSuccess)
+      sinon.assert.calledWithExactly(rpcPromiseResponseSuccess, data)
     })
 
     it('doesn\'t call rpc response callback twice when handling response message', async () => {
-      handle({
+      const handleMessage = correlationId => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.RESPONSE,
         name,
-        correlationId: getLastMessageSent().correlationId,
+        correlationId,
         parsedData: data
       })
-      handle({
-        topic: TOPIC.RPC,
-        action: RPC_ACTIONS.RESPONSE,
-        name,
-        correlationId: getLastMessageSent().correlationId,
-        parsedData: data
-      })
-
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
+      handleMessage(correlationIdPromiseRpc)
       await BBPromise.delay(rpcResponseTimeout * 2)
-      sinon.assert.calledOnce(rpcResponse)
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+
+      sinon.assert.notCalled(rpcPromiseResponseFail)
+      sinon.assert.calledOnce(rpcPromiseResponseSuccess)
     })
 
     it('handles the rpc response error message', async () => {
       const error = 'ERROR'
-      handle({
+      const handleMessage = correlationId => handle({
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.REQUEST_ERROR,
         name,
-        correlationId: getLastMessageSent().correlationId,
+        correlationId,
         parsedData: error
       })
-
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
       await BBPromise.delay(rpcResponseTimeout * 2)
-      sinon.assert.calledOnce(rpcResponse)
-      sinon.assert.calledWithExactly(rpcResponse, error, error)
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.calledWithExactly(rpcResponseCallback, error, error)
+
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
+      sinon.assert.calledOnce(rpcPromiseResponseFail)
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, error)
     })
 
     it('doesn\'t call rpc response callback twice when handling error message', async () => {
-      handle({
+      const error = 'ERROR'
+      const handleMessage = correlationId => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.RESPONSE,
+        action: RPC_ACTIONS.REQUEST_ERROR,
         name,
-        correlationId: getLastMessageSent().correlationId,
-        parsedData: data
+        correlationId,
+        parsedData: error
       })
-      handle({
-        topic: TOPIC.RPC,
-        action: RPC_ACTIONS.RESPONSE,
-        name,
-        correlationId: getLastMessageSent().correlationId,
-        parsedData: data
-      })
-
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
+      handleMessage(correlationIdPromiseRpc)
       await BBPromise.delay(rpcResponseTimeout * 2)
-      sinon.assert.calledOnce(rpcResponse)
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
+      sinon.assert.calledOnce(rpcPromiseResponseFail)
     })
   })
 
-
 })
-
-
