@@ -12,11 +12,11 @@ export class RPC {
     private services: Services
     private options: Options
     private name: string
-    private response: any
+    private response: (error: string | null, data: any) => void
     private acceptTimeout: number
     private responseTimeout: number
 
-    constructor (name: string, response: any, options: Options, services: Services) {
+    constructor (name: string, response: (error: string | null, data: any) => void, options: Options, services: Services) {
         this.options = options
         this.services = services
         this.name = name
@@ -56,15 +56,15 @@ export class RPC {
      * Called once a response message is received from the server.
      */
     public respond (data: any) {
-      this.response.callback(null, data)
+      this.response(null, data)
       this.complete()
     }
 
     /**
      * Called once an error is received from the server.
      */
-    public error (data: any) {
-      this.response.callback(data, data)
+    public error (action: RPC_ACTION) {
+      this.response(RPC_ACTION[action], undefined)
       this.complete()
     }
 
@@ -75,7 +75,7 @@ export class RPC {
      * UNSOLICITED_MESSAGE error
      */
     private onTimeout (event: RPC_ACTION, message: RPCMessage) {
-      this.response.callback(event)
+      this.response(RPC_ACTION[event], undefined)
       this.complete()
     }
 

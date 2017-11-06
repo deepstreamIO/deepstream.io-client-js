@@ -39,14 +39,14 @@ export class Client extends EventEmitter {
   constructor (url: string, options: any = {}) {
     super()
 
-    this.options = DefaultOptions
+    this.options = Object.assign({}, DefaultOptions, options)
 
     const services: any = {}
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
-    services.ackTimeoutRegistry = new TimeoutRegistry(services, DefaultOptions)
+    services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = options.socketFactory || socketFactory
-    services.connection = new Connection(services, DefaultOptions, url, this)
+    services.connection = new Connection(services, this.options, url, this)
     this.services = services as Services
 
     this.event = new EventHandler(this.services, this.options)

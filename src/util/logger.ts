@@ -53,7 +53,16 @@ export class Logger {
                 TOPIC[TOPIC.CONNECTION]
             )
             return
+        } else if (message.topic === TOPIC.CONNECTION && event === EVENT.CONNECTION_ERROR) {
+            this.emitter.emit(
+                'error',
+                meta,
+                EVENT[event],
+                TOPIC[TOPIC.CONNECTION]
+            )
+            return
         }
+        
         console.error(message, event, meta)
     }
 }
