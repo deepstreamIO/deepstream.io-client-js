@@ -10,7 +10,7 @@ import { CONNECTION_STATE } from '../../src/constants'
 import { DefaultOptions, Options } from '../../src/client-options'
 import { RecordCore, RECORD_STATE } from '../../src/record/record-core'
 
-describe.only('record core online', () => {
+describe('record core online', () => {
     let whenCompleted: sinon.SinonSpy
     let recordCore: RecordCore
     let options: Options
