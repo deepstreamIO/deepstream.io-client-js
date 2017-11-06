@@ -6,8 +6,8 @@
     "sourceMap": true,
     "allowJs": false,
     "strictNullChecks": true,
-    "noImplicitAny": false,
-    "noImplicitReturns": false,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
     "declaration": true
   },
   "files": [

@@ -60,10 +60,28 @@ export class List extends Emitter {
         return this.getEntries().length === 0
     }
 
+        /**
+    * Updates the list with a new set of entries
+    */
+    public setEntriesWithAck (entries: Array<string>, callback?: WriteAckCallback): Promise<void> | void {
+        if (!callback) {
+            return new Promise(( resolve, reject ) => {
+                this.setEntries(entries, (error: string | null) => {
+                    if (error) {
+                        reject(error)
+                    } else {
+                        resolve()
+                    }
+                })
+            })
+        }
+        this.setEntries(entries, callback)
+    }
+
     /**
-   * Updates the list with a new set of entries
-   */
-    public setEntries (entries: Array<string>) {
+    * Updates the list with a new set of entries
+    */
+    public setEntries (entries: Array<string>, callback?: WriteAckCallback) {
         const errorMsg = 'entries must be an array of record names'
         let i
 
@@ -81,7 +99,7 @@ export class List extends Emitter {
             // ...
         } else {
             this.beforeChange()
-            this.record.set(entries)
+            this.record.set({ data: entries, callback })
             this.afterChange()
         }
     }
@@ -92,7 +110,7 @@ export class List extends Emitter {
      * @param {String} entry
      * @param {Number} [index]
      */
-    public removeEntry (entry: string, index?: number) {
+    public removeEntry (entry: string, index?: number, callback?: WriteAckCallback) {
         if (this.record.isReady === false) {
             // ...
             return
@@ -109,7 +127,7 @@ export class List extends Emitter {
             }
         }
         this.beforeChange()
-        this.record.set(entries)
+        this.record.set({ data: entries, callback })
         this.afterChange()
     }
 
@@ -119,7 +137,7 @@ export class List extends Emitter {
    * @param {String} entry
    * @param {Number} [index]
    */
-    public addEntry (entry: string, index?: number) {
+    public addEntry (entry: string, index?: number, callback?: WriteAckCallback) {
         if (typeof entry !== 'string') {
             throw new Error('Entry must be a recordName')
         }
@@ -137,7 +155,7 @@ export class List extends Emitter {
             entries.push(entry)
         }
         this.beforeChange()
-        this.record.set(entries)
+        this.record.set({ data: entries, callback })
         this.afterChange()
     }
 
@@ -145,17 +163,16 @@ export class List extends Emitter {
    * Proxies the underlying Record's subscribe method. Makes sure
    * that no path is provided
    */
-    public subscribe (callback: (entires: Array<string>) => void)
-    public subscribe (...rest) {
-        const parameters = utils.normalizeArguments(rest)
+    public subscribe (callback: (entries: Array<string>) => void) {
+        const parameters = utils.normalizeArguments(arguments)
 
         if (parameters.path) {
             throw new Error('path is not supported for List.subscribe')
         }
 
         // Make sure the callback is invoked with an empty array for new records
-        const listCallback = function (callback) {
-            callback(this.getEntries())
+        const listCallback = function (cb: Function) {
+            cb(this.getEntries())
         }.bind(this, parameters.callback)
 
         /**
@@ -176,16 +193,15 @@ export class List extends Emitter {
    * Proxies the underlying Record's unsubscribe method. Makes sure
    * that no path is provided
    */
-    public unsubscribe (callback: (entries: Array<string>) => void)
-    public unsubscribe (...rest) {
-        const parameters = utils.normalizeArguments(rest)
+    public unsubscribe (callback: (entries: Array<string>) => void) {
+        const parameters = utils.normalizeArguments(arguments)
 
         if (parameters.path) {
             throw new Error('path is not supported for List.unsubscribe')
         }
 
         const listenCallback = this.wrappedFunctions.get(parameters.callback)
-        parameters.callback = listenCallback as Function
+        parameters.callback = listenCallback as (data: any) => void
         this.record.unsubscribe(parameters)
         this.wrappedFunctions.delete(parameters.callback)
     }
@@ -194,7 +210,7 @@ export class List extends Emitter {
  * Proxies the underlying Record's _update method. Set's
  * data to an empty array if no data is provided.
  */
-private applyUpdate  (message) {
+private applyUpdate  (message: RecordMessage) {
     if (!(message.parsedData instanceof Array)) {
         message.parsedData = []
     }
@@ -297,7 +313,7 @@ private applyUpdate  (message) {
    * }
    */
   private getStructure (): any {
-    const structure = {}
+    const structure: any = {}
     let i
     const entries = this.record.get()
 

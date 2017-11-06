@@ -10,7 +10,6 @@ describe('listener', () => {
   let services: any
   let listener: Listener
 
-  let listenResponse: ListenResponse
   let listenCallback: sinon.SinonStub
 
   const pattern = '.*'
@@ -132,7 +131,7 @@ describe('listener', () => {
     it('logs unsolicited message if an unknown message is recieved', () => {
       const message = {
         topic: TOPIC.EVENT,
-        action:EVENT_ACTIONS.EMIT,
+        action: EVENT_ACTIONS.EMIT,
         name: pattern,
         subscription
       }
@@ -147,10 +146,10 @@ describe('listener', () => {
     describe('gets a subscription for pattern found', () => {
       let response: ListenResponse
 
-      beforeEach(()=> {
+      beforeEach(() => {
         listener.handle({
           topic: TOPIC.EVENT,
-          action:EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND,
+          action: EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND,
           name: pattern,
           subscription
         })
@@ -158,7 +157,7 @@ describe('listener', () => {
         response = listenCallback.lastCall.args[1]
       })
 
-      it ('calls the listen callback', () => {
+      it('calls the listen callback', () => {
         sinon.assert.calledOnce(listenCallback)
         sinon.assert.calledWithExactly(listenCallback, subscription, sinon.match.any)
       })
@@ -198,7 +197,7 @@ describe('listener', () => {
 
         listener.handle({
           topic: TOPIC.EVENT,
-          action:EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+          action: EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED,
           name: pattern,
           subscription
         })
@@ -213,7 +212,7 @@ describe('listener', () => {
         response.accept()
         const message = {
           topic: TOPIC.EVENT,
-          action:EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED,
+          action: EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED,
           name: pattern,
           subscription
         }

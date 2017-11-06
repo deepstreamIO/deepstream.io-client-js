@@ -12,10 +12,10 @@
     "build:prod": "webpack --config webpack.prod.js",
     "rebuild": "rimraf dist && webpack",
     "clean": "rimraf dist",
-    "lint": "tslint test/**/*.ts src/**/*.ts -t verbose",
-    "lint:fix": "tslint --fix test/**/*.t src/**/*.ts -t verbose",
-    "test": "npm run tsc && mocha dist/test/connection --recursive --reporter dot --require source-map-support/register",
-    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test/connection -- --recursive --reporter dot --require source-map-support/register"
+    "lint": "tslint test/*.ts test/**/*.ts src/*.ts src/**/*.ts -t verbose",
+    "lint:fix": "npm run lint -- --fix",
+    "test": "npm run tsc && mocha dist/test --recursive --reporter dot --require source-map-support/register",
+    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot --require source-map-support/register"
   },
   "repository": {
     "type": "git",

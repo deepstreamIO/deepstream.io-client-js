@@ -21,7 +21,7 @@ export const socketFactory = (url: string, options: any): Socket => {
             (element as Message).parsedData = parseJSON((element as Message).data as Buffer)
             const msg = element as Message
             // console.log('<<<', TOPIC[msg.topic], ACTIONS[msg.topic][msg.action], msg.parsedData, msg.data)
-        });
+        })
         socket.onparsedmessages(parseResults)
     }
     socket.sendParsedMessage = (message: Message): void => {

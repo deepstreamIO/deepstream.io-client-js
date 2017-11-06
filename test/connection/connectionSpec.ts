@@ -1,6 +1,6 @@
 import { Promise as BBPromise } from 'bluebird'
-import { expect, assert } from 'chai'
-import { mock, spy, stub } from 'sinon'
+import { expect } from 'chai'
+import { mock, spy, stub, assert } from 'sinon'
 
 import { Services } from '../../src/client'
 import { Connection } from '../../src/connection/connection'
@@ -153,7 +153,7 @@ describe('connection', () => {
 
     connection.authenticate(authData, authCallback)
 
-    assert(authCallback.called === false)
+    assert.callCount(authCallback, 0)
 
     await BBPromise.delay(10)
   })
@@ -166,7 +166,8 @@ describe('connection', () => {
     await sendAuth()
     await receiveAuthResponse()
 
-    assert(authCallback.calledWith(true, clientData) === true)
+    assert.calledOnce(authCallback)
+    assert.calledWithExactly(authCallback, true, clientData)
   })
 
   it('handles rejected authentication', async () => {
@@ -184,7 +185,8 @@ describe('connection', () => {
     await receiveChallengeAccept()
     await sendAuth()
     await receiveAuthRejectResponse()
-    expect(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })).to.be.true
+    assert.calledOnce(authCallback)
+    assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
   })
 
   it('handles authenticating too may times', async () => {
@@ -373,7 +375,7 @@ describe('connection', () => {
       connection.authenticate('Bad Auth Data' as any, authCallback)
     }).to.throw('invalid argument authParams')
 
-    assert(authCallback.called === false)
+    assert.callCount(authCallback, 0)
 
     await BBPromise.delay(0)
   }
@@ -566,9 +568,10 @@ describe('connection', () => {
 
     await BBPromise.delay(0)
 
-    assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
+    assert.calledOnce(authCallback)
+    assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
 
-    await BBPromise.delay(2)
+    await BBPromise.delay(0)
   }
 
   async function receiveTooManyAuthAttempts () {

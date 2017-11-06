@@ -12,12 +12,19 @@ import { RecordHandler } from './record/record-handler'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 
+export interface RecordOfflineStore {
+  get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => void
+  set: (recordName: string, version: number, data: Array<string> | object, callback: ((error: string) => void)) => void
+  delete: (recordName: string, callback: ((error: string) => void)) => void
+}
+
 export interface Services {
   logger: Logger
   connection: Connection
   timeoutRegistry: TimeoutRegistry,
   timerRegistry: TimerRegistry,
-  socketFactory: SocketFactory
+  socketFactory: SocketFactory,
+  storage: RecordOfflineStore
 }
 
 export class Client extends EventEmitter {
@@ -30,7 +37,7 @@ export class Client extends EventEmitter {
   private options: Options
 
   constructor (url: string, options: any = {}) {
-    super ()
+    super()
 
     this.options = DefaultOptions
 
@@ -75,6 +82,6 @@ export class Client extends EventEmitter {
 
 export function deepstream (url: string, options: any): Client {
   return new Client(url, options)
-} 
+}
 
 export { CONNECTION_STATE, C, EVENT }

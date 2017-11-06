@@ -7,7 +7,7 @@ import * as Emitter from 'component-emitter2'
 
 export class AnonymousRecord extends Emitter  {
     private record: RecordCore | null
-    private subscriptions: Array<{ callback: Function, path: string, data: any }>
+    private subscriptions: Array<utils.RecordSubscribeArguments>
     private getRecordCore: (recordName: string) => RecordCore
 
     constructor (getRecordCore: (recordName: string) => RecordCore) {
@@ -69,37 +69,33 @@ export class AnonymousRecord extends Emitter  {
     public set (data: any, callback?: WriteAckCallback): void
     public set (path: string, data: any, callback?: WriteAckCallback): void {
         if (this.record) {
-            return this.record.set(path, data, callback)
+            return this.record.set(utils.normalizeSetArguments(arguments))
         }
     }
 
-    public setWithAck (data: any, callback?: ((error: string) => void)): Promise<void> | undefined
-    public setWithAck (path: string, data: any, callback?: ((error: string) => void)): Promise<void> | undefined {
+    public setWithAck (data: any, callback?: ((error: string) => void)): Promise<void> | void
+    public setWithAck (path: string, data: any, callback?: ((error: string) => void)): Promise<void> | void {
         if (this.record) {
-            return this.record.setWithAck(path, data, callback)
+            return this.record.setWithAck(utils.normalizeSetArguments(arguments))
         }
     }
 
-    public subscribe (path: string, callback: (data: any) => void, triggerNow?: boolean)
-    public subscribe (...rest) {
-        const parameters = utils.normalizeArguments(rest)
+    public subscribe (path: string, callback: (data: any) => void, triggerNow?: boolean) {
+        const parameters = utils.normalizeArguments(arguments)
         this.subscriptions.push(parameters)
         if (this.record) {
             this.record.subscribe(parameters)
         }
     }
 
-    public unsubscribe (path: string, callback: (data: any) => void)
-    public unsubscribe (...rest) {
-        const parameters = utils.normalizeArguments(rest)
+    public unsubscribe (path: string, callback: (data: any) => void) {
+        const parameters = utils.normalizeArguments(arguments)
 
         this.subscriptions = this.subscriptions.filter(subscription => {
-            if (
+            return (
                 subscription.path !== parameters.path ||
                 subscription.callback !== parameters.callback
-            ) {
-              return true
-            }
+            )
         })
 
         if (this.record) {

@@ -129,15 +129,28 @@ export class Connection {
 
     if (
       this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
+<<<<<<< HEAD
       this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS || 
+=======
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
+>>>>>>> 6a5a02fd62827d5d947ce4d5e2449e65880350a8
       this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
       return
     }
 
+<<<<<<< HEAD
     if (authParams) this.authParams = authParams
     if (callback) this.authCallback = callback
+=======
+    if (authParams) {
+      this.authParams = authParams
+    }
+    if (callback) {
+      this.authCallback = callback
+    }
+>>>>>>> 6a5a02fd62827d5d947ce4d5e2449e65880350a8
 
     // if (this.stateMachine.state === CONNECTION_STATE.CLOSED && !this.endpoint) {
     //   this.createEndpoint()
@@ -419,9 +432,15 @@ export class Connection {
     }
 
     if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
+<<<<<<< HEAD
       this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
       this.services.logger.error(message)
+=======
+      this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
+      this.services.logger.error(message)
+      return
+>>>>>>> 6a5a02fd62827d5d947ce4d5e2449e65880350a8
     }
   }
 
@@ -453,6 +472,12 @@ export class Connection {
   }
 
   private onAwaitingAuthentication (): void {
+<<<<<<< HEAD
     if (this.authParams) this.sendAuthParams()
+=======
+    if (this.authParams) {
+      this.sendAuthParams()
+    }
+>>>>>>> 6a5a02fd62827d5d947ce4d5e2449e65880350a8
   }
 }
