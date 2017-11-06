@@ -157,7 +157,7 @@ describe('listener', () => {
         response = listenCallback.lastCall.args[1]
       })
 
-      it ('calls the listen callback', () => {
+      it('calls the listen callback', () => {
         sinon.assert.calledOnce(listenCallback)
         sinon.assert.calledWithExactly(listenCallback, subscription, sinon.match.any)
       })

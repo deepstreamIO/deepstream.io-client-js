@@ -24,9 +24,7 @@ describe('event handler', () => {
   })
 
   afterEach(() => {
-    services.connectionMock.verify()
-    services.loggerMock.verify()
-    services.timeoutRegistryMock.verify()
+    services.verify()
     listener.listenerMock.verify()
   })
 

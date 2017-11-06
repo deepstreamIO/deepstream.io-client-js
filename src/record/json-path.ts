@@ -43,8 +43,12 @@ export function setValue (root: any, path: string | null, value: any): any {
     }
   }
 
-  node[tokens[i]] = value
-  return root
+  if (value === undefined) {
+    delete node[tokens[i]]
+  } else {
+    node[tokens[i]] = value
+  }
+  return Object.assign({}, root)
 }
 
 /**

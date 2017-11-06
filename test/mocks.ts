@@ -12,8 +12,9 @@ export const getServicesMock = () => {
   let handle: Function | null = null
 
   const connection = {
-      sendMessage: (message) => { lastMessageSent = message },
+      sendMessage: (message: Message) => { lastMessageSent = message },
       getConnectionState: stub().returns(CONNECTION_STATE.OPEN),
+      isConnected: true,
       registerHandler: (topic: any, callback: Function) => {
         handle = callback
       }
@@ -22,7 +23,8 @@ export const getServicesMock = () => {
 
   const timeoutRegistry = {
       add: () => {},
-      remove: () => {}
+      remove: () => {},
+      clear: () => {}
   }
   const timeoutRegistryMock = mock(timeoutRegistry)
 
@@ -70,6 +72,13 @@ export const getServicesMock = () => {
     return socket
   }
 
+  const storage = {
+    get: () => {},
+    set: () => {},
+    delete: () => {}
+  }
+  const storageMock = mock(storage)
+
   return {
     socketFactory,
     getSocket: (): any => ({ socket, socketMock: mock(socket) }),
@@ -82,10 +91,13 @@ export const getServicesMock = () => {
     getLogger: (): any => ({ logger, loggerMock}),
     timerRegistry,
     getHandle: (): Function | null => handle,
+    storage,
+    storageMock,
     verify: () => {
       connectionMock.verify()
       timeoutRegistryMock.verify()
       loggerMock.verify()
+      storageMock.verify()
     }
   }
 }

@@ -89,7 +89,7 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot (name, callback: (error: string | null, data: any) => void): Promise<any> | undefined {
+  public snapshot (name: string, callback?: (error: string | null, data: any) => void): Promise<any> | void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -118,13 +118,20 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public has (name: string, callback: (error: string | null, has: boolean) => void) {
-    this.head(name, (error, version) => {
-      if (callback) {
-        callback(error, version !== -1)
-      } else if (!error) {
-        return Promise.resolve(version !== -1)
-      }
+  public has (name: string, callback: (error: string | null, has: boolean) => void): Promise<boolean> | void {
+    if (!callback) {
+      return new Promise ((resolve, reject) => {
+        this.head(name, (error: string | null, version: number) => {
+          if (error) {
+            resolve(version !== -1)
+          } else {
+            reject(error)
+          }
+        })
+      })
+    }
+    this.head(name, (error: string | null, version: number) => {
+      callback(error, version !== -1)
     })
   }
 
@@ -134,7 +141,7 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public head (name: string, callback: (error: string | null, version: number) => void) {
+  public head (name: string, callback: (error: string | null, version: number) => void): Promise<number> | void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -172,8 +179,8 @@ export class RecordHandler {
    *                    with the result of the write
    */
   public setDataWithAck (recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<void> | void
-  public setDataWithAck (recordName: string, ...rest): Promise<void> | void {
-    const args = utils.normalizeSetArguments(rest)
+  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<void> | void {
+    const args = utils.normalizeSetArguments(arguments, 1)
     if (args.callback) {
       return new Promise((resolve, reject) => {
         args.callback = error => error === null ? resolve() : reject(error)
@@ -200,9 +207,9 @@ export class RecordHandler {
    */
   public setData (recordName: string, path: string, data?: any, callback?: WriteAckCallback): void
   public setData (recordName: string, path: string, data: any, callback?: WriteAckCallback): void
-  public setData (recordName: string, args: utils.SetArguments): void
-  public setData (recordName: string, ...rest): void {
-    const { path, data, callback } = utils.normalizeSetArguments(rest)
+  public setData (recordName: string, args: utils.RecordSetArguments): void
+  public setData (recordName: string, ...rest: Array<any>): void {
+    const { path, data, callback } = utils.normalizeSetArguments(arguments, 1)
 
     if (!path && (data === null || typeof data !== 'object')) {
       throw new Error('invalid argument: data must be an object when no path is provided')

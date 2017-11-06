@@ -1,6 +1,6 @@
 import { Promise as BBPromise } from 'bluebird'
-import { expect, assert } from 'chai'
-import { mock, spy, stub } from 'sinon'
+import { expect } from 'chai'
+import { mock, spy, stub, assert } from 'sinon'
 
 import { Services } from '../../src/client'
 import { Connection } from '../../src/connection/connection'
@@ -129,6 +129,35 @@ describe('connection', () => {
     await receiveChallengeReject()
   })
 
+  it('handles authentication when challenge was denied', async () => {
+    loggerMock
+      .expects('error')
+      .once()
+      .withArgs(
+        { topic: TOPIC.CONNECTION },
+        EVENT.IS_CLOSED
+      )
+
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+        EVENT.CONNECTION_STATE_CHANGED,
+        CONNECTION_STATE.CHALLENGE_DENIED
+      )
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeReject()
+
+    connection.authenticate(authData, authCallback)
+
+    assert.callCount(authCallback, 0)
+
+    await BBPromise.delay(10)
+  })
+
   it('handles successful authentication', async () => {
     await awaitConnectionAck()
     await receiveChallengeRequest()
@@ -137,7 +166,8 @@ describe('connection', () => {
     await sendAuth()
     await receiveAuthResponse()
 
-    assert(authCallback.calledWith(true, clientData) === true)
+    assert.calledOnce(authCallback)
+    assert.calledWithExactly(authCallback, true, clientData)
   })
 
   it('handles rejected authentication', async () => {
@@ -156,7 +186,49 @@ describe('connection', () => {
     await sendAuth()
     await receiveAuthRejectResponse()
 
-    assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
+    assert.calledOnce(authCallback)
+    assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
+  })
+
+  it('handles authenticating too may times', async () => {
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+        EVENT.CONNECTION_STATE_CHANGED,
+        CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS
+    )
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await sendAuth()
+    await receiveTooManyAuthAttempts()
+  })
+
+  it('handles authentication timeout', async () => {
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+        EVENT.CONNECTION_STATE_CHANGED,
+        CONNECTION_STATE.AUTHENTICATION_TIMEOUT
+    )
+
+    // loggerMock
+    //   .expects('error')
+    //   .once()
+    //   .withExactArgs(
+    //     { topic: TOPIC.CONNECTION },
+    //     EVENT.AUTHENTICATION_TIMEOUT
+    // )
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await receiveAuthenticationTimeout()
   })
 
   it('try to authenticate with invalid data and receive error', async () => {
@@ -203,6 +275,19 @@ describe('connection', () => {
     // try to reconnect fourth time (try to surpass the allowed max, fail)
     await receiveConnectionError()
     await BBPromise.delay(30)
+  })
+
+  it('tries to reconnect if the connection drops unexpectedly', async () => {
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await receiveConnectionError()
   })
 
   async function openConnection () {
@@ -291,7 +376,7 @@ describe('connection', () => {
       connection.authenticate('Bad Auth Data' as any, authCallback)
     }).to.throw('invalid argument authParams')
 
-    assert(authCallback.called === false)
+    assert.callCount(authCallback, 0)
 
     await BBPromise.delay(0)
   }
@@ -484,9 +569,28 @@ describe('connection', () => {
 
     await BBPromise.delay(0)
 
-    assert(authCallback.calledWith(false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS }) === true)
+    assert.calledOnce(authCallback)
+    assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
 
-    await BBPromise.delay(2)
+    await BBPromise.delay(0)
+  }
+
+  async function receiveTooManyAuthAttempts () {
+    socket.simulateMessages([{
+      topic: TOPIC.AUTH,
+      action: AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS
+    }])
+
+    await BBPromise.delay(0)
+  }
+
+  async function receiveAuthenticationTimeout () {
+    socket.simulateMessages([{
+      topic: TOPIC.CONNECTION,
+      action: CONNECTION_ACTION.AUTHENTICATION_TIMEOUT
+    }])
+
+    await BBPromise.delay(0)
   }
 
   function losesConnection () {

@@ -1,5 +1,6 @@
 import { DefaultOptions, Options } from './client-options'
 import { EVENT, CONNECTION_STATE } from './constants'
+import * as C from '../binary-protocol/src/message-constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
@@ -11,15 +12,22 @@ import { RecordHandler } from './record/record-handler'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 
+export interface RecordOfflineStore {
+  get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => void
+  set: (recordName: string, version: number, data: Array<string> | object, callback: ((error: string) => void)) => void
+  delete: (recordName: string, callback: ((error: string) => void)) => void
+}
+
 export interface Services {
   logger: Logger
   connection: Connection
   timeoutRegistry: TimeoutRegistry,
   timerRegistry: TimerRegistry,
-  socketFactory: SocketFactory
+  socketFactory: SocketFactory,
+  storage: RecordOfflineStore
 }
 
-export default class Client extends EventEmitter {
+export class Client extends EventEmitter {
   public event: EventHandler
   public rpc: RPCHandler
   public record: RecordHandler
@@ -29,12 +37,12 @@ export default class Client extends EventEmitter {
   private options: Options
 
   constructor (url: string, options: any = {}) {
-    super ()
+    super()
 
     this.options = DefaultOptions
 
     const services: any = {}
-    services.logger = new Logger()
+    services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.ackTimeoutRegistry = new TimeoutRegistry(services, DefaultOptions)
     services.socketFactory = options.socketFactory || socketFactory
@@ -52,7 +60,11 @@ export default class Client extends EventEmitter {
   }
 
   public getConnectionState (): CONNECTION_STATE {
-    return CONNECTION_STATE.OPEN
+    return this.services.connection.getConnectionState()
+  }
+
+  public close (): void {
+    this.services.connection.close()
   }
 
   /**
@@ -67,3 +79,9 @@ export default class Client extends EventEmitter {
     return `${timestamp}-${randomString}`
   }
 }
+
+export function deepstream (url: string, options: any): Client {
+  return new Client(url, options)
+}
+
+export { CONNECTION_STATE, C, EVENT }
