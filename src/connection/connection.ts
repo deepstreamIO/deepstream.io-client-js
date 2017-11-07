@@ -339,10 +339,6 @@ export class Connection {
     }
     if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
       this.stateMachine.transition(TRANSITIONS.RECONNECT)
-      console.log('min', 
-        this.options.maxReconnectInterval,
-        this.options.reconnectIntervalIncrement, this.reconnectionAttempt
-      )
       this.reconnectTimeout = setTimeout(
         this.tryOpen.bind(this),
         Math.min(
