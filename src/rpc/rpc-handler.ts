@@ -191,7 +191,6 @@ export class RPCHandler {
         rpc.error(message.action)
       }
       this.rpcs.delete(message.correlationId as string)
-      
     }
   }
 

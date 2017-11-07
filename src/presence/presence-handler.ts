@@ -7,9 +7,6 @@ import * as Emitter from 'component-emitter2'
 const allResponse: string = PRESENCE_ACTION.QUERY_ALL_RESPONSE.toString()
 const response: string = PRESENCE_ACTION.QUERY_ALL.toString()
 const allSubscribe: string = PRESENCE_ACTION.SUBSCRIBE_ALL.toString()
-const subscribe: string = PRESENCE_ACTION.SUBSCRIBE.toString()
-const allUnsubscribe: string = PRESENCE_ACTION.UNSUBSCRIBE_ALL.toString()
-const unsubscribe: string = PRESENCE_ACTION.UNSUBSCRIBE.toString()
 
 export type QueryCallback = (users: string[]) => void
 export type SubscribeCallback = (user: string, online: boolean) => void
@@ -128,7 +125,6 @@ export class PresenceHandler {
     }
   }
 
-  // tslint:disable-next-line:no-empty
   public handle (message: Message): void {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
