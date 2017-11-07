@@ -94,13 +94,13 @@ export class RPCHandler {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
+    if (callback && typeof callback !== 'function') {
+      throw new Error('invalid argument callback')
+    }
 
-    const cb = callback && typeof callback === 'function'
-      ? callback
-      : null
     if (this.services.connection.isConnected === false) {
-      if (cb) {
-        cb(EVENT.CLIENT_OFFLINE)
+      if (callback) {
+        callback(EVENT.CLIENT_OFFLINE)
         return
       }
       return Promise.reject(EVENT.CLIENT_OFFLINE)
@@ -116,8 +116,8 @@ export class RPCHandler {
       parsedData: data
     })
 
-    if (cb) {
-      this.rpcs.set(correlationId, new RPC(name, correlationId, cb, this.options, this.services))
+    if (callback) {
+      this.rpcs.set(correlationId, new RPC(name, correlationId, callback, this.options, this.services))
       return
     }
 

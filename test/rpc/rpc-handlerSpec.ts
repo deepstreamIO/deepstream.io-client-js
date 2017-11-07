@@ -51,6 +51,8 @@ describe('RPC handler', () => {
     expect(rpcHandler.make.bind(rpcHandler, '')).to.throw()
     expect(rpcHandler.make.bind(rpcHandler, 123)).to.throw()
     expect(rpcHandler.make.bind(rpcHandler, null)).to.throw()
+    expect(rpcHandler.make.bind(rpcHandler, name, {}, {})).to.throw()
+    expect(rpcHandler.make.bind(rpcHandler, name, {}, 123)).to.throw()
     expect(rpcHandler.make.bind(rpcHandler)).to.throw()
   })
 
@@ -356,7 +358,7 @@ describe('RPC handler', () => {
     it('responds rpc with error when request is not accepted in time', async () => {
       await BBPromise.delay(rpcAcceptTimeout * 2)
       sinon.assert.calledOnce(rpcResponseCallback)
-      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT])
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT], undefined)
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
@@ -392,7 +394,7 @@ describe('RPC handler', () => {
       await BBPromise.delay(rpcResponseTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
-      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT])
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT], undefined)
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
