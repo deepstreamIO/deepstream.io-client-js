@@ -27,10 +27,11 @@ export const socketFactory = (url: string, options: any): Socket => {
     socket.sendParsedMessage = (message: Message): void => {
         if (message.topic === TOPIC.CONNECTION && message.action === CONNECTION_ACTIONS.CLOSING) {
             socket.onparsedmessages([{ topic: TOPIC.CONNECTION, action: CONNECTION_ACTIONS.CLOSED }])
+            socket.close()
             return
         }
         message.data = JSON.stringify(message.parsedData)
-        // console.log('>>>', TOPIC[message.topic], ACTIONS[message.topic][message.action], message.parsedData)
+        // console.log('>>>', TOPIC[message.topic], ACTIONS[message.topic][message.action], message.parsedData, message.reason, message.name)
         socket.send(getMessage(message, false))
     }
     return socket

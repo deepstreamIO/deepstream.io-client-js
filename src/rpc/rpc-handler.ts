@@ -41,7 +41,7 @@ export class RPCHandler {
    * numbers or implicitly JSON serialized objects will arrive in their
    * respective format as well
    */
-  public provide (name: string, callback: RPCResponse): void {
+  public provide (name: string, callback: RPCProvider): void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
@@ -128,9 +128,9 @@ export class RPCHandler {
    * if this client sends a unprovide message whilst an incoming request is already in flight)
    */
   private respondToRpc (message: RPCMessage) {
-    const provider = this.providers.get(name)
+    const provider = this.providers.get(message.name)
     if (provider) {
-      provider(message.data, new RPCResponse(message, this.options, this.services))
+      provider(message.parsedData, new RPCResponse(message, this.options, this.services))
     } else {
       this.services.connection.sendMessage({
         topic: TOPIC.RPC,
@@ -180,13 +180,17 @@ export class RPCHandler {
     if (rpc) {
       if (message.action === RPC_ACTION.ACCEPT) {
         rpc.accept()
+        return
       } else if (message.action === RPC_ACTION.RESPONSE) {
-        rpc.respond(message)
-        this.rpcs.delete(message.correlationId as string)
-      } else if (message.action === RPC_ACTION.REQUEST_ERROR) {
-        rpc.error(message.parsedData)
-        this.rpcs.delete(message.correlationId as string)
+        rpc.respond(message.parsedData)
+      } else if (
+        message.action === RPC_ACTION.RESPONSE_TIMEOUT ||
+        message.action === RPC_ACTION.REQUEST_ERROR ||
+        message.action === RPC_ACTION.NO_RPC_PROVIDER
+      ) { 
+        rpc.error(message.action)
       }
+      this.rpcs.delete(message.correlationId as string)
     }
   }
 
