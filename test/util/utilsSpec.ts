@@ -533,6 +533,52 @@ describe('normalizeSetArguments', () => {
   })
 })
 
+describe('normalizeArguments', () => {
+  it('normalizes argument list contaning an object', () => {
+    const argumentSet = utils.normalizeArguments([{
+      path: 'title',
+      callback: () => {},
+      triggerNow: false
+    }] as any)
+
+    expect(argumentSet)
+      .to.have.property('path')
+      .to.equal('title')
+
+    expect(argumentSet)
+      .to.have.property('callback')
+      .to.be.a('function')
+
+    expect(argumentSet)
+      .to.have.property('triggerNow')
+      .to.equal(false)
+  })
+
+  it('normalizes argument list contaning path, callback and triggerNow arguments', () => {
+    const argumentSet = utils.normalizeArguments([
+      true, () => {}, 'title'
+    ] as any)
+
+    expect(argumentSet)
+      .to.have.property('path')
+      .to.equal('title')
+
+    expect(argumentSet)
+      .to.have.property('callback')
+      .to.be.a('function')
+
+    expect(argumentSet)
+      .to.have.property('triggerNow')
+      .to.equal(true)
+  })
+
+  it('handles an empty arguments list', () => {
+    const argumentSet = utils.normalizeArguments([] as any)
+
+    expect(argumentSet)
+      .to.deep.equal({})
+  })
+})
 // As these tests are only ever run in node, this is a bit pointless
 describe('isNode detects the environment', () => {
   it('has detected something', () => {
@@ -575,5 +621,10 @@ describe('parseUrl adds all missing parts of the url', () => {
   it('respects queries and hash', () => {
     expect(utils.parseUrl('localhost?query=value#login', '/deepstream'))
       .to.equal('ws://localhost/deepstream?query=value#login')
+  })
+
+  it('rejects urls with @no-host', () => {
+    expect(utils.parseUrl.bind(utils, '', '/deepstream'))
+      .to.throw('invalid url, missing host')
   })
 })
