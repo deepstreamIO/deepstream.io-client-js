@@ -472,9 +472,21 @@ describe('normalizeSetArguments', () => {
     expect(() => {
       utils.normalizeSetArguments([() => { }] as any)
     }).to.throw('Invalid set data argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([{
+        title: 'awesome post'
+      }, undefined] as any)
+    }).to.throw('Invalid set callback argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        'path', () => { }, () => {}
+      ] as any)
+    }).to.throw('Invalid set data argument')
   })
 
-  it('throws error on an argument list contaning an invalid path argument @path', () => {
+  it('throws error on an argument list contaning an invalid path argument', () => {
     expect(() => {
       utils.normalizeSetArguments([
         undefined, { title: 'awesome post' }
@@ -490,6 +502,12 @@ describe('normalizeSetArguments', () => {
     expect(() => {
       utils.normalizeSetArguments([
         null, { title: 'awesome post' }
+      ] as any)
+    }).to.throw('Invalid set path argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        true, { title: 'awesome post' }, () => {}
       ] as any)
     }).to.throw('Invalid set path argument')
   })
@@ -516,6 +534,12 @@ describe('normalizeSetArguments', () => {
     expect(() => {
       utils.normalizeSetArguments([
         'title', 'awesome post', 1
+      ] as any)
+    }).to.throw('Invalid set callback argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        'title', 'awesome post', false
       ] as any)
     }).to.throw('Invalid set callback argument')
   })
