@@ -51,6 +51,7 @@ export class Connection {
   private endpoint: Socket
   private emitter: Emitter
   private handlers: Map<TOPIC, Function>
+  private deliberateClose: boolean
 
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
@@ -128,7 +129,7 @@ export class Connection {
 
     if (
       this.stateMachine.state === CONNECTION_STATE.CHALLENGE_DENIED ||
-      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
+      this.stateMachine.state === CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS || 
       this.stateMachine.state === CONNECTION_STATE.AUTHENTICATION_TIMEOUT
     ) {
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
@@ -273,11 +274,21 @@ export class Connection {
       const message = parsedMessages[i] as Message
       if (message === null) {
         continue
-      } else if (message.topic === TOPIC.CONNECTION) {
-        this.handleConnectionResponse(parsedMessages[i])
-      } else if (message.topic === TOPIC.AUTH) {
-        this.handleAuthResponse(parsedMessages[i])
       }
+      if (message.topic === TOPIC.CONNECTION) {
+        this.handleConnectionResponse(parsedMessages[i])
+        return
+      }
+      if (message.topic === TOPIC.AUTH) {
+        this.handleAuthResponse(parsedMessages[i])
+        return
+      }
+      const handler = this.handlers.get(message.topic)
+      if (!handler) {
+        // this should never happen
+        return
+      }
+      handler(message)
     }
   }
 
@@ -422,9 +433,9 @@ export class Connection {
     }
 
     if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
+      this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
       this.services.logger.error(message)
-      return
     }
   }
 
@@ -436,6 +447,7 @@ export class Connection {
    */
   private handleAuthResponse (message: Message): void {
     if (message.action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
+      this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS)
       this.services.logger.error(message)
       return

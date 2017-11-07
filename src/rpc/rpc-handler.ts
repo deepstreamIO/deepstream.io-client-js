@@ -194,13 +194,18 @@ export class RPCHandler {
     if (rpc) {
       if (message.action === RPC_ACTION.ACCEPT) {
         rpc.accept()
+        return
       } else if (message.action === RPC_ACTION.RESPONSE) {
         rpc.respond(message.parsedData)
-        this.rpcs.delete(message.correlationId as string)
       } else if (message.action === RPC_ACTION.REQUEST_ERROR) {
         rpc.error(message.parsedData)
-        this.rpcs.delete(message.correlationId as string)
+      } else if (
+        message.action === RPC_ACTION.RESPONSE_TIMEOUT ||
+        message.action === RPC_ACTION.NO_RPC_PROVIDER
+      ) {
+        rpc.error(RPC_ACTION[message.action])
       }
+      this.rpcs.delete(message.correlationId as string)
     }
   }
 

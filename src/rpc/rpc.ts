@@ -79,7 +79,7 @@ export class RPC {
      * UNSOLICITED_MESSAGE error
      */
     private onTimeout (event: RPC_ACTION, message: RPCMessage) {
-      this.response(RPC_ACTION[event])
+      this.response(RPC_ACTION[event], undefined)
       this.complete()
     }
 
