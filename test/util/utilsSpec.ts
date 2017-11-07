@@ -358,36 +358,6 @@ describe('normalizeSetArguments', () => {
     })
   })
 
-  it('normalizes argument list containing only a data argument as string', () => {
-    const argumentsSet = utils.normalizeSetArguments(['awesome post'] as any)
-
-    expect(argumentsSet).to.deep.equal({
-      path: undefined,
-      data: 'awesome post',
-      callback: undefined
-    })
-  })
-
-  it('normalizes argument list containing only a data argument as number', () => {
-    const argumentsSet = utils.normalizeSetArguments([1234] as any)
-
-    expect(argumentsSet).to.deep.equal({
-      path: undefined,
-      data: 1234,
-      callback: undefined
-    })
-  })
-
-  it('normalizes argument list containing only a data argument as boolean', () => {
-    const argumentsSet = utils.normalizeSetArguments([true] as any)
-
-    expect(argumentsSet).to.deep.equal({
-      path: undefined,
-      data: true,
-      callback: undefined
-    })
-  })
-
   it('normalizes argument list containing only a data and a callback argument', () => {
     const argumentsSet = utils.normalizeSetArguments([
       { title: 'awesome post' },
@@ -407,12 +377,28 @@ describe('normalizeSetArguments', () => {
       .to.be.a('function')
   })
 
-  it('normalizes argument list containing only a path and a data argument', () => {
-    const argumentsSet = utils.normalizeSetArguments([ 'title', 'awesome post' ] as any)
+  it('normalizes argument list containing only a path and a data argument as primitive', () => {
+    let argumentsSet = utils.normalizeSetArguments([ 'title', 'awesome post' ] as any)
 
     expect(argumentsSet).to.deep.equal({
       path: 'title',
       data: 'awesome post',
+      callback: undefined
+    })
+
+    argumentsSet = utils.normalizeSetArguments(['version', 123] as any)
+
+    expect(argumentsSet).to.deep.equal({
+      path: 'version',
+      data: 123,
+      callback: undefined
+    })
+
+    argumentsSet = utils.normalizeSetArguments(['liked', true] as any)
+
+    expect(argumentsSet).to.deep.equal({
+      path: 'liked',
+      data: true,
       callback: undefined
     })
   })
@@ -474,10 +460,12 @@ describe('normalizeSetArguments', () => {
     }).to.throw('Invalid set data argument')
 
     expect(() => {
-      utils.normalizeSetArguments([{
-        title: 'awesome post'
-      }, undefined] as any)
-    }).to.throw('Invalid set callback argument')
+      utils.normalizeSetArguments(['data', () => {}] as any)
+    }).to.throw('Invalid set data argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([134, () => {}] as any)
+    }).to.throw('Invalid set data argument')
 
     expect(() => {
       utils.normalizeSetArguments([

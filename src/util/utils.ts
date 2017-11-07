@@ -188,24 +188,42 @@ export interface RecordSubscribeArguments { callback: (data: any) => void, path?
 export const normalizeSetArguments = (args: IArguments, startIndex: number = 0): RecordSetArguments => {
   let result
 
-  const isData = (data: any) => data !== undefined && typeof data !== 'function'
+  const isRootData = (data: any) => data !== undefined && typeof data === 'object'
+  const isNestedData = (data: any) => data !== undefined && typeof data !== 'function'
   const isPath = (path: any) => path !== undefined && typeof path === 'string'
   const isCallback = (callback: any) => typeof callback === 'function'
 
   if (args.length === startIndex + 1) {
-    result = { data: isData(args[startIndex]) ? args[startIndex] : undefined, path: undefined, callback: undefined }
+    result = {
+      path: undefined,
+      data: isRootData(args[startIndex]) ? args[startIndex] : undefined,
+      callback: undefined
+    }
   }
 
   if (args.length === startIndex + 2) {
-    if (isData(args[startIndex + 1])) {
-      result = { path: isPath(args[startIndex]) ? args[startIndex] : false, data: args[startIndex + 1], callback: undefined }
-    } else if (isData(args[startIndex])) {
-      result = { path: undefined, data: args[startIndex], callback: isCallback(args[startIndex + 1]) ? args[startIndex + 1] : false }
+    result = { path: undefined, data: undefined, callback: undefined }
+    if (!isCallback(args[startIndex + 1]) && isNestedData(args[startIndex + 1])) {
+      result.path = isPath(args[startIndex]) ? args[startIndex] : false
+    }
+
+    if (isPath(args[startIndex])) {
+      result.data = isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined
+    } else {
+      result.data = isRootData(args[startIndex]) ? args[startIndex] : undefined
+    }
+
+    if (!isPath(args[startIndex])) {
+      result.callback = isCallback(args[startIndex + 1]) ? args[startIndex + 1] : false
     }
   }
 
   if (args.length === startIndex + 3) {
-    result = { path: isPath(args[startIndex]) ? args[startIndex] : false, data: isData(args[startIndex + 1]) ? args[startIndex + 1] : undefined, callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : false }
+    result = {
+      path: isPath(args[startIndex]) ? args[startIndex] : false,
+      data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
+      callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : false
+    }
   }
 
   if (result) {
