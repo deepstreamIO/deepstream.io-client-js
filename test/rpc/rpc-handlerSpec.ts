@@ -99,6 +99,29 @@ describe('RPC handler', () => {
     expect(promise).to.be.a('promise')
   })
 
+  it('cant\'t make requests when client is offline', async () => {
+    const callback = sinon.spy()
+    const promisseError = sinon.spy()
+    const promisseSuccess = sinon.spy()
+
+    services.connection.isConnected = false
+    services.connectionMock
+      .expects('sendMessage')
+      .never()
+
+    rpcHandler.make(name, data, callback)
+    const promise = rpcHandler.make(name, data) as Promise <any>
+    promise.then(promisseSuccess).catch(promisseError)
+
+    sinon.assert.calledOnce(callback)
+    sinon.assert.calledWithExactly(callback, EVENT.CLIENT_OFFLINE)
+
+    await BBPromise.delay(0)
+    sinon.assert.notCalled(promisseSuccess)
+    sinon.assert.calledOnce(promisseError)
+    sinon.assert.calledWithExactly(promisseError, EVENT.CLIENT_OFFLINE)
+  })
+
   it('doesn\'t reply rpc and sends rejection if no provider exists', () => {
     services.connectionMock
       .expects('sendMessage')

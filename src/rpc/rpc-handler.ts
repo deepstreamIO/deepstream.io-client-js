@@ -2,7 +2,7 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
-import { RPC } from '../rpc/rpc'
+import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
 import { getUid } from '../util/utils'
 
@@ -90,9 +90,20 @@ export class RPCHandler {
    * @param   {Function} callback Will be invoked with the returned result or if the rpc failed
    *                              receives to arguments: error or null and the result
    */
-  public make (name: string, data: any, callback?: (error: string, data: any) => void): Promise<any> | undefined {
+  public make (name: string, data: any, callback?: RPCMakeCallback): Promise<any> | undefined {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
+    }
+
+    const cb = callback && typeof callback === 'function'
+      ? callback
+      : null
+    if (this.services.connection.isConnected === false) {
+      if (cb) {
+        cb(EVENT.CLIENT_OFFLINE)
+        return
+      }
+      return Promise.reject(EVENT.CLIENT_OFFLINE)
     }
 
     const correlationId = getUid()
@@ -105,8 +116,8 @@ export class RPCHandler {
       parsedData: data
     })
 
-    if (callback && typeof callback === 'function') {
-      this.rpcs.set(correlationId, new RPC(name, correlationId, callback, this.options, this.services))
+    if (cb) {
+      this.rpcs.set(correlationId, new RPC(name, correlationId, cb, this.options, this.services))
       return
     }
 

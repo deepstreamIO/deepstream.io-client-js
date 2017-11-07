@@ -55,6 +55,9 @@ export class RPCResponse {
      * providers left
      */
     public reject (): void {
+      if (this.isComplete === true) {
+        throw new Error(`Rpc ${this.name} already completed`)
+      }
       this.autoAccept = false
       this.isComplete = true
       this.isAccepted = true
@@ -71,6 +74,9 @@ export class RPCResponse {
      * This will complete the rpc.
      */
     public error (error: any): void {
+      if (this.isComplete === true) {
+        throw new Error(`Rpc ${this.name} already completed`)
+      }
       this.autoAccept = false
       this.isComplete = true
       this.isAccepted = true
