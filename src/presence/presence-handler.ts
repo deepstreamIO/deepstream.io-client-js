@@ -1,7 +1,7 @@
-import { Services } from '../client'
+import { Services, EVENT, Client } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, PRESENCE_ACTIONS as PRESENCE_ACTION, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
-
+import ResubscribeNotifier from '../util/resubscribe-notifier'
 import * as Emitter from 'component-emitter2'
 
 const allResponse: string = PRESENCE_ACTION.QUERY_ALL_RESPONSE.toString()
@@ -11,8 +11,6 @@ const allSubscribe: string = PRESENCE_ACTION.SUBSCRIBE_ALL.toString()
 export type QueryResult = string[]
 export type IndividualQueryResult = { user: string, online: boolean }[]
 export type SubscribeCallback = (user: string, online: boolean) => void
-
-type PendingSubscriptions = { [key: string]: boolean, user: boolean } | { [key: string]: boolean }
 
 function validateArguments (user: any, cb: any) {
   let userId: string | undefined
@@ -28,9 +26,9 @@ function validateArguments (user: any, cb: any) {
   return { userId, callback }
 }
 
-function validateQueryArguments (rest: any[]): { users: string[] | null, callback: null | ((data: QueryResult | IndividualQueryResult) => void) } {
+function validateQueryArguments (rest: any[]) : { users: string[] | null, callback: null | ((error: { reason: EVENT }, data?: QueryResult | IndividualQueryResult) => void) } {
   let users: string[] | null = null
-  let cb: ((data: QueryResult | IndividualQueryResult) => void) | null = null
+  let cb: ((error: { reason: EVENT }, data: QueryResult | IndividualQueryResult) => void) | null = null
 
   if (rest.length === 1) {
     if (Array.isArray(rest[0])) {
@@ -57,19 +55,24 @@ export class PresenceHandler {
   private queryEmitter: Emitter
   private options: Options
   private counter: number
-  private pendingSubscribes: PendingSubscriptions
-  private pendingUnsubscribes: PendingSubscriptions
-  private flushTimeout: WindowTimers | NodeJS.Timer | null
+  private pendingSubscribes: Map<string, boolean>
+  private pendingUnsubscribes: Map<string, boolean>
+  private flushTimeout: number | null
+  private emitter: Emitter
+  private resubscribeNotifier: ResubscribeNotifier
 
-  constructor (services: Services, options: Options) {
+  constructor (emitter: Emitter, services: Services, options: Options) {
+    this.emitter = emitter
     this.services = services
     this.options = options
     this.subscriptionEmitter = new Emitter()
     this.queryEmitter = new Emitter()
+    this.resubscribe = this.resubscribe.bind(this)
+    this.resubscribeNotifier = new ResubscribeNotifier(this.emitter, this.services, this.options, this.resubscribe)
     this.services.connection.registerHandler(TOPIC.PRESENCE, this.handle.bind(this))
     this.counter = 0
-    this.pendingSubscribes = {}
-    this.pendingUnsubscribes = {}
+    this.pendingSubscribes = new Map()
+    this.pendingUnsubscribes = new Map()
     this.flush = this.flush.bind(this)
   }
 
@@ -83,10 +86,15 @@ export class PresenceHandler {
       return
     }
 
-    this.pendingSubscribes[userId] = true
+    this.pendingUnsubscribes.delete(userId)
+    this.pendingSubscribes.set(userId, true)
     this.subscriptionEmitter.on(userId, cb)
     if (!this.flushTimeout) {
-      this.flushTimeout = setTimeout(this.flush, 0)
+      this.flushTimeout = this.services.timerRegistry.add({
+        duration: 0,
+        context: this,
+        callback: this.flush
+      })
     }
   }
 
@@ -100,19 +108,31 @@ export class PresenceHandler {
       return
     }
 
-    this.pendingUnsubscribes[userId] = true
+    this.pendingSubscribes.delete(userId)
+    this.pendingUnsubscribes.set(userId, true)
     this.subscriptionEmitter.off(userId, cb)
     if (!this.flushTimeout) {
-      this.flushTimeout = setTimeout(this.flush, 0)
+      this.flushTimeout = this.services.timerRegistry.add({
+        duration: 0,
+        context: this,
+        callback: this.flush
+      })
     }
   }
 
   public getAll () : Promise<QueryResult>
   public getAll (users: string[]) : Promise<IndividualQueryResult>
-  public getAll (callback: (result: QueryResult) => void): void
-  public getAll (users: string[], callback: (result: IndividualQueryResult) => void) : void
+  public getAll (callback: (error: { reason: EVENT }, result?: QueryResult) => void): void
+  public getAll (users: string[], callback: (error: { reason: EVENT }, result?: IndividualQueryResult) => void) : void
   public getAll (...rest: any[]) : Promise<QueryResult | IndividualQueryResult> | void {
     const { callback, users } = validateQueryArguments(rest)
+
+    if (!this.services.connection.isConnected) {
+      if (callback) {
+        callback({ reason: EVENT.CLIENT_OFFLINE })
+      }
+      return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
+    }
 
     const queryId = this.counter++
     let message: PresenceMessage
@@ -185,8 +205,10 @@ export class PresenceHandler {
       topic: TOPIC.PRESENCE,
       action: action
     }
-    this.services.timeoutRegistry.add({ message })
-    this.services.connection.sendMessage(message)
+    if (this.services.connection.isConnected) {
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
+    }
   }
 
   private bulkSubscription (action: PRESENCE_ACTION.SUBSCRIBE | PRESENCE_ACTION.UNSUBSCRIBE, names: string[]) {
@@ -202,16 +224,40 @@ export class PresenceHandler {
   }
 
   private flush () {
+    if (!this.services.connection.isConnected) {
+      // will be handled by resubscribe
+      return
+    }
     const subUsers = Object.keys(this.pendingSubscribes)
     if (subUsers.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, subUsers)
-      this.pendingSubscribes = {}
+      this.pendingSubscribes.clear()
     }
     const unsubUsers = Object.keys(this.pendingUnsubscribes)
     if (unsubUsers.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.UNSUBSCRIBE, subUsers)
-      this.pendingUnsubscribes = {}
+      this.pendingUnsubscribes.clear()
     }
     this.flushTimeout = null
+  }
+
+  private resubscribe () {
+    const keys = Object.keys(this.subscriptionEmitter._callbacks || {})
+    const index = keys.indexOf(allSubscribe)
+    if (index !== -1) {
+      keys.splice(index, 1)
+      const callback = this.subscriptionEmitter._callbacks[keys[index]] as SubscribeCallback
+      this.globalSubscription(PRESENCE_ACTION.SUBSCRIBE_ALL, callback)
+    }
+    if (keys.length > 0) {
+      this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, keys)
+    }
+    if (!this.flushTimeout) {
+      this.flushTimeout = this.services.timerRegistry.add({
+        duration: 0,
+        context: this,
+        callback: this.flush
+      })
+    }
   }
 }

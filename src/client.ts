@@ -49,10 +49,10 @@ export class Client extends EventEmitter {
     services.connection = new Connection(services, this.options, url, this)
     this.services = services as Services
 
-    this.event = new EventHandler(this.services, this.options)
+    this.event = new EventHandler(this, this.services, this.options)
     this.rpc = new RPCHandler(this.services, this.options)
     this.record = new RecordHandler(this.services, this.options)
-    this.presence = new PresenceHandler(this.services, this.options)
+    this.presence = new PresenceHandler(this, this.services, this.options)
   }
 
   public login (details?: object, callback?: AuthenticationCallback) {

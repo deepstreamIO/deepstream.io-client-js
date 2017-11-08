@@ -6,7 +6,7 @@ interface Emitter {
     listeners (event: string): Array<Function>
     hasListeners (event: string): boolean
     eventNames (): Array<string>
-    _callbacks: Array<Function>
+    _callbacks: { [key: string]: Function }
 }
 
 declare module 'component-emitter2' {
