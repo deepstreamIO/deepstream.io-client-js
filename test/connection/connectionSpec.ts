@@ -185,7 +185,7 @@ describe('connection', () => {
     await receiveChallengeAccept()
     await sendAuth()
     await receiveAuthRejectResponse()
-    
+
     assert.calledOnce(authCallback)
     assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
   })
