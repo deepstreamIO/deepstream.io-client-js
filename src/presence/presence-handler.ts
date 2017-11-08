@@ -8,7 +8,8 @@ const allResponse: string = PRESENCE_ACTION.QUERY_ALL_RESPONSE.toString()
 const response: string = PRESENCE_ACTION.QUERY_ALL.toString()
 const allSubscribe: string = PRESENCE_ACTION.SUBSCRIBE_ALL.toString()
 
-export type QueryCallback = (users: string[]) => void
+export type QueryResult = string[]
+export type IndividualQueryResult = { user: string, online: boolean }[]
 export type SubscribeCallback = (user: string, online: boolean) => void
 
 type PendingSubscriptions = { [key: string]: boolean, user: boolean } | { [key: string]: boolean }
@@ -25,6 +26,29 @@ function validateArguments (user: any, cb: any) {
     throw new Error('invalid arguments: "user" or "callback"')
   }
   return { userId, callback }
+}
+
+function validateQueryArguments (rest: any[]): { users: string[] | null, callback: null | ((data: QueryResult | IndividualQueryResult) => void) } {
+  let users: string[] | null = null
+  let cb: ((data: QueryResult | IndividualQueryResult) => void) | null = null
+
+  if (rest.length === 1) {
+    if (Array.isArray(rest[0])) {
+      users = rest[0]
+    } else {
+      if (typeof rest[0] !== 'function') {
+        throw new Error('invalid argument: "callback"')
+      }
+      cb = rest[0]
+    }
+  } else if (rest.length === 2) {
+    users = rest[0]
+    cb = rest[1]
+    if (!Array.isArray(users) || typeof cb !== 'function') {
+      throw new Error('invalid argument: "users" or "callback"')
+    }
+  }
+  return { users, callback: cb }
 }
 
 export class PresenceHandler {
@@ -58,7 +82,7 @@ export class PresenceHandler {
       this.globalSubscription(PRESENCE_ACTION.SUBSCRIBE_ALL, cb)
       return
     }
-    
+
     this.pendingSubscribes[userId] = true
     this.subscriptionEmitter.on(userId, cb)
     if (!this.flushTimeout) {
@@ -83,25 +107,18 @@ export class PresenceHandler {
     }
   }
 
-  public getAll (callback: QueryCallback): void
-  public getAll (users: string[], callback: QueryCallback) : void
-  public getAll (users: string[] | QueryCallback, callback?: QueryCallback)  : void {
-    let userIds: string[] | undefined
-    let cb: QueryCallback
-    if (typeof users === 'function' && callback === undefined) {
-      cb = users
-    } else if (Array.isArray(users) && typeof callback === 'function') {
-      userIds = users
-      cb = callback
-    } else {
-      throw new Error('invalid arguments: "users" or "callback"')
-    }
+  public getAll () : Promise<QueryResult>
+  public getAll (users: string[]) : Promise<IndividualQueryResult>
+  public getAll (callback: (result: QueryResult) => void): void
+  public getAll (users: string[], callback: (result: IndividualQueryResult) => void) : void
+  public getAll (...rest: any[]) : Promise<QueryResult | IndividualQueryResult> | void {
+    const { callback, users } = validateQueryArguments(rest)
 
     const queryId = this.counter++
     let message: PresenceMessage
     let responseType: string
 
-    if (!userIds) {
+    if (!users) {
       message = {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY_ALL,
@@ -113,15 +130,28 @@ export class PresenceHandler {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY,
         correlationId: queryId.toString(),
-        parsedData: userIds
+        parsedData: users
       }
       responseType = response
     }
 
     if (!this.queryEmitter.hasListeners(responseType)) {
-      this.queryEmitter.once(responseType, cb)
       this.services.connection.sendMessage(message)
       this.services.timeoutRegistry.add({ message })
+    }
+
+    if (!callback) {
+      return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
+        this.queryEmitter.once(responseType, (error: { reason: string }, results: QueryResult | IndividualQueryResult) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          resolve(results)
+        })
+      })
+    } else {
+      this.queryEmitter.once(responseType, callback)
     }
   }
 
