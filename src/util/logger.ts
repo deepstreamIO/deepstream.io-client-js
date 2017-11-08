@@ -61,8 +61,15 @@ export class Logger {
                 TOPIC[TOPIC.CONNECTION]
             )
             return
+        } else if (event === EVENT_ACTION.MESSAGE_DENIED) {
+            this.emitter.emit(
+                'error',
+                meta,
+                EVENT[event],
+                TOPIC[message.topic]
+            )
         }
-        
+
         console.error(message, event, meta)
     }
 }
