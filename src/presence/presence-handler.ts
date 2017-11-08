@@ -199,13 +199,13 @@ export class PresenceHandler {
       this.queryEmitter.emit(response, null, message.parsedData)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN) {
-      message.name = message.name as string
+      this.subscriptionEmitter.emit(message.name as string, message.name, true)
+    } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, true)
-      this.subscriptionEmitter.emit(message.name, message.name, true)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE) {
-      message.name = message.name as string
+      this.subscriptionEmitter.emit(message.name as string, message.name, false)
+    } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
-      this.subscriptionEmitter.emit(message.name, message.name, false)
     }
   }
 
