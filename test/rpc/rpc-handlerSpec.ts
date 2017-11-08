@@ -112,7 +112,7 @@ describe('RPC handler', () => {
       .never()
 
     rpcHandler.make(name, data, callback)
-    const promise = rpcHandler.make(name, data) as Promise <any>
+    const promise = rpcHandler.make(name, data)
     promise.then(promisseSuccess).catch(promisseError)
 
     await BBPromise.delay(0)
@@ -306,7 +306,7 @@ describe('RPC handler', () => {
 
       rpcPromiseResponseSuccess = sinon.spy()
       rpcPromiseResponseFail = sinon.spy()
-      promise = rpcHandler.make(name, data) as Promise<any>
+      promise = rpcHandler.make(name, data)
       promise
         .then(rpcPromiseResponseSuccess)
         .catch(rpcPromiseResponseFail)
