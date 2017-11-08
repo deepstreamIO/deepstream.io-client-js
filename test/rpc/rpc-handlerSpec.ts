@@ -115,10 +115,10 @@ describe('RPC handler', () => {
     const promise = rpcHandler.make(name, data) as Promise <any>
     promise.then(promisseSuccess).catch(promisseError)
 
+    await BBPromise.delay(0)
     sinon.assert.calledOnce(callback)
     sinon.assert.calledWithExactly(callback, EVENT.CLIENT_OFFLINE)
 
-    await BBPromise.delay(0)
     sinon.assert.notCalled(promisseSuccess)
     sinon.assert.calledOnce(promisseError)
     sinon.assert.calledWithExactly(promisseError, EVENT.CLIENT_OFFLINE)
