@@ -188,11 +188,11 @@ export class PresenceHandler {
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN) {
       message.name = message.name as string
       this.subscriptionEmitter.emit(allSubscribe, message.name, true)
-      this.subscriptionEmitter.emit(message.name, true, message.name)
+      this.subscriptionEmitter.emit(message.name, message.name, true)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE) {
       message.name = message.name as string
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
-      this.subscriptionEmitter.emit(message.name, false, message.name)
+      this.subscriptionEmitter.emit(message.name, message.name, false)
     }
   }
 
