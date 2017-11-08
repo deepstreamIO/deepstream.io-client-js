@@ -26,7 +26,7 @@ describe('event handler', () => {
 
     eventHandler = new EventHandler(emitter, services, DefaultOptions, listener.listener)
     handle = services.getHandle()
-    spy = spy()
+    spy = sinon.spy()
   })
 
   afterEach(() => {
@@ -210,7 +210,7 @@ describe('event handler', () => {
       name
     })
     sinon.assert.calledOnce(spy)
-    sinon.assert.calledWithExactly(spy)
+    sinon.assert.calledWithExactly(spy, undefined)
   })
 
   it('unsubscribes locally when it recieves a message denied', () => {

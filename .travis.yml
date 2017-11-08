@@ -6,10 +6,6 @@ language: node_js
 node_js:
   - "8"
   - "6"
-  - "4"
-
-env:
-  - DEFAULT_DELAY: 50
 
 script:
   - if [ "$TRAVIS_NODE_VERSION" ~= "8" ]; then

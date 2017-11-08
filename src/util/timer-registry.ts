@@ -1,3 +1,5 @@
+import { nextTick } from '../util/utils'
+
 export interface Timeout {
     callback: Function,
     duration: number,

@@ -16,7 +16,8 @@ export class RPCResponse {
     private correlationId: string
     private isAccepted: boolean
     private isComplete: boolean
-    private autoAccept: boolean
+
+    public autoAccept: boolean
 
     constructor (message: RPCMessage, options: Options, services: Services) {
         this.name = message.name as string
@@ -54,6 +55,9 @@ export class RPCResponse {
      * providers left
      */
     public reject (): void {
+      if (this.isComplete === true) {
+        throw new Error(`Rpc ${this.name} already completed`)
+      }
       this.autoAccept = false
       this.isComplete = true
       this.isAccepted = true
@@ -70,6 +74,9 @@ export class RPCResponse {
      * This will complete the rpc.
      */
     public error (error: any): void {
+      if (this.isComplete === true) {
+        throw new Error(`Rpc ${this.name} already completed`)
+      }
       this.autoAccept = false
       this.isComplete = true
       this.isAccepted = true

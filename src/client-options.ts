@@ -19,7 +19,7 @@ Default: 5 */
     /**The number of milliseconds after which a RPC will error if no Ack-message has been received.
 Type: Number
 Default: 6000 */
-    rpcAckTimeout: number
+rpcAcceptTimeout: number
     /**The number of milliseconds after which a RPC will error if no response-message has been received.
 Type: Number
 Default: 10000
@@ -75,7 +75,7 @@ export const DefaultOptions: Options = {
     reconnectIntervalIncrement: 4000,
     maxReconnectInterval: 180000,
     maxReconnectAttempts: 5,
-    rpcAckTimeout: 6000,
+    rpcAcceptTimeout: 6000,
     rpcResponseTimeout: 10000,
     subscriptionTimeout: 2000,
     recordReadAckTimeout: 15000,

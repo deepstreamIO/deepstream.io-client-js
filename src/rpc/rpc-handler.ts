@@ -2,7 +2,7 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
-import { RPC } from '../rpc/rpc'
+import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
 import { getUid } from '../util/utils'
 
@@ -90,9 +90,20 @@ export class RPCHandler {
    * @param   {Function} callback Will be invoked with the returned result or if the rpc failed
    *                              receives to arguments: error or null and the result
    */
-  public make (name: string, data: any, callback: (error: string, data: any) => void): Promise<any> | undefined {
+  public make (name: string, data: any, callback?: RPCMakeCallback): Promise<any> | undefined {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
+    }
+    if (callback && typeof callback !== 'function') {
+      throw new Error('invalid argument callback')
+    }
+
+    if (this.services.connection.isConnected === false) {
+      if (callback) {
+        this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
+        return
+      }
+      return Promise.reject(EVENT.CLIENT_OFFLINE)
     }
 
     const correlationId = getUid()
@@ -105,13 +116,13 @@ export class RPCHandler {
       parsedData: data
     })
 
-    if (callback && typeof callback === 'function') {
-      this.rpcs.set(correlationId, new RPC(name, callback, this.options, this.services))
+    if (callback) {
+      this.rpcs.set(correlationId, new RPC(name, correlationId, callback, this.options, this.services))
       return
     }
 
     return new Promise((resolve, reject) => {
-      this.rpcs.set(correlationId, new RPC(name, (error: string, result: any) => {
+      this.rpcs.set(correlationId, new RPC(name, correlationId, (error: string, result: any) => {
         if (error) {
           reject(error)
         } else {
@@ -160,18 +171,21 @@ export class RPCHandler {
 
     // handle auth/denied subscription errors
     if (message.action === RPC_ACTION.MESSAGE_PERMISSION_ERROR || message.action === RPC_ACTION.MESSAGE_DENIED) {
-      // if (message.innerMessage.action === RPC_ACTION.SUBSCRIBE || message.innerMessage.action === RPC_ACTION.UNSUBSCRIBE) {
-      //   this.services.timeoutRegistry.remove(message.innerMessage)
-      //   return
-      // }
-      // if (message.innerMessage.action === RPC_ACTION.REQUEST) {
-      //   const rpc = this.getRPC(message)
-      //   if (!rpc) {
-      //     return
-      //   }
-      //   rpc.error(message.parsedData)
-      //   this.rpcs.delete(message.correlationId as string)
-      // }
+      if (message.originalAction === RPC_ACTION.PROVIDE || message.originalAction === RPC_ACTION.UNPROVIDE) {
+        this.services.timeoutRegistry.remove(message)
+        this.providers.delete(message.name)
+        this.services.logger.warn(message)
+        return
+      }
+      if (message.originalAction === RPC_ACTION.REQUEST) {
+        const rpcInvalid = this.getRPC(message)
+        if (!rpcInvalid) {
+          return
+        }
+        rpcInvalid.error(RPC_ACTION[message.action])
+        this.rpcs.delete(message.correlationId)
+        return
+      }
       return
     }
 
@@ -183,12 +197,13 @@ export class RPCHandler {
         return
       } else if (message.action === RPC_ACTION.RESPONSE) {
         rpc.respond(message.parsedData)
+      } else if (message.action === RPC_ACTION.REQUEST_ERROR) {
+        rpc.error(message.parsedData)
       } else if (
         message.action === RPC_ACTION.RESPONSE_TIMEOUT ||
-        message.action === RPC_ACTION.REQUEST_ERROR ||
         message.action === RPC_ACTION.NO_RPC_PROVIDER
-      ) { 
-        rpc.error(message.action)
+      ) {
+        rpc.error(RPC_ACTION[message.action])
       }
       this.rpcs.delete(message.correlationId as string)
     }

@@ -2,6 +2,8 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
 
+export type RPCMakeCallback = (error: string | null, result?: any) => void
+
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -12,11 +14,11 @@ export class RPC {
     private services: Services
     private options: Options
     private name: string
-    private response: (error: string | null, data: any) => void
+    private response: RPCMakeCallback
     private acceptTimeout: number
     private responseTimeout: number
 
-    constructor (name: string, response: (error: string | null, data: any) => void, options: Options, services: Services) {
+    constructor (name: string, correlationId: string, response: RPCMakeCallback, options: Options, services: Services) {
         this.options = options
         this.services = services
         this.name = name
@@ -26,10 +28,11 @@ export class RPC {
             message: {
               topic: TOPIC.RPC,
               action: RPC_ACTION.ACCEPT,
-              name
+              name,
+              correlationId
             },
             event: RPC_ACTION.ACCEPT_TIMEOUT,
-            duration: this.options.rpcAckTimeout,
+            duration: this.options.rpcAcceptTimeout,
             callback: this.onTimeout.bind(this)
         })
 
@@ -37,7 +40,8 @@ export class RPC {
             message: {
               topic: TOPIC.RPC,
               action: RPC_ACTION.REQUEST,
-              name
+              name,
+              correlationId
             },
             event: RPC_ACTION.RESPONSE_TIMEOUT,
             duration: this.options.rpcResponseTimeout,
@@ -63,8 +67,8 @@ export class RPC {
     /**
      * Called once an error is received from the server.
      */
-    public error (action: RPC_ACTION) {
-      this.response(RPC_ACTION[action], undefined)
+    public error (data: any) {
+      this.response(data, data)
       this.complete()
     }
 
