@@ -130,6 +130,7 @@ export class PresenceHandler {
     if (!this.services.connection.isConnected) {
       if (callback) {
         callback({ reason: EVENT.CLIENT_OFFLINE })
+        return
       }
       return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
     }
@@ -179,10 +180,10 @@ export class PresenceHandler {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_ALL_RESPONSE) {
-      this.queryEmitter.emit(allResponse, message.parsedData)
+      this.queryEmitter.emit(allResponse, null, message.parsedData)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_RESPONSE) {
-      this.queryEmitter.emit(response, message.parsedData)
+      this.queryEmitter.emit(response, null, message.parsedData)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN) {
       message.name = message.name as string
@@ -228,12 +229,12 @@ export class PresenceHandler {
       // will be handled by resubscribe
       return
     }
-    const subUsers = Object.keys(this.pendingSubscribes)
+    const subUsers = Array.from(this.pendingSubscribes.keys())
     if (subUsers.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, subUsers)
       this.pendingSubscribes.clear()
     }
-    const unsubUsers = Object.keys(this.pendingUnsubscribes)
+    const unsubUsers = Array.from(this.pendingUnsubscribes.keys())
     if (unsubUsers.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.UNSUBSCRIBE, subUsers)
       this.pendingUnsubscribes.clear()
