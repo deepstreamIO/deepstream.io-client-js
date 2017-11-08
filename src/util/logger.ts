@@ -62,7 +62,7 @@ export class Logger {
             )
             return
         }
-        
+
         console.error(message, event, meta)
     }
 }
