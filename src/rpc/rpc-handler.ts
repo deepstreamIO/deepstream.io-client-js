@@ -4,7 +4,7 @@ import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-proto
 import { EVENT } from '../constants'
 import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
-import { getUid } from '../util/utils'
+import { getUid, nextTick } from '../util/utils'
 
 import * as Emitter from 'component-emitter2'
 
@@ -103,7 +103,9 @@ export class RPCHandler {
         callback(EVENT.CLIENT_OFFLINE)
         return
       }
-      return Promise.reject(EVENT.CLIENT_OFFLINE)
+      return new Promise((resolve, reject) => {
+        nextTick(reject.bind(this, EVENT.CLIENT_OFFLINE))
+      })
     }
 
     const correlationId = getUid()
