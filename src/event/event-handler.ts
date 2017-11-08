@@ -140,7 +140,9 @@ private handle (message: EventMessage): void {
     if (message.action === EVENT_ACTION.MESSAGE_DENIED) {
       this.services.logger.error({ topic: TOPIC.EVENT }, EVENT_ACTION.MESSAGE_DENIED)
       this.services.timeoutRegistry.remove(message)
-      this.emitter.off(message.name)
+      if (message.originalAction === EVENT_ACTION.SUBSCRIBE) {
+        this.emitter.off(message.name)
+      }
       return
     }
 
