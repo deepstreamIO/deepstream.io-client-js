@@ -9,22 +9,8 @@ const response: string = PRESENCE_ACTION.QUERY_ALL.toString()
 const allSubscribe: string = PRESENCE_ACTION.SUBSCRIBE_ALL.toString()
 
 export type QueryResult = string[]
-export type IndividualQueryResult = { user: string, online: boolean }[]
+export type IndividualQueryResult = { [key: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
-
-function validateArguments (user: any, cb: any) {
-  let userId: string | undefined
-  let callback: SubscribeCallback
-  if (typeof user === 'function' && cb === undefined) {
-    callback = user
-  } else if (typeof user === 'string' && typeof cb === 'function') {
-    userId = user
-    callback = cb
-  } else {
-    throw new Error('invalid arguments: "user" or "callback"')
-  }
-  return { userId, callback }
-}
 
 function validateQueryArguments (rest: any[]) : { users: string[] | null, callback: null | ((error: { reason: EVENT }, data?: QueryResult | IndividualQueryResult) => void) } {
   let users: string[] | null = null
@@ -55,8 +41,8 @@ export class PresenceHandler {
   private queryEmitter: Emitter
   private options: Options
   private counter: number
-  private pendingSubscribes: Map<string, boolean>
-  private pendingUnsubscribes: Map<string, boolean>
+  private pendingSubscribes: Set<string>
+  private pendingUnsubscribes: Set<string>
   private flushTimeout: number | null
   private emitter: Emitter
   private resubscribeNotifier: ResubscribeNotifier
@@ -71,24 +57,32 @@ export class PresenceHandler {
     this.resubscribeNotifier = new ResubscribeNotifier(this.emitter, this.services, this.options, this.resubscribe)
     this.services.connection.registerHandler(TOPIC.PRESENCE, this.handle.bind(this))
     this.counter = 0
-    this.pendingSubscribes = new Map()
-    this.pendingUnsubscribes = new Map()
+    this.pendingSubscribes = new Set()
+    this.pendingUnsubscribes = new Set()
     this.flush = this.flush.bind(this)
   }
 
   public subscribe (callback: SubscribeCallback) : void
   public subscribe (user: string, callback: SubscribeCallback) : void
   public subscribe (user: string | SubscribeCallback, callback?: SubscribeCallback) : void {
-    const { userId, callback: cb } = validateArguments(user, callback)
-
-    if (!userId) {
-      this.globalSubscription(PRESENCE_ACTION.SUBSCRIBE_ALL, cb)
-      return
+    let action: PRESENCE_ACTION
+    if (
+      typeof user === 'string' && user.length > 0 && typeof callback === 'function')
+    {
+      if (!this.subscriptionEmitter.hasListeners(user)) {
+        this.pendingSubscribes.add(user)
+      }
+      this.subscriptionEmitter.on(user, callback)
+      this.pendingUnsubscribes.delete(user)
+    } else if (typeof user === 'function') {
+      if (!this.subscriptionEmitter.hasListeners(allSubscribe)) {
+        this.pendingSubscribes.add(allSubscribe)
+      }
+      this.subscriptionEmitter.on(allSubscribe, user)
+      this.pendingUnsubscribes.delete(allSubscribe)
+    } else {
+      throw new Error('invalid arguments: "user" or "callback"')
     }
-
-    this.pendingUnsubscribes.delete(userId)
-    this.pendingSubscribes.set(userId, true)
-    this.subscriptionEmitter.on(userId, cb)
     if (!this.flushTimeout) {
       this.flushTimeout = this.services.timerRegistry.add({
         duration: 0,
@@ -98,19 +92,42 @@ export class PresenceHandler {
     }
   }
 
+  public unsubscribe (): void
+  public unsubscribe (user: string) : void
   public unsubscribe (callback: SubscribeCallback) : void
   public unsubscribe (user: string, callback: SubscribeCallback) : void
-  public unsubscribe (user: string | SubscribeCallback, callback?: SubscribeCallback) : void {
-    const { userId, callback: cb } = validateArguments(user, callback)
-
-    if (!userId) {
-      this.globalSubscription(PRESENCE_ACTION.UNSUBSCRIBE_ALL, cb)
-      return
+  public unsubscribe (user?: string | SubscribeCallback, callback?: SubscribeCallback) : void {
+    if (user && typeof user === 'string' && user.length > 0) {
+      if (callback) {
+        if (typeof callback !== 'function') {
+          throw new Error('invalid argument: "callback"')
+        }
+        this.subscriptionEmitter.off(user, callback)
+      } else {
+        this.subscriptionEmitter.off(user)
+      }
+      if (!this.subscriptionEmitter.hasListeners(user)) {
+        this.pendingSubscribes.delete(user)
+        this.pendingUnsubscribes.add(user)
+      }
+    } else if (user && typeof user === 'function') {
+      this.subscriptionEmitter.off(allSubscribe, user)
+      if (!this.subscriptionEmitter.hasListeners(allSubscribe)) {
+        this.pendingSubscribes.delete(allSubscribe)
+        this.pendingUnsubscribes.add(allSubscribe)
+      }
+    } else if (typeof user === 'undefined' && typeof callback === 'undefined') {
+      const users = this.subscriptionEmitter.eventNames()
+      this.subscriptionEmitter.off()
+      this.pendingSubscribes.clear()
+      for (let i = 0; i < users.length; i++) {
+        this.pendingUnsubscribes.add(users[i])
+      }
+      this.pendingUnsubscribes.add(allSubscribe)
+    } else {
+      throw new Error('invalid argument: "user" or "callback"')
     }
 
-    this.pendingSubscribes.delete(userId)
-    this.pendingUnsubscribes.set(userId, true)
-    this.subscriptionEmitter.off(userId, cb)
     if (!this.flushTimeout) {
       this.flushTimeout = this.services.timerRegistry.add({
         duration: 0,
@@ -135,35 +152,32 @@ export class PresenceHandler {
       return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
     }
 
-    const queryId = this.counter++
-    let message: PresenceMessage
-    let responseType: string
+    let message: Message
+    let emitterAction: string
 
     if (!users) {
       message = {
         topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTION.QUERY_ALL,
-        correlationId: queryId.toString()
+        action: PRESENCE_ACTION.QUERY_ALL
       }
-      responseType = allResponse
+      emitterAction = allResponse
     } else {
+      const queryId = (this.counter++).toString()
       message = {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY,
-        correlationId: queryId.toString(),
+        correlationId: queryId,
         parsedData: users
       }
-      responseType = response
+      emitterAction = `${response}-${queryId}`
     }
 
-    if (!this.queryEmitter.hasListeners(responseType)) {
-      this.services.connection.sendMessage(message)
-      this.services.timeoutRegistry.add({ message })
-    }
+    this.services.connection.sendMessage(message)
+    this.services.timeoutRegistry.add({ message })
 
     if (!callback) {
       return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
-        this.queryEmitter.once(responseType, (error: { reason: string }, results: QueryResult | IndividualQueryResult) => {
+        this.queryEmitter.once(emitterAction, (error: { reason: string }, results: QueryResult | IndividualQueryResult) => {
           if (error) {
             reject(error)
             return
@@ -172,7 +186,7 @@ export class PresenceHandler {
         })
       })
     } else {
-      this.queryEmitter.once(responseType, callback)
+      this.queryEmitter.once(emitterAction, callback)
     }
   }
 
@@ -183,32 +197,24 @@ export class PresenceHandler {
       this.queryEmitter.emit(allResponse, null, message.parsedData)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_RESPONSE) {
-      this.queryEmitter.emit(response, null, message.parsedData)
+      this.queryEmitter.emit(`${response}-${message.correlationId}`, null, message.parsedData)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN) {
-      message.name = message.name as string
+      this.subscriptionEmitter.emit(message.name as string, message.name, true)
+    } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, true)
-      this.subscriptionEmitter.emit(message.name, true, message.name)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE) {
-      message.name = message.name as string
+      this.subscriptionEmitter.emit(message.name as string, message.name, false)
+    } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
-      this.subscriptionEmitter.emit(message.name, false, message.name)
-    }
-  }
-
-  private globalSubscription (action: PRESENCE_ACTION.SUBSCRIBE_ALL | PRESENCE_ACTION.UNSUBSCRIBE_ALL, callback: SubscribeCallback) {
-    if (action === PRESENCE_ACTION.SUBSCRIBE_ALL) {
-      this.subscriptionEmitter.on(allSubscribe, callback)
-    } else {
-      this.subscriptionEmitter.off(allSubscribe, callback)
-    }
-    const message = {
-      topic: TOPIC.PRESENCE,
-      action: action
-    }
-    if (this.services.connection.isConnected) {
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+    } else if (message.action === PRESENCE_ACTION.MESSAGE_DENIED) {
+      if (message.originalAction === PRESENCE_ACTION.QUERY) {
+        this.queryEmitter.emit(`${response}-${message.correlationId}`, { reason: PRESENCE_ACTION[message.action] })
+      } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {
+        this.queryEmitter.emit(allResponse, { reason: PRESENCE_ACTION[message.action] })
+      } else {
+        this.services.logger.error(message)
+      }
     }
   }
 
@@ -230,13 +236,28 @@ export class PresenceHandler {
       return
     }
     const subUsers = Array.from(this.pendingSubscribes.keys())
+    const allSubIndex = subUsers.indexOf(allSubscribe)
+    if (allSubIndex !== -1) {
+      subUsers.splice(allSubIndex, 1)
+      const message = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE_ALL }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
+    }
     if (subUsers.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, subUsers)
       this.pendingSubscribes.clear()
     }
+
     const unsubUsers = Array.from(this.pendingUnsubscribes.keys())
+    const allUnsubIndex = unsubUsers.indexOf(allSubscribe)
+    if (allUnsubIndex !== -1) {
+      unsubUsers.splice(allUnsubIndex, 1)
+      const message = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.UNSUBSCRIBE_ALL }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
+    }
     if (unsubUsers.length > 0) {
-      this.bulkSubscription(PRESENCE_ACTION.UNSUBSCRIBE, subUsers)
+      this.bulkSubscription(PRESENCE_ACTION.UNSUBSCRIBE, unsubUsers)
       this.pendingUnsubscribes.clear()
     }
     this.flushTimeout = null
@@ -247,18 +268,12 @@ export class PresenceHandler {
     const index = keys.indexOf(allSubscribe)
     if (index !== -1) {
       keys.splice(index, 1)
-      const callback = this.subscriptionEmitter._callbacks[keys[index]] as SubscribeCallback
-      this.globalSubscription(PRESENCE_ACTION.SUBSCRIBE_ALL, callback)
+      const message = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE_ALL }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
     }
     if (keys.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, keys)
-    }
-    if (!this.flushTimeout) {
-      this.flushTimeout = this.services.timerRegistry.add({
-        duration: 0,
-        context: this,
-        callback: this.flush
-      })
     }
   }
 }

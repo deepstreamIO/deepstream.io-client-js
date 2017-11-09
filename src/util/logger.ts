@@ -10,6 +10,10 @@ import {
     Message
 } from '../../binary-protocol/src/message-constants'
 
+function isEvent (action: any) : action is EVENT {
+    return EVENT[action] !== undefined
+}
+
 export class Logger {
 
     private emitter: Emitter
@@ -23,46 +27,22 @@ export class Logger {
         console.warn(message, event, meta)
     }
 
-    public error (message: { topic: TOPIC } | Message, event?: EVENT| EVENT_ACTION | RECORD_ACTION | RPC_ACTION | CONNECTION_ACTION, meta?: string | object): void {
+    public error (message: { topic: TOPIC } | Message, event?: EVENT | EVENT_ACTION | RECORD_ACTION | RPC_ACTION | CONNECTION_ACTION, meta?: string | object): void {
         // tslint:disable-next-line:no-console
-        if (message.topic === TOPIC.CONNECTION && (message as Message).action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
-            console.log(TOPIC[TOPIC.CONNECTION], CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT], meta)
+        if (isEvent(event)) {
+            if (event === EVENT.IS_CLOSED) {
+                this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION])
+            } else if (event === EVENT.CONNECTION_ERROR) {
+                this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION])
+            }
+        } else {
+            const action = event ? event : (message as Message).action
             this.emitter.emit(
                 'error',
                 meta,
-                CONNECTION_ACTION[CONNECTION_ACTION.AUTHENTICATION_TIMEOUT],
-                TOPIC[TOPIC.CONNECTION]
+                (ACTIONS as any)[message.topic][action],
+                TOPIC[message.topic]
             )
-            return
-        } else if (message.topic === TOPIC.AUTH && (message as Message).action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
-            console.log(TOPIC[TOPIC.AUTH], AUTH_ACTION[AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS], meta)
-            this.emitter.emit(
-                'error',
-                meta,
-                AUTH_ACTION[AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS],
-                TOPIC[TOPIC.AUTH]
-            )
-            return
-        } else if (message.topic === TOPIC.CONNECTION && event === EVENT.IS_CLOSED) {
-            console.log('>>>>>')
-            console.log(TOPIC[TOPIC.CONNECTION], EVENT[EVENT.IS_CLOSED], meta)
-            this.emitter.emit(
-                'error',
-                meta,
-                EVENT[EVENT.IS_CLOSED],
-                TOPIC[TOPIC.CONNECTION]
-            )
-            return
-        } else if (message.topic === TOPIC.CONNECTION && event === EVENT.CONNECTION_ERROR) {
-            this.emitter.emit(
-                'error',
-                meta,
-                EVENT[event],
-                TOPIC[TOPIC.CONNECTION]
-            )
-            return
         }
-        
-        console.error(message, event, meta)
     }
 }
