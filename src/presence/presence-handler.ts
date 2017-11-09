@@ -66,7 +66,9 @@ export class PresenceHandler {
   public subscribe (user: string, callback: SubscribeCallback) : void
   public subscribe (user: string | SubscribeCallback, callback?: SubscribeCallback) : void {
     let action: PRESENCE_ACTION
-    if (typeof user === 'string' && callback && typeof callback === 'function') {
+    if (
+      typeof user === 'string' && user.length > 0 && typeof callback === 'function')
+    {
       if (!this.subscriptionEmitter.hasListeners(user)) {
         this.pendingSubscribes.add(user)
       }
@@ -95,8 +97,11 @@ export class PresenceHandler {
   public unsubscribe (callback: SubscribeCallback) : void
   public unsubscribe (user: string, callback: SubscribeCallback) : void
   public unsubscribe (user?: string | SubscribeCallback, callback?: SubscribeCallback) : void {
-    if (user && typeof user === 'string') {
-      if (callback && typeof callback === 'function') {
+    if (user && typeof user === 'string' && user.length > 0) {
+      if (callback) {
+        if (typeof callback !== 'function') {
+          throw new Error('invalid argument: "callback"')
+        }
         this.subscriptionEmitter.off(user, callback)
       } else {
         this.subscriptionEmitter.off(user)
@@ -105,14 +110,13 @@ export class PresenceHandler {
         this.pendingSubscribes.delete(user)
         this.pendingUnsubscribes.add(user)
       }
-      return
     } else if (user && typeof user === 'function') {
       this.subscriptionEmitter.off(allSubscribe, user)
       if (!this.subscriptionEmitter.hasListeners(allSubscribe)) {
         this.pendingSubscribes.delete(allSubscribe)
         this.pendingUnsubscribes.add(allSubscribe)
       }
-    } else if (!user && !callback) {
+    } else if (typeof user === 'undefined' && typeof callback === 'undefined') {
       const users = this.subscriptionEmitter.eventNames()
       this.subscriptionEmitter.off()
       this.pendingSubscribes.clear()
@@ -149,14 +153,13 @@ export class PresenceHandler {
     }
 
     const queryId = (this.counter++).toString()
-    let message: PresenceMessage
+    let message: Message
     let emitterAction: string
 
     if (!users) {
       message = {
         topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTION.QUERY_ALL,
-        correlationId: queryId
+        action: PRESENCE_ACTION.QUERY_ALL
       }
       emitterAction = allResponse
     } else {
@@ -236,7 +239,9 @@ export class PresenceHandler {
     const allSubIndex = subUsers.indexOf(allSubscribe)
     if (allSubIndex !== -1) {
       subUsers.splice(allSubIndex, 1)
-      this.services.connection.sendMessage({ topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE_ALL })
+      const message = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE_ALL }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
     }
     if (subUsers.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, subUsers)
@@ -247,10 +252,12 @@ export class PresenceHandler {
     const allUnsubIndex = unsubUsers.indexOf(allSubscribe)
     if (allUnsubIndex !== -1) {
       unsubUsers.slice(allUnsubIndex, 1)
-      this.services.connection.sendMessage({ topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.UNSUBSCRIBE_ALL })
+      const message = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.UNSUBSCRIBE_ALL }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
     }
     if (unsubUsers.length > 0) {
-      this.bulkSubscription(PRESENCE_ACTION.UNSUBSCRIBE, subUsers)
+      this.bulkSubscription(PRESENCE_ACTION.UNSUBSCRIBE, unsubUsers)
       this.pendingUnsubscribes.clear()
     }
     this.flushTimeout = null
@@ -261,7 +268,9 @@ export class PresenceHandler {
     const index = keys.indexOf(allSubscribe)
     if (index !== -1) {
       keys.splice(index, 1)
-      this.services.connection.sendMessage({ topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE_ALL })
+      const message = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE_ALL }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
     }
     if (keys.length > 0) {
       this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, keys)
