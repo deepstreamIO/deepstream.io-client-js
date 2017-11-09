@@ -40,7 +40,7 @@ export class Logger {
             this.emitter.emit(
                 'error',
                 meta,
-                TOPIC[message.topic][action],
+                (ACTIONS as any)[message.topic][action],
                 TOPIC[message.topic]
             )
         }
