@@ -174,7 +174,7 @@ export class RPCHandler {
       if (message.originalAction === RPC_ACTION.PROVIDE || message.originalAction === RPC_ACTION.UNPROVIDE) {
         this.services.timeoutRegistry.remove(message)
         this.providers.delete(message.name)
-        this.services.logger.warn(message)
+        this.services.logger.error(message)
         return
       }
       if (message.originalAction === RPC_ACTION.REQUEST) {
