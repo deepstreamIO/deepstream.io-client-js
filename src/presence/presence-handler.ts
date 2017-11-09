@@ -148,35 +148,33 @@ export class PresenceHandler {
       return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
     }
 
-    const queryId = this.counter++
+    const queryId = (this.counter++).toString()
     let message: PresenceMessage
-    let responseType: string
+    let emitterAction: string
 
     if (!users) {
       message = {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY_ALL,
-        correlationId: queryId.toString()
+        correlationId: queryId
       }
-      responseType = allResponse
+      emitterAction = allResponse
     } else {
       message = {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY,
-        correlationId: queryId.toString(),
+        correlationId: queryId,
         parsedData: users
       }
-      responseType = response
+      emitterAction = `${response}-${queryId}`
     }
 
-    if (!this.queryEmitter.hasListeners(responseType)) {
-      this.services.connection.sendMessage(message)
-      this.services.timeoutRegistry.add({ message })
-    }
+    this.services.connection.sendMessage(message)
+    this.services.timeoutRegistry.add({ message })
 
     if (!callback) {
       return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
-        this.queryEmitter.once(responseType, (error: { reason: string }, results: QueryResult | IndividualQueryResult) => {
+        this.queryEmitter.once(emitterAction, (error: { reason: string }, results: QueryResult | IndividualQueryResult) => {
           if (error) {
             reject(error)
             return
@@ -185,7 +183,7 @@ export class PresenceHandler {
         })
       })
     } else {
-      this.queryEmitter.once(responseType, callback)
+      this.queryEmitter.once(emitterAction, callback)
     }
   }
 
@@ -196,7 +194,7 @@ export class PresenceHandler {
       this.queryEmitter.emit(allResponse, null, message.parsedData)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_RESPONSE) {
-      this.queryEmitter.emit(response, null, message.parsedData)
+      this.queryEmitter.emit(`${response}-${message.correlationId}`, null, message.parsedData)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN) {
       this.subscriptionEmitter.emit(message.name as string, message.name, true)
@@ -208,7 +206,7 @@ export class PresenceHandler {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
     } else if (message.action === PRESENCE_ACTION.MESSAGE_DENIED) {
       if (message.originalAction === PRESENCE_ACTION.QUERY) {
-        this.queryEmitter.emit(response, { reason: PRESENCE_ACTION[message.action] })
+        this.queryEmitter.emit(`${response}-${message.correlationId}`, { reason: PRESENCE_ACTION[message.action] })
       } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {
         this.queryEmitter.emit(allResponse, { reason: PRESENCE_ACTION[message.action] })
       } else {
