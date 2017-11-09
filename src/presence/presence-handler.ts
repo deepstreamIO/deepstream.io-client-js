@@ -206,6 +206,14 @@ export class PresenceHandler {
       this.subscriptionEmitter.emit(message.name as string, message.name, false)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
+    } else if (message.action === PRESENCE_ACTION.MESSAGE_DENIED) {
+      if (message.originalAction === PRESENCE_ACTION.QUERY) {
+        this.queryEmitter.emit(response, { reason: PRESENCE_ACTION[message.action] })
+      } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {
+        this.queryEmitter.emit(allResponse, { reason: PRESENCE_ACTION[message.action] })
+      } else {
+        this.services.logger.error(message)
+      }
     }
   }
 
