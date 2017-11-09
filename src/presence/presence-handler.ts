@@ -9,7 +9,7 @@ const response: string = PRESENCE_ACTION.QUERY_ALL.toString()
 const allSubscribe: string = PRESENCE_ACTION.SUBSCRIBE_ALL.toString()
 
 export type QueryResult = string[]
-export type IndividualQueryResult = { user: string, online: boolean }[]
+export type IndividualQueryResult = { [username: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
 
 function validateQueryArguments (rest: any[]) : { users: string[] | null, callback: null | ((error: { reason: EVENT }, data?: QueryResult | IndividualQueryResult) => void) } {

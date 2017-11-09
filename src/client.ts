@@ -80,7 +80,7 @@ export class Client extends EventEmitter {
   }
 }
 
-export function deepstream (url: string, options: any): Client {
+export function deepstream (url: string, options?: any): Client {
   return new Client(url, options)
 }
 
