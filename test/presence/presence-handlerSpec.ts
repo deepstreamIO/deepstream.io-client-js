@@ -317,10 +317,14 @@ describe.only('Presence handler', () => {
   describe('when subscribing to userA, userB and all', () => {
     const userA = 'userA'
     const userB = 'userB'
-    const userACallback = spy()
-    const userBCallback = spy()
-    const allUsersCallback = spy()
+    let userACallback: sinon.SinonSpy
+    let userBCallback: sinon.SinonSpy
+    let allUsersCallback: sinon.SinonSpy
+
     beforeEach(async () => {
+      userACallback = spy()
+      userBCallback = spy()
+      allUsersCallback = spy()
       presenceHandler.subscribe(userA, userACallback)
       presenceHandler.subscribe(userB, userBCallback)
       presenceHandler.subscribe(allUsersCallback)
@@ -426,6 +430,43 @@ describe.only('Presence handler', () => {
       assert.calledWithExactly(allUsersCallback, userA, true)
     })
 
+    it('doesn\'t notify all users callback when userA logs in after unsubscribing', async () => {
+      presenceHandler.unsubscribe(allUsersCallback)
+      await BBPromise.delay(flushTimeout)
+
+      presenceHandler.handle({
+        name: userA,
+        topic: TOPIC.PRESENCE,
+        action: PRESENCE_ACTIONS.PRESENCE_JOIN
+      })
+
+      assert.calledOnce(userACallback)
+      assert.calledWithExactly(userACallback, userA, true)
+
+      assert.notCalled(userBCallback)
+
+      assert.notCalled(allUsersCallback)
+    })
+
+    it('doesn\'t notify callbacks after unsubscribing all', async () => {
+      const users = [userA, userB]
+      presenceHandler.unsubscribe()
+      await BBPromise.delay(flushTimeout)
+
+      users.forEach((user) => {
+        presenceHandler.handle({
+          name: user,
+          topic: TOPIC.PRESENCE,
+          action: PRESENCE_ACTIONS.PRESENCE_JOIN
+        })
+      })
+
+      assert.notCalled(userACallback)
+
+      assert.notCalled(userBCallback)
+
+      assert.notCalled(allUsersCallback)
+    })
   })
 
 })
