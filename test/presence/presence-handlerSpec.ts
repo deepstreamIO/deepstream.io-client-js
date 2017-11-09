@@ -140,8 +140,7 @@ describe.only('Presence handler', () => {
   it('queries for all users presence', () => {
     const message = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.QUERY_ALL,
-      correlationId: counter.toString(),
+      action: PRESENCE_ACTIONS.QUERY_ALL
     }
     services.connectionMock
       .expects('sendMessage')
@@ -186,7 +185,7 @@ describe.only('Presence handler', () => {
     await BBPromise.delay(flushTimeout)
   })
 
-  it.only('sends unsubscribe for all users presence', async () => {
+  it('sends unsubscribe for all users presence', async () => {
     const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE_ALL }
     const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE_ALL }
 
@@ -229,7 +228,7 @@ describe.only('Presence handler', () => {
     presenceHandler.handle(message)
   })
 
-  it.skip('resubscribes subscriptions when client reconnects', async () => {
+  it('resubscribes subscriptions when client reconnects', async () => {
     const users = ['userA','userB']
     presenceHandler.subscribe(users[0], () => {})
     presenceHandler.subscribe(users[1], () => {})
@@ -239,10 +238,8 @@ describe.only('Presence handler', () => {
     counter = parseInt(getLastMessageSent().correlationId as string, 10) + 1
     const messageSubscribeAll = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE_ALL,
-      correlationId: counter.toString()
+      action: PRESENCE_ACTIONS.SUBSCRIBE_ALL
     }
-    ++counter
     const messageSubscribe = {
       topic: TOPIC.PRESENCE,
       action: PRESENCE_ACTIONS.SUBSCRIBE,
@@ -351,11 +348,13 @@ describe.only('Presence handler', () => {
     it('receives data for query specific users', async () => {
       function message (id: number): PresenceMessage {
         return {
-        topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTIONS.QUERY_RESPONSE,
-        parsedData: usersPresence,
-        correlationId: id.toString()
-      }}
+          topic: TOPIC.PRESENCE,
+          action: PRESENCE_ACTIONS.QUERY_RESPONSE,
+          parsedData: usersPresence,
+          correlationId: id.toString()
+        }
+      }
+
       const messageForCallback = message(counter)
       const messageForPromise = message(counter + 1)
       services.timeoutRegistryMock

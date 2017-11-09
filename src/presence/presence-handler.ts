@@ -152,7 +152,6 @@ export class PresenceHandler {
       return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
     }
 
-    const queryId = (this.counter++).toString()
     let message: Message
     let emitterAction: string
 
@@ -163,6 +162,7 @@ export class PresenceHandler {
       }
       emitterAction = allResponse
     } else {
+      const queryId = (this.counter++).toString()
       message = {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY,
@@ -251,7 +251,7 @@ export class PresenceHandler {
     const unsubUsers = Array.from(this.pendingUnsubscribes.keys())
     const allUnsubIndex = unsubUsers.indexOf(allSubscribe)
     if (allUnsubIndex !== -1) {
-      unsubUsers.slice(allUnsubIndex, 1)
+      unsubUsers.splice(allUnsubIndex, 1)
       const message = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.UNSUBSCRIBE_ALL }
       this.services.timeoutRegistry.add({ message })
       this.services.connection.sendMessage(message)
