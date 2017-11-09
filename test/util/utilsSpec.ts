@@ -1,11 +1,26 @@
 import * as utils from '../../src/util/utils'
 import { expect } from 'chai'
 
-describe('deepEquals @unit', () => {
+describe('deepEquals', () => {
 
   it('compares two primitive values', () => {
     expect(utils.deepEquals('A', 'B'))
       .to.equal(false)
+
+    expect(utils.deepEquals('A', 'A'))
+      .to.equal(true)
+
+    expect(utils.deepEquals(1, 2))
+      .to.equal(false)
+
+    expect(utils.deepEquals(1, 1))
+      .to.equal(true)
+
+    expect(utils.deepEquals(1.2, 2.1))
+      .to.equal(false)
+
+    expect(utils.deepEquals(2.1, 2.1))
+      .to.equal(true)
   })
 
   it('compares two different simple objects', () => {
@@ -132,7 +147,7 @@ describe('deepEquals @unit', () => {
   })
 })
 
-describe('deepCopy @unit', () => {
+describe('deepCopy', () => {
   it('copies primitives', () => {
     expect(utils.deepCopy('bla'))
       .to.equal('bla')
@@ -239,8 +254,75 @@ describe('deepCopy @unit', () => {
   })
 })
 
-describe('trim removes whitespace @unit', () => {
-  it('removes various kinds of whitespace', () => {
+describe('shallowCopy', () => {
+  it('copies primitives', () => {
+    expect(utils.shallowCopy('bla'))
+      .to.equal('bla')
+
+    expect(utils.shallowCopy(42))
+      .to.equal(42)
+  })
+
+  it('copies arrays', () => {
+    const original = ['a', 'b', 2]
+    const copy = utils.shallowCopy(original)
+
+    expect(copy)
+      .to.deep.equal(original)
+  })
+
+  it('copies objects', () => {
+    const original = {
+      firstname: 'Wolfram',
+      lastname: ' Hempel'
+    }
+
+    const copy = utils.shallowCopy(original)
+
+    expect(copy)
+      .to.deep.equal(original)
+  })
+
+  it('copies objects with null values', () => {
+    const original = {
+      firstname: 'Wolfram',
+      lastname: null
+    }
+    const copy = utils.shallowCopy(original)
+
+    expect(copy)
+      .to.deep.equal(original)
+  })
+
+  it('handles empty objects', () => {
+    const copy = utils.shallowCopy({})
+
+    expect(copy).to.deep.equal({})
+  })
+
+  it('throws error on null values', () => {
+    expect(() => {
+      utils.shallowCopy(null)
+    }).to.throw('Cannot convert undefined or null to object')
+  })
+
+})
+
+describe('trim', () => {
+  it('removes various kinds of whitespace from Strings having String.prototype.trim polyfill', () => {
+    expect(utils.trim('a    '))
+      .to.equal('a')
+
+    expect(utils.trim('   b    '))
+      .to.equal('b')
+
+    expect(utils.trim('   c d    '))
+      .to.equal('c d')
+  })
+
+  it('removes various kinds of whitespace from string having no String.prototype.trim polyfill', () => {
+    delete String.prototype.trim
+
     expect(utils.trim('a    '))
       .to.equal('a')
 
@@ -252,14 +334,259 @@ describe('trim removes whitespace @unit', () => {
   })
 })
 
+describe('normalizeSetArguments', () => {
+  it('normalizes argument list containing only a data argument as object', () => {
+    const argumentsSet = utils.normalizeSetArguments([{title: 'awesome post'}] as any)
+
+    expect(argumentsSet).to.deep.equal({
+      path: undefined,
+      data: {
+        title: 'awesome post'
+      },
+      callback: undefined
+    })
+
+  })
+
+  it('normalizes argument list containing only a data argument as array', () => {
+    const argumentsSet = utils.normalizeSetArguments([[1, 2, 3, 4]] as any)
+
+    expect(argumentsSet).to.deep.equal({
+      path: undefined,
+      data: [1, 2, 3, 4],
+      callback: undefined
+    })
+  })
+
+  it('normalizes argument list containing only a data and a callback argument', () => {
+    const argumentsSet = utils.normalizeSetArguments([
+      { title: 'awesome post' },
+      () => { }
+    ] as any)
+
+    expect(argumentsSet)
+      .to.have.property('path')
+      .to.equal(undefined)
+    expect(argumentsSet)
+      .to.have.property('data')
+      .to.deep.equal({
+        title: 'awesome post'
+      })
+    expect(argumentsSet)
+      .to.have.property('callback')
+      .to.be.a('function')
+  })
+
+  it('normalizes argument list containing only a path and a data argument as primitive', () => {
+    let argumentsSet = utils.normalizeSetArguments([ 'title', 'awesome post' ] as any)
+
+    expect(argumentsSet).to.deep.equal({
+      path: 'title',
+      data: 'awesome post',
+      callback: undefined
+    })
+
+    argumentsSet = utils.normalizeSetArguments(['version', 123] as any)
+
+    expect(argumentsSet).to.deep.equal({
+      path: 'version',
+      data: 123,
+      callback: undefined
+    })
+
+    argumentsSet = utils.normalizeSetArguments(['liked', true] as any)
+
+    expect(argumentsSet).to.deep.equal({
+      path: 'liked',
+      data: true,
+      callback: undefined
+    })
+  })
+
+  it('normalizes argument list contaning a path, a data and a callback argument', () => {
+    const argumentsSet = utils.normalizeSetArguments([
+      'post',
+      { title: 'awesome post' },
+      () => {}
+    ] as any)
+
+    expect(argumentsSet)
+      .to.have.property('path')
+      .to.equal('post')
+    expect(argumentsSet)
+      .to.have.property('data')
+      .to.deep.equal({
+        title: 'awesome post'
+      })
+    expect(argumentsSet)
+      .to.have.property('callback')
+      .to.be.a('function')
+  })
+
+  it('normalizes argument list contaning a path, a data and a callback argument with a start index', () => {
+    const argumentsSet = utils.normalizeSetArguments([
+      this,
+      'post',
+      { title: 'awesome post' },
+      () => { }
+    ] as any, 1)
+
+    expect(argumentsSet)
+      .to.have.property('path')
+      .to.equal('post')
+    expect(argumentsSet)
+      .to.have.property('data')
+      .to.deep.equal({
+        title: 'awesome post'
+      })
+    expect(argumentsSet)
+      .to.have.property('callback')
+      .to.be.a('function')
+  })
+
+  it('throws error on an empty argument list', () => {
+    expect(() => {
+      utils.normalizeSetArguments([] as any)
+    }).to.throw('Invalid set arguments')
+  })
+
+  it('throws error on an argument list containing an invalid data argument', () => {
+    expect(() => {
+      utils.normalizeSetArguments([undefined] as any)
+    }).to.throw('Invalid set data argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([() => { }] as any)
+    }).to.throw('Invalid set data argument')
+
+    expect(() => {
+      utils.normalizeSetArguments(['data', () => {}] as any)
+    }).to.throw('Invalid set data argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([134, () => {}] as any)
+    }).to.throw('Invalid set data argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        'path', () => { }, () => {}
+      ] as any)
+    }).to.throw('Invalid set data argument')
+  })
+
+  it('throws error on an argument list contaning an invalid path argument', () => {
+    expect(() => {
+      utils.normalizeSetArguments([
+        undefined, { title: 'awesome post' }
+      ] as any)
+    }).to.throw('Invalid set path argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        '', { title: 'awesome post' }
+      ] as any)
+    }).to.throw('Invalid set path argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        null, { title: 'awesome post' }
+      ] as any)
+    }).to.throw('Invalid set path argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        true, { title: 'awesome post' }, () => {}
+      ] as any)
+    }).to.throw('Invalid set path argument')
+  })
+
+  it('throws error on an argument list containing an invalid callback argument', () => {
+    expect(() => {
+      utils.normalizeSetArguments([
+        'title', 'awesome post', null
+      ] as any)
+    }).to.throw('Invalid set callback argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        'title', 'awesome post', {}
+      ] as any)
+    }).to.throw('Invalid set callback argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        'title', 'awesome post', []
+      ] as any)
+    }).to.throw('Invalid set callback argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        'title', 'awesome post', 1
+      ] as any)
+    }).to.throw('Invalid set callback argument')
+
+    expect(() => {
+      utils.normalizeSetArguments([
+        'title', 'awesome post', false
+      ] as any)
+    }).to.throw('Invalid set callback argument')
+  })
+})
+
+describe('normalizeArguments', () => {
+  it('normalizes argument list contaning an object', () => {
+    const argumentSet = utils.normalizeArguments([{
+      path: 'title',
+      callback: () => {},
+      triggerNow: false
+    }] as any)
+
+    expect(argumentSet)
+      .to.have.property('path')
+      .to.equal('title')
+
+    expect(argumentSet)
+      .to.have.property('callback')
+      .to.be.a('function')
+
+    expect(argumentSet)
+      .to.have.property('triggerNow')
+      .to.equal(false)
+  })
+
+  it('normalizes argument list contaning path, callback and triggerNow arguments', () => {
+    const argumentSet = utils.normalizeArguments([
+      true, () => {}, 'title'
+    ] as any)
+
+    expect(argumentSet)
+      .to.have.property('path')
+      .to.equal('title')
+
+    expect(argumentSet)
+      .to.have.property('callback')
+      .to.be.a('function')
+
+    expect(argumentSet)
+      .to.have.property('triggerNow')
+      .to.equal(true)
+  })
+
+  it('handles an empty arguments list', () => {
+    const argumentSet = utils.normalizeArguments([] as any)
+
+    expect(argumentSet)
+      .to.deep.equal({})
+  })
+})
 // As these tests are only ever run in node, this is a bit pointless
-describe('isNode detects the environment @unit', () => {
+describe('isNode detects the environment', () => {
   it('has detected something', () => {
     expect(typeof utils.isNode).to.equal('boolean')
   })
 })
 
-describe('parseUrl adds all missing parts of the url @unit', () => {
+describe('parseUrl adds all missing parts of the url', () => {
   it('accepts no protocol and default to ws', () => {
     expect(utils.parseUrl('localhost', '/deepstream'))
       .to.equal('ws://localhost/deepstream')
@@ -294,5 +621,10 @@ describe('parseUrl adds all missing parts of the url @unit', () => {
   it('respects queries and hash', () => {
     expect(utils.parseUrl('localhost?query=value#login', '/deepstream'))
       .to.equal('ws://localhost/deepstream?query=value#login')
+  })
+
+  it('rejects urls with no host', () => {
+    expect(utils.parseUrl.bind(utils, '', '/deepstream'))
+      .to.throw('invalid url, missing host')
   })
 })
