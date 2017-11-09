@@ -4,7 +4,7 @@ import { expect } from 'chai'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../mocks'
 import { EVENT } from '../../src/constants'
-import { TOPIC, PRESENCE_ACTIONS, PresenceMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, PRESENCE_ACTIONS, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
 import * as Emitter from 'component-emitter2'
 
 import { DefaultOptions, Options } from '../../src/client-options'
@@ -331,12 +331,16 @@ describe.only('Presence handler', () => {
       await BBPromise.delay(flushTimeout)
     })
 
-    it.skip('notifies when userA logs in', () => {
-      presenceHandler.handle({
-        name: userA,
-        topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTIONS.PRESENCE_JOIN
-      })
+    it('notifies when userA logs in', () => {
+      function message (action: PRESENCE_ACTIONS): Message {
+        return {
+          name: userA,
+          topic: TOPIC.PRESENCE,
+          action
+        }
+      }
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN))
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL))
 
       assert.calledOnce(userACallback)
       assert.calledWithExactly(userACallback, userA, true)
@@ -347,12 +351,16 @@ describe.only('Presence handler', () => {
       assert.calledWithExactly(allUsersCallback, userA, true)
     })
 
-    it.skip('notifies when userB logs out', () => {
-      presenceHandler.handle({
-        name: userB,
-        topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTIONS.PRESENCE_LEAVE
-      })
+    it('notifies when userB logs out', () => {
+      function message (action: PRESENCE_ACTIONS): Message {
+        return {
+          name: userB,
+          topic: TOPIC.PRESENCE,
+          action
+        }
+      }
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE))
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL))
 
       assert.notCalled(userACallback)
 
@@ -363,12 +371,12 @@ describe.only('Presence handler', () => {
       assert.calledWithExactly(allUsersCallback, userB, false)
     })
 
-    it.skip('notifies only the all users callback when userC logs in', () => {
+    it('notifies only the all users callback when userC logs in', () => {
       const userC = 'userC'
       presenceHandler.handle({
         name: userC,
         topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTIONS.PRESENCE_JOIN
+        action: PRESENCE_ACTIONS.PRESENCE_JOIN_ALL
       })
 
       assert.notCalled(userACallback)
@@ -379,12 +387,12 @@ describe.only('Presence handler', () => {
       assert.calledWithExactly(allUsersCallback, userC, true)
     })
 
-    it.skip('notifies only the all users callback when userC logs out', () => {
+    it('notifies only the all users callback when userC logs out', () => {
       const userC = 'userC'
       presenceHandler.handle({
         name: userC,
         topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTIONS.PRESENCE_LEAVE
+        action: PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL
       })
 
       assert.notCalled(userACallback)
@@ -412,15 +420,18 @@ describe.only('Presence handler', () => {
       assert.notCalled(allUsersCallback)
     })
 
-    it.skip('doesn\'t notify userA callback when userA logs in after unsubscribing', async () => {
+    it('doesn\'t notify userA callback when userA logs in after unsubscribing', async () => {
       presenceHandler.unsubscribe(userA, userACallback)
       await BBPromise.delay(flushTimeout)
-
-      presenceHandler.handle({
-        name: userA,
-        topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTIONS.PRESENCE_JOIN
-      })
+      function message (action: PRESENCE_ACTIONS): Message {
+        return {
+          name: userA,
+          topic: TOPIC.PRESENCE,
+          action
+        }
+      }
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN))
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL))
 
       assert.notCalled(userACallback)
 
@@ -434,11 +445,15 @@ describe.only('Presence handler', () => {
       presenceHandler.unsubscribe(allUsersCallback)
       await BBPromise.delay(flushTimeout)
 
-      presenceHandler.handle({
-        name: userA,
-        topic: TOPIC.PRESENCE,
-        action: PRESENCE_ACTIONS.PRESENCE_JOIN
-      })
+      function message (action: PRESENCE_ACTIONS): Message {
+        return {
+          name: userA,
+          topic: TOPIC.PRESENCE,
+          action
+        }
+      }
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN))
+      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL))
 
       assert.calledOnce(userACallback)
       assert.calledWithExactly(userACallback, userA, true)
@@ -449,16 +464,19 @@ describe.only('Presence handler', () => {
     })
 
     it('doesn\'t notify callbacks after unsubscribing all', async () => {
-      const users = [userA, userB]
       presenceHandler.unsubscribe()
       await BBPromise.delay(flushTimeout)
-
-      users.forEach((user) => {
-        presenceHandler.handle({
+      const users = [userA, userB]
+      function message (user: string, action: PRESENCE_ACTIONS): Message {
+        return {
           name: user,
           topic: TOPIC.PRESENCE,
-          action: PRESENCE_ACTIONS.PRESENCE_JOIN
-        })
+          action
+        }
+      }
+      users.forEach((user) => {
+        presenceHandler.handle(message(user, PRESENCE_ACTIONS.PRESENCE_JOIN))
+        presenceHandler.handle(message(user, PRESENCE_ACTIONS.PRESENCE_JOIN_ALL))
       })
 
       assert.notCalled(userACallback)
