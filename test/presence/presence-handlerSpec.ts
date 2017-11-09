@@ -2,8 +2,8 @@ import { Promise as BBPromise } from 'bluebird'
 import { EventEmitter } from 'events'
 import { expect } from 'chai'
 import { assert, spy } from 'sinon'
-import { getServicesMock } from '../mocks'
-import { EVENT } from '../../src/constants'
+import { getServicesMock, getLastMessageSent } from '../mocks'
+import { EVENT, CONNECTION_STATE } from '../../src/constants'
 import { TOPIC, PRESENCE_ACTIONS, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
 import * as Emitter from 'component-emitter2'
 
@@ -12,6 +12,7 @@ import { PresenceHandler, QueryResult, IndividualQueryResult } from '../../src/p
 
 describe.only('Presence handler', () => {
   const flushTimeout = 10
+  const emitter = new Emitter()
   let services: any
   let presenceHandler: PresenceHandler
   let handle: Function
@@ -21,7 +22,7 @@ describe.only('Presence handler', () => {
 
   beforeEach(() => {
     services = getServicesMock()
-    presenceHandler = new PresenceHandler(new Emitter(), services, options)
+    presenceHandler = new PresenceHandler(emitter, services, options)
     handle = services.getHandle()
     callbackSpy = spy()
     counter = 0
@@ -100,7 +101,6 @@ describe.only('Presence handler', () => {
   })
 
   it.skip('subscribes to presence for all users', async () => {
-    const userA = 'userA'
     const message = {
       topic: TOPIC.PRESENCE,
       action: PRESENCE_ACTIONS.SUBSCRIBE_ALL,
@@ -139,10 +139,11 @@ describe.only('Presence handler', () => {
     presenceHandler.getAll(users, callbackSpy)
   })
 
-  it.skip('queries for all users presence', () => {
+  it('queries for all users presence', () => {
     const message = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.QUERY_ALL
+      action: PRESENCE_ACTIONS.QUERY_ALL,
+      correlationId: counter.toString(),
     }
     services.connectionMock
       .expects('sendMessage')
@@ -195,6 +196,63 @@ describe.only('Presence handler', () => {
       .withExactArgs({ message })
 
     presenceHandler.unsubscribe()
+    await BBPromise.delay(flushTimeout)
+  })
+
+  it('handles acks messages', () => {
+    const message: Message = {
+      topic: TOPIC.PRESENCE,
+      action: PRESENCE_ACTIONS.SUBSCRIBE_ACK,
+      isAck: true
+    }
+    services.timeoutRegistryMock
+      .expects('remove')
+      .once()
+      .withExactArgs(message)
+
+    presenceHandler.handle(message)
+  })
+
+  it.skip('resubscribes subscriptions when client reconnects', async () => {
+    const users = ['userA','userB']
+    presenceHandler.subscribe(users[0], () => {})
+    presenceHandler.subscribe(users[1], () => {})
+    presenceHandler.subscribe(() => {})
+    await BBPromise.delay(flushTimeout)
+
+    counter = parseInt(getLastMessageSent().correlationId as string, 10) + 1
+    const messageSubscribeAll = {
+      topic: TOPIC.PRESENCE,
+      action: PRESENCE_ACTIONS.SUBSCRIBE_ALL,
+      correlationId: counter.toString()
+    }
+    ++counter
+    const messageSubscribe = {
+      topic: TOPIC.PRESENCE,
+      action: PRESENCE_ACTIONS.SUBSCRIBE,
+      correlationId: counter.toString(),
+      parsedData: users
+    }
+
+    services.connectionMock
+      .expects('sendMessage')
+      .once()
+      .withExactArgs(messageSubscribeAll)
+    services.timeoutRegistryMock
+      .expects('add')
+      .once()
+      .withExactArgs({ message: messageSubscribeAll })
+    services.connectionMock
+      .expects('sendMessage')
+      .once()
+     .withExactArgs(messageSubscribe)
+    services.timeoutRegistryMock
+      .expects('add')
+      .once()
+     .withExactArgs({ message: messageSubscribe })
+
+    emitter.emit(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+    emitter.emit(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.OPEN)
     await BBPromise.delay(flushTimeout)
   })
 
