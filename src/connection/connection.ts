@@ -414,7 +414,7 @@ export class Connection {
       this.sendMessage({
         topic: TOPIC.CONNECTION,
         action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
-        parsedData: this.originalUrl
+        url: this.originalUrl
       })
       return
     }
