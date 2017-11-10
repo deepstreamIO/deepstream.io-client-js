@@ -1,8 +1,6 @@
 import { parse, parseData, parseJSON } from '../../binary-protocol/src/message-parser'
 import { getMessage } from '../../binary-protocol/src/message-builder'
 import { Message, TOPIC, ACTIONS, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants'
-const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
-import * as NodeWebSocket from 'ws'
 
 export type SocketFactory = (url: string, options: object) => Socket
 export interface Socket extends WebSocket {
@@ -10,10 +8,10 @@ export interface Socket extends WebSocket {
     sendParsedMessage: (message: Message) => void
 }
 
+import * as NodeWebSocket from 'ws'
+
 export const socketFactory = (url: string, options: any): Socket => {
-    const socket = BrowserWebsocket
-        ? new BrowserWebsocket(url)
-        : new NodeWebSocket(url, options) as any
+    const socket = new NodeWebSocket(url, options) as any
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => {}
     socket.onmessage = (raw: {data: Buffer}) => {

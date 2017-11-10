@@ -287,6 +287,9 @@ describe('RPC handler', () => {
       services.timeoutRegistryMock
         .expects('add')
         .once()
+      services.loggerMock
+        .expects('warn')
+        .once()
 
       rpcHandler.unprovide(name)
       rpcHandler.unprovide(name)
