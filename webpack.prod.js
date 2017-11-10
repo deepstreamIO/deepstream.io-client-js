@@ -6,6 +6,9 @@ module.exports = {
   output: {
     path: __dirname,
     filename: './dist/deepstream.min.js',
+    library: 'deepstream',
+    libraryTarget: 'umd',
+    umdNamedDefine: true
   },
   resolve: {
     extensions: ['.js', '.ts'],

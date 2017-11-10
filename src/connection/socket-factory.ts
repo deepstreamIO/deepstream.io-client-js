@@ -8,14 +8,23 @@ export interface Socket extends WebSocket {
     sendParsedMessage: (message: Message) => void
 }
 
+const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
+
 import * as NodeWebSocket from 'ws'
 
 export const socketFactory = (url: string, options: any): Socket => {
-    const socket = new NodeWebSocket(url, options) as any
+    const socket = BrowserWebsocket
+        ? new BrowserWebsocket(url, [], options) 
+        : new NodeWebSocket(url, options) as any
+
+    if (BrowserWebsocket) {
+        socket.binaryType = 'arraybuffer'
+    }
+
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => {}
     socket.onmessage = (raw: {data: Buffer}) => {
-        const parseResults = parse(raw.data)
+        const parseResults = parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data)) : raw.data)
         parseResults.forEach(element => {
             (element as Message).parsedData = parseJSON((element as Message).data as Buffer)
             const msg = element as Message
