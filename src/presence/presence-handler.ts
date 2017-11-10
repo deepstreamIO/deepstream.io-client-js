@@ -210,11 +210,7 @@ export class PresenceHandler {
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
     } else if (message.isError) {
-      this.services.timeoutRegistry.remove({
-        topic: TOPIC.PRESENCE,
-        action: message.originalAction as PRESENCE_ACTION,
-        correlationId: message.correlationId
-      })
+      this.services.timeoutRegistry.remove(message)
       if (message.originalAction === PRESENCE_ACTION.QUERY) {
         this.queryEmitter.emit(`${response}-${message.correlationId}`, PRESENCE_ACTION[message.action])
       } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {

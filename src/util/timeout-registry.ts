@@ -119,7 +119,8 @@ export class TimeoutRegistry extends EventEmitter {
    * Returns a unique name from the timeout
    */
   private getUniqueName (message: Message): string {
-    let name = `${message.topic}${message.action}_`
+    const action = message.originalAction || message.action
+    let name = `${message.topic}${action}_`
     if (message.correlationId) {
       name += message.correlationId
     } else if (message.name) {

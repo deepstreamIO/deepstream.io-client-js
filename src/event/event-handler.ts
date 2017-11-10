@@ -150,7 +150,8 @@ private handle (message: EventMessage): void {
       message.action === EVENT_ACTION.NOT_SUBSCRIBED ||
       message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS
     ) {
-        this.services.logger.warn(message)
+        this.services.timeoutRegistry.remove(message)
+        this.services.logger.warn(message, undefined, EVENT_ACTION[message.action])
         return
     }
 
