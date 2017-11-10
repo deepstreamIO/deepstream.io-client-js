@@ -181,65 +181,87 @@ export const getUid = (): string => {
 
 export interface RecordSetArguments { callback?: (error: string | null) => void, path?: string, data?: any }
 export interface RecordSubscribeArguments { callback: (data: any) => void, path?: string, triggerNow?: boolean }
-  /**
-   * Creates a map based on the types of the provided arguments
-   */
+
+/**
+ * Creates a map based on the types of the provided arguments
+ */
 export const normalizeSetArguments = (args: IArguments, startIndex: number = 0): RecordSetArguments => {
-    let result
+  let result
 
-    if (args.length === startIndex + 1) {
-      result = { data: args[startIndex], path: undefined, callback: undefined }
+  const isRootData = (data: any) => data !== undefined && typeof data === 'object'
+  const isNestedData = (data: any) => data !== undefined && typeof data !== 'function'
+  const isPath = (path: any) => path !== undefined && typeof path === 'string'
+  const isCallback = (callback: any) => typeof callback === 'function'
+
+  if (args.length === startIndex + 1) {
+    result = {
+      path: undefined,
+      data: isRootData(args[startIndex]) ? args[startIndex] : undefined,
+      callback: undefined
     }
-
-    if (args.length === startIndex + 2) {
-      if (typeof args[startIndex] === 'string' && typeof args[startIndex + 1] === 'object') {
-        result = { path: args[startIndex], data: args[startIndex + 1], callback: undefined }
-      }
-      if (typeof args[startIndex] === 'object' && typeof args[startIndex + 1] === 'function') {
-        result = { path: undefined, data: args[startIndex], callback: args[startIndex + 1] }
-      }
-    }
-
-    if (args.length === startIndex + 3) {
-      result = { path: args[startIndex + 0], data: args[startIndex + 1], callback: args[startIndex + 2]}
-    }
-
-    if (result) {
-      if (result.path !== undefined && typeof result.path !== 'string' || result.path.length === 0) {
-        throw Error ('Invalid set path argument')
-      }
-      if (result.callback !== undefined && typeof result.callback !== 'function') {
-        throw Error ('Invalid set callback argument')
-      }
-      if (result.data === undefined) {
-        throw Error ('Invalid set data argument')
-      }
-      return result
-    }
-
-    throw Error ('Invalid set arguments')
   }
 
-  /**
-   * Creates a map based on the types of the provided arguments
-   */
-export const normalizeArguments = (args: IArguments): RecordSubscribeArguments => {
-    // If arguments is already a map of normalized parameters
-    // (e.g. when called by AnonymousRecord), just return it.
-    if (args.length === 1 && typeof args[0] === 'object') {
-      return args[0]
+  if (args.length === startIndex + 2) {
+    result = { path: undefined, data: undefined, callback: undefined }
+    if (!isCallback(args[startIndex + 1]) && isNestedData(args[startIndex + 1])) {
+      result.path = isPath(args[startIndex]) ? args[startIndex] : false
     }
 
-    const result = Object.create(null)
+    if (isPath(args[startIndex])) {
+      result.data = isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined
+    } else {
+      result.data = isRootData(args[startIndex]) ? args[startIndex] : undefined
+    }
 
-    for (let i = 0; i < args.length; i++) {
-      if (typeof args[i] === 'string') {
-        result.path = args[i]
-      } else if (typeof args[i] === 'function') {
-        result.callback = args[i]
-      } else if (typeof args[i] === 'boolean') {
-        result.triggerNow = args[i]
-      }
+    if (!isPath(args[startIndex])) {
+      result.callback = isCallback(args[startIndex + 1]) ? args[startIndex + 1] : false
+    }
+  }
+
+  if (args.length === startIndex + 3) {
+    result = {
+      path: isPath(args[startIndex]) ? args[startIndex] : false,
+      data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
+      callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : false
+    }
+  }
+
+  if (result) {
+    if (result.path !== undefined && result.path.length === 0 || result.path === false) {
+      throw Error('Invalid set path argument')
+    }
+    if (result.data === undefined) {
+      throw Error('Invalid set data argument')
+    }
+    if (result.callback !== undefined && result.callback === false) {
+      throw Error('Invalid set callback argument')
     }
     return result
   }
+
+  throw Error('Invalid set arguments')
+}
+
+/**
+ * Creates a map based on the types of the provided arguments
+ */
+export const normalizeArguments = (args: IArguments): RecordSubscribeArguments => {
+  // If arguments is already a map of normalized parameters
+  // (e.g. when called by AnonymousRecord), just return it.
+  if (args.length === 1 && typeof args[0] === 'object') {
+    return args[0]
+  }
+
+  const result = Object.create(null)
+
+  for (let i = 0; i < args.length; i++) {
+    if (typeof args[i] === 'string') {
+      result.path = args[i]
+    } else if (typeof args[i] === 'function') {
+      result.callback = args[i]
+    } else if (typeof args[i] === 'boolean') {
+      result.triggerNow = args[i]
+    }
+  }
+  return result
+}

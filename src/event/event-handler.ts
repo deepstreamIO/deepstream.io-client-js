@@ -1,21 +1,26 @@
-import { Services } from '../client'
+import { Services, Client } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
+import ResubscribeNotifier from '../util/resubscribe-notifier'
 import * as Emitter from 'component-emitter2'
 
 export class EventHandler {
+
   private services: Services
   private emitter: Emitter
   private listeners: Listener
   private options: Options
+  private client: Client
+  private resubscribeNotifier: ResubscribeNotifier
 
-  constructor (services: Services, options: Options, listeners?: Listener) {
+  constructor (client: Emitter, services: Services, options: Options, listeners?: Listener) {
     this.options = options
     this.services = services
     this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()
+    this.resubscribeNotifier = new ResubscribeNotifier(client, services, options, this.resubscribe.bind(this))
     this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
   }
 
@@ -87,12 +92,14 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
       throw new Error('invalid argument name')
     }
 
-    this.services.connection.sendMessage({
-      topic: TOPIC.EVENT,
-      action: EVENT_ACTION.EMIT,
-      name,
-      parsedData: data
-    })
+    if (this.services.connection.isConnected) {
+      this.services.connection.sendMessage({
+        topic: TOPIC.EVENT,
+        action: EVENT_ACTION.EMIT,
+        name,
+        parsedData: data
+      })
+    }
     this.emitter.emit(name, data)
   }
 
@@ -125,15 +132,18 @@ private handle (message: EventMessage): void {
       if (message.parsedData !== undefined) {
         this.emitter.emit(message.name as string, message.parsedData)
       } else {
-        this.emitter.emit(message.name as string)
+        this.emitter.emit(message.name as string, undefined)
       }
       return
     }
 
     if (message.action === EVENT_ACTION.MESSAGE_DENIED) {
-        this.services.timeoutRegistry.remove(message)
+      this.services.logger.error({ topic: TOPIC.EVENT }, EVENT_ACTION.MESSAGE_DENIED)
+      this.services.timeoutRegistry.remove(message)
+      if (message.originalAction === EVENT_ACTION.SUBSCRIBE) {
         this.emitter.off(message.name)
-        return
+      }
+      return
     }
 
     if (

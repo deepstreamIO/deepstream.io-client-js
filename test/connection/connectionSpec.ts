@@ -97,6 +97,7 @@ describe('connection', () => {
 
     await openConnection()
     await BBPromise.delay(heartbeatInterval * 3)
+    await BBPromise.delay(10)
   })
 
   it('get redirected to server B while connecting to server A, reconnect to server A when connection to server B is lost', async () => {

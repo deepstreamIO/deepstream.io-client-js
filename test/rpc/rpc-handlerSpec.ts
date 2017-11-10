@@ -169,7 +169,7 @@ describe('RPC handler', () => {
         .once()
         .withExactArgs(message)
       services.loggerMock
-        .expects('warn')
+        .expects('error')
         .once()
         .withExactArgs(message)
     }

@@ -3,6 +3,7 @@ import * as sinon from 'sinon'
 import { getServicesMock, getListenerMock } from '../mocks'
 import { EVENT } from '../../src/constants'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION } from '../../binary-protocol/src/message-constants'
+import * as Emitter from 'component-emitter2'
 
 import { DefaultOptions } from '../../src/client-options'
 import { EventHandler } from '../../src/event/event-handler'
@@ -10,6 +11,8 @@ import { EventHandler } from '../../src/event/event-handler'
 describe('event handler', () => {
   let services: any
   let listener: any
+  let emitter
+  let emitterMock: sinon.SinonMock
   let eventHandler: EventHandler
   let handle: Function
   let spy: sinon.SinonSpy
@@ -18,7 +21,10 @@ describe('event handler', () => {
   beforeEach(() => {
     services = getServicesMock()
     listener = getListenerMock()
-    eventHandler = new EventHandler(services, DefaultOptions, listener.listener)
+    emitter = new Emitter()
+    emitterMock = sinon.mock(emitter)
+
+    eventHandler = new EventHandler(emitter, services, DefaultOptions, listener.listener)
     handle = services.getHandle()
     spy = sinon.spy()
   })
@@ -204,7 +210,7 @@ describe('event handler', () => {
       name
     })
     sinon.assert.calledOnce(spy)
-    sinon.assert.calledWithExactly(spy)
+    sinon.assert.calledWithExactly(spy, undefined)
   })
 
   it('unsubscribes locally when it recieves a message denied', () => {
@@ -212,6 +218,7 @@ describe('event handler', () => {
     handle({
       topic: TOPIC.EVENT,
       action: EVENT_ACTION.MESSAGE_DENIED,
+      originalAction: EVENT_ACTION.SUBSCRIBE,
       name
     })
     eventHandler.emit(name, 11)
