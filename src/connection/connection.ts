@@ -6,8 +6,13 @@ import {
   EVENT_ACTIONS as EVENT_ACTION,
   RECORD_ACTIONS as RECORD_ACTION,
   AUTH_ACTIONS as AUTH_ACTION,
-  Message
+  PARSER_ACTIONS as PARSER_ACTION,
+  Message,
+  ParseResult
 } from '../../binary-protocol/src/message-constants'
+import {
+  parseData
+} from '../../binary-protocol/src/message-parser'
 
 import { StateMachine } from '../util/state-machine'
 import { Services } from '../client'
@@ -269,18 +274,30 @@ export class Connection {
   /**
    * Callback for messages received on the connection.
    */
-  private onMessages (parsedMessages: Array<Message>): void {
-    for (let i = 0; i < parsedMessages.length; i++) {
-      const message = parsedMessages[i] as Message
+  private onMessages (parseResults: Array<ParseResult>): void {
+    parseResults.forEach(parseResult => {
+      if (parseResult.parseError) {
+        this.services.logger.error(
+          { topic: TOPIC.PARSER },
+          parseResult.action,
+          parseResult.raw && parseResult.raw.toString()
+        )
+        return
+      }
+      const message: Message = parseResult
+      const res = parseData(message)
+      if (res !== true) {
+        this.services.logger.error({ topic: TOPIC.PARSER }, PARSER_ACTION.INVALID_MESSAGE, res)
+      }
       if (message === null) {
-        continue
+        return
       }
       if (message.topic === TOPIC.CONNECTION) {
-        this.handleConnectionResponse(parsedMessages[i])
+        this.handleConnectionResponse(message)
         return
       }
       if (message.topic === TOPIC.AUTH) {
-        this.handleAuthResponse(parsedMessages[i])
+        this.handleAuthResponse(message)
         return
       }
       const handler = this.handlers.get(message.topic)
@@ -289,7 +306,7 @@ export class Connection {
         return
       }
       handler(message)
-    }
+    })
   }
 
   /**
@@ -426,7 +443,7 @@ export class Connection {
     }
 
     if (message.action === CONNECTION_ACTION.REDIRECT) {
-      this.url = message.data as string
+      this.url = message.url as string
       this.stateMachine.transition(TRANSITIONS.CONNECTION_REDIRECTED)
       this.endpoint.close()
       return

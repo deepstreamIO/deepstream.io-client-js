@@ -1,4 +1,4 @@
-import { parse, parseData, parseJSON } from '../../binary-protocol/src/message-parser'
+import { parse } from '../../binary-protocol/src/message-parser'
 import { getMessage } from '../../binary-protocol/src/message-builder'
 import { Message, TOPIC, ACTIONS, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants'
 
@@ -16,11 +16,12 @@ export const socketFactory = (url: string, options: any): Socket => {
     socket.onparsedmessage = () => {}
     socket.onmessage = (raw: {data: Buffer}) => {
         const parseResults = parse(raw.data)
-        parseResults.forEach(element => {
-            (element as Message).parsedData = parseJSON((element as Message).data as Buffer)
-            const msg = element as Message
-            // console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
-        })
+        /*
+         * parseResults.forEach(element => {
+         *     const msg = element as Message
+         *     console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
+         * })
+         */
         socket.onparsedmessages(parseResults)
     }
     socket.sendParsedMessage = (message: Message): void => {
