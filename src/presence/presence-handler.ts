@@ -202,7 +202,7 @@ export class PresenceHandler {
       this.subscriptionEmitter.emit(message.name as string, message.name, false)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
-    } else if (message.action === PRESENCE_ACTION.MESSAGE_DENIED) {
+    } else if (message.isError) {
       if (message.originalAction === PRESENCE_ACTION.QUERY) {
         this.queryEmitter.emit(`${response}-${message.correlationId}`, PRESENCE_ACTION[message.action])
       } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {
