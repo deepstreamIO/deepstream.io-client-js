@@ -3,8 +3,7 @@ import { TOPIC, Message, EVENT_ACTIONS, ALL_ACTIONS } from '../../binary-protoco
 import { Services, Client, EVENT } from '../client'
 import { Options } from '../client-options'
 
-
-export type SingleNotifierResponse = {
+export interface SingleNotifierResponse {
   callback?: (error?: any, result?: any) => void,
   resolve?: (result: any) => void,
   reject?: (error: any) => void,
@@ -29,7 +28,6 @@ export class SingleNotifier {
   private action: ALL_ACTIONS
   private topic: TOPIC
   private timeoutDuration: number
-
 
   constructor (services: Services, options: Options, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number) {
     this.services = services
@@ -88,7 +86,7 @@ export class SingleNotifier {
         response.callback(error, data)
       } else if (error && response.reject) {
         response.reject(data)
-      } else if (response.resolve){
+      } else if (response.resolve) {
         response.resolve(data)
       }
     }
