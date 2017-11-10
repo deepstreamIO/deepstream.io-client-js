@@ -8,12 +8,12 @@ const allResponse: string = PRESENCE_ACTION.QUERY_ALL_RESPONSE.toString()
 const response: string = PRESENCE_ACTION.QUERY_ALL.toString()
 const allSubscribe: string = PRESENCE_ACTION.SUBSCRIBE_ALL.toString()
 
-export type QueryResult = string[]
-export type IndividualQueryResult = { [key: string]: boolean }
+export type QueryResult = Array<string>
+export interface IndividualQueryResult { [key: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
 
-function validateQueryArguments (rest: any[]) : { users: string[] | null, callback: null | ((error: { reason: EVENT }, data?: QueryResult | IndividualQueryResult) => void) } {
-  let users: string[] | null = null
+function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | ((error: { reason: EVENT }, data?: QueryResult | IndividualQueryResult) => void) } {
+  let users: Array<string> | null = null
   let cb: ((error: { reason: EVENT }, data: QueryResult | IndividualQueryResult) => void) | null = null
 
   if (rest.length === 1) {
@@ -62,13 +62,10 @@ export class PresenceHandler {
     this.flush = this.flush.bind(this)
   }
 
-  public subscribe (callback: SubscribeCallback) : void
-  public subscribe (user: string, callback: SubscribeCallback) : void
-  public subscribe (user: string | SubscribeCallback, callback?: SubscribeCallback) : void {
-    let action: PRESENCE_ACTION
-    if (
-      typeof user === 'string' && user.length > 0 && typeof callback === 'function')
-    {
+  public subscribe (callback: SubscribeCallback): void
+  public subscribe (user: string, callback: SubscribeCallback): void
+  public subscribe (user: string | SubscribeCallback, callback?: SubscribeCallback): void {
+    if (typeof user === 'string' && user.length > 0 && typeof callback === 'function') {
       if (!this.subscriptionEmitter.hasListeners(user)) {
         this.pendingSubscribes.add(user)
       }
@@ -92,11 +89,9 @@ export class PresenceHandler {
     }
   }
 
-  public unsubscribe (): void
-  public unsubscribe (user: string) : void
-  public unsubscribe (callback: SubscribeCallback) : void
-  public unsubscribe (user: string, callback: SubscribeCallback) : void
-  public unsubscribe (user?: string | SubscribeCallback, callback?: SubscribeCallback) : void {
+  public unsubscribe (userOrCallback?: string | SubscribeCallback): void
+  public unsubscribe (user: string, callback: SubscribeCallback): void
+  public unsubscribe (user?: string | SubscribeCallback, callback?: SubscribeCallback): void {
     if (user && typeof user === 'string' && user.length > 0) {
       if (callback) {
         if (typeof callback !== 'function') {
@@ -137,11 +132,11 @@ export class PresenceHandler {
     }
   }
 
-  public getAll () : Promise<QueryResult>
-  public getAll (users: string[]) : Promise<IndividualQueryResult>
+  public getAll (): Promise<QueryResult>
+  public getAll (users: Array<string>): Promise<IndividualQueryResult>
   public getAll (callback: (error: { reason: EVENT }, result?: QueryResult) => void): void
-  public getAll (users: string[], callback: (error: { reason: EVENT }, result?: IndividualQueryResult) => void) : void
-  public getAll (...rest: any[]) : Promise<QueryResult | IndividualQueryResult> | void {
+  public getAll (users: Array<string>, callback: (error: { reason: EVENT }, result?: IndividualQueryResult) => void): void
+  public getAll (...rest: Array<any>): Promise<QueryResult | IndividualQueryResult> | void {
     const { callback, users } = validateQueryArguments(rest)
 
     if (!this.services.connection.isConnected) {
@@ -218,7 +213,7 @@ export class PresenceHandler {
     }
   }
 
-  private bulkSubscription (action: PRESENCE_ACTION.SUBSCRIBE | PRESENCE_ACTION.UNSUBSCRIBE, names: string[]) {
+  private bulkSubscription (action: PRESENCE_ACTION.SUBSCRIBE | PRESENCE_ACTION.UNSUBSCRIBE, names: Array<string>) {
     const correlationId = this.counter++
     const message: Message = {
       topic: TOPIC.PRESENCE,

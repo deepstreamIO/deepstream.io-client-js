@@ -118,7 +118,7 @@ describe.only('Presence handler', () => {
   })
 
   it('queries for specific users presence', () => {
-    const users = ['userA','userB']
+    const users = ['userA', 'userB']
     const message = {
       topic: TOPIC.PRESENCE,
       action: PRESENCE_ACTIONS.QUERY,
@@ -229,7 +229,7 @@ describe.only('Presence handler', () => {
   })
 
   it('resubscribes subscriptions when client reconnects', async () => {
-    const users = ['userA','userB']
+    const users = ['userA', 'userB']
     presenceHandler.subscribe(users[0], () => {})
     presenceHandler.subscribe(users[1], () => {})
     presenceHandler.subscribe(() => {})
@@ -273,7 +273,6 @@ describe.only('Presence handler', () => {
     let callback: sinon.SinonSpy
     let promisseSuccess: sinon.SinonSpy
     let promisseError: sinon.SinonSpy
-    let promise: Promise<QueryResult>
     let users: Array<string>
 
     beforeEach(() => {
@@ -330,7 +329,6 @@ describe.only('Presence handler', () => {
     let callback: sinon.SinonSpy
     let promisseSuccess: sinon.SinonSpy
     let promisseError: sinon.SinonSpy
-    let promise: Promise<QueryResult>
     let users: Array<string>
     let usersPresence: IndividualQueryResult
 
@@ -339,7 +337,7 @@ describe.only('Presence handler', () => {
       promisseError = spy()
       promisseSuccess = spy()
       users = ['userA', 'userB']
-      usersPresence = { 'userA': true, 'userB': false }
+      usersPresence = { userA: true, userB: false }
       presenceHandler.getAll(users, callback)
       const promise = presenceHandler.getAll(users)
       promise.then(promisseSuccess).catch(promisseError)
@@ -377,7 +375,6 @@ describe.only('Presence handler', () => {
       assert.calledOnce(promisseSuccess)
       assert.calledWithExactly(promisseSuccess, usersPresence)
     })
-
 
     it('recieves message denied for query users', async () => {
 
@@ -547,7 +544,7 @@ describe.only('Presence handler', () => {
           action
         }
       }
-      users.forEach((user) => {
+      users.forEach( user => {
         presenceHandler.handle(message(user, PRESENCE_ACTIONS.PRESENCE_JOIN))
         presenceHandler.handle(message(user, PRESENCE_ACTIONS.PRESENCE_JOIN_ALL))
       })

@@ -10,7 +10,7 @@ import {
     Message
 } from '../../binary-protocol/src/message-constants'
 
-function isEvent (action: any) : action is EVENT {
+function isEvent (action: any): action is EVENT {
     return EVENT[action] !== undefined
 }
 
