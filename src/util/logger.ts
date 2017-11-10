@@ -1,6 +1,7 @@
 import { EVENT } from '../constants'
 import {
     TOPIC,
+    ALL_ACTIONS,
     AUTH_ACTIONS as AUTH_ACTION,
     RECORD_ACTIONS as RECORD_ACTION,
     EVENT_ACTIONS as EVENT_ACTION,
@@ -22,12 +23,12 @@ export class Logger {
         this.emitter = emitter
     }
 
-    public warn (message: { topic: TOPIC } | Message, event?: EVENT | EVENT_ACTION | RECORD_ACTION | RPC_ACTION, meta?: any): void {
+    public warn (message: { topic: TOPIC } | Message, event?: EVENT | ALL_ACTIONS, meta?: any): void {
         // tslint:disable-next-line:no-console
-        console.warn(message, event, meta)
+        console.warn('warn', message, event, meta)
     }
 
-    public error (message: { topic: TOPIC } | Message, event?: EVENT | EVENT_ACTION | RECORD_ACTION | RPC_ACTION | CONNECTION_ACTION, meta?: string | object): void {
+    public error (message: { topic: TOPIC } | Message, event?: EVENT | ALL_ACTIONS, meta?: string | object): void {
         // tslint:disable-next-line:no-console
         if (isEvent(event)) {
             if (event === EVENT.IS_CLOSED) {

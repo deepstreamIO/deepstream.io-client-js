@@ -50,7 +50,7 @@ export class Client extends EventEmitter {
     this.services = services as Services
 
     this.event = new EventHandler(this, this.services, this.options)
-    this.rpc = new RPCHandler(this.services, this.options)
+    this.rpc = new RPCHandler(this, this.services, this.options)
     this.record = new RecordHandler(this.services, this.options)
     this.presence = new PresenceHandler(this, this.services, this.options)
   }

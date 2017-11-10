@@ -12,9 +12,9 @@ export type QueryResult = Array<string>
 export interface IndividualQueryResult { [key: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
 
-function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | ((error: { reason: EVENT }, data?: QueryResult | IndividualQueryResult) => void) } {
+function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | ((error: EVENT, data?: QueryResult | IndividualQueryResult) => void) } {
   let users: Array<string> | null = null
-  let cb: ((error: { reason: EVENT }, data: QueryResult | IndividualQueryResult) => void) | null = null
+  let cb: ((error: EVENT, data: QueryResult | IndividualQueryResult) => void) | null = null
 
   if (rest.length === 1) {
     if (Array.isArray(rest[0])) {
@@ -141,10 +141,10 @@ export class PresenceHandler {
 
     if (!this.services.connection.isConnected) {
       if (callback) {
-        callback({ reason: EVENT.CLIENT_OFFLINE })
+        this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
         return
       }
-      return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
+      return Promise.reject(EVENT.CLIENT_OFFLINE)
     }
 
     let message: Message
@@ -162,7 +162,7 @@ export class PresenceHandler {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY,
         correlationId: queryId,
-        parsedData: users
+        names: users
       }
       emitterAction = `${response}-${queryId}`
     }
@@ -189,11 +189,18 @@ export class PresenceHandler {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_ALL_RESPONSE) {
-      this.queryEmitter.emit(allResponse, null, message.parsedData)
-      this.services.timeoutRegistry.remove(message)
+      this.queryEmitter.emit(allResponse, null, message.names)
+      this.services.timeoutRegistry.remove({
+        topic: TOPIC.PRESENCE,
+        action: PRESENCE_ACTION.QUERY_ALL
+      })
     } else if (message.action === PRESENCE_ACTION.QUERY_RESPONSE) {
       this.queryEmitter.emit(`${response}-${message.correlationId}`, null, message.parsedData)
-      this.services.timeoutRegistry.remove(message)
+      this.services.timeoutRegistry.remove({
+        topic: TOPIC.PRESENCE,
+        action: PRESENCE_ACTION.QUERY,
+        correlationId: message.correlationId
+      })
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN) {
       this.subscriptionEmitter.emit(message.name as string, message.name, true)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN_ALL) {
@@ -202,14 +209,21 @@ export class PresenceHandler {
       this.subscriptionEmitter.emit(message.name as string, message.name, false)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
-    } else if (message.action === PRESENCE_ACTION.MESSAGE_DENIED) {
+    } else if (message.isError) {
+      this.services.timeoutRegistry.remove({
+        topic: TOPIC.PRESENCE,
+        action: message.originalAction as PRESENCE_ACTION,
+        correlationId: message.correlationId
+      })
       if (message.originalAction === PRESENCE_ACTION.QUERY) {
-        this.queryEmitter.emit(`${response}-${message.correlationId}`, { reason: PRESENCE_ACTION[message.action] })
+        this.queryEmitter.emit(`${response}-${message.correlationId}`, PRESENCE_ACTION[message.action])
       } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {
-        this.queryEmitter.emit(allResponse, { reason: PRESENCE_ACTION[message.action] })
+        this.queryEmitter.emit(allResponse, PRESENCE_ACTION[message.action])
       } else {
         this.services.logger.error(message)
       }
+    } else {
+      this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
     }
   }
 
@@ -219,7 +233,7 @@ export class PresenceHandler {
       topic: TOPIC.PRESENCE,
       action,
       correlationId: correlationId.toString(),
-      parsedData: names
+      names
     }
     this.services.timeoutRegistry.add({ message })
     this.services.connection.sendMessage(message)
