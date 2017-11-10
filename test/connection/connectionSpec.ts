@@ -326,7 +326,7 @@ describe('connection', () => {
       .withExactArgs([{
         topic: TOPIC.CONNECTION,
         action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
-        parsedData: url
+        url
       }])
 
     await BBPromise.delay(0)
@@ -495,7 +495,7 @@ describe('connection', () => {
     socket.simulateMessages([{
       topic: TOPIC.CONNECTION,
       action: CONNECTION_ACTION.REDIRECT,
-      data: otherUrl
+      url: otherUrl
     }])
 
     await BBPromise.delay(0)
@@ -544,7 +544,7 @@ describe('connection', () => {
       .withExactArgs({
         topic: TOPIC.CONNECTION,
         action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
-        parsedData: url
+        url
       })
 
     socket.simulateOpen()

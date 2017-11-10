@@ -168,6 +168,7 @@ export class PresenceHandler {
     }
 
     this.services.connection.sendMessage(message)
+    this.services.timeoutRegistry.add({ message })
 
     if (!callback) {
       return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
@@ -189,10 +190,17 @@ export class PresenceHandler {
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_ALL_RESPONSE) {
       this.queryEmitter.emit(allResponse, null, message.names)
-      this.services.timeoutRegistry.remove(message)
+      this.services.timeoutRegistry.remove({
+        topic: TOPIC.PRESENCE,
+        action: PRESENCE_ACTION.QUERY_ALL
+      })
     } else if (message.action === PRESENCE_ACTION.QUERY_RESPONSE) {
       this.queryEmitter.emit(`${response}-${message.correlationId}`, null, message.parsedData)
-      this.services.timeoutRegistry.remove(message)
+      this.services.timeoutRegistry.remove({
+        topic: TOPIC.PRESENCE,
+        action: PRESENCE_ACTION.QUERY,
+        correlationId: message.correlationId
+      })
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN) {
       this.subscriptionEmitter.emit(message.name as string, message.name, true)
     } else if (message.action === PRESENCE_ACTION.PRESENCE_JOIN_ALL) {
@@ -202,6 +210,11 @@ export class PresenceHandler {
     } else if (message.action === PRESENCE_ACTION.PRESENCE_LEAVE_ALL) {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
     } else if (message.isError) {
+      this.services.timeoutRegistry.remove({
+        topic: TOPIC.PRESENCE,
+        action: message.originalAction as PRESENCE_ACTION,
+        correlationId: message.correlationId
+      })
       if (message.originalAction === PRESENCE_ACTION.QUERY) {
         this.queryEmitter.emit(`${response}-${message.correlationId}`, PRESENCE_ACTION[message.action])
       } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {
@@ -209,6 +222,8 @@ export class PresenceHandler {
       } else {
         this.services.logger.error(message)
       }
+    } else {
+      this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
     }
   }
 

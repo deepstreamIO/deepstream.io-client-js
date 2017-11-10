@@ -84,7 +84,7 @@ describe('Presence handler', () => {
       topic: TOPIC.PRESENCE,
       action: PRESENCE_ACTIONS.SUBSCRIBE,
       correlationId: counter.toString(),
-      parsedData: [userA]
+      names: [userA]
     }
     services.connectionMock
       .expects('sendMessage')
@@ -123,7 +123,7 @@ describe('Presence handler', () => {
       topic: TOPIC.PRESENCE,
       action: PRESENCE_ACTIONS.QUERY,
       correlationId: counter.toString(),
-      parsedData: users
+      names: users
     }
     services.connectionMock
       .expects('sendMessage')
@@ -156,9 +156,9 @@ describe('Presence handler', () => {
 
   it('sends unsubscribe for specific user presence', async () => {
     const user = 'user'
-    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE, correlationId: counter.toString(), parsedData: [ user ] }
+    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE, correlationId: counter.toString(), names: [ user ] }
     counter++
-    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE, correlationId: counter.toString(), parsedData: [ user ] }
+    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE, correlationId: counter.toString(), names: [ user ] }
 
     services.connectionMock
       .expects('sendMessage')
@@ -244,7 +244,7 @@ describe('Presence handler', () => {
       topic: TOPIC.PRESENCE,
       action: PRESENCE_ACTIONS.SUBSCRIBE,
       correlationId: counter.toString(),
-      parsedData: users
+      names: users
     }
 
     services.connectionMock
@@ -291,7 +291,7 @@ describe('Presence handler', () => {
         return {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE,
-        parsedData: users,
+        names: users,
         correlationId: id.toString()
       }}
       const messageForCallback = message(counter)
