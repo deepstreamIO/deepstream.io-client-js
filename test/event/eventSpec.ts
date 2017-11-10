@@ -218,6 +218,7 @@ describe('event handler', () => {
     handle({
       topic: TOPIC.EVENT,
       action: EVENT_ACTION.MESSAGE_DENIED,
+      originalAction: EVENT_ACTION.SUBSCRIBE,
       name
     })
     eventHandler.emit(name, 11)

@@ -90,7 +90,9 @@ export class RPCHandler {
    * @param   {Function} callback Will be invoked with the returned result or if the rpc failed
    *                              receives to arguments: error or null and the result
    */
-  public make (name: string, data: any, callback?: RPCMakeCallback): Promise<any> | undefined {
+  public make (name: string, data: any): Promise<any>
+  public make (name: string, data: any, callback: RPCMakeCallback): void
+  public make (name: string, data: any, callback?: RPCMakeCallback): Promise<any> | void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
@@ -174,7 +176,7 @@ export class RPCHandler {
       if (message.originalAction === RPC_ACTION.PROVIDE || message.originalAction === RPC_ACTION.UNPROVIDE) {
         this.services.timeoutRegistry.remove(message)
         this.providers.delete(message.name)
-        this.services.logger.warn(message)
+        this.services.logger.error(message)
         return
       }
       if (message.originalAction === RPC_ACTION.REQUEST) {
