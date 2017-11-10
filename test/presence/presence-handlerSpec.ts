@@ -10,7 +10,7 @@ import * as Emitter from 'component-emitter2'
 import { DefaultOptions, Options } from '../../src/client-options'
 import { PresenceHandler, QueryResult, IndividualQueryResult } from '../../src/presence/presence-handler'
 
-describe.only('Presence handler', () => {
+describe('Presence handler', () => {
   const flushTimeout = 10
   const emitter = new Emitter()
   let services: any
