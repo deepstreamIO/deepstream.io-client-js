@@ -8,6 +8,7 @@ import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
+import { SingleNotifier } from '../util/single-notifier'
 import * as Emitter from 'component-emitter2'
 
 export class RecordHandler {
@@ -16,6 +17,8 @@ export class RecordHandler {
   private options: Options
   private listener: Listener
   private recordCores: Map<string, RecordCore>
+  private readRegistry: SingleNotifier
+  private headRegistry: SingleNotifier
 
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
@@ -24,6 +27,8 @@ export class RecordHandler {
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
     this.recordCores = new Map()
+    this.readRegistry = new SingleNotifier(services, options, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
+    this.headRegistry = new SingleNotifier(services, options, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
@@ -103,13 +108,13 @@ export class RecordHandler {
         return Promise.resolve(recordCore.get())
       }
     }
-    // if (callback) {
-    //   this.readRegistry.request(name, { callback })
-    // } else {
-    //   return new Promise((resolve, reject) => {
-    //     this.readRegistry.request(name, { resolve, reject })
-    //   })
-    // }
+    if (callback) {
+      this.readRegistry.request(name, { callback })
+    } else {
+      return new Promise((resolve, reject) => {
+        this.readRegistry.request(name, { resolve, reject })
+      })
+    }
   }
 
   /**
@@ -155,13 +160,13 @@ export class RecordHandler {
       return Promise.resolve(recordCore.version)
     }
 
-    // if (callback) {
-    //   this.headRegistry.request(name, { callback })
-    // } else {
-    //   return new Promise((resolve, reject) => {
-    //     this.headRegistry.request(name, { resolve, reject })
-    //   })
-    // }
+    if (callback) {
+      this.headRegistry.request(name, { callback })
+    } else {
+      return new Promise((resolve, reject) => {
+        this.headRegistry.request(name, { resolve, reject })
+      })
+    }
   }
 
   /**
@@ -269,15 +274,28 @@ export class RecordHandler {
       message.action === RECORD_ACTION.MESSAGE_DENIED ||
       message.action === RECORD_ACTION.MESSAGE_PERMISSION_ERROR
     ) {
-      // do something
+      let isHandled = this.handleMessageDeniedAndPermissionError(message)
+      if (isHandled) {
+        return
+      }
     }
 
     if (message.action === RECORD_ACTION.READ_RESPONSE) {
-      // do something
+      if (message.isError) {
+        this.readRegistry.recieve(message, message.parsedData, null)
+      } else {
+        this.readRegistry.recieve(message, null, message.parsedData)
+      }
+      return
     }
 
     if (message.action === RECORD_ACTION.HEAD_RESPONSE) {
-      // do something
+      if (message.isError) {
+        this.readRegistry.recieve(message, message.parsedData, null)
+      } else {
+        this.readRegistry.recieve(message, null, message.version)
+      }
+      return
     }
 
     if (message.action === RECORD_ACTION.DELETED) {
@@ -306,6 +324,19 @@ export class RecordHandler {
    */
   private removeRecord (recordName: string) {
     this.recordCores.delete(recordName)
+  }
+
+  private handleMessageDeniedAndPermissionError (message: RecordMessage): boolean {
+    let handled = false
+    if (message.originalAction === RECORD_ACTION.READ){
+      this.readRegistry.recieve(message, RECORD_ACTION[message.action], null)
+      handled = true
+    }
+    if (message.originalAction === RECORD_ACTION.HEAD){
+      this.headRegistry.recieve(message, RECORD_ACTION[message.action], null)
+      handled = true
+    }
+    return handled
   }
 
   private getRecordCore (recordName: string): RecordCore {
