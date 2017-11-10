@@ -27,8 +27,8 @@ export class RecordHandler {
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
     this.recordCores = new Map()
-    this.readRegistry = new SingleNotifier(services, options, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
-    this.headRegistry = new SingleNotifier(services, options, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
+    this.readRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
+    this.headRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
@@ -98,6 +98,9 @@ export class RecordHandler {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
+    if (callback !== undefined && typeof callback !== 'function') {
+      throw new Error('invalid argument: callback')
+    }
 
     const recordCore = this.recordCores.get(name)
     if (recordCore && recordCore.isReady) {
@@ -123,7 +126,14 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public has (name: string, callback: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
+  public has (name: string, callback?: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new Error('invalid argument: name')
+    }
+    if (callback !== undefined && typeof callback !== 'function') {
+      throw new Error('invalid argument: callback')
+    }
+
     if (!callback) {
       return new Promise ((resolve, reject) => {
         this.head(name, (error: string | null, version: number) => {
@@ -154,9 +164,12 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public head (name: string, callback: (error: string | null, version: number) => void): Promise<number> | void {
+  public head (name: string, callback?: (error: string | null, version: number) => void): Promise<number> | void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
+    }
+    if (callback !== undefined && typeof callback !== 'function') {
+      throw new Error('invalid argument: callback')
     }
 
     const recordCore = this.recordCores.get(name)
@@ -290,7 +303,7 @@ export class RecordHandler {
       message.originalAction === RECORD_ACTION.READ
     ) {
       if (message.isError) {
-        this.readRegistry.recieve(message, RECORD_ACTION[message.action], null)
+        this.readRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
       } else {
         this.readRegistry.recieve(message, null, message.parsedData)
       }
@@ -302,7 +315,7 @@ export class RecordHandler {
       message.originalAction === RECORD_ACTION.HEAD
     ) {
       if (message.isError) {
-        this.headRegistry.recieve(message, RECORD_ACTION[message.action], null)
+        this.headRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
       } else {
         this.headRegistry.recieve(message, null, message.version)
       }

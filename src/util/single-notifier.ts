@@ -23,15 +23,13 @@ export interface SingleNotifierResponse {
 export class SingleNotifier {
 
   private services: Services
-  private options: Options
   private requests: Map<string, Array<SingleNotifierResponse>>
   private action: ALL_ACTIONS
   private topic: TOPIC
   private timeoutDuration: number
 
-  constructor (services: Services, options: Options, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number) {
+  constructor (services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number) {
     this.services = services
-    this.options = options
     this.topic = topic
     this.action = action
     this.timeoutDuration = timeoutDuration
@@ -85,7 +83,7 @@ export class SingleNotifier {
       if (response.callback) {
         response.callback(error, data)
       } else if (error && response.reject) {
-        response.reject(data)
+        response.reject(error)
       } else if (response.resolve) {
         response.resolve(data)
       }

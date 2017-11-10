@@ -22,7 +22,7 @@ export class TimerRegistry {
     }
 
     public requestIdleCallback (callback: Function): void {
-        process.nextTick(callback)
+        nextTick(callback)
     }
 
 }
