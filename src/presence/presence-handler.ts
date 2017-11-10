@@ -162,13 +162,12 @@ export class PresenceHandler {
         topic: TOPIC.PRESENCE,
         action: PRESENCE_ACTION.QUERY,
         correlationId: queryId,
-        parsedData: users
+        names: users
       }
       emitterAction = `${response}-${queryId}`
     }
 
     this.services.connection.sendMessage(message)
-    this.services.timeoutRegistry.add({ message })
 
     if (!callback) {
       return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
@@ -189,7 +188,7 @@ export class PresenceHandler {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_ALL_RESPONSE) {
-      this.queryEmitter.emit(allResponse, null, message.parsedData)
+      this.queryEmitter.emit(allResponse, null, message.names)
       this.services.timeoutRegistry.remove(message)
     } else if (message.action === PRESENCE_ACTION.QUERY_RESPONSE) {
       this.queryEmitter.emit(`${response}-${message.correlationId}`, null, message.parsedData)
@@ -219,7 +218,7 @@ export class PresenceHandler {
       topic: TOPIC.PRESENCE,
       action,
       correlationId: correlationId.toString(),
-      parsedData: names
+      names
     }
     this.services.timeoutRegistry.add({ message })
     this.services.connection.sendMessage(message)
