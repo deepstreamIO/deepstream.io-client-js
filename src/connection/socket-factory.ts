@@ -8,20 +8,23 @@ export interface Socket extends WebSocket {
     sendParsedMessage: (message: Message) => void
 }
 
+const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
+
 import * as NodeWebSocket from 'ws'
 
 export const socketFactory = (url: string, options: any): Socket => {
-    const socket = new NodeWebSocket(url, options) as any
+    const socket = BrowserWebsocket
+        ? new BrowserWebsocket(url, [], options) 
+        : new NodeWebSocket(url, options) as any
+
+    if (BrowserWebsocket) {
+        socket.binaryType = 'arraybuffer'
+    }
+
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => {}
     socket.onmessage = (raw: {data: Buffer}) => {
         const parseResults = parse(raw.data)
-        // parseResults.forEach(element => {
-        //     const msg = element as Message
-        //     if (msg.action !== CONNECTION_ACTIONS.PONG && msg.action !== CONNECTION_ACTIONS.PING) {
-        //         console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
-        //     }
-        // })
         socket.onparsedmessages(parseResults)
     }
     socket.sendParsedMessage = (message: Message): void => {
