@@ -123,20 +123,28 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public has (name: string, callback: (error: string | null, has: boolean) => void): Promise<boolean> | void {
+  public has (name: string, callback: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
     if (!callback) {
       return new Promise ((resolve, reject) => {
         this.head(name, (error: string | null, version: number) => {
-          if (error) {
-            resolve(version !== -1)
-          } else {
+          if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
+            resolve(false)
+          } else if (error) {
             reject(error)
+          } else {
+            resolve(version !== -1)
           }
         })
       })
     }
     this.head(name, (error: string | null, version: number) => {
-      callback(error, version !== -1)
+      if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
+        callback(null, false)
+      } else if (error) {
+        callback(error, null)
+      } else {
+        callback(null, version !== -1)
+      }
     })
   }
 
@@ -274,26 +282,29 @@ export class RecordHandler {
       message.action === RECORD_ACTION.MESSAGE_DENIED ||
       message.action === RECORD_ACTION.MESSAGE_PERMISSION_ERROR
     ) {
-      let isHandled = this.handleMessageDeniedAndPermissionError(message)
-      if (isHandled) {
-        return
-      }
+      // do something
     }
 
-    if (message.action === RECORD_ACTION.READ_RESPONSE) {
+    if (
+      message.action === RECORD_ACTION.READ_RESPONSE ||
+      message.originalAction === RECORD_ACTION.READ
+    ) {
       if (message.isError) {
-        this.readRegistry.recieve(message, message.parsedData, null)
+        this.readRegistry.recieve(message, RECORD_ACTION[message.action], null)
       } else {
         this.readRegistry.recieve(message, null, message.parsedData)
       }
       return
     }
 
-    if (message.action === RECORD_ACTION.HEAD_RESPONSE) {
+    if (
+      message.action === RECORD_ACTION.HEAD_RESPONSE ||
+      message.originalAction === RECORD_ACTION.HEAD
+    ) {
       if (message.isError) {
-        this.readRegistry.recieve(message, message.parsedData, null)
+        this.headRegistry.recieve(message, RECORD_ACTION[message.action], null)
       } else {
-        this.readRegistry.recieve(message, null, message.version)
+        this.headRegistry.recieve(message, null, message.version)
       }
       return
     }
@@ -326,24 +337,11 @@ export class RecordHandler {
     this.recordCores.delete(recordName)
   }
 
-  private handleMessageDeniedAndPermissionError (message: RecordMessage): boolean {
-    let handled = false
-    if (message.originalAction === RECORD_ACTION.READ){
-      this.readRegistry.recieve(message, RECORD_ACTION[message.action], null)
-      handled = true
-    }
-    if (message.originalAction === RECORD_ACTION.HEAD){
-      this.headRegistry.recieve(message, RECORD_ACTION[message.action], null)
-      handled = true
-    }
-    return handled
-  }
-
   private getRecordCore (recordName: string): RecordCore {
-    let recordCore = this.recordCores.get(name)
+    let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
-      recordCore = new RecordCore(name, this.services, this.options, this.removeRecord.bind(this))
-      this.recordCores.set(name, recordCore)
+      recordCore = new RecordCore(recordName, this.services, this.options, this.removeRecord.bind(this))
+      this.recordCores.set(recordName, recordCore)
     }
     recordCore.usages++
     return recordCore
