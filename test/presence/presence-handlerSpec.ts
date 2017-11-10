@@ -71,11 +71,11 @@ describe('Presence handler', () => {
 
     await BBPromise.delay(0)
     assert.calledOnce(callbackSpy)
-    assert.calledWithExactly(callbackSpy, { reason: EVENT.CLIENT_OFFLINE })
+    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
 
     assert.notCalled(promisseSuccess)
     assert.calledOnce(promisseError)
-    assert.calledWithExactly(promisseError, { reason: EVENT.CLIENT_OFFLINE })
+    assert.calledWithExactly(promisseError, EVENT.CLIENT_OFFLINE)
   })
 
   it('subscribes to presence with user a', async () => {

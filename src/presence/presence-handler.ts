@@ -12,9 +12,9 @@ export type QueryResult = Array<string>
 export interface IndividualQueryResult { [key: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
 
-function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | ((error: { reason: EVENT }, data?: QueryResult | IndividualQueryResult) => void) } {
+function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | ((error: EVENT, data?: QueryResult | IndividualQueryResult) => void) } {
   let users: Array<string> | null = null
-  let cb: ((error: { reason: EVENT }, data: QueryResult | IndividualQueryResult) => void) | null = null
+  let cb: ((error: EVENT, data: QueryResult | IndividualQueryResult) => void) | null = null
 
   if (rest.length === 1) {
     if (Array.isArray(rest[0])) {
@@ -141,10 +141,10 @@ export class PresenceHandler {
 
     if (!this.services.connection.isConnected) {
       if (callback) {
-        callback({ reason: EVENT.CLIENT_OFFLINE })
+        this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
         return
       }
-      return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
+      return Promise.reject(EVENT.CLIENT_OFFLINE)
     }
 
     let message: Message
@@ -204,9 +204,9 @@ export class PresenceHandler {
       this.subscriptionEmitter.emit(allSubscribe, message.name, false)
     } else if (message.action === PRESENCE_ACTION.MESSAGE_DENIED) {
       if (message.originalAction === PRESENCE_ACTION.QUERY) {
-        this.queryEmitter.emit(`${response}-${message.correlationId}`, { reason: PRESENCE_ACTION[message.action] })
+        this.queryEmitter.emit(`${response}-${message.correlationId}`, PRESENCE_ACTION[message.action])
       } else if (message.originalAction === PRESENCE_ACTION.QUERY_ALL) {
-        this.queryEmitter.emit(allResponse, { reason: PRESENCE_ACTION[message.action] })
+        this.queryEmitter.emit(allResponse, PRESENCE_ACTION[message.action])
       } else {
         this.services.logger.error(message)
       }
