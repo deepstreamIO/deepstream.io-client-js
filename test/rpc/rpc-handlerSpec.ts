@@ -4,6 +4,7 @@ import * as sinon from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../mocks'
 import { EVENT } from '../../src/constants'
 import { TOPIC, RPC_ACTIONS, RPCMessage, Message } from '../../binary-protocol/src/message-constants'
+import * as Emitter from 'component-emitter2'
 
 import { DefaultOptions, Options } from '../../src/client-options'
 import { RPCHandler, RPCProvider } from '../../src/rpc/rpc-handler'
@@ -16,6 +17,8 @@ describe('RPC handler', () => {
   let handle: Function
   let rpcProviderSpy: sinon.SinonSpy
   let data: any
+  let emitter
+  let emitterMock: sinon.SinonMock
   const name = 'myRpc'
   const rpcAcceptTimeout = 3
   const rpcResponseTimeout = 10
@@ -23,7 +26,9 @@ describe('RPC handler', () => {
 
   beforeEach(() => {
     services = getServicesMock()
-    rpcHandler = new RPCHandler(services, options)
+    emitter = new Emitter()
+    emitterMock = sinon.mock(emitter)
+    rpcHandler = new RPCHandler(emitter, services, options)
     handle = services.getHandle()
     rpcProviderSpy = sinon.spy()
     data = { foo: 'bar' }

@@ -4,6 +4,7 @@ import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-proto
 import { EVENT } from '../constants'
 import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
+import ResubscribeNotifier from '../util/resubscribe-notifier'
 import { getUid } from '../util/utils'
 
 import * as Emitter from 'component-emitter2'
@@ -15,11 +16,13 @@ export class RPCHandler {
   private options: Options
   private rpcs: Map<string, RPC>
   private providers: Map<string, RPCProvider>
+  private resubscribeNotifier: ResubscribeNotifier
 
-  constructor (services: Services, options: Options) {
+  constructor (client: Emitter, services: Services, options: Options) {
     this.services = services
     this.options = options
-
+    this.resubscribe = this.resubscribe.bind(this)
+    this.resubscribeNotifier = new ResubscribeNotifier(client, this.services, this.options, this.resubscribe)
     this.rpcs = new Map<string, RPC>()
     this.providers = new Map<string, RPCProvider>()
     this.services.connection.registerHandler(TOPIC.RPC, this.handle.bind(this))
@@ -52,14 +55,16 @@ export class RPCHandler {
       throw new Error('invalid argument callback')
     }
 
-    const message = {
-      topic: TOPIC.RPC,
-      action: RPC_ACTION.PROVIDE,
-      name
-    }
-    this.services.timeoutRegistry.add({ message })
-    this.services.connection.sendMessage(message)
     this.providers.set(name, callback)
+    if (this.services.connection.isConnected) {
+      const message = {
+        topic: TOPIC.RPC,
+        action: RPC_ACTION.PROVIDE,
+        name
+      }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
+    }
   }
 
   /**
@@ -70,15 +75,21 @@ export class RPCHandler {
       throw new Error('invalid argument name')
     }
 
-    if (this.providers.has(name)) {
-      this.providers.delete(name)
-      const message = {
+    if (!this.providers.has(name)) {
+      this.services.logger.warn({
         topic: TOPIC.RPC,
-        action: RPC_ACTION.UNPROVIDE,
+        action: RPC_ACTION.NOT_PROVIDED,
         name
-      }
+      })
+      return
+    }
+
+    this.providers.delete(name)
+    if (this.services.connection.isConnected) {
+      const message = { topic: TOPIC.RPC, action: RPC_ACTION.UNPROVIDE, name }
       this.services.timeoutRegistry.add({ message })
       this.services.connection.sendMessage(message)
+      return
     }
   }
 
@@ -217,6 +228,19 @@ export class RPCHandler {
       this.services.logger.error(message, EVENT.UNKNOWN_CORRELATION_ID)
     }
     return rpc
+  }
+
+  private resubscribe (): void {
+    const keys = Array.from(this.providers.keys())
+    for (let i = 0; i < keys.length; i++) {
+      const message = {
+        topic: TOPIC.RPC,
+        action: RPC_ACTION.PROVIDE,
+        name: keys[i]
+      }
+      this.services.timeoutRegistry.add({ message })
+      this.services.connection.sendMessage(message)
+    }
   }
 
 }

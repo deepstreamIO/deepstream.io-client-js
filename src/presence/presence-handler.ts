@@ -141,10 +141,10 @@ export class PresenceHandler {
 
     if (!this.services.connection.isConnected) {
       if (callback) {
-        callback({ reason: EVENT.CLIENT_OFFLINE })
+        this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
         return
       }
-      return Promise.reject({ reason: EVENT.CLIENT_OFFLINE })
+      return Promise.reject(EVENT.CLIENT_OFFLINE)
     }
 
     let message: Message
