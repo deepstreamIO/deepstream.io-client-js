@@ -6,6 +6,12 @@ module.exports = {
   output: {
     path: __dirname,
     filename: './dist/deepstream.js',
+    library: 'deepstream',
+    libraryTarget: 'umd',
+    umdNamedDefine: true
+  },
+  externals: {
+    "ws": "WebSocket"
   },
   resolve: {
     extensions: ['.js', '.ts'],
@@ -16,6 +22,6 @@ module.exports = {
     }],
   },
   plugins: [
-    new webpack.IgnorePlugin(/ws/),
+    // new webpack.IgnorePlugin(/ws/),
   ],
 };
