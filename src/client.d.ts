@@ -145,6 +145,11 @@ declare namespace deepstreamIO {
                 delete(): void;
         }
 
+        interface AnonymousRecord extends Record {
+                /**Sets the underlying record the anonymousRecord wraps around. It takes care of cleaning up the previous record on your behalf. */
+                setName(recordName: string): any;
+        }
+
         interface List extends EventEmitter {
                 name: string;
                 usages: number;
@@ -212,7 +217,7 @@ declare namespace deepstreamIO {
                 /** Get a list of record names */
                 getList(oath: string): List;
                 /** An AnonymousRecord is a record that can change its name. It acts as a wrapper around an actual record that can be swapped out for another one whilst keeping all bindings intact. */
-                getAnonymousRecord(): Record;
+                getAnonymousRecord(): AnonymousRecord;
                 /** Check if a record exists and run a callback that contains an error argument and a boolean to indicate whether or not the record exists in deepstream. */
                 has(name: string, callback: (error: string, hasRecord: boolean) => void): void;
                 /** Listen for record subscriptions made by other clients. */
