@@ -254,6 +254,9 @@ Connection.prototype._queueNextPacket = function () {
  * @returns {void}
  */
 Connection.prototype._sendAuthParams = function () {
+  if (this._state === C.CONNECTION_STATE.AUTHENTICATING) {
+    return
+  }
   this._setState(C.CONNECTION_STATE.AUTHENTICATING)
   const authMessage = messageBuilder.getMsg(C.TOPIC.AUTH, C.ACTIONS.REQUEST, [this._authParams])
   this._submit(authMessage)
@@ -459,6 +462,8 @@ Connection.prototype._handleAuthResponse = function (message) {
       }
 
       return
+    } else if (message.data[0] === C.EVENT.ALREADY_AUTHENTICATED) {
+      this._client._$onError(C.TOPIC.ERROR, C.EVENT.ALREADY_AUTHENTICATED, 'this client\'s connection is already authenticated')
     } else {
       this._setState(C.CONNECTION_STATE.AWAITING_AUTHENTICATION)
     }
