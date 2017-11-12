@@ -16,8 +16,10 @@ export const getServicesMock = () => {
       sendMessage: (message: Message) => { lastMessageSent = message },
       getConnectionState: stub().returns(CONNECTION_STATE.OPEN),
       isConnected: true,
-      registerHandler: (topic: any, callback: Function) => {
+      registerHandler: (topic: any, callback: Function): void => {
         handle = callback
+      },
+      onReestablished: (callback: Function): void => {
       }
   }
   const connectionMock = mock(connection)

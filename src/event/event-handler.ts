@@ -3,7 +3,6 @@ import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
-import ResubscribeNotifier from '../util/resubscribe-notifier'
 import * as Emitter from 'component-emitter2'
 
 export class EventHandler {
@@ -12,16 +11,14 @@ export class EventHandler {
   private emitter: Emitter
   private listeners: Listener
   private options: Options
-  private client: Client
-  private resubscribeNotifier: ResubscribeNotifier
 
-  constructor (client: Emitter, services: Services, options: Options, listeners?: Listener) {
+  constructor (services: Services, options: Options, listeners?: Listener) {
     this.options = options
     this.services = services
     this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()
-    this.resubscribeNotifier = new ResubscribeNotifier(client, services, options, this.resubscribe.bind(this))
     this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
+    this.services.connection.onReestablished(this.resubscribe.bind(this))
   }
 
   /**
@@ -151,7 +148,7 @@ private handle (message: EventMessage): void {
       message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS
     ) {
         this.services.timeoutRegistry.remove(message)
-        this.services.logger.warn(message, undefined, EVENT_ACTION[message.action])
+        this.services.logger.warn(message)
         return
     }
 

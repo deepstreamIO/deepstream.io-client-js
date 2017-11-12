@@ -33,14 +33,12 @@ export class TimeoutRegistry extends EventEmitter {
     private options: Options
     private services: Services
     private register: Map<number, InternalTimeout>
-    private counter: number
 
     constructor (services: Services, options: Options) {
         super()
         this.options = options
         this.services = services
         this.register = new Map()
-        this.counter = 0
         // services.connection.on(EVENT.CONNECTION_STATE_CHANGED, this.onConnectionStateChanged.bind(this))
     }
 
@@ -74,7 +72,6 @@ export class TimeoutRegistry extends EventEmitter {
         data: internalTimeout
       })
       this.register.set(internalTimeout.timerId, internalTimeout)
-      this.counter++
       return internalTimeout.timerId
   }
 
@@ -87,7 +84,6 @@ export class TimeoutRegistry extends EventEmitter {
       if (timeout.uniqueName === uniqueName) {
         clearTimeout(timerId)
         this.register.delete(timerId)
-        this.counter--
       }
     }
   }
@@ -98,7 +94,6 @@ export class TimeoutRegistry extends EventEmitter {
   public clear (timerId: number): void {
     this.services.timerRegistry.remove(timerId)
     this.register.delete(timerId)
-    this.counter--
   }
 
   /**
@@ -106,7 +101,6 @@ export class TimeoutRegistry extends EventEmitter {
    */
   private onTimeout (internalTimeout: InternalTimeout): void {
     this.register.delete(internalTimeout.timerId)
-    this.counter--
     const timeout = internalTimeout.timeout
     if (timeout.callback) {
       timeout.callback(timeout.event as EVENT, timeout.message)
@@ -136,7 +130,6 @@ export class TimeoutRegistry extends EventEmitter {
     if (connectionState !== CONNECTION_STATE.OPEN) {
       for (const [ timerId, timer ] of this.register) {
         clearTimeout(timer.timerId)
-        this.counter--
         this.register.delete(timer.timerId)
       }
     }

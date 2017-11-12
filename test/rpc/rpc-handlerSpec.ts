@@ -17,8 +17,6 @@ describe('RPC handler', () => {
   let handle: Function
   let rpcProviderSpy: sinon.SinonSpy
   let data: any
-  let emitter
-  let emitterMock: sinon.SinonMock
   const name = 'myRpc'
   const rpcAcceptTimeout = 3
   const rpcResponseTimeout = 10
@@ -26,9 +24,7 @@ describe('RPC handler', () => {
 
   beforeEach(() => {
     services = getServicesMock()
-    emitter = new Emitter()
-    emitterMock = sinon.mock(emitter)
-    rpcHandler = new RPCHandler(emitter, services, options)
+    rpcHandler = new RPCHandler(services, options)
     handle = services.getHandle()
     rpcProviderSpy = sinon.spy()
     data = { foo: 'bar' }

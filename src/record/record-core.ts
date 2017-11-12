@@ -111,7 +111,7 @@ export class RecordCore extends Emitter {
   }
 
   set usages (usages: number) {
-    this.references++
+    this.references = usages
     if (this.references === 1) {
       this.services.timerRegistry.remove(this.discardTimeout)
       this.stateMachine.transition(RECORD_ACTION.SUBSCRIBE)
@@ -712,7 +712,7 @@ export class RecordCore extends Emitter {
       this.services.logger.error(
         { topic: TOPIC.RECORD },
         EVENT.RECORD_ALREADY_DESTROYED,
-        `Can't invoke '${methodName}'. Record '${this.name}' is already destroyed`
+        { methodName }
       )
       return true
     }

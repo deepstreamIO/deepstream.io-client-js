@@ -11,8 +11,6 @@ import { EventHandler } from '../../src/event/event-handler'
 describe('event handler', () => {
   let services: any
   let listener: any
-  let emitter
-  let emitterMock: sinon.SinonMock
   let eventHandler: EventHandler
   let handle: Function
   let spy: sinon.SinonSpy
@@ -21,10 +19,8 @@ describe('event handler', () => {
   beforeEach(() => {
     services = getServicesMock()
     listener = getListenerMock()
-    emitter = new Emitter()
-    emitterMock = sinon.mock(emitter)
 
-    eventHandler = new EventHandler(emitter, services, DefaultOptions, listener.listener)
+    eventHandler = new EventHandler(services, DefaultOptions, listener.listener)
     handle = services.getHandle()
     spy = sinon.spy()
   })

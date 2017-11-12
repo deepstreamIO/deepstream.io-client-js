@@ -94,8 +94,8 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot (name: string): void
-  public snapshot (name: string, callback: (error: string | null, data: any) => void): Promise<number>
+  public snapshot (name: string): Promise<number>
+  public snapshot (name: string, callback: (error: string | null, data: any) => void): void
   public snapshot (name: string, callback?: (error: string | null, data: any) => void): void | Promise<number> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')

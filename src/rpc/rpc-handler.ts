@@ -4,7 +4,6 @@ import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-proto
 import { EVENT } from '../constants'
 import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
-import ResubscribeNotifier from '../util/resubscribe-notifier'
 import { getUid } from '../util/utils'
 
 import * as Emitter from 'component-emitter2'
@@ -16,16 +15,14 @@ export class RPCHandler {
   private options: Options
   private rpcs: Map<string, RPC>
   private providers: Map<string, RPCProvider>
-  private resubscribeNotifier: ResubscribeNotifier
 
-  constructor (client: Emitter, services: Services, options: Options) {
+  constructor (services: Services, options: Options) {
     this.services = services
     this.options = options
-    this.resubscribe = this.resubscribe.bind(this)
-    this.resubscribeNotifier = new ResubscribeNotifier(client, this.services, this.options, this.resubscribe)
     this.rpcs = new Map<string, RPC>()
     this.providers = new Map<string, RPCProvider>()
     this.services.connection.registerHandler(TOPIC.RPC, this.handle.bind(this))
+    this.services.connection.onReestablished(this.reprovide.bind(this))
   }
 
   /**
@@ -230,7 +227,7 @@ export class RPCHandler {
     return rpc
   }
 
-  private resubscribe (): void {
+  private reprovide (): void {
     const keys = Array.from(this.providers.keys())
     for (let i = 0; i < keys.length; i++) {
       const message = {

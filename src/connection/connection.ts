@@ -70,6 +70,8 @@ export class Connection {
     // tslint:disable-next-line:no-empty
     this.authCallback = () => {}
     this.emitter = emitter
+
+    let isReconnecting = false
     this.stateMachine = new StateMachine(
       this.services.logger,
       {
@@ -80,6 +82,12 @@ export class Connection {
           }
           this.isConnected = newState === CONNECTION_STATE.OPEN
           emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
+
+          if (newState === CONNECTION_STATE.RECONNECTING) {
+            isReconnecting = true
+          } else if (newState === CONNECTION_STATE.OPEN && isReconnecting) {
+            emitter.emit(EVENT.CONNECTION_REESTABLISHED)
+          }
         },
         transitions: [
           { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
@@ -108,6 +116,10 @@ export class Connection {
     this.originalUrl = utils.parseUrl(url, this.options.path)
     this.url = this.originalUrl
     this.createEndpoint()
+  }
+
+  public onReestablished (callback: Function): void {
+    this.emitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {
