@@ -5,7 +5,7 @@ import { getServicesMock, getLastMessageSent } from '../mocks'
 import { EVENT, CONNECTION_STATE } from '../../src/constants'
 import { TOPIC, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
 
-import { SingleNotifier } from '../../src/util/single-notifier'
+import { SingleNotifier } from '../../src/record/single-notifier'
 
 describe('Single Notifier', () => {
   const timeout = 10

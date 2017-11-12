@@ -128,7 +128,7 @@ export class RecordCore extends Emitter {
  * event is fired
  * @param   {[Function]} callback Will be called when the record is ready
  */
-  public whenReady (context: any, callback?: (context: any) => void): Promise<any> | void {
+  public whenReady (context: null | List | Record | AnonymousRecord, callback?: (context: any) => void): Promise<any> | void {
     if (this.isReady === true) {
       if (callback) {
         callback(context)
@@ -171,12 +171,7 @@ export class RecordCore extends Emitter {
     }
 
     const oldValue = this.data
-    let newValue
-    if (path === undefined) {
-      newValue = data
-    } else {
-      newValue = setPath(oldValue, path, data)
-    }
+    const newValue = setPath(oldValue, path || null, data)
 
     if (oldValue === newValue) {
       if (callback) {
@@ -259,7 +254,7 @@ export class RecordCore extends Emitter {
     }
 
     if (args.triggerNow) {
-      this.whenReady(() => {
+      this.whenReady(null, () => {
         this.emitter.on(args.path || '', args.callback)
         args.callback(this.get(args.path))
       })
@@ -295,7 +290,7 @@ export class RecordCore extends Emitter {
       return
     }
 
-    this.emitter.off(args.path, args.callback)
+    this.emitter.off(args.path || '', args.callback)
   }
 
   /**
@@ -306,7 +301,7 @@ export class RecordCore extends Emitter {
     if (this.checkDestroyed('discard')) {
       return
     }
-    this.whenReady(this, () => {
+    this.whenReady(null, () => {
       this.references--
       if (this.references <= 0) {
         this.discardTimeout = this.services.timerRegistry.add({
@@ -327,7 +322,7 @@ export class RecordCore extends Emitter {
     if (this.checkDestroyed('delete')) {
       return
     }
-    this.whenReady(this, () => {
+    this.whenReady(null, () => {
       if (this.services.connection.isConnected) {
         const message = {
           topic: TOPIC.RECORD,

@@ -57,7 +57,7 @@ export class AnonymousRecord extends Emitter  {
         }
 
         this.emit('nameChanged', recordName)
-        return this.record.whenReady(callback)
+        return this.record.whenReady(this, callback)
     }
 
     public get (path?: string): any {

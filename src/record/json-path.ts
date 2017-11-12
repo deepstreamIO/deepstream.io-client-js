@@ -27,6 +27,10 @@ export function get (data: any, path: string | null, deepCopy: boolean): any {
  * string-based paths
  */
 export function setValue (root: any, path: string | null, value: any): any {
+  if (path === null) {
+    return value
+  }
+
   const tokens = tokenize(path)
   let node = root
 

@@ -579,12 +579,6 @@ describe('normalizeArguments', () => {
       .to.deep.equal({})
   })
 })
-// As these tests are only ever run in node, this is a bit pointless
-describe('isNode detects the environment', () => {
-  it('has detected something', () => {
-    expect(typeof utils.isNode).to.equal('boolean')
-  })
-})
 
 describe('parseUrl adds all missing parts of the url', () => {
   it('accepts no protocol and default to ws', () => {

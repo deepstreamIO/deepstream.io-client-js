@@ -4,13 +4,15 @@ import { mock, stub, SinonMock, SinonStub } from 'sinon'
 import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
 import { Message } from '../binary-protocol/src/message-constants'
-import { SingleNotifier } from '../src/util/single-notifier'
+import { SingleNotifier } from '../src/record/single-notifier'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
 
 export const getServicesMock = () => {
   let handle: Function | null = null
+  let onReestablished: Function
+  let onLost: Function
 
   const connection = {
       sendMessage: (message: Message) => { lastMessageSent = message },
@@ -20,6 +22,10 @@ export const getServicesMock = () => {
         handle = callback
       },
       onReestablished: (callback: Function): void => {
+        onReestablished = callback
+      },
+      onLost: (callback: Function): void => {
+        onLost = callback
       }
   }
   const connectionMock = mock(connection)
@@ -94,6 +100,8 @@ export const getServicesMock = () => {
     getLogger: (): any => ({ logger, loggerMock}),
     timerRegistry,
     getHandle: (): Function | null => handle,
+    simulateConnectionLost: (): void => onLost(),
+    simulateConnectionReestablished: (): void => onReestablished(),
     storage,
     storageMock,
     verify: () => {

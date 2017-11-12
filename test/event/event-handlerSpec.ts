@@ -83,6 +83,31 @@ describe('event handler', () => {
     eventHandler.subscribe(name, spy)
   })
 
+  it('resubscribes to an event when connection reestablished', () => {
+    services.connectionMock
+      .expects('sendMessage')
+      .twice()
+      .withExactArgs({
+        topic: TOPIC.EVENT,
+        action: EVENT_ACTION.SUBSCRIBE,
+        name
+      })
+
+    services.timeoutRegistryMock
+      .expects('add')
+      .twice()
+      .withExactArgs({
+        message: {
+          topic: TOPIC.EVENT,
+          action: EVENT_ACTION.SUBSCRIBE,
+          name
+        }
+      })
+
+    eventHandler.subscribe(name, spy)
+    services.simulateConnectionReestablished()
+  })
+
   it('subscribes to an event twice', () => {
     services.connectionMock
       .expects('sendMessage')
