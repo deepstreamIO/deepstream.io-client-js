@@ -94,7 +94,9 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot (name: string, callback?: (error: string | null, data: any) => void): Promise<any> | void {
+  public snapshot (name: string): void
+  public snapshot (name: string, callback: (error: string | null, data: any) => void): Promise<number>
+  public snapshot (name: string, callback?: (error: string | null, data: any) => void): void | Promise<number> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -126,6 +128,8 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
+  public has (name: string): Promise<boolean>
+  public has (name: string, callback: (error: string | null, has: boolean | null) => void): void
   public has (name: string, callback?: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
@@ -164,7 +168,9 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public head (name: string, callback?: (error: string | null, version: number) => void): Promise<number> | void {
+  public head (name: string): Promise<number>
+  public head (name: string, callback: (error: string | null, version: number) => void): void
+  public head (name: string, callback?: (error: string | null, version: number) => void): void | Promise<number> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }

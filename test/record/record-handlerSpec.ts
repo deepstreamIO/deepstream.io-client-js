@@ -94,7 +94,7 @@ describe('Record handler', () => {
     beforeEach(() => {
       data = { some: 'data' }
       recordHandler.snapshot(name, callbackSpy)
-      const promise = recordHandler.snapshot(name) as Promise<any>
+      const promise = recordHandler.snapshot(name)
       promise.then(resolveSpy).catch(rejectSpy)
     })
 
@@ -150,7 +150,8 @@ describe('Record handler', () => {
       .withExactArgs(name, { resolve: match.func, reject: match.func })
 
     recordHandler.head(name, callbackSpy)
-    const promise = recordHandler.head(name) as Promise<number>
+
+    const promise = recordHandler.head(name)
     promise.then(resolveSpy).catch(rejectSpy)
   })
 
@@ -166,7 +167,7 @@ describe('Record handler', () => {
     beforeEach(() => {
       version = 1
       recordHandler.head(name, callbackSpy)
-      const promise = recordHandler.head(name) as Promise<number>
+      const promise = recordHandler.head(name)
       promise.then(resolveSpy).catch(rejectSpy)
     })
 
@@ -218,7 +219,7 @@ describe('Record handler', () => {
       .withExactArgs(name, { callback: match.func })
 
     recordHandler.has(name, callbackSpy)
-    const promise = recordHandler.has(name) as Promise<boolean>
+    const promise = recordHandler.has(name)
     promise.then(resolveSpy).catch(rejectSpy)
   })
 
@@ -234,7 +235,7 @@ describe('Record handler', () => {
     beforeEach(() => {
       version = 1
       recordHandler.has(name, callbackSpy)
-      const promise = recordHandler.has(name) as Promise<boolean>
+      const promise = recordHandler.has(name)
       promise.then(resolveSpy).catch(rejectSpy)
     })
 
