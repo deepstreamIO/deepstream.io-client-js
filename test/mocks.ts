@@ -4,6 +4,7 @@ import { mock, stub, SinonMock, SinonStub } from 'sinon'
 import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
 import { Message } from '../binary-protocol/src/message-constants'
+import { SingleNotifier } from '../src/util/single-notifier'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -112,5 +113,14 @@ export const getListenerMock = () => {
   return {
     listener,
     listenerMock
+  }
+}
+
+export const getSingleNotifierMock = () => {
+  const singleNotifier = SingleNotifier.prototype
+  const singleNotifierMock = mock(singleNotifier)
+  return {
+    singleNotifier,
+    singleNotifierMock
   }
 }

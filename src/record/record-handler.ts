@@ -8,6 +8,7 @@ import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
+import { SingleNotifier } from '../util/single-notifier'
 import * as Emitter from 'component-emitter2'
 
 export class RecordHandler {
@@ -16,6 +17,8 @@ export class RecordHandler {
   private options: Options
   private listener: Listener
   private recordCores: Map<string, RecordCore>
+  private readRegistry: SingleNotifier
+  private headRegistry: SingleNotifier
 
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
@@ -24,6 +27,8 @@ export class RecordHandler {
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
     this.recordCores = new Map()
+    this.readRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
+    this.headRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
@@ -93,6 +98,9 @@ export class RecordHandler {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
+    if (callback !== undefined && typeof callback !== 'function') {
+      throw new Error('invalid argument: callback')
+    }
 
     const recordCore = this.recordCores.get(name)
     if (recordCore && recordCore.isReady) {
@@ -103,13 +111,13 @@ export class RecordHandler {
         return Promise.resolve(recordCore.get())
       }
     }
-    // if (callback) {
-    //   this.readRegistry.request(name, { callback })
-    // } else {
-    //   return new Promise((resolve, reject) => {
-    //     this.readRegistry.request(name, { resolve, reject })
-    //   })
-    // }
+    if (callback) {
+      this.readRegistry.request(name, { callback })
+    } else {
+      return new Promise((resolve, reject) => {
+        this.readRegistry.request(name, { resolve, reject })
+      })
+    }
   }
 
   /**
@@ -118,20 +126,35 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public has (name: string, callback: (error: string | null, has: boolean) => void): Promise<boolean> | void {
+  public has (name: string, callback?: (error: string | null, has: boolean | null) => void): Promise<boolean> | void {
+    if (typeof name !== 'string' || name.length === 0) {
+      throw new Error('invalid argument: name')
+    }
+    if (callback !== undefined && typeof callback !== 'function') {
+      throw new Error('invalid argument: callback')
+    }
+
     if (!callback) {
       return new Promise ((resolve, reject) => {
         this.head(name, (error: string | null, version: number) => {
-          if (error) {
-            resolve(version !== -1)
-          } else {
+          if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
+            resolve(false)
+          } else if (error) {
             reject(error)
+          } else {
+            resolve(version !== -1)
           }
         })
       })
     }
     this.head(name, (error: string | null, version: number) => {
-      callback(error, version !== -1)
+      if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
+        callback(null, false)
+      } else if (error) {
+        callback(error, null)
+      } else {
+        callback(null, version !== -1)
+      }
     })
   }
 
@@ -141,9 +164,12 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public head (name: string, callback: (error: string | null, version: number) => void): Promise<number> | void {
+  public head (name: string, callback?: (error: string | null, version: number) => void): Promise<number> | void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
+    }
+    if (callback !== undefined && typeof callback !== 'function') {
+      throw new Error('invalid argument: callback')
     }
 
     const recordCore = this.recordCores.get(name)
@@ -155,13 +181,13 @@ export class RecordHandler {
       return Promise.resolve(recordCore.version)
     }
 
-    // if (callback) {
-    //   this.headRegistry.request(name, { callback })
-    // } else {
-    //   return new Promise((resolve, reject) => {
-    //     this.headRegistry.request(name, { resolve, reject })
-    //   })
-    // }
+    if (callback) {
+      this.headRegistry.request(name, { callback })
+    } else {
+      return new Promise((resolve, reject) => {
+        this.headRegistry.request(name, { resolve, reject })
+      })
+    }
   }
 
   /**
@@ -272,12 +298,28 @@ export class RecordHandler {
       // do something
     }
 
-    if (message.action === RECORD_ACTION.READ_RESPONSE) {
-      // do something
+    if (
+      message.action === RECORD_ACTION.READ_RESPONSE ||
+      message.originalAction === RECORD_ACTION.READ
+    ) {
+      if (message.isError) {
+        this.readRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
+      } else {
+        this.readRegistry.recieve(message, null, message.parsedData)
+      }
+      return
     }
 
-    if (message.action === RECORD_ACTION.HEAD_RESPONSE) {
-      // do something
+    if (
+      message.action === RECORD_ACTION.HEAD_RESPONSE ||
+      message.originalAction === RECORD_ACTION.HEAD
+    ) {
+      if (message.isError) {
+        this.headRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
+      } else {
+        this.headRegistry.recieve(message, null, message.version)
+      }
+      return
     }
 
     if (message.action === RECORD_ACTION.DELETED) {
@@ -309,10 +351,10 @@ export class RecordHandler {
   }
 
   private getRecordCore (recordName: string): RecordCore {
-    let recordCore = this.recordCores.get(name)
+    let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
-      recordCore = new RecordCore(name, this.services, this.options, this.removeRecord.bind(this))
-      this.recordCores.set(name, recordCore)
+      recordCore = new RecordCore(recordName, this.services, this.options, this.removeRecord.bind(this))
+      this.recordCores.set(recordName, recordCore)
     }
     recordCore.usages++
     return recordCore
