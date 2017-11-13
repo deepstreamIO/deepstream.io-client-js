@@ -75,6 +75,28 @@ describe('listener', () => {
     listener.listen(pattern, listenCallback)
   })
 
+  it('resubscribes all patterns when connection reestablished', () => {
+    listener = new Listener(TOPIC.RECORD, services)
+
+    const message = {
+      topic: TOPIC.RECORD,
+      action: RECORD_ACTIONS.LISTEN,
+      name: pattern
+    }
+    services.connectionMock
+    .expects('sendMessage')
+    .twice()
+    .withExactArgs(message)
+
+    services.timeoutRegistryMock
+    .expects('add')
+    .twice()
+    .withExactArgs({ message })
+
+    listener.listen(pattern, listenCallback)
+    services.simulateConnectionReestablished()
+  })
+
   describe('when a pattern is listened to', () => {
     beforeEach(() => {
       listener.listen(pattern, listenCallback)
@@ -210,15 +232,24 @@ describe('listener', () => {
         const closeSpy = sinon.spy()
         response.onStop(closeSpy)
         response.accept()
-        const message = {
+
+        listener.handle({
           topic: TOPIC.EVENT,
           action: EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED,
           name: pattern,
           subscription
-        }
+        })
 
-        listener.handle(message)
-        listener.handle(message)
+        sinon.assert.calledOnce(closeSpy)
+        sinon.assert.calledWithExactly(closeSpy, subscription)
+      })
+
+      it('triggers all stop callbacks when connection lost', () => {
+        const closeSpy = sinon.spy()
+        response.onStop(closeSpy)
+        response.accept()
+
+        services.simulateConnectionLost()
 
         sinon.assert.calledOnce(closeSpy)
         sinon.assert.calledWithExactly(closeSpy, subscription)

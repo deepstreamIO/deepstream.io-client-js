@@ -28,6 +28,9 @@ export class Listener {
     } else if (topic === TOPIC.EVENT) {
       this.actions = EVENT_ACTIONS
     }
+
+    this.services.connection.onLost(this.onConnectionLost.bind(this))
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
   }
 
   public listen (pattern: string, callback: ListenCallback): void {
@@ -67,29 +70,6 @@ export class Listener {
 
     this.listeners.delete(pattern)
     this.sendUnlisten(pattern)
-  }
-
-  /*
- * Sends a C.ACTIONS.LISTEN to deepstream.
- */
-  private sendListen (pattern: string): void {
-    const message = {
-      topic: this.topic,
-      action: this.actions.LISTEN,
-      name: pattern
-     }
-    this.services.timeoutRegistry.add({ message })
-    this.services.connection.sendMessage(message)
-  }
-
-  private sendUnlisten (pattern: string): void {
-    const message = {
-      topic: this.topic,
-      action: this.actions.UNLISTEN,
-      name: pattern
-    }
-    this.services.timeoutRegistry.add({ message })
-    this.services.connection.sendMessage(message)
   }
 
   /*
@@ -154,4 +134,39 @@ export class Listener {
     this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
   }
 
+  private onConnectionLost () {
+    this.stopCallbacks.forEach((callback, subscription) => {
+      callback(subscription)
+    })
+    this.stopCallbacks.clear()
+  }
+
+  private onConnectionReestablished () {
+    this.listeners.forEach((callback, pattern) => {
+      this.sendListen(pattern)
+    })
+  }
+
+  /*
+  * Sends a C.ACTIONS.LISTEN to deepstream.
+  */
+  private sendListen (pattern: string): void {
+    const message = {
+      topic: this.topic,
+      action: this.actions.LISTEN,
+      name: pattern
+    }
+    this.services.timeoutRegistry.add({ message })
+    this.services.connection.sendMessage(message)
+  }
+
+  private sendUnlisten (pattern: string): void {
+    const message = {
+      topic: this.topic,
+      action: this.actions.UNLISTEN,
+      name: pattern
+    }
+    this.services.timeoutRegistry.add({ message })
+    this.services.connection.sendMessage(message)
+  }
 }

@@ -8,27 +8,6 @@ import * as URL from 'url'
 const TRIM_REGULAR_EXPRESSION: RegExp = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g
 
 /**
- * True if environment is node, false if it's a browser
- * This seems somewhat inelegant, if anyone knows a better solution,
- * let's change this (must identify browserify's pseudo node implementation though)
- */
-export const isNode: boolean = typeof process !== 'undefined' && process.toString() === '[object process]'
-
-/**
- * Provides as soon as possible async execution in a cross
- * platform way
- *
- * @param   {Function} fn the function to be executed in an asynchronous fashion
- */
-export const nextTick = (fn: Function): void => {
-  if (exports.isNode) {
-    process.nextTick(fn)
-  } else {
-    setTimeout(fn, 0)
-  }
-}
-
-/**
  * Removes whitespace from the beginning and end of a string
  */
 export const trim = function (inputString: string): string {
@@ -100,34 +79,6 @@ export const shallowCopy = (obj: any): any => {
     return copy
   }
   return obj
-}
-
-/**
- * Set timeout utility that adds support for disabling a timeout
- * by passing null
- *
- * @param {Function} callback        the function that will be called after the given time
- * @param {Number}   timeoutDuration the duration of the timeout in milliseconds
- */
-export const setTimeout = (callback: Function, timeoutDuration: number): number => {
-  if (timeoutDuration !== null) {
-    return setTimeout(callback, timeoutDuration)
-  }
-  return -1
-}
-
-/**
- * Set Interval utility that adds support for disabling an interval
- * by passing null
- *
- * @param {Function} callback        the function that will be called after the given time
- * @param {Number}   intervalDuration the duration of the interval in milliseconds
- */
-export const setInterval = (callback: Function, intervalDuration: number): number => {
-  if (intervalDuration !== null) {
-    return setInterval(callback, intervalDuration)
-  }
-  return -1
 }
 
 /**

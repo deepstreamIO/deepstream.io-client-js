@@ -68,7 +68,7 @@ export class RPC {
      * Called once an error is received from the server.
      */
     public error (data: any) {
-      this.response(data, data)
+      this.response(data)
       this.complete()
     }
 
@@ -79,7 +79,7 @@ export class RPC {
      * UNSOLICITED_MESSAGE error
      */
     private onTimeout (event: RPC_ACTION, message: RPCMessage) {
-      this.response(RPC_ACTION[event], undefined)
+      this.response(RPC_ACTION[event])
       this.complete()
     }
 

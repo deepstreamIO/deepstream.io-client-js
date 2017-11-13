@@ -4,7 +4,6 @@ import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-proto
 import { EVENT } from '../constants'
 import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
-import ResubscribeNotifier from '../util/resubscribe-notifier'
 import { getUid } from '../util/utils'
 
 import * as Emitter from 'component-emitter2'
@@ -16,16 +15,14 @@ export class RPCHandler {
   private options: Options
   private rpcs: Map<string, RPC>
   private providers: Map<string, RPCProvider>
-  private resubscribeNotifier: ResubscribeNotifier
 
-  constructor (client: Emitter, services: Services, options: Options) {
+  constructor (services: Services, options: Options) {
     this.services = services
     this.options = options
-    this.resubscribe = this.resubscribe.bind(this)
-    this.resubscribeNotifier = new ResubscribeNotifier(client, this.services, this.options, this.resubscribe)
     this.rpcs = new Map<string, RPC>()
     this.providers = new Map<string, RPCProvider>()
     this.services.connection.registerHandler(TOPIC.RPC, this.handle.bind(this))
+    this.services.connection.onReestablished(this.reprovide.bind(this))
   }
 
   /**
@@ -57,13 +54,7 @@ export class RPCHandler {
 
     this.providers.set(name, callback)
     if (this.services.connection.isConnected) {
-      const message = {
-        topic: TOPIC.RPC,
-        action: RPC_ACTION.PROVIDE,
-        name
-      }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+      this.sendProvide(name)
     }
   }
 
@@ -191,15 +182,13 @@ export class RPCHandler {
         return
       }
       if (message.originalAction === RPC_ACTION.REQUEST) {
-        const rpcInvalid = this.getRPC(message)
-        if (!rpcInvalid) {
+        const invalidRPC = this.getRPC(message)
+        if (invalidRPC) {
+          invalidRPC.error(RPC_ACTION[message.action])
+          this.rpcs.delete(message.correlationId)
           return
         }
-        rpcInvalid.error(RPC_ACTION[message.action])
-        this.rpcs.delete(message.correlationId)
-        return
       }
-      return
     }
 
     // RPC Responses
@@ -208,7 +197,9 @@ export class RPCHandler {
       if (message.action === RPC_ACTION.ACCEPT) {
         rpc.accept()
         return
-      } else if (message.action === RPC_ACTION.RESPONSE) {
+      }
+
+      if (message.action === RPC_ACTION.RESPONSE) {
         rpc.respond(message.parsedData)
       } else if (message.action === RPC_ACTION.REQUEST_ERROR) {
         rpc.error(message.parsedData)
@@ -230,17 +221,20 @@ export class RPCHandler {
     return rpc
   }
 
-  private resubscribe (): void {
-    const keys = Array.from(this.providers.keys())
-    for (let i = 0; i < keys.length; i++) {
-      const message = {
-        topic: TOPIC.RPC,
-        action: RPC_ACTION.PROVIDE,
-        name: keys[i]
-      }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+  private reprovide (): void {
+    for (const [name, callback] of this.providers) {
+      this.sendProvide(name)
     }
+  }
+
+  private sendProvide (name: string) {
+    const message = {
+      topic: TOPIC.RPC,
+      action: RPC_ACTION.PROVIDE,
+      name
+    }
+    this.services.timeoutRegistry.add({ message })
+    this.services.connection.sendMessage(message)
   }
 
 }

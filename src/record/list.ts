@@ -36,13 +36,13 @@ export class List extends Emitter {
     }
 
     public whenReady (callback?: ((list: List) => void)): void | Promise<List> {
-        return this.record.whenReady(callback)
+        return this.record.whenReady(this, callback)
     }
 
     /**
- * Returns the array of list entries or an
- * empty array if the list hasn't been populated yet.
- */
+     * Returns the array of list entries or an
+     * empty array if the list hasn't been populated yet.
+     */
     public getEntries (): Array<string> {
         const entries = this.record.get()
 

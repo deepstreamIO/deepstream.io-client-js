@@ -29,6 +29,17 @@ describe('timeout registry', () => {
         services.loggerMock.verify()
     })
 
+    describe('adding timeout when connection down', () => {
+        beforeEach(() => {
+            services.connection.isConnected = false
+            timerId = timeoutRegistry.add({ message })
+        })
+
+        it('does not invoke an error', done => {
+            setTimeout(done, 20)
+        })
+    })
+
     describe('generic timeout', () => {
         beforeEach(() => {
             timerId = timeoutRegistry.add({ message })
@@ -55,6 +66,11 @@ describe('timeout registry', () => {
 
         it('clearing timer id clears timeout', done => {
             timeoutRegistry.clear(timerId)
+            setTimeout(done, 10)
+        })
+
+        it('clears timeout when connection lost', done => {
+            services.simulateConnectionLost()
             setTimeout(done, 10)
         })
     })
@@ -101,6 +117,11 @@ describe('timeout registry', () => {
                 sinon.assert.callCount(spy, 0)
                 done()
             }, 50)
+        })
+
+        it('clears timeout when connection lost', done => {
+            services.simulateConnectionLost()
+            setTimeout(done, 10)
         })
     })
 })

@@ -43,7 +43,9 @@ const enum TRANSITIONS {
 
 export class Connection {
   public isConnected: boolean
+  public emitter: Emitter
 
+  private internalEmitter: Emitter
   private services: Services
   private options: Options
   private stateMachine: StateMachine
@@ -54,7 +56,6 @@ export class Connection {
   private heartbeatInterval: number
   private lastHeartBeat: number
   private endpoint: Socket
-  private emitter: Emitter
   private handlers: Map<TOPIC, Function>
   private deliberateClose: boolean
 
@@ -70,6 +71,10 @@ export class Connection {
     // tslint:disable-next-line:no-empty
     this.authCallback = () => {}
     this.emitter = emitter
+    this.internalEmitter = new Emitter()
+
+    let isReconnecting = false
+    let firstOpen = true
     this.stateMachine = new StateMachine(
       this.services.logger,
       {
@@ -80,6 +85,16 @@ export class Connection {
           }
           this.isConnected = newState === CONNECTION_STATE.OPEN
           emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
+
+          if (newState === CONNECTION_STATE.RECONNECTING) {
+            isReconnecting = true
+            if (oldState !== CONNECTION_STATE.RECONNECTING) {
+              this.internalEmitter.emit(EVENT.CONNECTION_LOST)
+            }
+          } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
+            firstOpen = false
+            this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
+          }
         },
         transitions: [
           { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
@@ -108,6 +123,14 @@ export class Connection {
     this.originalUrl = utils.parseUrl(url, this.options.path)
     this.url = this.originalUrl
     this.createEndpoint()
+  }
+
+  public onLost (callback: Function): void {
+    this.internalEmitter.on(EVENT.CONNECTION_LOST, callback)
+  }
+
+  public onReestablished (callback: Function): void {
+    this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {

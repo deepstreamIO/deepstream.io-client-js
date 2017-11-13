@@ -73,7 +73,7 @@ describe('record core online', () => {
     it.skip('triggers ready promise on read response', () => {
         let promiseResult = null
         const context = { ola: 1 }
-        const promise = recordCore.whenReady(context)
+        const promise = recordCore.whenReady(null)
         if (promise) {
             promise.then(result => {
                 promiseResult = result

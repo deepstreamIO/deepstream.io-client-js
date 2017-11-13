@@ -8,7 +8,7 @@ import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
-import { SingleNotifier } from '../util/single-notifier'
+import { SingleNotifier } from './single-notifier'
 import * as Emitter from 'component-emitter2'
 
 export class RecordHandler {
@@ -94,8 +94,8 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot (name: string): void
-  public snapshot (name: string, callback: (error: string | null, data: any) => void): Promise<number>
+  public snapshot (name: string): Promise<number>
+  public snapshot (name: string, callback: (error: string | null, data: any) => void): void
   public snapshot (name: string, callback?: (error: string | null, data: any) => void): void | Promise<number> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
@@ -237,10 +237,10 @@ export class RecordHandler {
    * @param {Function} callback if provided this will be called with the result of the
    *                            write
    */
-  public setData (recordName: string, path: string, data?: any, callback?: WriteAckCallback): void
-  public setData (recordName: string, path: string, data: any, callback?: WriteAckCallback): void
+  public setData (recordName: string, path: string, data: any, callback: WriteAckCallback): void
   public setData (recordName: string, args: utils.RecordSetArguments): void
-  public setData (recordName: string, ...rest: Array<any>): void {
+  public setData (recordName: string, pathOrData: string | object, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
+  public setData (recordName: string): void {
     const { path, data, callback } = utils.normalizeSetArguments(arguments, 1)
 
     if (!path && (data === null || typeof data !== 'object')) {

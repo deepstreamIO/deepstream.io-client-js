@@ -3,7 +3,6 @@ import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
-import ResubscribeNotifier from '../util/resubscribe-notifier'
 import * as Emitter from 'component-emitter2'
 
 export class EventHandler {
@@ -12,16 +11,14 @@ export class EventHandler {
   private emitter: Emitter
   private listeners: Listener
   private options: Options
-  private client: Client
-  private resubscribeNotifier: ResubscribeNotifier
 
-  constructor (client: Emitter, services: Services, options: Options, listeners?: Listener) {
+  constructor (services: Services, options: Options, listeners?: Listener) {
     this.options = options
     this.services = services
     this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()
-    this.resubscribeNotifier = new ResubscribeNotifier(client, services, options, this.resubscribe.bind(this))
     this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
+    this.services.connection.onReestablished(this.resubscribe.bind(this))
   }
 
   /**
@@ -37,13 +34,7 @@ export class EventHandler {
     }
 
     if (!this.emitter.hasListeners(name)) {
-      const message = {
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.SUBSCRIBE,
-        name
-      }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+      this.sendSubscriptionMessage(name)
     }
     this.emitter.on(name, callback)
   }
@@ -151,7 +142,7 @@ private handle (message: EventMessage): void {
       message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS
     ) {
         this.services.timeoutRegistry.remove(message)
-        this.services.logger.warn(message, undefined, EVENT_ACTION[message.action])
+        this.services.logger.warn(message)
         return
     }
 
@@ -170,13 +161,19 @@ private handle (message: EventMessage): void {
    * Resubscribes to events when connection is lost
    */
   private resubscribe () {
-    const callbacks = this.emitter._callbacks
-    for (const name in callbacks) {
-      this.services.connection.sendMessage({
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.SUBSCRIBE,
-        name
-      })
+    const callbacks = this.emitter.eventNames()
+    for (const name of callbacks) {
+      this.sendSubscriptionMessage(name)
     }
+  }
+
+  private sendSubscriptionMessage (name: string) {
+    const message = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.SUBSCRIBE,
+      name
+    }
+    this.services.timeoutRegistry.add({ message })
+    this.services.connection.sendMessage(message)
   }
 }

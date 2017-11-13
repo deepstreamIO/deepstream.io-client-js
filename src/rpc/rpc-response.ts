@@ -1,6 +1,5 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { nextTick } from '../util/utils'
 import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
 
 /**
@@ -27,7 +26,7 @@ export class RPCResponse {
         this.isAccepted = false
         this.isComplete = false
         this.autoAccept = true
-        nextTick(this.performAutoAck.bind(this))
+        this.services.timerRegistry.requestIdleCallback(this.performAutoAck.bind(this))
     }
 
     /**

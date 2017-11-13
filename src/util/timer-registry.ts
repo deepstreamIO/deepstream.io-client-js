@@ -1,5 +1,3 @@
-import { nextTick } from '../util/utils'
-
 export interface Timeout {
     callback: Function,
     duration: number,
@@ -22,7 +20,7 @@ export class TimerRegistry {
     }
 
     public requestIdleCallback (callback: Function): void {
-        nextTick(callback)
+        process.nextTick(callback)
     }
 
 }

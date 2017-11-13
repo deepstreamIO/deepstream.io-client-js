@@ -11,8 +11,6 @@ import { EventHandler } from '../../src/event/event-handler'
 describe('event handler', () => {
   let services: any
   let listener: any
-  let emitter
-  let emitterMock: sinon.SinonMock
   let eventHandler: EventHandler
   let handle: Function
   let spy: sinon.SinonSpy
@@ -21,10 +19,8 @@ describe('event handler', () => {
   beforeEach(() => {
     services = getServicesMock()
     listener = getListenerMock()
-    emitter = new Emitter()
-    emitterMock = sinon.mock(emitter)
 
-    eventHandler = new EventHandler(emitter, services, DefaultOptions, listener.listener)
+    eventHandler = new EventHandler(services, DefaultOptions, listener.listener)
     handle = services.getHandle()
     spy = sinon.spy()
   })
@@ -85,6 +81,31 @@ describe('event handler', () => {
       })
 
     eventHandler.subscribe(name, spy)
+  })
+
+  it('resubscribes to an event when connection reestablished', () => {
+    services.connectionMock
+      .expects('sendMessage')
+      .twice()
+      .withExactArgs({
+        topic: TOPIC.EVENT,
+        action: EVENT_ACTION.SUBSCRIBE,
+        name
+      })
+
+    services.timeoutRegistryMock
+      .expects('add')
+      .twice()
+      .withExactArgs({
+        message: {
+          topic: TOPIC.EVENT,
+          action: EVENT_ACTION.SUBSCRIBE,
+          name
+        }
+      })
+
+    eventHandler.subscribe(name, spy)
+    services.simulateConnectionReestablished()
   })
 
   it('subscribes to an event twice', () => {
