@@ -34,13 +34,7 @@ export class EventHandler {
     }
 
     if (!this.emitter.hasListeners(name)) {
-      const message = {
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.SUBSCRIBE,
-        name
-      }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+      this.sendSubscriptionMessage(name)
     }
     this.emitter.on(name, callback)
   }
@@ -167,13 +161,19 @@ private handle (message: EventMessage): void {
    * Resubscribes to events when connection is lost
    */
   private resubscribe () {
-    const callbacks = this.emitter._callbacks
-    for (const name in callbacks) {
-      this.services.connection.sendMessage({
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.SUBSCRIBE,
-        name
-      })
+    const callbacks = this.emitter.eventNames()
+    for (const name of callbacks) {
+      this.sendSubscriptionMessage(name)
     }
+  }
+
+  private sendSubscriptionMessage (name: string) {
+    const message = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.SUBSCRIBE,
+      name
+    }
+    this.services.timeoutRegistry.add({ message })
+    this.services.connection.sendMessage(message)
   }
 }

@@ -54,13 +54,7 @@ export class RPCHandler {
 
     this.providers.set(name, callback)
     if (this.services.connection.isConnected) {
-      const message = {
-        topic: TOPIC.RPC,
-        action: RPC_ACTION.PROVIDE,
-        name
-      }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+      this.sendProvide(name)
     }
   }
 
@@ -188,15 +182,13 @@ export class RPCHandler {
         return
       }
       if (message.originalAction === RPC_ACTION.REQUEST) {
-        const rpcInvalid = this.getRPC(message)
-        if (!rpcInvalid) {
+        const invalidRPC = this.getRPC(message)
+        if (invalidRPC) {
+          invalidRPC.error(RPC_ACTION[message.action])
+          this.rpcs.delete(message.correlationId)
           return
         }
-        rpcInvalid.error(RPC_ACTION[message.action])
-        this.rpcs.delete(message.correlationId)
-        return
       }
-      return
     }
 
     // RPC Responses
@@ -205,7 +197,9 @@ export class RPCHandler {
       if (message.action === RPC_ACTION.ACCEPT) {
         rpc.accept()
         return
-      } else if (message.action === RPC_ACTION.RESPONSE) {
+      }
+
+      if (message.action === RPC_ACTION.RESPONSE) {
         rpc.respond(message.parsedData)
       } else if (message.action === RPC_ACTION.REQUEST_ERROR) {
         rpc.error(message.parsedData)
@@ -228,16 +222,19 @@ export class RPCHandler {
   }
 
   private reprovide (): void {
-    const keys = Array.from(this.providers.keys())
-    for (let i = 0; i < keys.length; i++) {
-      const message = {
-        topic: TOPIC.RPC,
-        action: RPC_ACTION.PROVIDE,
-        name: keys[i]
-      }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+    for (const [name, callback] of this.providers) {
+      this.sendProvide(name)
     }
+  }
+
+  private sendProvide (name: string) {
+    const message = {
+      topic: TOPIC.RPC,
+      action: RPC_ACTION.PROVIDE,
+      name
+    }
+    this.services.timeoutRegistry.add({ message })
+    this.services.connection.sendMessage(message)
   }
 
 }

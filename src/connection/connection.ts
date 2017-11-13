@@ -45,6 +45,7 @@ export class Connection {
   public isConnected: boolean
   public emitter: Emitter
 
+  private internalEmitter: Emitter
   private services: Services
   private options: Options
   private stateMachine: StateMachine
@@ -70,8 +71,10 @@ export class Connection {
     // tslint:disable-next-line:no-empty
     this.authCallback = () => {}
     this.emitter = emitter
+    this.internalEmitter = new Emitter()
 
     let isReconnecting = false
+    let firstOpen = true
     this.stateMachine = new StateMachine(
       this.services.logger,
       {
@@ -85,8 +88,12 @@ export class Connection {
 
           if (newState === CONNECTION_STATE.RECONNECTING) {
             isReconnecting = true
-          } else if (newState === CONNECTION_STATE.OPEN && isReconnecting) {
-            emitter.emit(EVENT.CONNECTION_REESTABLISHED)
+            if (oldState !== CONNECTION_STATE.RECONNECTING) {
+              this.internalEmitter.emit(EVENT.CONNECTION_LOST)
+            }
+          } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
+            firstOpen = false
+            this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
           }
         },
         transitions: [
@@ -118,8 +125,12 @@ export class Connection {
     this.createEndpoint()
   }
 
+  public onLost (callback: Function): void {
+    this.internalEmitter.on(EVENT.CONNECTION_LOST, callback)
+  }
+
   public onReestablished (callback: Function): void {
-    this.emitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
+    this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {

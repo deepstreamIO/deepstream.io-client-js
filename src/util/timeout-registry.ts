@@ -39,7 +39,7 @@ export class TimeoutRegistry extends EventEmitter {
         this.options = options
         this.services = services
         this.register = new Map()
-        // services.connection.on(EVENT.CONNECTION_STATE_CHANGED, this.onConnectionStateChanged.bind(this))
+        services.connection.onLost(this.onConnectionLost.bind(this))
     }
 
     /**
@@ -53,7 +53,14 @@ export class TimeoutRegistry extends EventEmitter {
         timeout.event = EVENT.ACK_TIMEOUT
       }
 
-      if (this.services.connection.getConnectionState() !== CONNECTION_STATE.OPEN || timeout.duration < 1) {
+      /*
+      if (timeout.duration < 1) {
+        should we throw an error?
+        return -1
+      }
+      */
+
+      if (!this.services.connection.isConnected) {
         return -1
       }
 
@@ -126,12 +133,10 @@ export class TimeoutRegistry extends EventEmitter {
   /**
    * Remote all timeouts when connection disconnects
    */
-  private onConnectionStateChanged (connectionState: CONNECTION_STATE): void {
-    if (connectionState !== CONNECTION_STATE.OPEN) {
-      for (const [ timerId, timer ] of this.register) {
-        clearTimeout(timer.timerId)
-        this.register.delete(timer.timerId)
-      }
+  private onConnectionLost (): void {
+    for (const [ timerId, timer ] of this.register) {
+      clearTimeout(timer.timerId)
+      this.register.delete(timer.timerId)
     }
   }
 }
