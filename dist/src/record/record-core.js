@@ -352,7 +352,6 @@ class RecordCore extends Emitter {
         this.destroy();
     }
     onDeleted() {
-        console.log('onDeleted');
         this.emit(constants_1.EVENT.RECORD_DELETED);
         this.destroy();
     }

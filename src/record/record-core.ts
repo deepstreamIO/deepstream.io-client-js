@@ -436,7 +436,6 @@ export class RecordCore extends Emitter {
   }
 
   private onDeleted (): void {
-    console.log('onDeleted')
     this.emit(EVENT.RECORD_DELETED)
     this.destroy()
   }
