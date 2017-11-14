@@ -18,6 +18,7 @@ export enum EVENT {
     CONNECTION_STATE_CHANGED = 'connectionStateChanged',
     AUTHENTICATION_TIMEOUT = 'AUTHENTICATION_TIMEOUT',
 
+    RECORD_ERROR = 'error',
     RECORD_READY = 'ready',
     RECORD_DELETED = 'delete',
     RECORD_DISCARDED = 'discard',

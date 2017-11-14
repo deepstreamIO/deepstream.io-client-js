@@ -13,6 +13,7 @@ export class AnonymousRecord extends Emitter  {
     constructor (getRecordCore: (recordName: string) => RecordCore) {
         super()
         this.record = null
+        this.subscriptions = []
         this.getRecordCore = getRecordCore
     }
 

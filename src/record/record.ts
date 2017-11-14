@@ -16,6 +16,7 @@ export class Record extends Emitter  {
         this.record.on(EVENT.RECORD_READY, this.emit.bind(this, EVENT.RECORD_READY, this))
         this.record.on(EVENT.RECORD_DISCARDED, this.emit.bind(this, EVENT.RECORD_DISCARDED))
         this.record.on(EVENT.RECORD_DELETED, this.emit.bind(this, EVENT.RECORD_DELETED))
+        this.record.on(EVENT.RECORD_ERROR, this.emit.bind(this, EVENT.RECORD_ERROR))
     }
 
     get name (): string {
