@@ -23,6 +23,7 @@ describe('timeout registry', () => {
         services = getServicesMock()
         services.connection.getConnectionState.returns(CONNECTION_STATE.OPEN)
         timeoutRegistry = new TimeoutRegistry(services, options)
+        timeoutRegistry.setConnectionEndpoint(services.connection)
     })
 
     afterEach(() => {
@@ -70,6 +71,10 @@ describe('timeout registry', () => {
         })
 
         it('clears timeout when connection lost', done => {
+            services.loggerMock
+                .expects('warn')
+                .never()
+
             services.simulateConnectionLost()
             setTimeout(done, 10)
         })
@@ -121,7 +126,10 @@ describe('timeout registry', () => {
 
         it('clears timeout when connection lost', done => {
             services.simulateConnectionLost()
-            setTimeout(done, 10)
+            setTimeout(() => {
+                sinon.assert.callCount(spy, 0)
+                done()
+            }, 50)
         })
     })
 })
