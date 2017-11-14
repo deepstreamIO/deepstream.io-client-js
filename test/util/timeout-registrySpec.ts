@@ -7,9 +7,11 @@ import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, RPC_ACTIONS as RPC_ACTION } from 
 
 describe('timeout registry', () => {
     let timeoutRegistry: TimeoutRegistry
+    let onConnectionLost: sinon.SinonSpy
     let services: any
     let options: Options
     let timerId: number
+
     const name = 'event'
     const message = {
         topic: TOPIC.EVENT,
@@ -23,6 +25,7 @@ describe('timeout registry', () => {
         services = getServicesMock()
         services.connection.getConnectionState.returns(CONNECTION_STATE.OPEN)
         timeoutRegistry = new TimeoutRegistry(services, options)
+        timeoutRegistry.setConnectionEndpoint(services.connection)
     })
 
     afterEach(() => {
@@ -70,6 +73,10 @@ describe('timeout registry', () => {
         })
 
         it('clears timeout when connection lost', done => {
+            services.loggerMock
+                .expects('warn')
+                .never()
+
             services.simulateConnectionLost()
             setTimeout(done, 10)
         })
@@ -121,7 +128,10 @@ describe('timeout registry', () => {
 
         it('clears timeout when connection lost', done => {
             services.simulateConnectionLost()
-            setTimeout(done, 10)
+            setTimeout(() => {
+                sinon.assert.callCount(spy, 0)
+                done()
+            }, 50)
         })
     })
 })
