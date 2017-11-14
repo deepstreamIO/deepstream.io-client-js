@@ -1,5 +1,6 @@
-import { TOPIC, ALL_ACTIONS, Message } from './message-constants';
-export declare const hasCorrelationId: (topic: TOPIC, action: ALL_ACTIONS) => boolean;
-export declare const hasAck: (topic: TOPIC, action: ALL_ACTIONS) => boolean;
+import { TOPIC, ALL_ACTIONS } from './message-constants';
 export declare const hasPayload: (topic: TOPIC, action: ALL_ACTIONS) => boolean;
-export declare function validate(message: Message): string | undefined;
+export declare function validateMeta(topic: TOPIC, action: ALL_ACTIONS, meta: {
+    [key: string]: any;
+}): string | undefined;
+export declare function hasCorrelationId(topic: TOPIC, action: ALL_ACTIONS): boolean | undefined;

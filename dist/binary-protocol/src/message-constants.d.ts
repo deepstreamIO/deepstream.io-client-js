@@ -134,8 +134,6 @@ export declare enum AUTH_ACTIONS {
     AUTH_UNSUCCESSFUL = 3,
     TOO_MANY_AUTH_ATTEMPTS = 80,
     INVALID_MESSAGE = 82,
-    MESSAGE_PERMISSION_ERROR = 96,
-    MESSAGE_DENIED = 97,
     INVALID_MESSAGE_DATA = 98,
 }
 export declare enum EVENT_ACTIONS {
@@ -214,8 +212,6 @@ export declare enum RECORD_ACTIONS {
     INVALID_MESSAGE_DATA = 98,
     MULTIPLE_SUBSCRIPTIONS = 99,
     NOT_SUBSCRIBED = 100,
-    HAS = 112,
-    HAS_RESPONSE = 113,
 }
 export declare enum RPC_ACTIONS {
     ERROR = 0,
