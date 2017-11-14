@@ -289,6 +289,7 @@ describe('connection', () => {
     await sendChallengeResponse()
     await receiveChallengeAccept()
     await receiveConnectionError()
+    await BBPromise.delay(10)
   })
 
   async function openConnection () {
