@@ -361,8 +361,9 @@ export class RecordHandler {
     if (!recordCore) {
       recordCore = new RecordCore(recordName, this.services, this.options, this.removeRecord.bind(this))
       this.recordCores.set(recordName, recordCore)
+    } else {
+      recordCore.usages++
     }
-    recordCore.usages++
     return recordCore
   }
 }

@@ -30,9 +30,9 @@ export function setValue (root: any, path: string | null, value: any): any {
   if (path === null) {
     return value
   }
-
   const tokens = tokenize(path)
-  let node = root
+  const copy = utils.deepCopy(root)
+  let node = copy
 
   let i
   for (i = 0; i < tokens.length - 1; i++) {
@@ -52,7 +52,7 @@ export function setValue (root: any, path: string | null, value: any): any {
   } else {
     node[tokens[i]] = value
   }
-  return Object.assign({}, root)
+  return copy
 }
 
 /**

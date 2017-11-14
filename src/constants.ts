@@ -20,6 +20,7 @@ export enum EVENT {
 
     RECORD_READY = 'ready',
     RECORD_DELETED = 'delete',
+    RECORD_DISCARDED = 'discard',
     RECORD_VERSION_EXISTS = 'versionExists',
     RECORD_HAS_PROVIDER_CHANGED = 'hasProviderChanged',
     RECORD_STATE_CHANGED = 'onRecordStateChanged',

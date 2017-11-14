@@ -268,7 +268,7 @@ describe('record core online', () => {
 
         recordCore.handle({
             topic: TOPIC.RECORD,
-            action: RECORD_ACTION.DELETE_ACK,
+            action: RECORD_ACTION.DELETE_SUCCESS,
             name
         })
 

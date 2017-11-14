@@ -90,7 +90,7 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
           { name: RECORD_ACTION.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
           { name: RECORD_ACTION.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this)  },
-          { name: RECORD_ACTION.DELETE_ACK, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
+          { name: RECORD_ACTION.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
           { name: RECORD_ACTION.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
           { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_ACTION.UNSUBSCRIBE_ACK, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: this.onUnsubscribed.bind(this) },
@@ -305,7 +305,7 @@ export class RecordCore extends Emitter {
       this.references--
       if (this.references <= 0) {
         this.discardTimeout = this.services.timerRegistry.add({
-          duration: this.options.discardTimout,
+          duration: this.options.discardTimeout,
           callback: this.stateMachine.transition,
           context: this.stateMachine,
           data: RECORD_ACTION.UNSUBSCRIBE_ACK
@@ -338,7 +338,7 @@ export class RecordCore extends Emitter {
       } else {
         this.services.storage.delete(this.name, () => {
           this.services.timerRegistry.requestIdleCallback(() => {
-            this.stateMachine.transition(RECORD_ACTION.DELETE_ACK)
+            this.stateMachine.transition(RECORD_ACTION.DELETE_SUCCESS)
           })
         })
       }
@@ -437,6 +437,7 @@ export class RecordCore extends Emitter {
       this.services.timeoutRegistry.add({ message })
       this.services.connection.sendMessage(message)
     }
+    this.emit(EVENT.RECORD_DISCARDED)
     this.destroy()
   }
 
@@ -479,10 +480,10 @@ export class RecordCore extends Emitter {
     }
 
     if (
-      message.action === RECORD_ACTION.DELETE_ACK ||
+      message.action === RECORD_ACTION.DELETE_SUCCESS ||
       message.action === RECORD_ACTION.DELETED
     ) {
-      this.stateMachine.transition(RECORD_ACTION.DELETE_ACK)
+      this.stateMachine.transition(message.action)
       return
     }
 
@@ -599,7 +600,8 @@ export class RecordCore extends Emitter {
     }
 
     this.version = version
-    this.applyChange(setPath(this.data, message.path || null, data))
+    const newData = setPath(this.data, message.path || null, data)
+    this.applyChange(newData)
   }
 
   /**

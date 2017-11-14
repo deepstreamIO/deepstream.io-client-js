@@ -12,6 +12,10 @@ export class Record extends Emitter  {
     constructor (record: RecordCore) {
         super()
         this.record = record
+        this.subscriptions = []
+        this.record.on(EVENT.RECORD_READY, this.emit.bind(this, EVENT.RECORD_READY, this))
+        this.record.on(EVENT.RECORD_DISCARDED, this.emit.bind(this, EVENT.RECORD_DISCARDED))
+        this.record.on(EVENT.RECORD_DELETED, this.emit.bind(this, EVENT.RECORD_DELETED))
     }
 
     get name (): string {
