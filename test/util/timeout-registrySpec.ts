@@ -7,11 +7,9 @@ import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, RPC_ACTIONS as RPC_ACTION } from 
 
 describe('timeout registry', () => {
     let timeoutRegistry: TimeoutRegistry
-    let onConnectionLost: sinon.SinonSpy
     let services: any
     let options: Options
     let timerId: number
-
     const name = 'event'
     const message = {
         topic: TOPIC.EVENT,
