@@ -34,6 +34,8 @@ export class SingleNotifier {
     this.action = action
     this.timeoutDuration = timeoutDuration
     this.requests = new Map<string, Array<SingleNotifierResponse>>()
+
+    this.services.connection.onLost(this.onConnectionLost.bind(this))
   }
 
     /**
@@ -89,5 +91,18 @@ export class SingleNotifier {
       }
     }
     this.requests.delete(name)
+  }
+
+  private onConnectionLost (): void {
+    this.requests.forEach(responses => {
+      responses.forEach(response => {
+        if (response.callback) {
+          response.callback(EVENT.CLIENT_OFFLINE)
+        } else if (response.reject) {
+          response.reject(EVENT.CLIENT_OFFLINE)
+        }
+      })
+    })
+    this.requests.clear()
   }
 }

@@ -470,7 +470,7 @@ describe('RPC handler', () => {
             sinon.assert.notCalled(rpcPromiseResponseSuccess);
             sinon.assert.calledOnce(rpcPromiseResponseFail);
         }));
-        it.only('responds with error when onConnectionLost', () => __awaiter(this, void 0, void 0, function* () {
+        it('responds with error when onConnectionLost', () => __awaiter(this, void 0, void 0, function* () {
             services.simulateConnectionLost();
             yield bluebird_1.Promise.delay(1);
             sinon.assert.calledOnce(rpcResponseCallback);

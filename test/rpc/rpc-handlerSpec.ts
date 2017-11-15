@@ -542,7 +542,7 @@ describe('RPC handler', () => {
       sinon.assert.calledOnce(rpcPromiseResponseFail)
     })
 
-    it.only('responds with error when onConnectionLost', async () => {
+    it('responds with error when onConnectionLost', async () => {
       services.simulateConnectionLost()
       await BBPromise.delay(1)
 

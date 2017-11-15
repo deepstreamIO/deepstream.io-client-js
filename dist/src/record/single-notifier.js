@@ -19,6 +19,7 @@ class SingleNotifier {
         this.action = action;
         this.timeoutDuration = timeoutDuration;
         this.requests = new Map();
+        this.services.connection.onLost(this.onConnectionLost.bind(this));
     }
     /**
    * Add a request. If one has already been made it will skip the server request
@@ -75,6 +76,19 @@ class SingleNotifier {
             }
         }
         this.requests.delete(name);
+    }
+    onConnectionLost() {
+        this.requests.forEach(responses => {
+            responses.forEach(response => {
+                if (response.callback) {
+                    response.callback(client_1.EVENT.CLIENT_OFFLINE);
+                }
+                else if (response.reject) {
+                    response.reject(client_1.EVENT.CLIENT_OFFLINE);
+                }
+            });
+        });
+        this.requests.clear();
     }
 }
 exports.SingleNotifier = SingleNotifier;

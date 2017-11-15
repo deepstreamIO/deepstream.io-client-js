@@ -154,6 +154,18 @@ describe('Single Notifier', () => {
       await BBPromise.delay(1)
     })
 
+    it('responds with error on connection lost', async () => {
+      services.simulateConnectionLost()
+      await BBPromise.delay(1)
+
+      assert.calledOnce(callbackSpy)
+      assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+
+      assert.notCalled(resolveSpy)
+
+      assert.calledOnce(rejectSpy)
+      assert.calledWithExactly(rejectSpy, EVENT.CLIENT_OFFLINE)
+    })
   })
 
 })

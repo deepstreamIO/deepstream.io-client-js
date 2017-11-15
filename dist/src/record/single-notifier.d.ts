@@ -35,4 +35,5 @@ export declare class SingleNotifier {
    */
     request(name: string, response: SingleNotifierResponse): void;
     recieve(message: Message, error?: any, data?: any): void;
+    private onConnectionLost();
 }
