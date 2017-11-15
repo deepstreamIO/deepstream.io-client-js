@@ -47,6 +47,7 @@ export class Client extends EventEmitter {
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
+    services.timeoutRegistry.setConnectionEndpoint(services.connection)
     this.services = services as Services
 
     this.event = new EventHandler(this.services, this.options)
