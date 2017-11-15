@@ -18,7 +18,7 @@ export class List extends Emitter {
     constructor (record: RecordCore) {
         super()
         this.record = record
-        this.originalApplyUpdate = this.record.applyUpdate
+        this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
         this.record.applyUpdate = this.applyUpdate.bind(this)
         this.wrappedFunctions = new Map()
     }

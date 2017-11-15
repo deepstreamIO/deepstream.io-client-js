@@ -8,6 +8,7 @@
   },
   "scripts": {
     "tsc": "rm -rf dist && tsc",
+    "precommit": "npm run tsc && git add dist/",
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
     "rebuild": "rimraf dist && webpack",
@@ -27,6 +28,7 @@
   },
   "dependencies": {
     "component-emitter2": "^1.3.5",
+    "husky": "^0.14.3",
     "ws": "^3.2.0"
   },
   "browser": {

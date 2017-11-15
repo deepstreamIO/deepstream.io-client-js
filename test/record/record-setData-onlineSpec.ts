@@ -10,7 +10,7 @@ import { RecordHandler } from '../../src/record/record-handler'
 import { WriteAckCallback } from '../../src/record/record-core'
 import { RecordSetArguments } from '../../src/util/utils'
 
-describe.only('record setData online', () => {
+describe('record setData online', () => {
   const topic = TOPIC.RECORD
   const name = 'testRecord'
 

@@ -23,6 +23,7 @@ describe('timeout registry', () => {
         services = getServicesMock()
         services.connection.getConnectionState.returns(CONNECTION_STATE.OPEN)
         timeoutRegistry = new TimeoutRegistry(services, options)
+        services.connection.onLost(timeoutRegistry.onConnectionLost.bind(timeoutRegistry))
     })
 
     afterEach(() => {

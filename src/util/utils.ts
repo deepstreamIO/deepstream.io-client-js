@@ -139,7 +139,7 @@ export interface RecordSubscribeArguments { callback: (data: any) => void, path?
 export const normalizeSetArguments = (args: IArguments, startIndex: number = 0): RecordSetArguments => {
   let result
   const isRootData = (data: any) => data !== undefined && typeof data === 'object'
-  const isNestedData = (data: any) => data !== undefined && typeof data !== 'function'
+  const isNestedData = (data: any) => typeof data !== 'function'
   const isPath = (path: any) => path !== undefined && typeof path === 'string'
   const isCallback = (callback: any) => typeof callback === 'function'
 

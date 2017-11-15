@@ -53,6 +53,11 @@ export class RecordCore extends Emitter {
   private discardTimeout: number
   private deletedTimeout: number
   private offlineDirty: boolean
+  private deleteResponse: {
+    callback?: (error: string | null) => void,
+    reject?: (error: string) => void,
+    resolve?: () => void
+  }
   private whenComplete: (recordName: string) => void
 
   constructor (name: string, services: Services, options: Options, whenComplete: (recordName: string) => void) {
@@ -90,7 +95,7 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
           { name: RECORD_ACTION.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
           { name: RECORD_ACTION.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this)  },
-          { name: RECORD_ACTION.DELETE_ACK, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
+          { name: RECORD_ACTION.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
           { name: RECORD_ACTION.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
           { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_ACTION.UNSUBSCRIBE_ACK, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: this.onUnsubscribed.bind(this) },
@@ -305,7 +310,7 @@ export class RecordCore extends Emitter {
       this.references--
       if (this.references <= 0) {
         this.discardTimeout = this.services.timerRegistry.add({
-          duration: this.options.discardTimout,
+          duration: this.options.discardTimeout,
           callback: this.stateMachine.transition,
           context: this.stateMachine,
           data: RECORD_ACTION.UNSUBSCRIBE_ACK
@@ -316,34 +321,23 @@ export class RecordCore extends Emitter {
   }
 
   /**
- * Deletes the record on the server.
- */
+   * Deletes the record on the server.
+   */
   public delete (callback?: (error: string | null) => void): Promise<void> | void {
     if (this.checkDestroyed('delete')) {
       return
     }
-    this.whenReady(null, () => {
-      if (this.services.connection.isConnected) {
-        const message = {
-          topic: TOPIC.RECORD,
-          action: RECORD_ACTION.DELETE,
-          name: this.name
-        }
-        this.deletedTimeout = this.services.timeoutRegistry.add({
-          message,
-          event: EVENT.RECORD_DELETE_TIMEOUT,
-          duration: this.options.recordDeleteTimeout
-        })
-        this.services.connection.sendMessage(message)
-      } else {
-        this.services.storage.delete(this.name, () => {
-          this.services.timerRegistry.requestIdleCallback(() => {
-            this.stateMachine.transition(RECORD_ACTION.DELETE_ACK)
-          })
-        })
-      }
-    })
     this.stateMachine.transition(RECORD_ACTION.DELETE)
+
+    if (callback && typeof callback === 'function') {
+      this.deleteResponse = { callback }
+      this.sendDelete()
+    } else {
+      return new Promise((resolve: () => void,  reject: (error: string) => void) => {
+        this.deleteResponse = { resolve, reject }
+        this.sendDelete()
+      })
+    }
   }
 
   /**
@@ -437,6 +431,7 @@ export class RecordCore extends Emitter {
       this.services.timeoutRegistry.add({ message })
       this.services.connection.sendMessage(message)
     }
+    this.emit(EVENT.RECORD_DISCARDED)
     this.destroy()
   }
 
@@ -478,13 +473,20 @@ export class RecordCore extends Emitter {
       return
     }
 
-    if (
-      message.action === RECORD_ACTION.DELETE_ACK ||
-      message.action === RECORD_ACTION.DELETED
-    ) {
-      this.stateMachine.transition(RECORD_ACTION.DELETE_ACK)
+    if (message.action === RECORD_ACTION.DELETE_SUCCESS) {
+      this.stateMachine.transition(message.action)
+      if (this.deleteResponse.callback) {
+        this.deleteResponse.callback(null)
+      } else if (this.deleteResponse.resolve) {
+        this.deleteResponse.resolve()
+      }
       return
     }
+
+    if (message.action === RECORD_ACTION.DELETED) {
+      this.stateMachine.transition(message.action)
+    }
+
 
     if (message.action === RECORD_ACTION.VERSION_EXISTS) {
       // what kind of message is version exists?
@@ -493,7 +495,24 @@ export class RecordCore extends Emitter {
     }
 
     if (message.action === RECORD_ACTION.MESSAGE_DENIED) {
-      // depends on action that failed.. unsubscribe if issue was read based
+      if (
+        message.originalAction === RECORD_ACTION.PATCH ||
+        message.originalAction === RECORD_ACTION.UPDATE ||
+        message.originalAction === RECORD_ACTION.ERASE ||
+        message.originalAction === RECORD_ACTION.DELETE ||
+        message.originalAction === RECORD_ACTION.CREATE ||
+        message.originalAction === RECORD_ACTION.READ
+      ) {
+        this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], RECORD_ACTION[message.originalAction])
+      }
+
+      if (message.originalAction === RECORD_ACTION.DELETE) {
+        if (this.deleteResponse.callback) {
+          this.deleteResponse.callback(RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED])
+        } else if (this.deleteResponse.reject) {
+          this.deleteResponse.reject(RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED])
+        }
+      }
       return
     }
 
@@ -599,7 +618,8 @@ export class RecordCore extends Emitter {
     }
 
     this.version = version
-    this.applyChange(setPath(this.data, message.path || null, data))
+    const newData = setPath(this.data, message.path || null, data)
+    this.applyChange(newData)
   }
 
   /**
@@ -623,6 +643,34 @@ export class RecordCore extends Emitter {
         this.emitter.emit(paths[i], this.get(paths[i]))
       }
     }
+  }
+
+  /**
+   * If connected sends the delete message to server, otherwise
+   * we delete in local storage and transition to delete success.
+   */
+  private sendDelete (): void {
+    this.whenReady(null, () => {
+      if (this.services.connection.isConnected) {
+        const message = {
+          topic: TOPIC.RECORD,
+          action: RECORD_ACTION.DELETE,
+          name: this.name
+        }
+        this.deletedTimeout = this.services.timeoutRegistry.add({
+          message,
+          event: EVENT.RECORD_DELETE_TIMEOUT,
+          duration: this.options.recordDeleteTimeout
+        })
+        this.services.connection.sendMessage(message)
+      } else {
+        this.services.storage.delete(this.name, () => {
+          this.services.timerRegistry.requestIdleCallback(() => {
+            this.stateMachine.transition(RECORD_ACTION.DELETE_SUCCESS)
+          })
+        })
+      }
+    })
   }
 
   /**

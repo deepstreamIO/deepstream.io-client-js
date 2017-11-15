@@ -62,7 +62,7 @@ Default: /deepstream */
     maxReconnectInterval: number,
 
     recordDeepCopy: boolean,
-    discardTimout: 5000,
+    discardTimeout: 5000,
 
     /**
      * Options for the provided socket factory
@@ -81,7 +81,7 @@ export const DefaultOptions: Options = {
     recordReadAckTimeout: 15000,
     recordReadTimeout: 15000,
     recordDeleteTimeout: 15000,
-    discardTimout: 5000,
+    discardTimeout: 5000,
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,

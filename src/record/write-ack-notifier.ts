@@ -53,7 +53,10 @@ export class WriteAckNotifier {
   public recieve (message: Message): void {
     const id = message.correlationId as string
     const response = this.responses.get(id)
-    if (!response || message.action !== RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT) {
+    if (
+      !response ||
+      (message.action !== RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT && !message.isError)
+    ) {
       this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
       return
     }

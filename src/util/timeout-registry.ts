@@ -102,11 +102,6 @@ export class TimeoutRegistry extends EventEmitter {
     this.register.delete(timerId)
   }
 
-  public setConnectionEndpoint (connection: any) {
-    this.services.connection = connection
-    this.services.connection.onLost(this.onConnectionLost.bind(this))
-  }
-
   /**
    * Will be invoked if the timeout has occured before the ack message was received
    */
@@ -137,7 +132,7 @@ export class TimeoutRegistry extends EventEmitter {
   /**
    * Remote all timeouts when connection disconnects
    */
-  private onConnectionLost (): void {
+  public onConnectionLost (): void {
     for (const [ timerId, timer ] of this.register) {
       clearTimeout(timer.timerId)
       this.register.delete(timer.timerId)
