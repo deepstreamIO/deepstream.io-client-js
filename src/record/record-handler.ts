@@ -320,6 +320,17 @@ export class RecordHandler {
       message.action === RECORD_ACTION.MESSAGE_DENIED ||
       message.action === RECORD_ACTION.MESSAGE_PERMISSION_ERROR
     ) {
+      if (
+        message.originalAction === RECORD_ACTION.PATCH_WITH_WRITE_ACK ||
+        message.originalAction === RECORD_ACTION.ERASE_WITH_WRITE_ACK ||
+        message.originalAction === RECORD_ACTION.UPDATE_WITH_WRITE_ACK ||
+        message.originalAction === RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK ||
+        message.originalAction === RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK
+      ) {
+        this.writeAckNotifier.recieve(message)
+        return
+      }
+      this.services.logger.error(message)
       // do something
     }
 
@@ -352,16 +363,18 @@ export class RecordHandler {
     }
 
     if (
-      message.originalAction === RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK ||
+      message.originalAction === RECORD_ACTION.PATCH_WITH_WRITE_ACK ||
+      message.originalAction === RECORD_ACTION.ERASE_WITH_WRITE_ACK ||
+      message.originalAction === RECORD_ACTION.UPDATE_WITH_WRITE_ACK ||
       message.originalAction === RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK ||
-      message.originalAction === RECORD_ACTION.ERASE_WITH_WRITE_ACK
+      message.originalAction === RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK
     ) {
       this.writeAckNotifier.recieve(message)
       return
     }
 
     if (message.action === RECORD_ACTION.WRITE_ACKNOWLEDGEMENT) {
-
+      this.writeAckNotifier.recieve(message)
     }
 
     if (

@@ -381,7 +381,7 @@ class RecordCore extends Emitter {
             this.sendRead();
             return;
         }
-        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH || message.action === message_constants_1.RECORD_ACTIONS.UPDATE) {
+        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH || message.action === message_constants_1.RECORD_ACTIONS.UPDATE || message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
             this.applyUpdate(message);
             return;
         }
@@ -404,12 +404,14 @@ class RecordCore extends Emitter {
             return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED) {
+            console.log(message);
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.UPDATE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.CREATE ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.READ) {
+                message.originalAction === message_constants_1.RECORD_ACTIONS.READ ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD) {
                 this.emit(constants_1.EVENT.RECORD_ERROR, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], message_constants_1.RECORD_ACTIONS[message.originalAction]);
             }
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE) {
@@ -513,7 +515,16 @@ class RecordCore extends Emitter {
             return;
         }
         this.version = version;
-        const newData = json_path_1.setValue(this.data, message.path || null, data);
+        let newData;
+        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH) {
+            newData = json_path_1.setValue(this.data, message.path, data);
+        }
+        else if (message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
+            newData = json_path_1.setValue(this.data, message.path, undefined);
+        }
+        else {
+            newData = json_path_1.setValue(this.data, null, data);
+        }
         this.applyChange(newData);
     }
     /**

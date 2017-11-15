@@ -233,6 +233,15 @@ class RecordHandler {
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED ||
             message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_PERMISSION_ERROR) {
+            if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK) {
+                this.writeAckNotifier.recieve(message);
+                return;
+            }
+            this.services.logger.error(message);
             // do something
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.READ_RESPONSE ||
@@ -258,13 +267,16 @@ class RecordHandler {
         if (message.action === message_constants_1.RECORD_ACTIONS.DELETED) {
             // do something
         }
-        if (message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK ||
+        if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK ||
+            message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK ||
+            message.originalAction === message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK ||
             message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK ||
-            message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK) {
+            message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK) {
             this.writeAckNotifier.recieve(message);
             return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT) {
+            this.writeAckNotifier.recieve(message);
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
