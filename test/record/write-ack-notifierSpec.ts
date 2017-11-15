@@ -43,8 +43,20 @@ describe('Write Ack Notifier', () => {
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
   })
 
-  it.skip('calls callbacks with error message when connection is lost', () => {
+  it('calls callbacks with error message when connection is lost', async () => {
+    const messageBody = {
+      topic,
+      action,
+      name
+    }
+    writeAckNotifier.send(messageBody, callbackSpy)
+    writeAckNotifier.send(messageBody, callbackSpy)
 
+    services.simulateConnectionLost()
+    await BBPromise.delay(1)
+
+    assert.calledTwice(callbackSpy)
+    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
   })
 
   it('sends correct messages with different correlationsId for each call', () => {

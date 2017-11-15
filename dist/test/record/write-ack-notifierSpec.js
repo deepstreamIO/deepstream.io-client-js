@@ -43,8 +43,19 @@ describe('Write Ack Notifier', () => {
         sinon_1.assert.calledOnce(callbackSpy);
         sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
     }));
-    it.skip('calls callbacks with error message when connection is lost', () => {
-    });
+    it('calls callbacks with error message when connection is lost', () => __awaiter(this, void 0, void 0, function* () {
+        const messageBody = {
+            topic,
+            action,
+            name
+        };
+        writeAckNotifier.send(messageBody, callbackSpy);
+        writeAckNotifier.send(messageBody, callbackSpy);
+        services.simulateConnectionLost();
+        yield bluebird_1.Promise.delay(1);
+        sinon_1.assert.calledTwice(callbackSpy);
+        sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
+    }));
     it('sends correct messages with different correlationsId for each call', () => {
         const messageBody = {
             topic,
