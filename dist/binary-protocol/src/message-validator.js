@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("./message-constants");
-const metaParamsMap = {
+exports.META_PARAMS_SPEC = {
     [message_constants_1.TOPIC.PARSER]: {
         [message_constants_1.PARSER_ACTIONS.UNKNOWN_TOPIC]: [[message_constants_1.META_KEYS.originalTopic], []],
         [message_constants_1.PARSER_ACTIONS.UNKNOWN_ACTION]: [[message_constants_1.META_KEYS.originalTopic, message_constants_1.META_KEYS.originalAction], []],
@@ -44,23 +44,23 @@ const metaParamsMap = {
         [message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDREAD]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.READ_RESPONSE]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
         [message_constants_1.RECORD_ACTIONS.UPDATE]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
-        [message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
+        [message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RECORD_ACTIONS.PATCH]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path], []],
-        [message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path], []],
+        [message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RECORD_ACTIONS.ERASE]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path], []],
-        [message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path], []],
+        [message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
         [message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDUPDATE]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
-        [message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
+        [message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RECORD_ACTIONS.CREATEANDPATCH]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path], []],
-        [message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path], []],
+        [message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version, message_constants_1.META_KEYS.path, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RECORD_ACTIONS.DELETE]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.DELETED]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER]: [[message_constants_1.META_KEYS.name], []],
-        [message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT]: [[message_constants_1.META_KEYS.name], []],
+        [message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RECORD_ACTIONS.VERSION_EXISTS]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
         [message_constants_1.RECORD_ACTIONS.CACHE_RETRIEVAL_TIMEOUT]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.STORAGE_RETRIEVAL_TIMEOUT]: [[message_constants_1.META_KEYS.name], []],
@@ -151,7 +151,6 @@ const metaParamsMap = {
         [message_constants_1.PRESENCE_ACTIONS.INVALID_PRESENCE_USERS]: [[], []],
         [message_constants_1.PRESENCE_ACTIONS.MESSAGE_PERMISSION_ERROR]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
         [message_constants_1.PRESENCE_ACTIONS.MESSAGE_DENIED]: [[message_constants_1.META_KEYS.originalAction], [message_constants_1.META_KEYS.correlationId, message_constants_1.META_KEYS.name]],
-        [message_constants_1.PRESENCE_ACTIONS.INVALID_MESSAGE_DATA]: [[message_constants_1.META_KEYS.originalAction], [message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId]],
     }
 };
 const payloadMap = {
@@ -204,7 +203,6 @@ const ackMap = {
         message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE,
         message_constants_1.RECORD_ACTIONS.LISTEN,
         message_constants_1.RECORD_ACTIONS.UNLISTEN,
-        message_constants_1.RECORD_ACTIONS.DELETE,
     ],
     [message_constants_1.TOPIC.PRESENCE]: [
         message_constants_1.PRESENCE_ACTIONS.SUBSCRIBE,
@@ -226,7 +224,7 @@ function mapOfArraysHas(map, topic, action) {
 }
 exports.hasPayload = (topic, action) => mapOfArraysHas(payloadMap, topic, action);
 function validateMeta(topic, action, meta) {
-    const spec = metaParamsMap[topic][action];
+    const spec = exports.META_PARAMS_SPEC[topic][action];
     if (!spec) {
         return 'no meta spec';
     }
@@ -247,7 +245,7 @@ function validateMeta(topic, action, meta) {
 }
 exports.validateMeta = validateMeta;
 function hasCorrelationId(topic, action) {
-    const spec = metaParamsMap[topic][action];
+    const spec = exports.META_PARAMS_SPEC[topic][action];
     if (!spec) {
         return;
     }
