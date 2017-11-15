@@ -156,7 +156,7 @@ exports.normalizeSetArguments = (args, startIndex = 0) => {
     if (args.length === startIndex + 3) {
         result = {
             path: isPath(args[startIndex]) ? args[startIndex] : false,
-            data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
+            data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : false,
             callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : false
         };
     }
@@ -164,7 +164,7 @@ exports.normalizeSetArguments = (args, startIndex = 0) => {
         if (result.path !== undefined && result.path.length === 0 || result.path === false) {
             throw Error('Invalid set path argument');
         }
-        if (result.data === undefined && !result.path) {
+        if (result.data === undefined && !result.path || result.data === false) {
             throw Error('Invalid set data argument');
         }
         if (result.callback !== undefined && result.callback === false) {

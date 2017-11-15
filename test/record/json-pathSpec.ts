@@ -53,13 +53,13 @@ describe('objects are created from paths and their value is set correctly', () =
 
     expect(result).to.deep.equal({
       address: [
-        undefined,
-        undefined,
+        null,
+        null,
         {
           99: {
             street: [
-              undefined,
-              undefined,
+              null,
+              null,
               {
                 1: 'someStreet'
               }
@@ -98,7 +98,7 @@ describe('objects are created from paths and their value is set correctly', () =
 
     expect(result).to.deep.equal({
       pastAddresses: [
-        undefined,
+        null,
         {
           street: 'someStreet'
         }
@@ -107,9 +107,7 @@ describe('objects are created from paths and their value is set correctly', () =
   })
 
   it('sets value AS arrays of arrays', () => {
-    const record = {
-      addresses: undefined
-    }
+    const record = {}
     const arrOfArr = [
       undefined,
       [
@@ -124,7 +122,7 @@ describe('objects are created from paths and their value is set correctly', () =
 
     expect(result).to.deep.equal({
       addresses: [
-        undefined,
+        null,
         [
           'new-Street1', 'road1', 'blvd1'
         ],
@@ -138,7 +136,7 @@ describe('objects are created from paths and their value is set correctly', () =
   it('sets value IN arrays of arrays', () => {
     const record = {
       addresses: [
-        undefined,
+        null,
         [
           'street1', 'road1', 'blvd1'
         ],
@@ -151,7 +149,7 @@ describe('objects are created from paths and their value is set correctly', () =
 
     expect(result).to.deep.equal({
       addresses: [
-        undefined,
+        null,
         [
           'new-Street1', 'road1', 'blvd1'
         ],
@@ -193,19 +191,19 @@ describe('objects are created from paths and their value is set correctly', () =
         101: {
           addresses: [
             [
-              undefined,
+              null,
               [
-                undefined,
+                null,
                 ['new-Street1', 'road1', 'blvd1'],
                 ['street2', 'road2', 'blvd2']
               ],
               [
-                undefined,
+                null,
                 { a: 'street1', b: 'road1', c: 'blvd1' },
                 { 1: 'street2', 2: 'road2', 3: 'blvd2' }
               ]
             ],
-            undefined,
+            null,
             [[0, 1, 2, 3], [9, 8, 7, 6], [2, 4, 6, 8]]
           ]
         }

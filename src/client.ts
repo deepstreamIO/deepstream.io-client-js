@@ -49,7 +49,9 @@ export class Client extends EventEmitter {
     services.connection = new Connection(services, this.options, url, this)
     this.services = services as Services
 
-    this.services.timeoutRegistry.onConnectionLost = services.connection.onLost.bind(this)
+    this.services.connection.onLost(
+      services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
+    )
 
     this.event = new EventHandler(this.services, this.options)
     this.rpc = new RPCHandler(this.services, this.options)

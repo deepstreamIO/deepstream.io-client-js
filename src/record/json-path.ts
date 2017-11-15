@@ -31,17 +31,20 @@ export function setValue (root: any, path: string | null, value: any): any {
     return value
   }
   const tokens = tokenize(path)
-  const copy = utils.deepCopy(root)
-  let node = copy
+  const rootCopy = utils.deepCopy(root)
+  const valueCopy = utils.deepCopy(value)
+  let node = rootCopy
 
   let i
   for (i = 0; i < tokens.length - 1; i++) {
     const token = tokens[i]
 
-    if (node[token] !== undefined && typeof node[token] === 'object') {
+    if (node[token] !== undefined && node[token] !== null && typeof node[token] === 'object') {
       node = node[token]
     } else if (typeof tokens[i + 1] === 'number') {
-      node = node[token] = []
+      const array: Array<any> = new Array(tokens[i + 1])
+      array.fill(null)
+      node = node[token] = array
     } else {
       node = node[token] = {}
     }
@@ -50,9 +53,9 @@ export function setValue (root: any, path: string | null, value: any): any {
   if (value === undefined) {
     delete node[tokens[i]]
   } else {
-    node[tokens[i]] = value
+    node[tokens[i]] = valueCopy
   }
-  return copy
+  return rootCopy
 }
 
 /**

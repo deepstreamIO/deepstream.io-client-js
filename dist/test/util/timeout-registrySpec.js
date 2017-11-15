@@ -23,6 +23,7 @@ describe('timeout registry', () => {
         services = mocks_1.getServicesMock();
         services.connection.getConnectionState.returns(constants_1.CONNECTION_STATE.OPEN);
         timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, options);
+        services.connection.onLost(timeoutRegistry.onConnectionLost.bind(timeoutRegistry));
     });
     afterEach(() => {
         services.loggerMock.verify();

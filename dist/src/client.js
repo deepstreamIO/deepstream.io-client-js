@@ -27,7 +27,7 @@ class Client extends EventEmitter {
         services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
         services.connection = new connection_1.Connection(services, this.options, url, this);
         this.services = services;
-        this.services.timeoutRegistry.onConnectionLost = services.connection.onLost.bind(this);
+        this.services.connection.onLost(services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry));
         this.event = new event_handler_1.EventHandler(this.services, this.options);
         this.rpc = new rpc_handler_1.RPCHandler(this.services, this.options);
         this.record = new record_handler_1.RecordHandler(this.services, this.options);
