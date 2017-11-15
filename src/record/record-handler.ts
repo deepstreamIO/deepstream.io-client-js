@@ -9,6 +9,7 @@ import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
 import { SingleNotifier } from './single-notifier'
+import { WriteAckNotifier } from './write-ack-notifier'
 import * as Emitter from 'component-emitter2'
 
 export class RecordHandler {
@@ -19,6 +20,7 @@ export class RecordHandler {
   private recordCores: Map<string, RecordCore>
   private readRegistry: SingleNotifier
   private headRegistry: SingleNotifier
+  private writeAckNotifier: WriteAckNotifier
 
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
@@ -29,6 +31,7 @@ export class RecordHandler {
     this.recordCores = new Map()
     this.readRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
     this.headRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
+    this.writeAckNotifier = new WriteAckNotifier(services)
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
@@ -210,16 +213,19 @@ export class RecordHandler {
    * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
    *                    with the result of the write
    */
-  public setDataWithAck (recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<void> | void
-  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<void> | void {
+  public setDataWithAck (recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void
+  public setDataWithAck (recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void
+  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<string> | void {
     const args = utils.normalizeSetArguments(arguments, 1)
-    if (args.callback) {
+    if (!args.callback) {
       return new Promise((resolve, reject) => {
-        args.callback = error => error === null ? resolve() : reject(error)
-        this.setData(recordName, args)
+        args.callback = (error) => {
+          error === null ? resolve() : reject(error)
+        }
+        this.sendSetData(recordName, args)
       })
     }
-    this.setData(recordName, args)
+    this.sendSetData(recordName, args)
   }
 
   /**
@@ -237,12 +243,19 @@ export class RecordHandler {
    * @param {Function} callback if provided this will be called with the result of the
    *                            write
    */
+  public setData (recordName: string, data: object): void
   public setData (recordName: string, path: string, data: any, callback: WriteAckCallback): void
-  public setData (recordName: string, args: utils.RecordSetArguments): void
   public setData (recordName: string, pathOrData: string | object, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
   public setData (recordName: string): void {
-    const { path, data, callback } = utils.normalizeSetArguments(arguments, 1)
+    const args = utils.normalizeSetArguments(arguments, 1)
+    this.sendSetData(recordName, args)
+  }
 
+  private sendSetData (recordName: string, args: utils.RecordSetArguments) : void {
+    const { path, data, callback } = args
+    if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
+      throw new Error('invalid argument: recordName must be an non empty string')
+    }
     if (!path && (data === null || typeof data !== 'object')) {
       throw new Error('invalid argument: data must be an object when no path is provided')
     }
@@ -253,23 +266,31 @@ export class RecordHandler {
       return
     }
 
-    if (callback) {
-      // register with write ack service
-    }
-
     let action
     if (path) {
-      action = callback ? RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK : RECORD_ACTION.CREATEANDPATCH
+      if (data === undefined) {
+        action = callback ? RECORD_ACTION.ERASE_WITH_WRITE_ACK : RECORD_ACTION.ERASE
+      } else {
+        action = callback ? RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK : RECORD_ACTION.CREATEANDPATCH
+      }
     } else {
       action = callback ? RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK : RECORD_ACTION.CREATEANDUPDATE
     }
 
-    this.services.connection.sendMessage({
+    const message = {
       topic: TOPIC.RECORD,
       action,
       name: recordName,
-      version: -1
-    })
+      path,
+      version: -1,
+      parsedData: data
+    }
+
+    if (callback) {
+      this.writeAckNotifier.send(message, callback)
+    } else {
+      this.services.connection.sendMessage(message)
+    }
   }
 
   /**
@@ -332,9 +353,17 @@ export class RecordHandler {
       // do something
     }
 
-    if (message.action === RECORD_ACTION.WRITE_ACKNOWLEDGEMENT) {
-      // handle write ack
+    if (
+      message.originalAction === RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK ||
+      message.originalAction === RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK ||
+      message.originalAction === RECORD_ACTION.ERASE_WITH_WRITE_ACK
+    ) {
+      this.writeAckNotifier.recieve(message)
       return
+    }
+
+    if (message.action === RECORD_ACTION.WRITE_ACKNOWLEDGEMENT) {
+
     }
 
     if (

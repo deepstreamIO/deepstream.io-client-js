@@ -138,7 +138,6 @@ export interface RecordSubscribeArguments { callback: (data: any) => void, path?
  */
 export const normalizeSetArguments = (args: IArguments, startIndex: number = 0): RecordSetArguments => {
   let result
-
   const isRootData = (data: any) => data !== undefined && typeof data === 'object'
   const isNestedData = (data: any) => data !== undefined && typeof data !== 'function'
   const isPath = (path: any) => path !== undefined && typeof path === 'string'
@@ -154,8 +153,8 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
 
   if (args.length === startIndex + 2) {
     result = { path: undefined, data: undefined, callback: undefined }
-    if (!isCallback(args[startIndex + 1]) && isNestedData(args[startIndex + 1])) {
-      result.path = isPath(args[startIndex]) ? args[startIndex] : false
+    if (!isCallback(args[startIndex]) && isNestedData(args[startIndex])) {
+      result.path = isPath(args[startIndex]) ? args[startIndex] : undefined
     }
 
     if (isPath(args[startIndex])) {
@@ -163,7 +162,6 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
     } else {
       result.data = isRootData(args[startIndex]) ? args[startIndex] : undefined
     }
-
     if (!isPath(args[startIndex])) {
       result.callback = isCallback(args[startIndex + 1]) ? args[startIndex + 1] : false
     }
@@ -171,20 +169,26 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
 
   if (args.length === startIndex + 3) {
     result = {
-      path: isPath(args[startIndex]) ? args[startIndex] : false,
+      path: isPath(args[startIndex]) ? args[startIndex] : undefined,
       data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
-      callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : false
+      callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : undefined
     }
   }
 
   if (result) {
-    if (result.path !== undefined && result.path.length === 0 || result.path === false) {
+    if (
+      result.path !== undefined && result.path.length === 0 ||
+      (result.path === undefined && !result.data)
+    ) {
       throw Error('Invalid set path argument')
     }
-    if (result.data === undefined) {
+    if (result.data === undefined && result.path === undefined) {
       throw Error('Invalid set data argument')
     }
-    if (result.callback !== undefined && result.callback === false) {
+    if (
+      result.callback !== undefined && result.callback === false ||
+      result.callback === undefined && args.length === startIndex + 3
+    ) {
       throw Error('Invalid set callback argument')
     }
     return result

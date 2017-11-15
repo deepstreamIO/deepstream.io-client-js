@@ -5,6 +5,7 @@ import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
 import { Message } from '../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../src/record/single-notifier'
+import { WriteAckNotifier } from '../src/record/write-ack-notifier'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -132,5 +133,14 @@ export const getSingleNotifierMock = () => {
   return {
     singleNotifier,
     singleNotifierMock
+  }
+}
+
+export const getWriteAckNotifierMock = () => {
+  const writeAckNotifier = WriteAckNotifier.prototype
+  const writeAckNotifierMock = mock(writeAckNotifier)
+  return {
+    writeAckNotifier,
+    writeAckNotifierMock
   }
 }
