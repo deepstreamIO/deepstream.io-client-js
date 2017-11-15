@@ -102,7 +102,7 @@ export class TimeoutRegistry extends EventEmitter {
     this.register.delete(timerId)
   }
 
-  public setConnectionEndpoint(connection: any) {
+  public setConnectionEndpoint (connection: any) {
     this.services.connection = connection
     this.services.connection.onLost(this.onConnectionLost.bind(this))
   }

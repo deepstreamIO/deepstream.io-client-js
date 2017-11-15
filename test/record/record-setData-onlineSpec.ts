@@ -10,7 +10,7 @@ import { RecordHandler } from '../../src/record/record-handler'
 import { WriteAckCallback } from '../../src/record/record-core'
 import { RecordSetArguments } from '../../src/util/utils'
 
-describe('record setData online', () => {
+describe.only('record setData online', () => {
   const topic = TOPIC.RECORD
   const name = 'testRecord'
 
@@ -119,13 +119,11 @@ describe('record setData online', () => {
   })
 
   describe('with ack', () => {
-    let counter: number
     let data: any
     let path: string
     let cb: WriteAckCallback
 
     beforeEach(() => {
-      counter = 1
       path = 'key'
       data = { some: 'value' }
       cb = () => {}
@@ -230,137 +228,140 @@ describe('record setData online', () => {
       expect(promise).is.a('promise')
     })
 
-    describe('handling acknowledgements', () => {
-      const path = 'key'
-      const data = { some: 'value' }
+  })
 
-      let ackCallback: sinon.SinonSpy
-      let ackResolve: sinon.SinonSpy
-      let ackReject: sinon.SinonSpy
+  describe('handling acknowledgements', () => {
+    const path = 'key'
+    const data = { some: 'value' }
 
-      beforeEach(() => {
-        ackCallback = spy()
-        ackResolve = spy()
-        ackReject = spy()
-      })
+    let ackCallback: sinon.SinonSpy
+    let ackResolve: sinon.SinonSpy
+    let ackReject: sinon.SinonSpy
 
-      const errorMsg: RecordMessage = {
-        topic,
-        action: RECORD_ACTION.MESSAGE_DENIED,
-        originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
-        name,
-        correlationId: "1",
-        isError: true
-      }
+    beforeEach(() => {
+      ackCallback = spy()
+      ackResolve = spy()
+      ackReject = spy()
+    })
 
-      it('calls callbackAck with error', () => {
-        recordHandler.setDataWithAck(name, data, ackCallback)
+    const errorMsg: RecordMessage = {
+      topic,
+      action: RECORD_ACTION.MESSAGE_DENIED,
+      originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
+      name,
+      correlationId: '1',
+      isError: true
+    }
 
-        handle(errorMsg)
+    it('calls callbackAck with error', async () => {
+      recordHandler.setDataWithAck(name, data, ackCallback)
 
-        assert.calledOnce(ackCallback)
-        assert.calledWithExactly(ackCallback, RECORD_ACTION[errorMsg.action])
-      })
+      handle(errorMsg)
+      await BBPromise.delay(1)
 
-      it('rejects promise with error', async () => {
-        const promise = recordHandler.setDataWithAck(name, path, undefined) as Promise<string>
-        promise.then(ackResolve).catch(ackReject)
+      assert.calledOnce(ackCallback)
+      assert.calledWithExactly(ackCallback, RECORD_ACTION[errorMsg.action])
+    })
 
-        handle(errorMsg)
-        await BBPromise.delay(1)
+    it('rejects promise with error', async () => {
+      const promise = recordHandler.setDataWithAck(name, path, undefined) as Promise<string>
+      promise.then(ackResolve).catch(ackReject)
 
-        assert.notCalled(ackResolve)
+      handle(errorMsg)
+      await BBPromise.delay(1)
 
-        assert.calledOnce(ackReject)
-        assert.calledWithExactly(ackReject, RECORD_ACTION[errorMsg.action])
-      })
+      assert.notCalled(ackResolve)
 
-      const createUpdateAckMsg: RecordMessage = {
-        topic,
-        action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
-        originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
-        name,
-        correlationId: "1"
-      }
+      assert.calledOnce(ackReject)
+      assert.calledWithExactly(ackReject, RECORD_ACTION[errorMsg.action])
+    })
 
-      it('calls callbackAck for setData without path', () => {
-        recordHandler.setDataWithAck(name, data, ackCallback)
+    const createUpdateAckMsg: RecordMessage = {
+      topic,
+      action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
+      originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
+      name,
+      correlationId: '1'
+    }
 
-        handle(createUpdateAckMsg)
+    it('calls callbackAck for setData without path', async () => {
+      recordHandler.setDataWithAck(name, data, ackCallback)
 
-        assert.calledOnce(ackCallback)
-        assert.calledWithExactly(ackCallback, null)
-      })
+      handle(createUpdateAckMsg)
+      await BBPromise.delay(1)
 
-      it('resolves promise for setData without path', async () => {
-        const promise = recordHandler.setDataWithAck(name, data) as Promise<string>
-        promise.then(ackResolve).catch(ackReject)
+      assert.calledOnce(ackCallback)
+      assert.calledWithExactly(ackCallback, null)
+    })
 
-        handle(createUpdateAckMsg)
-        await BBPromise.delay(1)
+    it('resolves promise for setData without path', async () => {
+      const promise = recordHandler.setDataWithAck(name, data) as Promise<string>
+      promise.then(ackResolve).catch(ackReject)
 
-        assert.calledOnce(ackResolve)
-        assert.notCalled(ackReject)
-      })
+      handle(createUpdateAckMsg)
+      await BBPromise.delay(1)
 
-      const createPatchAckMsg: RecordMessage = {
-        topic,
-        action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
-        originalAction: RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK,
-        name,
-        correlationId: "1"
-      }
+      assert.calledOnce(ackResolve)
+      assert.notCalled(ackReject)
+    })
 
-      it('calls callbackAck for setData with path', () => {
-        recordHandler.setDataWithAck(name, path, data, ackCallback)
+    const createPatchAckMsg: RecordMessage = {
+      topic,
+      action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
+      originalAction: RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK,
+      name,
+      correlationId: '1'
+    }
 
-        handle(createPatchAckMsg)
+    it('calls callbackAck for setData with path', async () => {
+      recordHandler.setDataWithAck(name, path, data, ackCallback)
 
-        assert.calledOnce(ackCallback)
-        assert.calledWithExactly(ackCallback, null)
-      })
+      handle(createPatchAckMsg)
+      await BBPromise.delay(1)
 
-      it('resolves promise for setData with path', async () => {
-        const promise = recordHandler.setDataWithAck(name, path, data) as Promise<string>
-        promise.then(ackResolve).catch(ackReject)
+      assert.calledOnce(ackCallback)
+      assert.calledWithExactly(ackCallback, null)
+    })
 
-        handle(createPatchAckMsg)
-        await BBPromise.delay(1)
+    it('resolves promise for setData with path', async () => {
+      const promise = recordHandler.setDataWithAck(name, path, data) as Promise<string>
+      promise.then(ackResolve).catch(ackReject)
 
-        assert.calledOnce(ackResolve)
-        assert.notCalled(ackReject)
-      })
+      handle(createPatchAckMsg)
+      await BBPromise.delay(1)
 
-      const eraseAckMsg: RecordMessage = {
-        topic,
-        action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
-        originalAction: RECORD_ACTION.ERASE_WITH_WRITE_ACK,
-        name,
-        correlationId: "1"
-      }
+      assert.calledOnce(ackResolve)
+      assert.notCalled(ackReject)
+    })
 
-      it('calls callbackAck for setData deleting values', () => {
-        recordHandler.setDataWithAck(name, path, undefined, ackCallback)
+    const eraseAckMsg: RecordMessage = {
+      topic,
+      action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
+      originalAction: RECORD_ACTION.ERASE_WITH_WRITE_ACK,
+      name,
+      correlationId: '1'
+    }
 
-        handle(eraseAckMsg)
+    it('calls callbackAck for setData deleting values', async () => {
+      recordHandler.setDataWithAck(name, path, undefined, ackCallback)
 
-        assert.calledOnce(ackCallback)
-        assert.calledWithExactly(ackCallback, null)
-      })
+      handle(eraseAckMsg)
+      await BBPromise.delay(1)
 
-      it('resolves promise for setData deleting values', async () => {
-        const promise = recordHandler.setDataWithAck(name, path, undefined) as Promise<string>
-        promise.then(ackResolve).catch(ackReject)
+      assert.calledOnce(ackCallback)
+      assert.calledWithExactly(ackCallback, null)
+    })
 
-        handle(eraseAckMsg)
-        await BBPromise.delay(1)
+    it('resolves promise for setData deleting values', async () => {
+      const promise = recordHandler.setDataWithAck(name, path, undefined) as Promise<string>
+      promise.then(ackResolve).catch(ackReject)
 
-        assert.calledOnce(ackResolve)
-        assert.notCalled(ackReject)
-      })
+      handle(eraseAckMsg)
+      await BBPromise.delay(1)
 
+      assert.calledOnce(ackResolve)
+      assert.notCalled(ackReject)
     })
 
   })
-
 })

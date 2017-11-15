@@ -24,7 +24,7 @@ export class WriteAckNotifier {
   constructor (services: Services) {
     this.services = services
     this.responses = new Map<string, WriteAckCallback>()
-    this.count = 1;
+    this.count = 1
   }
 
     /**
@@ -53,7 +53,7 @@ export class WriteAckNotifier {
   public recieve (message: Message): void {
     const id = message.correlationId as string
     const response = this.responses.get(id)
-    if (!response) {
+    if (!response || message.action !== RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT) {
       this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
       return
     }

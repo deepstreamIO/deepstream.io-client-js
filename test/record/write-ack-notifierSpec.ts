@@ -31,9 +31,6 @@ describe('Write Ack Notifier', () => {
     services.connectionMock
       .expects('sendMessage')
       .never()
-    services.timeoutRegistryMock
-      .expects('add')
-      .never()
 
     writeAckNotifier.send({
       topic,
@@ -50,7 +47,7 @@ describe('Write Ack Notifier', () => {
 
   })
 
-  it('sends correct messages with different correlationsId and register timeouts for each call', () => {
+  it('sends correct messages with different correlationsId for each call', () => {
     const messageBody = {
       topic,
       action,
@@ -59,19 +56,18 @@ describe('Write Ack Notifier', () => {
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { correlationId: "1" }))
+      .withExactArgs(Object.assign({}, messageBody, { correlationId: '1' }))
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { correlationId: "2" }))
+      .withExactArgs(Object.assign({}, messageBody, { correlationId: '2' }))
 
     writeAckNotifier.send(messageBody, () => {})
     writeAckNotifier.send(messageBody, () => {})
   })
 
-
-  describe('receiving', async () => {
-    const correlationId = "1"
+  describe('receiving', () => {
+    const correlationId = '1'
 
     let message: RecordMessage
 
@@ -84,12 +80,12 @@ describe('Write Ack Notifier', () => {
       writeAckNotifier.send(Object.assign({}, message), callbackSpy)
     })
 
-    it('logs error for unknown acknowledgements', () => {
+    it('logs error for unknown acknowledgements', async () => {
       const msg = {
         topic,
         action,
         name,
-        correlationId: "123"
+        correlationId: '123'
       }
       services.loggerMock
         .expects('error')
@@ -97,23 +93,25 @@ describe('Write Ack Notifier', () => {
         .withExactArgs(msg, EVENT.UNSOLICITED_MESSAGE)
 
       writeAckNotifier.recieve(msg)
+      await BBPromise.delay(1)
 
       assert.notCalled(callbackSpy)
     })
 
-    it('calls ack callback when server sends ack message', () => {
+    it('calls ack callback when server sends ack message', async () => {
       writeAckNotifier.recieve({
         topic,
         action: RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
         correlationId,
         originalAction: RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK
       })
+      await BBPromise.delay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWith(callbackSpy)
     })
 
-    it('doesn\'t call callback twice', () => {
+    it('doesn\'t call callback twice', async () => {
       const msg = {
         topic,
         action: RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
@@ -122,23 +120,25 @@ describe('Write Ack Notifier', () => {
       }
       writeAckNotifier.recieve(msg)
       writeAckNotifier.recieve(msg)
+      await BBPromise.delay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWith(callbackSpy)
     })
 
     it('calls ack callback with error when server sends error message', async () => {
-      const action = RECORD_ACTIONS.MESSAGE_DENIED
+      const errorAction = RECORD_ACTIONS.MESSAGE_DENIED
       writeAckNotifier.recieve({
         topic,
-        action,
+        action: errorAction,
         correlationId,
         originalAction: RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK,
         isError: true
       })
+      await BBPromise.delay(1)
 
       assert.calledOnce(callbackSpy)
-      assert.calledWith(callbackSpy, RECORD_ACTIONS[action])
+      assert.calledWith(callbackSpy, RECORD_ACTIONS[errorAction])
     })
 
   })

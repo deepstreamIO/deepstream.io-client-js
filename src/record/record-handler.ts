@@ -219,9 +219,7 @@ export class RecordHandler {
     const args = utils.normalizeSetArguments(arguments, 1)
     if (!args.callback) {
       return new Promise((resolve, reject) => {
-        args.callback = (error) => {
-          error === null ? resolve() : reject(error)
-        }
+        args.callback = error => error === null ? resolve() : reject(error)
         this.sendSetData(recordName, args)
       })
     }
@@ -251,7 +249,7 @@ export class RecordHandler {
     this.sendSetData(recordName, args)
   }
 
-  private sendSetData (recordName: string, args: utils.RecordSetArguments) : void {
+  private sendSetData (recordName: string, args: utils.RecordSetArguments): void {
     const { path, data, callback } = args
     if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
       throw new Error('invalid argument: recordName must be an non empty string')
