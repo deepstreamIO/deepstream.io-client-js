@@ -24,7 +24,7 @@ describe('record core offline', () => {
     beforeEach(() => {
         whenCompleted = sinon_1.spy();
         services = mocks_1.getServicesMock();
-        options = Object.assign({}, client_options_1.DefaultOptions, { discardTimout: 20 });
+        options = Object.assign({}, client_options_1.DefaultOptions, { discardTimeout: 20 });
         services.connectionMock
             .expects('sendMessage')
             .never();

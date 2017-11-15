@@ -24,7 +24,7 @@ describe('record core online', () => {
     beforeEach(() => {
         whenCompleted = sinon_1.spy();
         services = mocks_1.getServicesMock();
-        options = Object.assign({}, client_options_1.DefaultOptions, { discardTimout: 20 });
+        options = Object.assign({}, client_options_1.DefaultOptions, { discardTimeout: 20 });
         services.connection.isConnected = true;
         recordCore = new record_core_1.RecordCore(name, services, options, whenCompleted);
         services.connectionMock.restore();
@@ -230,10 +230,6 @@ describe('record core online', () => {
     }));
     it('calls delete when delete happens remotely', () => __awaiter(this, void 0, void 0, function* () {
         recordCore.handle(READ_RESPONSE);
-        services.connectionMock
-            .expects('sendMessage')
-            .once();
-        recordCore.delete();
         recordCore.handle({
             topic: message_constants_1.TOPIC.RECORD,
             action: message_constants_1.RECORD_ACTIONS.DELETED,

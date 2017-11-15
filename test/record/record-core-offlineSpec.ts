@@ -19,7 +19,7 @@ describe('record core offline', () => {
     beforeEach(() => {
         whenCompleted = spy()
         services = getServicesMock()
-        options = Object.assign({}, DefaultOptions, { discardTimout: 20 })
+        options = Object.assign({}, DefaultOptions, { discardTimeout: 20 })
 
         services.connectionMock
             .expects('sendMessage')

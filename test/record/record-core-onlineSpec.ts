@@ -19,7 +19,7 @@ describe('record core online', () => {
     beforeEach(() => {
         whenCompleted = spy()
         services = getServicesMock()
-        options = Object.assign({}, DefaultOptions, { discardTimout: 20 })
+        options = Object.assign({}, DefaultOptions, { discardTimeout: 20 })
 
         services.connection.isConnected = true
         recordCore = new RecordCore(name, services, options, whenCompleted)
@@ -283,12 +283,6 @@ describe('record core online', () => {
 
     it('calls delete when delete happens remotely', async () => {
         recordCore.handle(READ_RESPONSE)
-
-        services.connectionMock
-        .expects('sendMessage')
-        .once()
-
-        recordCore.delete()
 
         recordCore.handle({
             topic: TOPIC.RECORD,

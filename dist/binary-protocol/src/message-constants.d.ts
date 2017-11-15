@@ -262,7 +262,13 @@ export declare enum PRESENCE_ACTIONS {
     NOT_SUBSCRIBED = 100,
 }
 export declare const ACTIONS: {
-    [x: number]: typeof PARSER_ACTIONS | typeof CONNECTION_ACTIONS | typeof AUTH_ACTIONS | typeof EVENT_ACTIONS | typeof RECORD_ACTIONS | typeof RPC_ACTIONS | typeof PRESENCE_ACTIONS;
+    [TOPIC.PARSER]: typeof PARSER_ACTIONS;
+    [TOPIC.CONNECTION]: typeof CONNECTION_ACTIONS;
+    [TOPIC.AUTH]: typeof AUTH_ACTIONS;
+    [TOPIC.EVENT]: typeof EVENT_ACTIONS;
+    [TOPIC.RECORD]: typeof RECORD_ACTIONS;
+    [TOPIC.RPC]: typeof RPC_ACTIONS;
+    [TOPIC.PRESENCE]: typeof PRESENCE_ACTIONS;
 };
 export declare enum EVENT {
     INFO = "INFO",
