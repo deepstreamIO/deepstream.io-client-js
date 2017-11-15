@@ -55,4 +55,5 @@ export declare class RPCHandler {
     private getRPC(message);
     private reprovide();
     private sendProvide(name);
+    private onConnectionLost();
 }

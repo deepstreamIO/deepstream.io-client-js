@@ -23,6 +23,7 @@ export class RPCHandler {
     this.providers = new Map<string, RPCProvider>()
     this.services.connection.registerHandler(TOPIC.RPC, this.handle.bind(this))
     this.services.connection.onReestablished(this.reprovide.bind(this))
+    this.services.connection.onLost(this.onConnectionLost.bind(this))
   }
 
   /**
@@ -235,6 +236,13 @@ export class RPCHandler {
     }
     this.services.timeoutRegistry.add({ message })
     this.services.connection.sendMessage(message)
+  }
+
+  private onConnectionLost (): void {
+    this.rpcs.forEach(rpc => {
+      rpc.error(EVENT.CLIENT_OFFLINE)
+    })
+    this.rpcs.clear()
   }
 
 }

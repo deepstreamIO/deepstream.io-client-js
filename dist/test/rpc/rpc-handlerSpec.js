@@ -470,6 +470,15 @@ describe('RPC handler', () => {
             sinon.assert.notCalled(rpcPromiseResponseSuccess);
             sinon.assert.calledOnce(rpcPromiseResponseFail);
         }));
+        it.only('responds with error when onConnectionLost', () => __awaiter(this, void 0, void 0, function* () {
+            services.simulateConnectionLost();
+            yield bluebird_1.Promise.delay(1);
+            sinon.assert.calledOnce(rpcResponseCallback);
+            sinon.assert.calledWithExactly(rpcResponseCallback, constants_1.EVENT.CLIENT_OFFLINE);
+            sinon.assert.notCalled(rpcPromiseResponseSuccess);
+            sinon.assert.calledOnce(rpcPromiseResponseFail);
+            sinon.assert.calledWithExactly(rpcPromiseResponseFail, constants_1.EVENT.CLIENT_OFFLINE);
+        }));
     });
 });
 //# sourceMappingURL=rpc-handlerSpec.js.map
