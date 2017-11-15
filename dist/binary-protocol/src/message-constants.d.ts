@@ -134,8 +134,6 @@ export declare enum AUTH_ACTIONS {
     AUTH_UNSUCCESSFUL = 3,
     TOO_MANY_AUTH_ATTEMPTS = 80,
     INVALID_MESSAGE = 82,
-    MESSAGE_PERMISSION_ERROR = 96,
-    MESSAGE_DENIED = 97,
     INVALID_MESSAGE_DATA = 98,
 }
 export declare enum EVENT_ACTIONS {
@@ -214,8 +212,6 @@ export declare enum RECORD_ACTIONS {
     INVALID_MESSAGE_DATA = 98,
     MULTIPLE_SUBSCRIPTIONS = 99,
     NOT_SUBSCRIBED = 100,
-    HAS = 112,
-    HAS_RESPONSE = 113,
 }
 export declare enum RPC_ACTIONS {
     ERROR = 0,
@@ -266,13 +262,7 @@ export declare enum PRESENCE_ACTIONS {
     NOT_SUBSCRIBED = 100,
 }
 export declare const ACTIONS: {
-    [TOPIC.PARSER]: typeof PARSER_ACTIONS;
-    [TOPIC.CONNECTION]: typeof CONNECTION_ACTIONS;
-    [TOPIC.AUTH]: typeof AUTH_ACTIONS;
-    [TOPIC.EVENT]: typeof EVENT_ACTIONS;
-    [TOPIC.RECORD]: typeof RECORD_ACTIONS;
-    [TOPIC.RPC]: typeof RPC_ACTIONS;
-    [TOPIC.PRESENCE]: typeof PRESENCE_ACTIONS;
+    [x: number]: typeof PARSER_ACTIONS | typeof CONNECTION_ACTIONS | typeof AUTH_ACTIONS | typeof EVENT_ACTIONS | typeof RECORD_ACTIONS | typeof RPC_ACTIONS | typeof PRESENCE_ACTIONS;
 };
 export declare enum EVENT {
     INFO = "INFO",

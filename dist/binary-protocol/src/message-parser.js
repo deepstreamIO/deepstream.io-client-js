@@ -120,6 +120,7 @@ function parseMessage(rawMessage) {
             raw: rawHeader
         };
     }
+    // mask out uppermost bit(ACK)
     const action = rawAction & 0x7F;
     const message = { topic, action };
     if (rawMessage.meta && rawMessage.meta.length > 0) {
@@ -132,6 +133,16 @@ function parseMessage(rawMessage) {
                 description: `invalid meta field ${rawMessage.meta.toString()}`,
                 raw: rawHeader
             };
+        }
+        const metaError = message_validator_1.validateMeta(topic, rawAction, meta);
+        if (metaError) {
+            throw new Error(`invalid meta ${message_constants_1.TOPIC[message.topic]} ${message_constants_1.ACTIONS[message.topic][message.action]}: ${metaError}`);
+            // return {
+            //   parseError: true,
+            //   action: PARSER_ACTIONS.INVALID_META_PARAMS,
+            //   parsedMessage: message,
+            //   description: 'invalid ack'
+            // }
         }
         addMetadataToMessage(meta, message);
     }
@@ -167,16 +178,6 @@ function parseMessage(rawMessage) {
         && rawAction >= 0x10
         && rawAction < 0x20) {
         message.isWriteAck = constants_1.isWriteAck(message.action);
-    }
-    const error = message_validator_1.validate(message);
-    if (error) {
-        console.trace('invalid message', message);
-        return {
-            parseError: true,
-            action: message_constants_1.PARSER_ACTIONS.INVALID_META_PARAMS,
-            parsedMessage: message,
-            description: error
-        };
     }
     return message;
 }

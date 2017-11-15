@@ -12,7 +12,7 @@ exports.socketFactory = (url, options) => {
         const parseResults = message_parser_1.parse(raw.data);
         parseResults.forEach(element => {
             const msg = element;
-            console.log('<<<', message_constants_1.TOPIC[msg.topic], message_constants_1.ACTIONS[msg.topic][msg.action], msg.parsedData, msg.data, msg.name);
+            // console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
         });
         socket.onparsedmessages(parseResults);
     };
@@ -23,7 +23,7 @@ exports.socketFactory = (url, options) => {
             return;
         }
         message.data = JSON.stringify(message.parsedData);
-        console.log('>>>', message_constants_1.TOPIC[message.topic], message_constants_1.ACTIONS[message.topic][message.action], message.parsedData, message.reason, message.name);
+        // console.log('>>>', TOPIC[message.topic], (ACTIONS as any)[message.topic][message.action], message.parsedData, message.reason, message.name)
         socket.send(message_builder_1.getMessage(message, false));
     };
     return socket;

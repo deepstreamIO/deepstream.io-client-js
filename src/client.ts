@@ -21,9 +21,9 @@ export interface RecordOfflineStore {
 export interface Services {
   logger: Logger
   connection: Connection
-  timeoutRegistry: TimeoutRegistry,
-  timerRegistry: TimerRegistry,
-  socketFactory: SocketFactory,
+  timeoutRegistry: TimeoutRegistry
+  timerRegistry: TimerRegistry
+  socketFactory: SocketFactory
   storage: RecordOfflineStore
 }
 
