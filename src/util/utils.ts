@@ -140,7 +140,7 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
   let result
 
   const isRootData = (data: any) => data !== undefined && typeof data === 'object'
-  const isNestedData = (data: any) => data !== undefined && typeof data !== 'function'
+  const isNestedData = (data: any) => typeof data !== 'function'
   const isPath = (path: any) => path !== undefined && typeof path === 'string'
   const isCallback = (callback: any) => typeof callback === 'function'
 
@@ -172,7 +172,7 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
   if (args.length === startIndex + 3) {
     result = {
       path: isPath(args[startIndex]) ? args[startIndex] : false,
-      data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
+      data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : false,
       callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : false
     }
   }
@@ -181,7 +181,7 @@ export const normalizeSetArguments = (args: IArguments, startIndex: number = 0):
     if (result.path !== undefined && result.path.length === 0 || result.path === false) {
       throw Error('Invalid set path argument')
     }
-    if (result.data === undefined) {
+    if (result.data === undefined && !result.path || result.data === false) {
       throw Error('Invalid set data argument')
     }
     if (result.callback !== undefined && result.callback === false) {

@@ -21,9 +21,9 @@ export interface RecordOfflineStore {
 export interface Services {
   logger: Logger
   connection: Connection
-  timeoutRegistry: TimeoutRegistry,
-  timerRegistry: TimerRegistry,
-  socketFactory: SocketFactory,
+  timeoutRegistry: TimeoutRegistry
+  timerRegistry: TimerRegistry
+  socketFactory: SocketFactory
   storage: RecordOfflineStore
 }
 
@@ -47,8 +47,11 @@ export class Client extends EventEmitter {
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
-    services.timeoutRegistry.setConnectionEndpoint(services.connection)
     this.services = services as Services
+
+    this.services.connection.onLost(
+      services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
+    )
 
     this.event = new EventHandler(this.services, this.options)
     this.rpc = new RPCHandler(this.services, this.options)

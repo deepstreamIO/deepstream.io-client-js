@@ -16,7 +16,7 @@ module.exports = {
     }],
   },
   plugins: [
-    // new webpack.IgnorePlugin(/ws/),
+    new webpack.IgnorePlugin(/ws/),
     new UglifyJSPlugin()
   ],
 };

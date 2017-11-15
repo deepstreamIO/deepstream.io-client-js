@@ -18,8 +18,10 @@ export enum EVENT {
     CONNECTION_STATE_CHANGED = 'connectionStateChanged',
     AUTHENTICATION_TIMEOUT = 'AUTHENTICATION_TIMEOUT',
 
+    RECORD_ERROR = 'error',
     RECORD_READY = 'ready',
     RECORD_DELETED = 'delete',
+    RECORD_DISCARDED = 'discard',
     RECORD_VERSION_EXISTS = 'versionExists',
     RECORD_HAS_PROVIDER_CHANGED = 'hasProviderChanged',
     RECORD_STATE_CHANGED = 'onRecordStateChanged',
