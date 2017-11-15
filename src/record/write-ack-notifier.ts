@@ -25,6 +25,8 @@ export class WriteAckNotifier {
     this.services = services
     this.responses = new Map<string, WriteAckCallback>()
     this.count = 1
+
+    this.services.connection.onLost(this.onConnectionLost.bind(this))
   }
 
     /**
@@ -70,8 +72,9 @@ export class WriteAckNotifier {
 
   private onConnectionLost (): void {
     this.responses.forEach(response => {
-
+      response(EVENT.CLIENT_OFFLINE)
     })
+    this.responses.clear()
   }
 
 }

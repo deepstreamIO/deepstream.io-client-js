@@ -54,6 +54,8 @@ export class PresenceHandler {
     this.resubscribe = this.resubscribe.bind(this)
     this.services.connection.registerHandler(TOPIC.PRESENCE, this.handle.bind(this))
     this.services.connection.onReestablished(this.resubscribe.bind(this))
+    this.services.connection.onLost(this.onConnectionLost.bind(this))
+
     this.counter = 0
     this.pendingSubscribes = new Set()
     this.pendingUnsubscribes = new Set()
@@ -309,5 +311,12 @@ export class PresenceHandler {
         callback: this.flush
       })
     }
+  }
+
+  private onConnectionLost (): void {
+    this.queryEmitter.eventNames().forEach(correlationId => {
+      this.queryEmitter.emit(correlationId, EVENT.CLIENT_OFFLINE)
+    })
+    this.queryAllEmitter.emit(ONLY_EVENT, EVENT.CLIENT_OFFLINE)
   }
 }

@@ -18,6 +18,7 @@ class WriteAckNotifier {
         this.services = services;
         this.responses = new Map();
         this.count = 1;
+        this.services.connection.onLost(this.onConnectionLost.bind(this));
     }
     /**
    * Add a write ack nofity callback.
@@ -55,7 +56,9 @@ class WriteAckNotifier {
     }
     onConnectionLost() {
         this.responses.forEach(response => {
+            response(client_1.EVENT.CLIENT_OFFLINE);
         });
+        this.responses.clear();
     }
 }
 exports.WriteAckNotifier = WriteAckNotifier;

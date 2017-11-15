@@ -18,6 +18,8 @@ describe('Presence handler', () => {
   let presenceHandler: PresenceHandler
   let handle: Function
   let callbackSpy: sinon.SinonSpy
+  let promiseSuccess: sinon.SinonSpy
+  let promiseError: sinon.SinonSpy
   const options = Object.assign({}, DefaultOptions)
   let counter: number
 
@@ -26,6 +28,8 @@ describe('Presence handler', () => {
     presenceHandler = new PresenceHandler(services, options)
     handle = services.getHandle()
     callbackSpy = spy()
+    promiseSuccess = spy()
+    promiseError = spy()
     counter = 0
   })
 
@@ -58,9 +62,6 @@ describe('Presence handler', () => {
   })
 
   it('cant\'t query getAll when client is offline', async () => {
-    const promiseError = spy()
-    const promiseSuccess = spy()
-
     services.connection.isConnected = false
     services.connectionMock
       .expects('sendMessage')
@@ -71,6 +72,39 @@ describe('Presence handler', () => {
     promise.then(promiseSuccess).catch(promiseError)
 
     await BBPromise.delay(0)
+    assert.calledOnce(callbackSpy)
+    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+
+    assert.notCalled(promiseSuccess)
+    assert.calledOnce(promiseError)
+    assert.calledWithExactly(promiseError, EVENT.CLIENT_OFFLINE)
+  })
+
+  it('calls query for all users callback with error message when connection is lost', async () => {
+    presenceHandler.getAll(callbackSpy)
+    const promise = presenceHandler.getAll()
+    promise.then(promiseSuccess).catch(promiseError)
+
+    services.simulateConnectionLost()
+    await BBPromise.delay(1)
+
+    assert.calledOnce(callbackSpy)
+    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+
+    assert.notCalled(promiseSuccess)
+    assert.calledOnce(promiseError)
+    assert.calledWithExactly(promiseError, EVENT.CLIENT_OFFLINE)
+  })
+
+  it('calls query for specific users callback with error message when connection is lost', async () => {
+    const users = ['userA', 'userB']
+    presenceHandler.getAll(users, callbackSpy)
+    const promise = presenceHandler.getAll(users)
+    promise.then(promiseSuccess).catch(promiseError)
+
+    services.simulateConnectionLost()
+    await BBPromise.delay(1)
+
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
 
@@ -268,14 +302,10 @@ describe('Presence handler', () => {
 
   describe('when server responds for getAll for all users ', () => {
     let callback: sinon.SinonSpy
-    let promiseSuccess: sinon.SinonSpy
-    let promiseError: sinon.SinonSpy
     let users: Array<string>
 
     beforeEach(() => {
       callback = spy()
-      promiseError = spy()
-      promiseSuccess = spy()
       users = ['userA', 'userB']
 
       presenceHandler.getAll(callback)
@@ -283,17 +313,17 @@ describe('Presence handler', () => {
       promise.then(promiseSuccess).catch(promiseError)
     })
 
-    it.skip('receives data for query all users', async () => {
-      const messageForCallback = messageResponse(counter, users)
-      const messageForPromise = messageResponse(counter + 1, users)
+    it('receives data for query all users', async () => {
+      const messageForCallback = messageResponseQueryAll(counter, users)
+      const messageForPromise = messageResponseQueryAll(counter + 1, users)
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(messageForCallback)
+        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY_ALL }))
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(messageForPromise)
+        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_ALL }))
 
       presenceHandler.handle(messageForCallback)
       presenceHandler.handle(messageForPromise)
@@ -307,35 +337,10 @@ describe('Presence handler', () => {
       assert.calledWithExactly(promiseSuccess, users)
     })
 
-    it('recieves message denied for query all users', async () => {
-
-    })
-    it('recieves permission error for query all users', async () => {
-
-    })
-  })
-
-  describe('when server responds for getAll for specific users ', () => {
-    let callback: sinon.SinonSpy
-    let promiseSuccess: sinon.SinonSpy
-    let promiseError: sinon.SinonSpy
-    let users: Array<string>
-    let usersPresence: IndividualQueryResult
-
-    beforeEach(() => {
-      callback = spy()
-      promiseError = spy()
-      promiseSuccess = spy()
-      users = ['userA', 'userB']
-      usersPresence = { userA: true, userB: false }
-      presenceHandler.getAll(users, callback)
-      const promise = presenceHandler.getAll(users)
-      promise.then(promiseSuccess).catch(promiseError)
-    })
-
-    it.skip('receives data for query specific users', async () => {
-      const messageForCallback = messageResponse(counter, users)
-      const messageForPromise = messageResponse(counter + 1, users)
+    it('recieves error message for query all users', async () => {
+      const error = PRESENCE_ACTIONS.MESSAGE_DENIED
+      const messageForCallback = errorMessageResponseQueryAll(counter, error)
+      const messageForPromise = errorMessageResponseQueryAll(counter + 1, error)
       services.timeoutRegistryMock
         .expects('remove')
         .once()
@@ -350,6 +355,46 @@ describe('Presence handler', () => {
 
       await BBPromise.delay(1)
       assert.calledOnce(callback)
+      assert.calledWithExactly(callback, PRESENCE_ACTIONS[error])
+
+      assert.calledOnce(promiseError)
+      assert.calledWithExactly(promiseError, PRESENCE_ACTIONS[error])
+
+      assert.notCalled(promiseSuccess)
+    })
+  })
+
+  describe('when server responds for getAll for specific users ', () => {
+    let callback: sinon.SinonSpy
+    let users: Array<string>
+    let usersPresence: IndividualQueryResult
+
+    beforeEach(() => {
+      callback = spy()
+      users = ['userA', 'userB']
+      usersPresence = { userA: true, userB: false }
+      presenceHandler.getAll(users, callback)
+      const promise = presenceHandler.getAll(users)
+      promise.then(promiseSuccess).catch(promiseError)
+    })
+
+    it('receives data for query specific users', async () => {
+      const messageForCallback = messageResponseQuery(counter, usersPresence)
+      const messageForPromise = messageResponseQuery(counter + 1, usersPresence)
+      services.timeoutRegistryMock
+        .expects('remove')
+        .once()
+        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY }))
+      services.timeoutRegistryMock
+        .expects('remove')
+        .once()
+        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY }))
+
+      presenceHandler.handle(messageForCallback)
+      presenceHandler.handle(messageForPromise)
+
+      await BBPromise.delay(1)
+      assert.calledOnce(callback)
       assert.calledWithExactly(callback, null, usersPresence)
 
       assert.notCalled(promiseError)
@@ -357,12 +402,32 @@ describe('Presence handler', () => {
       assert.calledWithExactly(promiseSuccess, usersPresence)
     })
 
-    it('recieves message denied for query users', async () => {
+    it('recieves error message for query users', async () => {
+      const error = PRESENCE_ACTIONS.MESSAGE_DENIED
+      const messageForCallback = errorMessageResponseQuery(counter, error)
+      const messageForPromise = errorMessageResponseQuery(counter + 1, error)
+      services.timeoutRegistryMock
+        .expects('remove')
+        .once()
+        .withExactArgs(messageForCallback)
+      services.timeoutRegistryMock
+        .expects('remove')
+        .once()
+        .withExactArgs(messageForPromise)
 
-    })
-    it('recieves permission error for query users', async () => {
+      presenceHandler.handle(messageForCallback)
+      presenceHandler.handle(messageForPromise)
 
+      await BBPromise.delay(1)
+      assert.calledOnce(callback)
+      assert.calledWithExactly(callback, PRESENCE_ACTIONS[error])
+
+      assert.calledOnce(promiseError)
+      assert.calledWithExactly(promiseError, PRESENCE_ACTIONS[error])
+
+      assert.notCalled(promiseSuccess)
     })
+
   })
 
   describe('when subscribing to userA, userB and all', () => {
@@ -504,11 +569,40 @@ function message (action: PRESENCE_ACTIONS, user?: string): Message {
   }
 }
 
-function messageResponse (id: number, users: any): PresenceMessage {
+function messageResponseQueryAll (id: number, users: Array<string>): PresenceMessage {
   return {
     topic: TOPIC.PRESENCE,
     action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE,
     names: users,
     correlationId: id.toString()
+  }
+}
+
+function messageResponseQuery (id: number, usersPresence: IndividualQueryResult): PresenceMessage {
+  return {
+    topic: TOPIC.PRESENCE,
+    action: PRESENCE_ACTIONS.QUERY_RESPONSE,
+    parsedData: usersPresence,
+    correlationId: id.toString()
+  }
+}
+
+function errorMessageResponseQueryAll (id: number, error: PRESENCE_ACTIONS): PresenceMessage {
+  return {
+    topic: TOPIC.PRESENCE,
+    action: error,
+    originalAction: PRESENCE_ACTIONS.QUERY_ALL,
+    correlationId: id.toString(),
+    isError: true
+  }
+}
+
+function errorMessageResponseQuery (id: number, error: PRESENCE_ACTIONS): PresenceMessage {
+  return {
+    topic: TOPIC.PRESENCE,
+    action: error,
+    originalAction: PRESENCE_ACTIONS.QUERY,
+    correlationId: id.toString(),
+    isError: true
   }
 }

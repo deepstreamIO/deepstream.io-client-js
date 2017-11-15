@@ -541,6 +541,19 @@ describe('RPC handler', () => {
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
     })
+
+    it('responds with error when onConnectionLost', async () => {
+      services.simulateConnectionLost()
+      await BBPromise.delay(1)
+
+      sinon.assert.calledOnce(rpcResponseCallback)
+      sinon.assert.calledWithExactly(rpcResponseCallback, EVENT.CLIENT_OFFLINE)
+
+      sinon.assert.notCalled(rpcPromiseResponseSuccess)
+      sinon.assert.calledOnce(rpcPromiseResponseFail)
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, EVENT.CLIENT_OFFLINE)
+    })
+
   })
 
 })

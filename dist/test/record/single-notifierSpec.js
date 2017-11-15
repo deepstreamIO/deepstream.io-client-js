@@ -136,6 +136,15 @@ describe('Single Notifier', () => {
             sinon_1.assert.calledWithExactly(rejectSpy, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]);
             yield bluebird_1.Promise.delay(1);
         }));
+        it('responds with error on connection lost', () => __awaiter(this, void 0, void 0, function* () {
+            services.simulateConnectionLost();
+            yield bluebird_1.Promise.delay(1);
+            sinon_1.assert.calledOnce(callbackSpy);
+            sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
+            sinon_1.assert.notCalled(resolveSpy);
+            sinon_1.assert.calledOnce(rejectSpy);
+            sinon_1.assert.calledWithExactly(rejectSpy, constants_1.EVENT.CLIENT_OFFLINE);
+        }));
     }));
 });
 //# sourceMappingURL=single-notifierSpec.js.map

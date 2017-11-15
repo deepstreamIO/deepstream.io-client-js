@@ -25,6 +25,8 @@ describe('Presence handler', () => {
     let presenceHandler;
     let handle;
     let callbackSpy;
+    let promiseSuccess;
+    let promiseError;
     const options = Object.assign({}, client_options_1.DefaultOptions);
     let counter;
     beforeEach(() => {
@@ -32,6 +34,8 @@ describe('Presence handler', () => {
         presenceHandler = new presence_handler_1.PresenceHandler(services, options);
         handle = services.getHandle();
         callbackSpy = sinon_1.spy();
+        promiseSuccess = sinon_1.spy();
+        promiseError = sinon_1.spy();
         counter = 0;
     });
     afterEach(() => {
@@ -59,8 +63,6 @@ describe('Presence handler', () => {
         chai_1.expect(presenceHandler.getAll.bind(presenceHandler, 'name', 1)).to.throw();
     });
     it('cant\'t query getAll when client is offline', () => __awaiter(this, void 0, void 0, function* () {
-        const promiseError = sinon_1.spy();
-        const promiseSuccess = sinon_1.spy();
         services.connection.isConnected = false;
         services.connectionMock
             .expects('sendMessage')
@@ -69,6 +71,31 @@ describe('Presence handler', () => {
         const promise = presenceHandler.getAll();
         promise.then(promiseSuccess).catch(promiseError);
         yield bluebird_1.Promise.delay(0);
+        sinon_1.assert.calledOnce(callbackSpy);
+        sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
+        sinon_1.assert.notCalled(promiseSuccess);
+        sinon_1.assert.calledOnce(promiseError);
+        sinon_1.assert.calledWithExactly(promiseError, constants_1.EVENT.CLIENT_OFFLINE);
+    }));
+    it('calls query for all users callback with error message when connection is lost', () => __awaiter(this, void 0, void 0, function* () {
+        presenceHandler.getAll(callbackSpy);
+        const promise = presenceHandler.getAll();
+        promise.then(promiseSuccess).catch(promiseError);
+        services.simulateConnectionLost();
+        yield bluebird_1.Promise.delay(1);
+        sinon_1.assert.calledOnce(callbackSpy);
+        sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
+        sinon_1.assert.notCalled(promiseSuccess);
+        sinon_1.assert.calledOnce(promiseError);
+        sinon_1.assert.calledWithExactly(promiseError, constants_1.EVENT.CLIENT_OFFLINE);
+    }));
+    it('calls query for specific users callback with error message when connection is lost', () => __awaiter(this, void 0, void 0, function* () {
+        const users = ['userA', 'userB'];
+        presenceHandler.getAll(users, callbackSpy);
+        const promise = presenceHandler.getAll(users);
+        promise.then(promiseSuccess).catch(promiseError);
+        services.simulateConnectionLost();
+        yield bluebird_1.Promise.delay(1);
         sinon_1.assert.calledOnce(callbackSpy);
         sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
         sinon_1.assert.notCalled(promiseSuccess);
@@ -239,29 +266,25 @@ describe('Presence handler', () => {
     }));
     describe('when server responds for getAll for all users ', () => {
         let callback;
-        let promiseSuccess;
-        let promiseError;
         let users;
         beforeEach(() => {
             callback = sinon_1.spy();
-            promiseError = sinon_1.spy();
-            promiseSuccess = sinon_1.spy();
             users = ['userA', 'userB'];
             presenceHandler.getAll(callback);
             const promise = presenceHandler.getAll();
             promise.then(promiseSuccess).catch(promiseError);
         });
-        it.skip('receives data for query all users', () => __awaiter(this, void 0, void 0, function* () {
-            const messageForCallback = messageResponse(counter, users);
-            const messageForPromise = messageResponse(counter + 1, users);
+        it('receives data for query all users', () => __awaiter(this, void 0, void 0, function* () {
+            const messageForCallback = messageResponseQueryAll(counter, users);
+            const messageForPromise = messageResponseQueryAll(counter + 1, users);
             services.timeoutRegistryMock
                 .expects('remove')
                 .once()
-                .withExactArgs(messageForCallback);
+                .withExactArgs(Object.assign({}, messageForCallback, { action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL }));
             services.timeoutRegistryMock
                 .expects('remove')
                 .once()
-                .withExactArgs(messageForPromise);
+                .withExactArgs(Object.assign({}, messageForPromise, { action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL }));
             presenceHandler.handle(messageForCallback);
             presenceHandler.handle(messageForPromise);
             yield bluebird_1.Promise.delay(1);
@@ -271,30 +294,10 @@ describe('Presence handler', () => {
             sinon_1.assert.calledOnce(promiseSuccess);
             sinon_1.assert.calledWithExactly(promiseSuccess, users);
         }));
-        it('recieves message denied for query all users', () => __awaiter(this, void 0, void 0, function* () {
-        }));
-        it('recieves permission error for query all users', () => __awaiter(this, void 0, void 0, function* () {
-        }));
-    });
-    describe('when server responds for getAll for specific users ', () => {
-        let callback;
-        let promiseSuccess;
-        let promiseError;
-        let users;
-        let usersPresence;
-        beforeEach(() => {
-            callback = sinon_1.spy();
-            promiseError = sinon_1.spy();
-            promiseSuccess = sinon_1.spy();
-            users = ['userA', 'userB'];
-            usersPresence = { userA: true, userB: false };
-            presenceHandler.getAll(users, callback);
-            const promise = presenceHandler.getAll(users);
-            promise.then(promiseSuccess).catch(promiseError);
-        });
-        it.skip('receives data for query specific users', () => __awaiter(this, void 0, void 0, function* () {
-            const messageForCallback = messageResponse(counter, users);
-            const messageForPromise = messageResponse(counter + 1, users);
+        it('recieves error message for query all users', () => __awaiter(this, void 0, void 0, function* () {
+            const error = message_constants_1.PRESENCE_ACTIONS.MESSAGE_DENIED;
+            const messageForCallback = errorMessageResponseQueryAll(counter, error);
+            const messageForPromise = errorMessageResponseQueryAll(counter + 1, error);
             services.timeoutRegistryMock
                 .expects('remove')
                 .once()
@@ -307,14 +310,64 @@ describe('Presence handler', () => {
             presenceHandler.handle(messageForPromise);
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.calledOnce(callback);
+            sinon_1.assert.calledWithExactly(callback, message_constants_1.PRESENCE_ACTIONS[error]);
+            sinon_1.assert.calledOnce(promiseError);
+            sinon_1.assert.calledWithExactly(promiseError, message_constants_1.PRESENCE_ACTIONS[error]);
+            sinon_1.assert.notCalled(promiseSuccess);
+        }));
+    });
+    describe('when server responds for getAll for specific users ', () => {
+        let callback;
+        let users;
+        let usersPresence;
+        beforeEach(() => {
+            callback = sinon_1.spy();
+            users = ['userA', 'userB'];
+            usersPresence = { userA: true, userB: false };
+            presenceHandler.getAll(users, callback);
+            const promise = presenceHandler.getAll(users);
+            promise.then(promiseSuccess).catch(promiseError);
+        });
+        it('receives data for query specific users', () => __awaiter(this, void 0, void 0, function* () {
+            const messageForCallback = messageResponseQuery(counter, usersPresence);
+            const messageForPromise = messageResponseQuery(counter + 1, usersPresence);
+            services.timeoutRegistryMock
+                .expects('remove')
+                .once()
+                .withExactArgs(Object.assign({}, messageForCallback, { action: message_constants_1.PRESENCE_ACTIONS.QUERY }));
+            services.timeoutRegistryMock
+                .expects('remove')
+                .once()
+                .withExactArgs(Object.assign({}, messageForPromise, { action: message_constants_1.PRESENCE_ACTIONS.QUERY }));
+            presenceHandler.handle(messageForCallback);
+            presenceHandler.handle(messageForPromise);
+            yield bluebird_1.Promise.delay(1);
+            sinon_1.assert.calledOnce(callback);
             sinon_1.assert.calledWithExactly(callback, null, usersPresence);
             sinon_1.assert.notCalled(promiseError);
             sinon_1.assert.calledOnce(promiseSuccess);
             sinon_1.assert.calledWithExactly(promiseSuccess, usersPresence);
         }));
-        it('recieves message denied for query users', () => __awaiter(this, void 0, void 0, function* () {
-        }));
-        it('recieves permission error for query users', () => __awaiter(this, void 0, void 0, function* () {
+        it('recieves error message for query users', () => __awaiter(this, void 0, void 0, function* () {
+            const error = message_constants_1.PRESENCE_ACTIONS.MESSAGE_DENIED;
+            const messageForCallback = errorMessageResponseQuery(counter, error);
+            const messageForPromise = errorMessageResponseQuery(counter + 1, error);
+            services.timeoutRegistryMock
+                .expects('remove')
+                .once()
+                .withExactArgs(messageForCallback);
+            services.timeoutRegistryMock
+                .expects('remove')
+                .once()
+                .withExactArgs(messageForPromise);
+            presenceHandler.handle(messageForCallback);
+            presenceHandler.handle(messageForPromise);
+            yield bluebird_1.Promise.delay(1);
+            sinon_1.assert.calledOnce(callback);
+            sinon_1.assert.calledWithExactly(callback, message_constants_1.PRESENCE_ACTIONS[error]);
+            sinon_1.assert.calledOnce(promiseError);
+            sinon_1.assert.calledWithExactly(promiseError, message_constants_1.PRESENCE_ACTIONS[error]);
+            sinon_1.assert.notCalled(promiseSuccess);
         }));
     });
     describe('when subscribing to userA, userB and all', () => {
@@ -419,12 +472,38 @@ function message(action, user) {
         };
     }
 }
-function messageResponse(id, users) {
+function messageResponseQueryAll(id, users) {
     return {
         topic: message_constants_1.TOPIC.PRESENCE,
         action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE,
         names: users,
         correlationId: id.toString()
+    };
+}
+function messageResponseQuery(id, usersPresence) {
+    return {
+        topic: message_constants_1.TOPIC.PRESENCE,
+        action: message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE,
+        parsedData: usersPresence,
+        correlationId: id.toString()
+    };
+}
+function errorMessageResponseQueryAll(id, error) {
+    return {
+        topic: message_constants_1.TOPIC.PRESENCE,
+        action: error,
+        originalAction: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL,
+        correlationId: id.toString(),
+        isError: true
+    };
+}
+function errorMessageResponseQuery(id, error) {
+    return {
+        topic: message_constants_1.TOPIC.PRESENCE,
+        action: error,
+        originalAction: message_constants_1.PRESENCE_ACTIONS.QUERY,
+        correlationId: id.toString(),
+        isError: true
     };
 }
 //# sourceMappingURL=presence-handlerSpec.js.map
