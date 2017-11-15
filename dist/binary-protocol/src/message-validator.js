@@ -68,7 +68,6 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.RECORD_ACTIONS.RECORD_CREATE_ERROR]: [[message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId, message_constants_1.META_KEYS.originalAction]],
         [message_constants_1.RECORD_ACTIONS.RECORD_UPDATE_ERROR]: [[message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId, message_constants_1.META_KEYS.originalAction]],
         [message_constants_1.RECORD_ACTIONS.RECORD_DELETE_ERROR]: [[message_constants_1.META_KEYS.name], []],
-        [message_constants_1.RECORD_ACTIONS.RECORD_READ_ERROR]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.RECORD_NOT_FOUND]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], []],
         [message_constants_1.RECORD_ACTIONS.INVALID_VERSION]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], [message_constants_1.META_KEYS.correlationId]],
         [message_constants_1.RECORD_ACTIONS.INVALID_PATCH_ON_HOTPATH]: [[message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
