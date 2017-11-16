@@ -494,7 +494,6 @@ export class RecordCore extends Emitter {
     }
 
     if (message.action === RECORD_ACTION.MESSAGE_DENIED) {
-      console.log(message)
       if (
         message.originalAction === RECORD_ACTION.PATCH ||
         message.originalAction === RECORD_ACTION.UPDATE ||

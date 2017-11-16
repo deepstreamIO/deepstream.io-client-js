@@ -404,7 +404,6 @@ class RecordCore extends Emitter {
             return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED) {
-            console.log(message);
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.UPDATE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE ||
