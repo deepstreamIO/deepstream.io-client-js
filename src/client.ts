@@ -1,3 +1,5 @@
+require('source-map-support').install()
+
 import { DefaultOptions, Options } from './client-options'
 import { EVENT, CONNECTION_STATE } from './constants'
 import * as C from '../binary-protocol/src/message-constants'

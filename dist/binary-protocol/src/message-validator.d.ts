@@ -1,4 +1,9 @@
-import { TOPIC, ALL_ACTIONS } from './message-constants';
+import { TOPIC, ALL_ACTIONS, META_KEYS as M } from './message-constants';
+export declare const META_PARAMS_SPEC: {
+    [t: number]: {
+        [a: number]: [Array<M>, Array<M>];
+    };
+};
 export declare const hasPayload: (topic: TOPIC, action: ALL_ACTIONS) => boolean;
 export declare function validateMeta(topic: TOPIC, action: ALL_ACTIONS, meta: {
     [key: string]: any;

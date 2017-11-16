@@ -75,6 +75,10 @@ class Connection {
         this.handlers.set(topic, callback);
     }
     sendMessage(message) {
+        if (!this.isOpen()) {
+            this.services.logger.error(message, constants_1.EVENT.IS_CLOSED);
+            return;
+        }
         this.endpoint.sendParsedMessage(message);
     }
     /**
@@ -115,6 +119,12 @@ class Connection {
     */
     getConnectionState() {
         return this.stateMachine.state;
+    }
+    isOpen() {
+        const connState = this.getConnectionState();
+        return connState !== constants_1.CONNECTION_STATE.CLOSED
+            && connState !== constants_1.CONNECTION_STATE.ERROR
+            && connState !== constants_1.CONNECTION_STATE.CLOSING;
     }
     /**
      * Closes the connection. Using this method
@@ -337,7 +347,9 @@ class Connection {
     handleConnectionResponse(message) {
         if (message.action === message_constants_1.CONNECTION_ACTIONS.PING) {
             this.lastHeartBeat = Date.now();
-            this.sendMessage({ topic: message_constants_1.TOPIC.CONNECTION, action: message_constants_1.CONNECTION_ACTIONS.PONG });
+            if (this.getConnectionState() !== constants_1.CONNECTION_STATE.CLOSING) {
+                this.sendMessage({ topic: message_constants_1.TOPIC.CONNECTION, action: message_constants_1.CONNECTION_ACTIONS.PONG });
+            }
             return;
         }
         if (message.action === message_constants_1.CONNECTION_ACTIONS.ACCEPT) {

@@ -62,7 +62,7 @@ function getMessage(msg, isAck) {
         throw new Error(`invalid ${message_constants_1.TOPIC[message.topic]} ${message_constants_1.ACTIONS[message.topic][action] || action}: ${metaError}`);
     }
     const metaStr = JSON.stringify(meta);
-    const metaBuff = metaStr === '{}' ? null : Buffer.from(JSON.stringify(meta), 'utf8');
+    const metaBuff = metaStr === '{}' ? null : Buffer.from(metaStr, 'utf8');
     let payloadBuff;
     if (message.data instanceof Buffer) {
         payloadBuff = message.data;

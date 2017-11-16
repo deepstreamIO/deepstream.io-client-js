@@ -2,9 +2,6 @@ import { CONNECTION_STATE, EVENT } from '../constants'
 import {
   TOPIC,
   CONNECTION_ACTIONS as CONNECTION_ACTION,
-  RPC_ACTIONS as RPC_ACTION,
-  EVENT_ACTIONS as EVENT_ACTION,
-  RECORD_ACTIONS as RECORD_ACTION,
   AUTH_ACTIONS as AUTH_ACTION,
   PARSER_ACTIONS as PARSER_ACTION,
   Message,
@@ -18,7 +15,6 @@ import { StateMachine } from '../util/state-machine'
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { Socket } from './socket-factory'
-import * as NodeWebSocket from 'ws'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
@@ -138,6 +134,10 @@ export class Connection {
   }
 
   public sendMessage (message: Message): void {
+    if (!this.isOpen()) {
+      this.services.logger.error(message, EVENT.IS_CLOSED)
+      return
+    }
     this.endpoint.sendParsedMessage(message)
   }
 
@@ -186,6 +186,13 @@ export class Connection {
   */
   public getConnectionState (): CONNECTION_STATE {
     return this.stateMachine.state
+  }
+
+  private isOpen (): boolean {
+    const connState = this.getConnectionState()
+    return connState !== CONNECTION_STATE.CLOSED
+      && connState !== CONNECTION_STATE.ERROR
+      && connState !== CONNECTION_STATE.CLOSING
   }
 
   /**
@@ -440,7 +447,9 @@ export class Connection {
   private handleConnectionResponse (message: Message): void {
     if (message.action === CONNECTION_ACTION.PING) {
       this.lastHeartBeat = Date.now()
-      this.sendMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PONG })
+      if (this.getConnectionState() !== CONNECTION_STATE.CLOSING) {
+        this.sendMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PONG })
+      }
       return
     }
 

@@ -468,7 +468,7 @@ export class RecordCore extends Emitter {
       return
     }
 
-    if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE) {
+    if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
       this.applyUpdate(message as RecordWriteMessage)
       return
     }
@@ -500,7 +500,8 @@ export class RecordCore extends Emitter {
         message.originalAction === RECORD_ACTION.ERASE ||
         message.originalAction === RECORD_ACTION.DELETE ||
         message.originalAction === RECORD_ACTION.CREATE ||
-        message.originalAction === RECORD_ACTION.READ
+        message.originalAction === RECORD_ACTION.READ ||
+        message.originalAction === RECORD_ACTION.SUBSCRIBECREATEANDREAD
       ) {
         this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], RECORD_ACTION[message.originalAction])
       }
@@ -617,7 +618,14 @@ export class RecordCore extends Emitter {
     }
 
     this.version = version
-    const newData = setPath(this.data, message.path || null, data)
+    let newData
+    if (message.action === RECORD_ACTION.PATCH) {
+      newData = setPath(this.data, message.path as string, data)
+    } else if (message.action === RECORD_ACTION.ERASE) {
+      newData = setPath(this.data, message.path as string, undefined)
+    } else {
+      newData = setPath(this.data, null, data)
+    }
     this.applyChange(newData)
   }
 
