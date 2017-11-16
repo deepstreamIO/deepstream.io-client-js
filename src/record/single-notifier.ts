@@ -27,13 +27,15 @@ export class SingleNotifier {
   private action: ALL_ACTIONS
   private topic: TOPIC
   private timeoutDuration: number
+  private internalRequests: Map<string, Array<(message: Message) => void>>
 
   constructor (services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number) {
     this.services = services
     this.topic = topic
     this.action = action
     this.timeoutDuration = timeoutDuration
-    this.requests = new Map<string, Array<SingleNotifierResponse>>()
+    this.requests = new Map()
+    this.internalRequests = new Map()
 
     this.services.connection.onLost(this.onConnectionLost.bind(this))
   }
@@ -72,14 +74,39 @@ export class SingleNotifier {
     }
   }
 
+  /**
+   * Adds a callback to a (possibly) inflight request that will be called
+   * on the response.
+   *
+   * @param name
+   * @param response
+   */
+  public register (name: string, callback: (message: Message) => void): void {
+    const request = this.internalRequests.get(name)
+    if (!request) {
+      this.internalRequests.set(name, [callback])
+    } else {
+      request.push(callback)
+    }
+  }
+
   public recieve (message: Message, error?: any, data?: any): boolean {
     const name = message.name as string
-    const responses = this.requests.get(name)
-    if (!responses) {
+    const responses = this.requests.get(name) || []
+    const internalResponses = this.internalRequests.get(name) || []
+    if (!responses && !internalResponses) {
       return false
     }
 
+    for (let i = 0; i < internalResponses.length; i++) {
+      console.log('calling')
+      internalResponses[i](message)
+    }
+    this.internalRequests.delete(name)
+
+    // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
     for (let i = 0; i < responses.length; i++) {
+      console.log('calling')
       const response = responses[i]
       if (response.callback) {
         response.callback(error, data)

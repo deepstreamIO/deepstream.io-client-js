@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const utils = require("../util/utils");
 const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const constants_2 = require("../../binary-protocol/src/constants");
 const record_core_1 = require("./record-core");
 const record_1 = require("./record");
 const anonymous_record_1 = require("./anonymous-record");
@@ -18,9 +19,11 @@ class RecordHandler {
         this.emitter = new Emitter();
         this.listener = listener || new listener_1.Listener(message_constants_1.TOPIC.RECORD, this.services);
         this.recordCores = new Map();
-        this.readRegistry = new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout);
-        this.headRegistry = new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout);
-        this.writeAckService = new write_ack_service_1.WriteAcknowledgementService(services);
+        this.recordServices = {
+            writeAckService: new write_ack_service_1.WriteAcknowledgementService(services),
+            readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
+            headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout)
+        };
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.RECORD, this.handle.bind(this));
     }
@@ -81,21 +84,27 @@ class RecordHandler {
             throw new Error('invalid argument: callback');
         }
         const recordCore = this.recordCores.get(name);
-        if (recordCore && recordCore.isReady) {
+        if (recordCore) {
             if (callback) {
-                callback(null, recordCore.get());
-                return;
+                recordCore.whenReady(null, () => {
+                    callback(null, recordCore.get());
+                });
             }
             else {
-                return Promise.resolve(recordCore.get());
+                return new Promise((resolve, reject) => {
+                    recordCore.whenReady(null, () => {
+                        resolve(recordCore.get());
+                    });
+                });
             }
+            return;
         }
         if (callback) {
-            this.readRegistry.request(name, { callback });
+            this.recordServices.readRegistry.request(name, { callback });
         }
         else {
             return new Promise((resolve, reject) => {
-                this.readRegistry.request(name, { resolve, reject });
+                this.recordServices.readRegistry.request(name, { resolve, reject });
             });
         }
     }
@@ -108,30 +117,12 @@ class RecordHandler {
         }
         if (!callback) {
             return new Promise((resolve, reject) => {
-                this.head(name, (error, version) => {
-                    if (error && error === message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.RECORD_NOT_FOUND]) {
-                        resolve(false);
-                    }
-                    else if (error) {
-                        reject(error);
-                    }
-                    else {
-                        resolve(version !== -1);
-                    }
-                });
+                const cb = (error, version) => error ? reject(error) : resolve(version !== -1);
+                this.head(name, cb);
             });
         }
-        this.head(name, (error, version) => {
-            if (error && error === message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.RECORD_NOT_FOUND]) {
-                callback(null, false);
-            }
-            else if (error) {
-                callback(error, null);
-            }
-            else {
-                callback(null, version !== -1);
-            }
-        });
+        const cb = (error, version) => error ? callback(error, null) : callback(null, version !== -1);
+        this.head(name, cb);
     }
     head(name, callback) {
         if (typeof name !== 'string' || name.length === 0) {
@@ -141,19 +132,27 @@ class RecordHandler {
             throw new Error('invalid argument: callback');
         }
         const recordCore = this.recordCores.get(name);
-        if (recordCore && recordCore.isReady) {
+        if (recordCore) {
             if (callback) {
-                callback(null, recordCore.version);
-                return;
+                recordCore.whenReady(null, () => {
+                    callback(null, recordCore.version);
+                });
             }
-            return Promise.resolve(recordCore.version);
+            else {
+                return new Promise((resolve, reject) => {
+                    recordCore.whenReady(null, () => {
+                        resolve(recordCore.version);
+                    });
+                });
+            }
+            return;
         }
         if (callback) {
-            this.headRegistry.request(name, { callback });
+            this.recordServices.headRegistry.request(name, { callback });
         }
         else {
             return new Promise((resolve, reject) => {
-                this.headRegistry.request(name, { resolve, reject });
+                this.recordServices.headRegistry.request(name, { resolve, reject });
             });
         }
     }
@@ -187,14 +186,14 @@ class RecordHandler {
         let action;
         if (path) {
             if (data === undefined) {
-                action = callback ? message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK : message_constants_1.RECORD_ACTIONS.ERASE;
+                action = message_constants_1.RECORD_ACTIONS.ERASE;
             }
             else {
-                action = callback ? message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK : message_constants_1.RECORD_ACTIONS.CREATEANDPATCH;
+                action = message_constants_1.RECORD_ACTIONS.CREATEANDPATCH;
             }
         }
         else {
-            action = callback ? message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK : message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE;
+            action = message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE;
         }
         const message = {
             topic: message_constants_1.TOPIC.RECORD,
@@ -205,7 +204,7 @@ class RecordHandler {
             parsedData: data
         };
         if (callback) {
-            this.writeAckService.send(message, callback);
+            this.recordServices.writeAckService.send(message, callback);
         }
         else {
             this.services.connection.sendMessage(message);
@@ -222,50 +221,43 @@ class RecordHandler {
             this.listener.handle(message);
             return;
         }
-        let processed = false;
-        const recordCore = this.recordCores.get(message.name);
-        if (recordCore) {
-            processed = recordCore.handle(message);
+        if (constants_2.isWriteAck(message.action) || constants_2.isWriteAck(message.originalAction)) {
+            this.recordServices.writeAckService.recieve(message);
+            return;
         }
-        if (message.isWriteAck) {
-            if (this.writeAckService.recieve(message)) {
-                processed = true;
-            }
-        }
-        if (message.action === message_constants_1.RECORD_ACTIONS.READ_RESPONSE ||
-            message.originalAction === message_constants_1.RECORD_ACTIONS.READ) {
+        if (message.action === message_constants_1.RECORD_ACTIONS.READ_RESPONSE || message.originalAction === message_constants_1.RECORD_ACTIONS.READ) {
             if (message.isError) {
-                if (this.readRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action])) {
-                    processed = true;
-                }
+                this.recordServices.readRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action]);
             }
             else {
-                if (this.readRegistry.recieve(message, null, message.parsedData)) {
-                    processed = true;
-                }
+                this.recordServices.readRegistry.recieve(message, null, message.parsedData);
             }
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE ||
             message.originalAction === message_constants_1.RECORD_ACTIONS.HEAD) {
             if (message.isError) {
-                processed = this.headRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action]);
+                this.recordServices.headRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action]);
             }
             else {
-                processed = this.headRegistry.recieve(message, null, message.version);
+                this.recordServices.headRegistry.recieve(message, null, message.version);
             }
+        }
+        const recordCore = this.recordCores.get(message.name);
+        if (recordCore) {
+            recordCore.handle(message);
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
             // record can receive a HAS_PROVIDER after discarding the record
-            processed = true;
+            return;
         }
-        if (message.isError && !processed) {
+        if (message.isError) {
             this.services.logger.error(message);
-            processed = true;
+            return;
         }
-        if (!processed) {
-            this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);
-        }
+        this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);
     }
     /**
      * Callback for 'deleted' and 'discard' events from a record. Removes the record from
@@ -277,7 +269,7 @@ class RecordHandler {
     getRecordCore(recordName) {
         let recordCore = this.recordCores.get(recordName);
         if (!recordCore) {
-            recordCore = new record_core_1.RecordCore(recordName, this.services, this.options, this.removeRecord.bind(this));
+            recordCore = new record_core_1.RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this));
             this.recordCores.set(recordName, recordCore);
         }
         else {

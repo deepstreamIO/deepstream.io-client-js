@@ -3,6 +3,7 @@ import { EVENT } from '../constants'
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
+import { isWriteAck } from '../../binary-protocol/src/constants'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
@@ -12,15 +13,19 @@ import { SingleNotifier } from './single-notifier'
 import { WriteAcknowledgementService } from './write-ack-service'
 import * as Emitter from 'component-emitter2'
 
+export interface RecordServices {
+  writeAckService: WriteAcknowledgementService
+  readRegistry: SingleNotifier,
+  headRegistry: SingleNotifier
+}
+
 export class RecordHandler {
   private services: Services
   private emitter: Emitter
   private options: Options
   private listener: Listener
   private recordCores: Map<string, RecordCore>
-  private readRegistry: SingleNotifier
-  private headRegistry: SingleNotifier
-  private writeAckService: WriteAcknowledgementService
+  private recordServices: RecordServices
 
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
@@ -29,9 +34,12 @@ export class RecordHandler {
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
     this.recordCores = new Map()
-    this.readRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
-    this.headRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
-    this.writeAckService = new WriteAcknowledgementService(services)
+
+    this.recordServices = {
+      writeAckService: new WriteAcknowledgementService(services),
+      readRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout),
+      headRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
+    } as RecordServices
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
@@ -108,19 +116,25 @@ export class RecordHandler {
     }
 
     const recordCore = this.recordCores.get(name)
-    if (recordCore && recordCore.isReady) {
+    if (recordCore) {
       if (callback) {
-        callback(null, recordCore.get())
-        return
+        recordCore.whenReady(null, () => {
+          callback(null, recordCore.get())
+        })
       } else {
-        return Promise.resolve(recordCore.get())
+        return new Promise((resolve, reject) => {
+          recordCore.whenReady(null, () => {
+            resolve(recordCore.get())
+          })
+        })
       }
+      return
     }
     if (callback) {
-      this.readRegistry.request(name, { callback })
+      this.recordServices.readRegistry.request(name, { callback })
     } else {
       return new Promise((resolve, reject) => {
-        this.readRegistry.request(name, { resolve, reject })
+        this.recordServices.readRegistry.request(name, { resolve, reject })
       })
     }
   }
@@ -143,26 +157,12 @@ export class RecordHandler {
 
     if (!callback) {
       return new Promise ((resolve, reject) => {
-        this.head(name, (error: string | null, version: number) => {
-          if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
-            resolve(false)
-          } else if (error) {
-            reject(error)
-          } else {
-            resolve(version !== -1)
-          }
-        })
+        const cb = (error: string | null, version: number) => error ? reject(error) : resolve(version !== -1)
+        this.head(name, cb)
       })
     }
-    this.head(name, (error: string | null, version: number) => {
-      if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
-        callback(null, false)
-      } else if (error) {
-        callback(error, null)
-      } else {
-        callback(null, version !== -1)
-      }
-    })
+    const cb = (error: string | null, version: number) => error ? callback(error, null) : callback(null, version !== -1)
+    this.head(name, cb)
   }
 
   /**
@@ -182,19 +182,26 @@ export class RecordHandler {
     }
 
     const recordCore = this.recordCores.get(name)
-    if (recordCore && recordCore.isReady) {
+    if (recordCore) {
       if (callback) {
-        callback(null, recordCore.version)
-        return
+        recordCore.whenReady(null, () => {
+          callback(null, recordCore.version)
+        })
+      } else {
+        return new Promise((resolve, reject) => {
+          recordCore.whenReady(null, () => {
+            resolve(recordCore.version)
+          })
+        })
       }
-      return Promise.resolve(recordCore.version)
+      return
     }
 
     if (callback) {
-      this.headRegistry.request(name, { callback })
+      this.recordServices.headRegistry.request(name, { callback })
     } else {
       return new Promise((resolve, reject) => {
-        this.headRegistry.request(name, { resolve, reject })
+        this.recordServices.headRegistry.request(name, { resolve, reject })
       })
     }
   }
@@ -267,12 +274,12 @@ export class RecordHandler {
     let action
     if (path) {
       if (data === undefined) {
-        action = callback ? RECORD_ACTION.ERASE_WITH_WRITE_ACK : RECORD_ACTION.ERASE
+        action = RECORD_ACTION.ERASE
       } else {
-        action = callback ? RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK : RECORD_ACTION.CREATEANDPATCH
+        action = RECORD_ACTION.CREATEANDPATCH
       }
     } else {
-      action = callback ? RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK : RECORD_ACTION.CREATEANDUPDATE
+      action = RECORD_ACTION.CREATEANDUPDATE
     }
 
     const message = {
@@ -285,7 +292,7 @@ export class RecordHandler {
     }
 
     if (callback) {
-      this.writeAckService.send(message, callback)
+      this.recordServices.writeAckService.send(message, callback)
     } else {
       this.services.connection.sendMessage(message)
     }
@@ -305,32 +312,18 @@ export class RecordHandler {
       return
     }
 
-    let processed = false
-
-    const recordCore = this.recordCores.get(message.name)
-    if (recordCore) {
-      processed = recordCore.handle(message)
+    if (isWriteAck(message.action) || isWriteAck(message.originalAction as RECORD_ACTION)) {
+      this.recordServices.writeAckService.recieve(message)
+      return
     }
 
-    if (message.isWriteAck) {
-      if (this.writeAckService.recieve(message)) {
-        processed = true
-      }
-    }
-
-    if (
-      message.action === RECORD_ACTION.READ_RESPONSE ||
-      message.originalAction === RECORD_ACTION.READ
-    ) {
+    if (message.action === RECORD_ACTION.READ_RESPONSE || message.originalAction === RECORD_ACTION.READ) {
       if (message.isError) {
-        if (this.readRegistry.recieve(message, RECORD_ACTION[message.action])) {
-          processed = true
-        }
+        this.recordServices.readRegistry.recieve(message, RECORD_ACTION[message.action])
       } else {
-        if (this.readRegistry.recieve(message, null, message.parsedData)) {
-          processed = true
-        }
+        this.recordServices.readRegistry.recieve(message, null, message.parsedData)
       }
+      return
     }
 
     if (
@@ -338,10 +331,16 @@ export class RecordHandler {
       message.originalAction === RECORD_ACTION.HEAD
     ) {
       if (message.isError) {
-        processed = this.headRegistry.recieve(message, RECORD_ACTION[message.action])
+        this.recordServices.headRegistry.recieve(message, RECORD_ACTION[message.action])
       } else {
-        processed = this.headRegistry.recieve(message, null, message.version)
+        this.recordServices.headRegistry.recieve(message, null, message.version)
       }
+    }
+
+    const recordCore = this.recordCores.get(message.name)
+    if (recordCore) {
+      recordCore.handle(message)
+      return
     }
 
     if (
@@ -349,17 +348,15 @@ export class RecordHandler {
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
     ) {
       // record can receive a HAS_PROVIDER after discarding the record
-      processed = true
+      return
     }
 
-    if (message.isError && !processed) {
+    if (message.isError) {
       this.services.logger.error(message)
-      processed = true
+      return
     }
 
-    if (!processed) {
-      this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
-    }
+    this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
   }
 
   /**
@@ -373,7 +370,7 @@ export class RecordHandler {
   private getRecordCore (recordName: string): RecordCore {
     let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
-      recordCore = new RecordCore(recordName, this.services, this.options, this.removeRecord.bind(this))
+      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this))
       this.recordCores.set(recordName, recordCore)
     } else {
       recordCore.usages++

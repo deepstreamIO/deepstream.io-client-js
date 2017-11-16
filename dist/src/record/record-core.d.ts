@@ -2,6 +2,7 @@ import { Services } from '../client';
 import { Options } from '../client-options';
 import { MergeStrategy } from './merge-strategy';
 import { RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants';
+import { RecordServices } from './record-handler';
 import * as Emitter from 'component-emitter2';
 import * as utils from '../util/utils';
 import { Record } from './record';
@@ -29,10 +30,10 @@ export declare class RecordCore extends Emitter {
     private references;
     private services;
     private options;
+    private recordServices;
     private emitter;
     private data;
     private mergeStrategy;
-    private writeCallbacks;
     private stateMachine;
     private responseTimeout;
     private discardTimeout;
@@ -40,7 +41,7 @@ export declare class RecordCore extends Emitter {
     private offlineDirty;
     private deleteResponse;
     private whenComplete;
-    constructor(name: string, services: Services, options: Options, whenComplete: (recordName: string) => void);
+    constructor(name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void);
     readonly recordState: RECORD_STATE;
     usages: number;
     /**
@@ -127,6 +128,7 @@ export declare class RecordCore extends Emitter {
      * Transition States
      */
     private onSubscribing();
+    private handleReadResponse(message);
     private onResubscribing();
     private onOfflineLoading();
     private onReady();
@@ -135,7 +137,7 @@ export declare class RecordCore extends Emitter {
     handle(message: RecordMessage): boolean;
     private sendRead();
     private saveUpdate();
-    private sendUpdate(path, data, writeSuccess);
+    private sendUpdate(path, data, callback);
     /**
      * Applies incoming updates and patches to the record's dataset
      */
@@ -175,7 +177,6 @@ export declare class RecordCore extends Emitter {
    * to make sure it hasn't been destroyed yet - and to handle it gracefully if it has.
    */
     private checkDestroyed(methodName);
-    private setupWriteCallback(version, callback);
     /**
      * Destroys the record and nulls all
      * its dependencies

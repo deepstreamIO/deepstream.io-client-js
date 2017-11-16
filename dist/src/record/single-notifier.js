@@ -19,6 +19,7 @@ class SingleNotifier {
         this.action = action;
         this.timeoutDuration = timeoutDuration;
         this.requests = new Map();
+        this.internalRequests = new Map();
         this.services.connection.onLost(this.onConnectionLost.bind(this));
     }
     /**
@@ -56,13 +57,37 @@ class SingleNotifier {
             req.push(response);
         }
     }
+    /**
+     * Adds a callback to a (possibly) inflight request that will be called
+     * on the response.
+     *
+     * @param name
+     * @param response
+     */
+    register(name, callback) {
+        const request = this.internalRequests.get(name);
+        if (!request) {
+            this.internalRequests.set(name, [callback]);
+        }
+        else {
+            request.push(callback);
+        }
+    }
     recieve(message, error, data) {
         const name = message.name;
-        const responses = this.requests.get(name);
-        if (!responses) {
+        const responses = this.requests.get(name) || [];
+        const internalResponses = this.internalRequests.get(name) || [];
+        if (!responses && !internalResponses) {
             return false;
         }
+        for (let i = 0; i < internalResponses.length; i++) {
+            console.log('calling');
+            internalResponses[i](message);
+        }
+        this.internalRequests.delete(name);
+        // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
         for (let i = 0; i < responses.length; i++) {
+            console.log('calling');
             const response = responses[i];
             if (response.callback) {
                 response.callback(error, data);

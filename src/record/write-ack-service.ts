@@ -1,4 +1,5 @@
 import { RECORD_ACTIONS, Message } from '../../binary-protocol/src/message-constants'
+import { actionToWriteAck } from '../../binary-protocol/src/constants'
 
 import { Services, Client, EVENT } from '../client'
 import { Options } from '../client-options'
@@ -37,11 +38,9 @@ export class WriteAcknowledgementService {
       this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
       return
     }
-
     const correlationId = this.count.toString()
     this.responses.set(correlationId, callback)
-    this.services.connection.sendMessage(Object.assign({}, message, { correlationId } ))
-
+    this.services.connection.sendMessage(Object.assign({}, message, { correlationId, action: actionToWriteAck[message.action] } ))
     this.count++
   }
 

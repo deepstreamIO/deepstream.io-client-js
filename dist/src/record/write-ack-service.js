@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const constants_1 = require("../../binary-protocol/src/constants");
 const client_1 = require("../client");
 /**
  * @param {Services} services
@@ -30,7 +31,7 @@ class WriteAcknowledgementService {
         }
         const correlationId = this.count.toString();
         this.responses.set(correlationId, callback);
-        this.services.connection.sendMessage(Object.assign({}, message, { correlationId }));
+        this.services.connection.sendMessage(Object.assign({}, message, { correlationId, action: constants_1.actionToWriteAck[message.action] }));
         this.count++;
     }
     recieve(message) {

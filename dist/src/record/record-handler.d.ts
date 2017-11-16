@@ -5,15 +5,20 @@ import { Record } from './record';
 import { AnonymousRecord } from './anonymous-record';
 import { List } from './list';
 import { Listener, ListenCallback } from '../util/listener';
+import { SingleNotifier } from './single-notifier';
+import { WriteAcknowledgementService } from './write-ack-service';
+export interface RecordServices {
+    writeAckService: WriteAcknowledgementService;
+    readRegistry: SingleNotifier;
+    headRegistry: SingleNotifier;
+}
 export declare class RecordHandler {
     private services;
     private emitter;
     private options;
     private listener;
     private recordCores;
-    private readRegistry;
-    private headRegistry;
-    private writeAckService;
+    private recordServices;
     constructor(services: Services, options: Options, listener?: Listener);
     /**
    * Returns an existing record or creates a new one.
