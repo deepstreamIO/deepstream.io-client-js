@@ -37,6 +37,7 @@ export declare class Connection {
      */
     authenticate(authParams?: object | null, callback?: AuthenticationCallback | null): void;
     getConnectionState(): CONNECTION_STATE;
+    private isOpen();
     /**
      * Closes the connection. Using this method
      * will prevent the client from reconnecting.
