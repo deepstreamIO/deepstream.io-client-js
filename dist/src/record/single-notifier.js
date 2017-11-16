@@ -60,8 +60,7 @@ class SingleNotifier {
         const name = message.name;
         const responses = this.requests.get(name);
         if (!responses) {
-            this.services.logger.error(message, client_1.EVENT.UNSOLICITED_MESSAGE);
-            return;
+            return false;
         }
         for (let i = 0; i < responses.length; i++) {
             const response = responses[i];
@@ -76,6 +75,7 @@ class SingleNotifier {
             }
         }
         this.requests.delete(name);
+        return true;
     }
     onConnectionLost() {
         this.requests.forEach(responses => {

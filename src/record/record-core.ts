@@ -440,37 +440,36 @@ export class RecordCore extends Emitter {
     this.destroy()
   }
 
-  public handle (message: RecordMessage) {
+  public handle (message: RecordMessage): boolean {
     if (message.action === RECORD_ACTION.READ_RESPONSE) {
       if (this.stateMachine.state === RECORD_STATE.MERGING) {
         this.recoverRecord(message.version as number, message.parsedData, message)
-        return
+        return true
       }
       this.version = message.version as number
       this.applyChange(setPath(this.data, null, message.parsedData))
       this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
-      return
     }
 
     if (message.action === RECORD_ACTION.HEAD_RESPONSE) {
       if (this.version === message.version as number) {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-        return
+        return true
       }
       if (this.version + 1 === message.version as number) {
         this.version = message.version as number
         this.applyChange(setPath(this.data, null, message.parsedData))
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-        return
+        return true
       }
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
       this.sendRead()
-      return
+      return true
     }
 
     if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
       this.applyUpdate(message as RecordWriteMessage)
-      return
+      return true
     }
 
     if (message.action === RECORD_ACTION.DELETE_SUCCESS) {
@@ -480,17 +479,18 @@ export class RecordCore extends Emitter {
       } else if (this.deleteResponse.resolve) {
         this.deleteResponse.resolve()
       }
-      return
+      return true
     }
 
     if (message.action === RECORD_ACTION.DELETED) {
       this.stateMachine.transition(message.action)
+      return true
     }
 
     if (message.action === RECORD_ACTION.VERSION_EXISTS) {
       // what kind of message is version exists?
       // this.recoverRecord(message)
-      return
+      return true
     }
 
     if (message.action === RECORD_ACTION.MESSAGE_DENIED) {
@@ -513,12 +513,7 @@ export class RecordCore extends Emitter {
           this.deleteResponse.reject(RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED])
         }
       }
-      return
-    }
-
-    if (message.action === RECORD_ACTION.WRITE_ACKNOWLEDGEMENT) {
-      this.handleWriteAcknowledgements(message)
-      return
+      return true
     }
 
     if (
@@ -527,8 +522,10 @@ export class RecordCore extends Emitter {
     ) {
       this.hasProvider = message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER
       this.emit(EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider)
-      return
+      return true
     }
+
+    return false
   }
 
   private sendRead () {
@@ -537,19 +534,6 @@ export class RecordCore extends Emitter {
       action: RECORD_ACTION.READ,
       name: this.name
     })
-  }
-
-  private handleWriteAcknowledgements (message: RecordMessage) {
-    const versions: Array<number> = message.parsedData[0]
-    const error: string = message.parsedData[1]
-    for (let i = 0; i < versions.length; i++) {
-      const version = versions[i]
-      const callback = this.writeCallbacks.get(version)
-      if (callback) {
-        this.writeCallbacks.delete(version)
-        callback(error)
-      }
-    }
   }
 
   private saveUpdate (): void {

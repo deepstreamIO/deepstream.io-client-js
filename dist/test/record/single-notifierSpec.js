@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const bluebird_1 = require("bluebird");
+const chai_1 = require("chai");
 const sinon_1 = require("sinon");
 const mocks_1 = require("../mocks");
 const constants_1 = require("../../src/constants");
@@ -96,11 +97,8 @@ describe('Single Notifier', () => {
                 name: 'something',
                 isError: true
             };
-            services.loggerMock
-                .expects('error')
-                .once()
-                .withExactArgs(message, constants_1.EVENT.UNSOLICITED_MESSAGE);
-            singleNotifier.recieve(message, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], undefined);
+            const processed = singleNotifier.recieve(message, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], undefined);
+            chai_1.expect(processed).to.be.false;
             sinon_1.assert.notCalled(callbackSpy);
             sinon_1.assert.notCalled(resolveSpy);
             sinon_1.assert.notCalled(rejectSpy);
@@ -108,13 +106,14 @@ describe('Single Notifier', () => {
         }));
         it('responds callback and promise requests with success response', () => __awaiter(this, void 0, void 0, function* () {
             const parsedData = { some: 'data' };
-            singleNotifier.recieve({
+            const processed = singleNotifier.recieve({
                 topic,
                 action,
                 name,
                 isError: false,
                 parsedData
             }, undefined, parsedData);
+            chai_1.expect(processed).to.be.true;
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWithExactly(callbackSpy, undefined, parsedData);
             sinon_1.assert.calledOnce(resolveSpy);
@@ -123,12 +122,13 @@ describe('Single Notifier', () => {
             yield bluebird_1.Promise.delay(1);
         }));
         it('responds callback and promise requests with error response', () => __awaiter(this, void 0, void 0, function* () {
-            singleNotifier.recieve({
+            const processed = singleNotifier.recieve({
                 topic,
                 action: message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED,
                 name,
                 isError: true
             }, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], undefined);
+            chai_1.expect(processed).to.be.true;
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWithExactly(callbackSpy, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], undefined);
             sinon_1.assert.notCalled(resolveSpy);

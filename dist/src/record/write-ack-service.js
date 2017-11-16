@@ -13,7 +13,7 @@ const client_1 = require("../client");
  *
  * @constructor
  */
-class WriteAckNotifier {
+class WriteAcknowledgementService {
     constructor(services) {
         this.services = services;
         this.responses = new Map();
@@ -34,25 +34,23 @@ class WriteAckNotifier {
             this.services.timerRegistry.requestIdleCallback(callback.bind(this, client_1.EVENT.CLIENT_OFFLINE));
             return;
         }
-        else {
-            const correlationId = this.count.toString();
-            this.responses.set(correlationId, callback);
-            this.services.connection.sendMessage(Object.assign({}, message, { correlationId }));
-            this.count++;
-        }
+        const correlationId = this.count.toString();
+        this.responses.set(correlationId, callback);
+        this.services.connection.sendMessage(Object.assign({}, message, { correlationId }));
+        this.count++;
     }
     recieve(message) {
         const id = message.correlationId;
         const response = this.responses.get(id);
         if (!response ||
             (message.action !== message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT && !message.isError)) {
-            this.services.logger.error(message, client_1.EVENT.UNSOLICITED_MESSAGE);
-            return;
+            return false;
         }
         message.isError
             ? response(message_constants_1.RECORD_ACTIONS[message.action])
             : response(null);
         this.responses.delete(id);
+        return true;
     }
     onConnectionLost() {
         this.responses.forEach(response => {
@@ -61,5 +59,5 @@ class WriteAckNotifier {
         this.responses.clear();
     }
 }
-exports.WriteAckNotifier = WriteAckNotifier;
-//# sourceMappingURL=write-ack-notifier.js.map
+exports.WriteAcknowledgementService = WriteAcknowledgementService;
+//# sourceMappingURL=write-ack-service.js.map

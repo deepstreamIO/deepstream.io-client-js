@@ -13,7 +13,7 @@ export declare class RecordHandler {
     private recordCores;
     private readRegistry;
     private headRegistry;
-    private writeAckNotifier;
+    private writeAckService;
     constructor(services: Services, options: Options, listener?: Listener);
     /**
    * Returns an existing record or creates a new one.

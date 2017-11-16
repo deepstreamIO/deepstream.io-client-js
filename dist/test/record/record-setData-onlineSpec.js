@@ -215,7 +215,8 @@ describe('record setData online', () => {
             originalAction: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK,
             name,
             correlationId: '1',
-            isError: true
+            isError: true,
+            isWriteAck: true
         };
         it('calls callbackAck with error', () => __awaiter(this, void 0, void 0, function* () {
             recordHandler.setDataWithAck(name, data, ackCallback);
@@ -238,7 +239,8 @@ describe('record setData online', () => {
             action: message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
             originalAction: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK,
             name,
-            correlationId: '1'
+            correlationId: '1',
+            isWriteAck: true
         };
         it('calls callbackAck for setData without path', () => __awaiter(this, void 0, void 0, function* () {
             recordHandler.setDataWithAck(name, data, ackCallback);
@@ -260,7 +262,8 @@ describe('record setData online', () => {
             action: message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
             originalAction: message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK,
             name,
-            correlationId: '1'
+            correlationId: '1',
+            isWriteAck: true
         };
         it('calls callbackAck for setData with path', () => __awaiter(this, void 0, void 0, function* () {
             recordHandler.setDataWithAck(name, path, data, ackCallback);
@@ -282,7 +285,8 @@ describe('record setData online', () => {
             action: message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
             originalAction: message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK,
             name,
-            correlationId: '1'
+            correlationId: '1',
+            isWriteAck: true
         };
         it('calls callbackAck for setData deleting values', () => __awaiter(this, void 0, void 0, function* () {
             recordHandler.setDataWithAck(name, path, undefined, ackCallback);

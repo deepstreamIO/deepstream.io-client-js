@@ -9,7 +9,7 @@ import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
 import { SingleNotifier } from './single-notifier'
-import { WriteAckNotifier } from './write-ack-notifier'
+import { WriteAcknowledgementService } from './write-ack-service'
 import * as Emitter from 'component-emitter2'
 
 export class RecordHandler {
@@ -20,7 +20,7 @@ export class RecordHandler {
   private recordCores: Map<string, RecordCore>
   private readRegistry: SingleNotifier
   private headRegistry: SingleNotifier
-  private writeAckNotifier: WriteAckNotifier
+  private writeAckService: WriteAcknowledgementService
 
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
@@ -31,7 +31,7 @@ export class RecordHandler {
     this.recordCores = new Map()
     this.readRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
     this.headRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
-    this.writeAckNotifier = new WriteAckNotifier(services)
+    this.writeAckService = new WriteAcknowledgementService(services)
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
@@ -285,7 +285,7 @@ export class RecordHandler {
     }
 
     if (callback) {
-      this.writeAckNotifier.send(message, callback)
+      this.writeAckService.send(message, callback)
     } else {
       this.services.connection.sendMessage(message)
     }
@@ -305,33 +305,17 @@ export class RecordHandler {
       return
     }
 
+    let processed = false
+
     const recordCore = this.recordCores.get(message.name)
     if (recordCore) {
-      recordCore.handle(message)
-      return
+      processed = recordCore.handle(message)
     }
 
-    if (message.action === RECORD_ACTION.VERSION_EXISTS) {
-      // do something
-      return
-    }
-
-    if (
-      message.action === RECORD_ACTION.MESSAGE_DENIED ||
-      message.action === RECORD_ACTION.MESSAGE_PERMISSION_ERROR
-    ) {
-      if (
-        message.originalAction === RECORD_ACTION.PATCH_WITH_WRITE_ACK ||
-        message.originalAction === RECORD_ACTION.ERASE_WITH_WRITE_ACK ||
-        message.originalAction === RECORD_ACTION.UPDATE_WITH_WRITE_ACK ||
-        message.originalAction === RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK ||
-        message.originalAction === RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK
-      ) {
-        this.writeAckNotifier.recieve(message)
-        return
+    if (message.isWriteAck) {
+      if (this.writeAckService.recieve(message)) {
+        processed = true
       }
-      this.services.logger.error(message)
-      // do something
     }
 
     if (
@@ -339,11 +323,14 @@ export class RecordHandler {
       message.originalAction === RECORD_ACTION.READ
     ) {
       if (message.isError) {
-        this.readRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
+        if (this.readRegistry.recieve(message, RECORD_ACTION[message.action])) {
+          processed = true
+        }
       } else {
-        this.readRegistry.recieve(message, null, message.parsedData)
+        if (this.readRegistry.recieve(message, null, message.parsedData)) {
+          processed = true
+        }
       }
-      return
     }
 
     if (
@@ -351,41 +338,23 @@ export class RecordHandler {
       message.originalAction === RECORD_ACTION.HEAD
     ) {
       if (message.isError) {
-        this.headRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
+        processed = this.headRegistry.recieve(message, RECORD_ACTION[message.action])
       } else {
-        this.headRegistry.recieve(message, null, message.version)
+        processed = this.headRegistry.recieve(message, null, message.version)
       }
-      return
-    }
-
-    if (message.action === RECORD_ACTION.DELETED) {
-      // do something
-    }
-
-    if (
-      message.originalAction === RECORD_ACTION.PATCH_WITH_WRITE_ACK ||
-      message.originalAction === RECORD_ACTION.ERASE_WITH_WRITE_ACK ||
-      message.originalAction === RECORD_ACTION.UPDATE_WITH_WRITE_ACK ||
-      message.originalAction === RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK ||
-      message.originalAction === RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK
-    ) {
-      this.writeAckNotifier.recieve(message)
-      return
-    }
-
-    if (message.action === RECORD_ACTION.WRITE_ACKNOWLEDGEMENT) {
-      this.writeAckNotifier.recieve(message)
     }
 
     if (
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER ||
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
     ) {
+      console.log('todo')
       // record can receive a HAS_PROVIDER after discarding the record
-      return
     }
 
-    this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
+    if (!processed) {
+      this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
+    }
   }
 
   /**

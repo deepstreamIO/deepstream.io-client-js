@@ -250,7 +250,8 @@ describe('record setData online', () => {
       originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
       name,
       correlationId: '1',
-      isError: true
+      isError: true,
+      isWriteAck: true
     }
 
     it('calls callbackAck with error', async () => {
@@ -281,7 +282,8 @@ describe('record setData online', () => {
       action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
       originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
       name,
-      correlationId: '1'
+      correlationId: '1',
+      isWriteAck: true
     }
 
     it('calls callbackAck for setData without path', async () => {
@@ -310,7 +312,8 @@ describe('record setData online', () => {
       action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
       originalAction: RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK,
       name,
-      correlationId: '1'
+      correlationId: '1',
+      isWriteAck: true
     }
 
     it('calls callbackAck for setData with path', async () => {
@@ -339,7 +342,8 @@ describe('record setData online', () => {
       action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
       originalAction: RECORD_ACTION.ERASE_WITH_WRITE_ACK,
       name,
-      correlationId: '1'
+      correlationId: '1',
+      isWriteAck: true
     }
 
     it('calls callbackAck for setData deleting values', async () => {

@@ -9,7 +9,7 @@ const anonymous_record_1 = require("./anonymous-record");
 const list_1 = require("./list");
 const listener_1 = require("../util/listener");
 const single_notifier_1 = require("./single-notifier");
-const write_ack_notifier_1 = require("./write-ack-notifier");
+const write_ack_service_1 = require("./write-ack-service");
 const Emitter = require("component-emitter2");
 class RecordHandler {
     constructor(services, options, listener) {
@@ -20,7 +20,7 @@ class RecordHandler {
         this.recordCores = new Map();
         this.readRegistry = new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout);
         this.headRegistry = new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout);
-        this.writeAckNotifier = new write_ack_notifier_1.WriteAckNotifier(services);
+        this.writeAckService = new write_ack_service_1.WriteAcknowledgementService(services);
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.RECORD, this.handle.bind(this));
     }
@@ -205,7 +205,7 @@ class RecordHandler {
             parsedData: data
         };
         if (callback) {
-            this.writeAckNotifier.send(message, callback);
+            this.writeAckService.send(message, callback);
         }
         else {
             this.services.connection.sendMessage(message);
@@ -222,68 +222,46 @@ class RecordHandler {
             this.listener.handle(message);
             return;
         }
+        let processed = false;
         const recordCore = this.recordCores.get(message.name);
         if (recordCore) {
-            recordCore.handle(message);
-            return;
+            processed = recordCore.handle(message);
         }
-        if (message.action === message_constants_1.RECORD_ACTIONS.VERSION_EXISTS) {
-            // do something
-            return;
-        }
-        if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED ||
-            message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_PERMISSION_ERROR) {
-            if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK) {
-                this.writeAckNotifier.recieve(message);
-                return;
+        if (message.isWriteAck) {
+            if (this.writeAckService.recieve(message)) {
+                processed = true;
             }
-            this.services.logger.error(message);
-            // do something
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.READ_RESPONSE ||
             message.originalAction === message_constants_1.RECORD_ACTIONS.READ) {
             if (message.isError) {
-                this.readRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action], undefined);
+                if (this.readRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action])) {
+                    processed = true;
+                }
             }
             else {
-                this.readRegistry.recieve(message, null, message.parsedData);
+                if (this.readRegistry.recieve(message, null, message.parsedData)) {
+                    processed = true;
+                }
             }
-            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE ||
             message.originalAction === message_constants_1.RECORD_ACTIONS.HEAD) {
             if (message.isError) {
-                this.headRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action], undefined);
+                processed = this.headRegistry.recieve(message, message_constants_1.RECORD_ACTIONS[message.action]);
             }
             else {
-                this.headRegistry.recieve(message, null, message.version);
+                processed = this.headRegistry.recieve(message, null, message.version);
             }
-            return;
-        }
-        if (message.action === message_constants_1.RECORD_ACTIONS.DELETED) {
-            // do something
-        }
-        if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK ||
-            message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK ||
-            message.originalAction === message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK ||
-            message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK ||
-            message.originalAction === message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK) {
-            this.writeAckNotifier.recieve(message);
-            return;
-        }
-        if (message.action === message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT) {
-            this.writeAckNotifier.recieve(message);
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
+            console.log('todo');
             // record can receive a HAS_PROVIDER after discarding the record
-            return;
         }
-        this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);
+        if (!processed) {
+            this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);
+        }
     }
     /**
      * Callback for 'deleted' and 'discard' events from a record. Removes the record from

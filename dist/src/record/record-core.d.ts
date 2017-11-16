@@ -132,9 +132,8 @@ export declare class RecordCore extends Emitter {
     private onReady();
     private onUnsubscribed();
     private onDeleted();
-    handle(message: RecordMessage): void;
+    handle(message: RecordMessage): boolean;
     private sendRead();
-    private handleWriteAcknowledgements(message);
     private saveUpdate();
     private sendUpdate(path, data, writeSuccess);
     /**

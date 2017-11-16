@@ -175,7 +175,7 @@ function parseMessage(rawMessage) {
     message.isAck = rawAction >= 0x80;
     message.isError = isError(message);
     if (message.topic === message_constants_1.TOPIC.RECORD
-        && rawAction >= 0x10
+        && rawAction >= 0x09
         && rawAction < 0x20) {
         message.isWriteAck = constants_1.isWriteAck(message.action);
     }

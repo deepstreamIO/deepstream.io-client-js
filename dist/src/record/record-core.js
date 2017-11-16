@@ -359,31 +359,30 @@ class RecordCore extends Emitter {
         if (message.action === message_constants_1.RECORD_ACTIONS.READ_RESPONSE) {
             if (this.stateMachine.state === 5 /* MERGING */) {
                 this.recoverRecord(message.version, message.parsedData, message);
-                return;
+                return true;
             }
             this.version = message.version;
             this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
             this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
-            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE) {
             if (this.version === message.version) {
                 this.stateMachine.transition(3 /* RESUBSCRIBED */);
-                return;
+                return true;
             }
             if (this.version + 1 === message.version) {
                 this.version = message.version;
                 this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
                 this.stateMachine.transition(3 /* RESUBSCRIBED */);
-                return;
+                return true;
             }
             this.stateMachine.transition(4 /* INVALID_VERSION */);
             this.sendRead();
-            return;
+            return true;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.PATCH || message.action === message_constants_1.RECORD_ACTIONS.UPDATE || message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
             this.applyUpdate(message);
-            return;
+            return true;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS) {
             this.stateMachine.transition(message.action);
@@ -393,15 +392,16 @@ class RecordCore extends Emitter {
             else if (this.deleteResponse.resolve) {
                 this.deleteResponse.resolve();
             }
-            return;
+            return true;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.DELETED) {
             this.stateMachine.transition(message.action);
+            return true;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.VERSION_EXISTS) {
             // what kind of message is version exists?
             // this.recoverRecord(message)
-            return;
+            return true;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED) {
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH ||
@@ -421,18 +421,15 @@ class RecordCore extends Emitter {
                     this.deleteResponse.reject(message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]);
                 }
             }
-            return;
-        }
-        if (message.action === message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT) {
-            this.handleWriteAcknowledgements(message);
-            return;
+            return true;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
             this.hasProvider = message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER;
             this.emit(constants_1.EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider);
-            return;
+            return true;
         }
+        return false;
     }
     sendRead() {
         this.services.connection.sendMessage({
@@ -440,18 +437,6 @@ class RecordCore extends Emitter {
             action: message_constants_1.RECORD_ACTIONS.READ,
             name: this.name
         });
-    }
-    handleWriteAcknowledgements(message) {
-        const versions = message.parsedData[0];
-        const error = message.parsedData[1];
-        for (let i = 0; i < versions.length; i++) {
-            const version = versions[i];
-            const callback = this.writeCallbacks.get(version);
-            if (callback) {
-                this.writeCallbacks.delete(version);
-                callback(error);
-            }
-        }
     }
     saveUpdate() {
         if (!this.offlineDirty) {

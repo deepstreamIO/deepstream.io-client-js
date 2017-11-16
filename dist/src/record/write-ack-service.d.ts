@@ -12,7 +12,7 @@ import { WriteAckCallback } from './record-core';
  *
  * @constructor
  */
-export declare class WriteAckNotifier {
+export declare class WriteAcknowledgementService {
     private services;
     private responses;
     private count;
@@ -27,6 +27,6 @@ export declare class WriteAckNotifier {
    * @returns {void}
    */
     send(message: Message, callback: WriteAckCallback): void;
-    recieve(message: Message): void;
+    recieve(message: Message): boolean;
     private onConnectionLost();
 }

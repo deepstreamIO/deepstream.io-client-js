@@ -72,12 +72,11 @@ export class SingleNotifier {
     }
   }
 
-  public recieve (message: Message, error?: any, data?: any): void {
+  public recieve (message: Message, error?: any, data?: any): boolean {
     const name = message.name as string
     const responses = this.requests.get(name)
     if (!responses) {
-      this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
-      return
+      return false
     }
 
     for (let i = 0; i < responses.length; i++) {
@@ -91,6 +90,7 @@ export class SingleNotifier {
       }
     }
     this.requests.delete(name)
+    return true
   }
 
   private onConnectionLost (): void {

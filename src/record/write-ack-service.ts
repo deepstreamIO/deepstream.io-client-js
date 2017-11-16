@@ -15,7 +15,7 @@ import { WriteAckCallback } from './record-core'
  *
  * @constructor
  */
-export class WriteAckNotifier {
+export class WriteAcknowledgementService {
 
   private services: Services
   private responses: Map<string, Function>
@@ -42,25 +42,23 @@ export class WriteAckNotifier {
     if (this.services.connection.isConnected === false) {
       this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
       return
-    } else {
-      const correlationId = this.count.toString()
-      this.responses.set(correlationId, callback)
-      this.services.connection.sendMessage(Object.assign({}, message, { correlationId } ))
-
-      this.count++
     }
 
+    const correlationId = this.count.toString()
+    this.responses.set(correlationId, callback)
+    this.services.connection.sendMessage(Object.assign({}, message, { correlationId } ))
+
+    this.count++
   }
 
-  public recieve (message: Message): void {
+  public recieve (message: Message): boolean {
     const id = message.correlationId as string
     const response = this.responses.get(id)
     if (
       !response ||
       (message.action !== RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT && !message.isError)
     ) {
-      this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
-      return
+      return false
     }
 
     message.isError
@@ -68,6 +66,8 @@ export class WriteAckNotifier {
       : response(null)
 
     this.responses.delete(id)
+
+    return true
   }
 
   private onConnectionLost (): void {
