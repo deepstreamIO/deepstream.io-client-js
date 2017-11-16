@@ -2,13 +2,7 @@ import { Message } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 import { WriteAckCallback } from './record-core';
 /**
- * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
- * and HAS functionality. The SingleNotifier multiplexes all the client requests so
- * that they can can be notified at once, and also includes reconnection funcionality
- * incase the connection drops.
- *
- * @param {Services} services          The deepstream client
- * @param {Options} options     Function to call to allow resubscribing
+ * @param {Services} services
  *
  * @constructor
  */
@@ -18,10 +12,10 @@ export declare class WriteAcknowledgementService {
     private count;
     constructor(services: Services);
     /**
-   * Add a write ack nofity callback.
+   * Send message with write ack callback.
    *
-   * @param {String} name An identifier for the request, e.g. a record name
-   * @param {Object} callback An object with property `callback` or `resolve` and `reject`
+   * @param {Message} message
+   * @param {Function} callback
    *
    * @public
    * @returns {void}
