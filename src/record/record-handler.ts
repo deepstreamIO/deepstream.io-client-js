@@ -348,8 +348,13 @@ export class RecordHandler {
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER ||
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
     ) {
-      console.log('todo')
       // record can receive a HAS_PROVIDER after discarding the record
+      processed = true
+    }
+
+    if (message.isError && !processed) {
+      this.services.logger.error(message)
+      processed = true
     }
 
     if (!processed) {

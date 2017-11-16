@@ -256,8 +256,12 @@ class RecordHandler {
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
-            console.log('todo');
             // record can receive a HAS_PROVIDER after discarding the record
+            processed = true;
+        }
+        if (message.isError && !processed) {
+            this.services.logger.error(message);
+            processed = true;
         }
         if (!processed) {
             this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);

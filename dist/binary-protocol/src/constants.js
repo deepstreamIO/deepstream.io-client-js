@@ -8,7 +8,8 @@ function isWriteAck(action) {
         || action === message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK
         || action === message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK
         || action === message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK
-        || action === message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK;
+        || action === message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK
+        || action === message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT;
 }
 exports.isWriteAck = isWriteAck;
 exports.actionToWriteAck = {

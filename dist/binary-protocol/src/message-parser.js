@@ -174,10 +174,11 @@ function parseMessage(rawMessage) {
     // }
     message.isAck = rawAction >= 0x80;
     message.isError = isError(message);
-    if (message.topic === message_constants_1.TOPIC.RECORD
-        && rawAction >= 0x09
-        && rawAction < 0x20) {
-        message.isWriteAck = constants_1.isWriteAck(message.action);
+    if (message.topic === message_constants_1.TOPIC.RECORD) {
+        const originalAction = message.originalAction;
+        if ((rawAction >= 0x09 && rawAction < 0x27) || (originalAction >= 0x09 && originalAction < 0x27)) {
+            message.isWriteAck = constants_1.isWriteAck(rawAction) || constants_1.isWriteAck(originalAction);
+        }
     }
     return message;
 }
