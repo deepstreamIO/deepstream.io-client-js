@@ -3,19 +3,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const message_parser_1 = require("../../binary-protocol/src/message-parser");
 const message_builder_1 = require("../../binary-protocol/src/message-builder");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
 const NodeWebSocket = require("ws");
 exports.socketFactory = (url, options) => {
-    const socket = new NodeWebSocket(url, options);
+    const socket = BrowserWebsocket
+        ? new BrowserWebsocket(url, [], options)
+        : new NodeWebSocket(url, options);
+    if (BrowserWebsocket) {
+        socket.binaryType = 'arraybuffer';
+    }
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => { };
     socket.onmessage = (raw) => {
         const parseResults = message_parser_1.parse(raw.data);
-        // parseResults.forEach(element => {
-        //     const msg = element as Message
-        //     if (msg.action !== CONNECTION_ACTIONS.PONG && msg.action !== CONNECTION_ACTIONS.PING) {
-        //         console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
-        //     }
-        // })
         socket.onparsedmessages(parseResults);
     };
     socket.sendParsedMessage = (message) => {

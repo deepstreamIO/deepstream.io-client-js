@@ -67,7 +67,12 @@ Default: /deepstream */
     /**
      * Options for the provided socket factory
      */
-    socketOptions: any
+    socketOptions: any,
+
+    /**
+     * blbalbla
+     */
+    lazyConnect: boolean
 }
 
 export const DefaultOptions: Options = {
@@ -85,5 +90,6 @@ export const DefaultOptions: Options = {
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
-    socketOptions: null
+    socketOptions: null,
+    lazyConnect: false
 }

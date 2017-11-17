@@ -11,7 +11,7 @@ module.exports = {
     umdNamedDefine: true
   },
   externals: {
-    "ws": "WebSocket"
+    // "ws": "WebSocket"
   },
   resolve: {
     extensions: ['.js', '.ts'],
