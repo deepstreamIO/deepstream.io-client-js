@@ -11,6 +11,7 @@ export declare class Connection {
     private options;
     private stateMachine;
     private authParams;
+    private clientData;
     private authCallback;
     private originalUrl;
     private url;
@@ -35,7 +36,7 @@ export declare class Connection {
      *                E.g. { username:<String>, password:<String> }
      * @param   {Function} callback   A callback that will be invoked with the authenticationr result
      */
-    authenticate(authParams?: object | null, callback?: AuthenticationCallback | null): void;
+    authenticate(authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void;
     getConnectionState(): CONNECTION_STATE;
     private isOpen();
     /**
@@ -133,4 +134,7 @@ export declare class Connection {
      */
     private handleAuthResponse(message);
     private onAwaitingAuthentication();
+    private onAuthSuccessful(clientData);
+    private onAuthUnSuccessful();
+    private updateClientData(data);
 }

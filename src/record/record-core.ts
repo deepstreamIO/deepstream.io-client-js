@@ -487,7 +487,6 @@ export class RecordCore extends Emitter {
       this.stateMachine.transition(message.action)
     }
 
-
     if (message.action === RECORD_ACTION.VERSION_EXISTS) {
       // what kind of message is version exists?
       // this.recoverRecord(message)

@@ -291,6 +291,73 @@ describe('connection', () => {
     await receiveConnectionError()
   })
 
+  it('emits clientDataChanged if the client data is different after reconnection', async () => {
+    const newClientData = { data: 'changed' }
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData))
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await sendAuth()
+    await receiveAuthResponse()
+
+    await receiveConnectionError()
+    await BBPromise.delay(0)
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAcceptAndResendAuth()
+    await receiveAuthResponse(Object.assign({}, newClientData))
+
+    await BBPromise.delay(0)
+    assert.calledOnce(authCallback)
+  })
+
+  it('emits reAuthenticationFailure if reauthentication is rejected', async () => {
+    const newClientData = { data: 'changed' }
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+          EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_AUTHENTICATION)
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(EVENT.REAUTHENTICATION_FAILURE, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAccept()
+    await sendAuth()
+    await receiveAuthResponse()
+
+    await receiveConnectionError()
+    await BBPromise.delay(0)
+
+    await awaitConnectionAck()
+    await receiveChallengeRequest()
+    await sendChallengeResponse()
+    await receiveChallengeAcceptAndResendAuth()
+    await receiveAuthRejectResponse()
+
+    await BBPromise.delay(0)
+    assert.calledOnce(authCallback)
+  })
+
   async function openConnection () {
     socket.simulateOpen()
     await BBPromise.delay(0)
@@ -345,6 +412,30 @@ describe('connection', () => {
     await BBPromise.delay(0)
   }
 
+  async function receiveChallengeAcceptAndResendAuth () {
+    emitterMock.expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_AUTHENTICATION)
+    emitterMock.expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AUTHENTICATING)
+    socketMock
+      .expects('sendParsedMessage')
+      .once()
+      .withExactArgs({
+        topic: TOPIC.AUTH,
+        action: AUTH_ACTION.REQUEST,
+        parsedData: authData
+      })
+
+    socket.simulateMessages([{
+      topic: TOPIC.CONNECTION,
+      action: CONNECTION_ACTION.ACCEPT
+    }])
+
+    await BBPromise.delay(0)
+  }
+
   async function receiveChallengeReject () {
     socket.simulateMessages([{
       topic: TOPIC.CONNECTION,
@@ -375,9 +466,10 @@ describe('connection', () => {
   async function sendBadAuthDataAndReceiveError () {
     expect(() => {
       connection.authenticate('Bad Auth Data' as any, authCallback)
-    }).to.throw('invalid argument authParams')
-
-    assert.callCount(authCallback, 0)
+    }).to.throw('invalid argument authParamsOrCallback')
+    expect(() => {
+      connection.authenticate({}, 'Bad Auth Data' as any)
+    }).to.throw('invalid argument callback')
 
     await BBPromise.delay(0)
   }
@@ -401,7 +493,7 @@ describe('connection', () => {
     await BBPromise.delay(0)
   }
 
-  async function receiveAuthResponse () {
+  async function receiveAuthResponse (data?: object) {
     emitterMock.expects('emit')
       .once()
       .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.OPEN)
@@ -409,7 +501,7 @@ describe('connection', () => {
     socket.simulateMessages([{
       topic: TOPIC.AUTH,
       action: AUTH_ACTION.AUTH_SUCCESSFUL,
-      parsedData: clientData
+      parsedData: data || clientData
     }])
 
     await BBPromise.delay(5)

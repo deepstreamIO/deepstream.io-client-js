@@ -228,6 +228,62 @@ describe('connection', () => {
         yield receiveChallengeAccept();
         yield receiveConnectionError();
     }));
+    it('emits clientDataChanged if the client data is different after reconnection', () => __awaiter(this, void 0, void 0, function* () {
+        const newClientData = { data: 'changed' };
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.RECONNECTING);
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(constants_1.EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData));
+        yield awaitConnectionAck();
+        yield receiveChallengeRequest();
+        yield sendChallengeResponse();
+        yield receiveChallengeAccept();
+        yield sendAuth();
+        yield receiveAuthResponse();
+        yield receiveConnectionError();
+        yield bluebird_1.Promise.delay(0);
+        yield awaitConnectionAck();
+        yield receiveChallengeRequest();
+        yield sendChallengeResponse();
+        yield receiveChallengeAcceptAndResendAuth();
+        yield receiveAuthResponse(Object.assign({}, newClientData));
+        yield bluebird_1.Promise.delay(0);
+        sinon_1.assert.calledOnce(authCallback);
+    }));
+    it('emits reAuthenticationFailure if reauthentication is rejected', () => __awaiter(this, void 0, void 0, function* () {
+        const newClientData = { data: 'changed' };
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.RECONNECTING);
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION);
+        emitterMock
+            .expects('emit')
+            .once()
+            .withExactArgs(constants_1.EVENT.REAUTHENTICATION_FAILURE, { reason: constants_1.EVENT.INVALID_AUTHENTICATION_DETAILS });
+        yield awaitConnectionAck();
+        yield receiveChallengeRequest();
+        yield sendChallengeResponse();
+        yield receiveChallengeAccept();
+        yield sendAuth();
+        yield receiveAuthResponse();
+        yield receiveConnectionError();
+        yield bluebird_1.Promise.delay(0);
+        yield awaitConnectionAck();
+        yield receiveChallengeRequest();
+        yield sendChallengeResponse();
+        yield receiveChallengeAcceptAndResendAuth();
+        yield receiveAuthRejectResponse();
+        yield bluebird_1.Promise.delay(0);
+        sinon_1.assert.calledOnce(authCallback);
+    }));
     function openConnection() {
         return __awaiter(this, void 0, void 0, function* () {
             socket.simulateOpen();
@@ -281,6 +337,29 @@ describe('connection', () => {
             yield bluebird_1.Promise.delay(0);
         });
     }
+    function receiveChallengeAcceptAndResendAuth() {
+        return __awaiter(this, void 0, void 0, function* () {
+            emitterMock.expects('emit')
+                .once()
+                .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION);
+            emitterMock.expects('emit')
+                .once()
+                .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.AUTHENTICATING);
+            socketMock
+                .expects('sendParsedMessage')
+                .once()
+                .withExactArgs({
+                topic: message_constants_1.TOPIC.AUTH,
+                action: message_constants_1.AUTH_ACTIONS.REQUEST,
+                parsedData: authData
+            });
+            socket.simulateMessages([{
+                    topic: message_constants_1.TOPIC.CONNECTION,
+                    action: message_constants_1.CONNECTION_ACTIONS.ACCEPT
+                }]);
+            yield bluebird_1.Promise.delay(0);
+        });
+    }
     function receiveChallengeReject() {
         return __awaiter(this, void 0, void 0, function* () {
             socket.simulateMessages([{
@@ -311,8 +390,10 @@ describe('connection', () => {
         return __awaiter(this, void 0, void 0, function* () {
             chai_1.expect(() => {
                 connection.authenticate('Bad Auth Data', authCallback);
-            }).to.throw('invalid argument authParams');
-            sinon_1.assert.callCount(authCallback, 0);
+            }).to.throw('invalid argument authParamsOrCallback');
+            chai_1.expect(() => {
+                connection.authenticate({}, 'Bad Auth Data');
+            }).to.throw('invalid argument callback');
             yield bluebird_1.Promise.delay(0);
         });
     }
@@ -333,7 +414,7 @@ describe('connection', () => {
             yield bluebird_1.Promise.delay(0);
         });
     }
-    function receiveAuthResponse() {
+    function receiveAuthResponse(data) {
         return __awaiter(this, void 0, void 0, function* () {
             emitterMock.expects('emit')
                 .once()
@@ -341,7 +422,7 @@ describe('connection', () => {
             socket.simulateMessages([{
                     topic: message_constants_1.TOPIC.AUTH,
                     action: message_constants_1.AUTH_ACTIONS.AUTH_SUCCESSFUL,
-                    parsedData: clientData
+                    parsedData: data || clientData
                 }]);
             yield bluebird_1.Promise.delay(5);
         });

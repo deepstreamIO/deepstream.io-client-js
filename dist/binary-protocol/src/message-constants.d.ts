@@ -203,7 +203,6 @@ export declare enum RECORD_ACTIONS {
     RECORD_CREATE_ERROR = 84,
     RECORD_UPDATE_ERROR = 85,
     RECORD_DELETE_ERROR = 86,
-    RECORD_READ_ERROR = 87,
     RECORD_NOT_FOUND = 88,
     INVALID_VERSION = 89,
     INVALID_PATCH_ON_HOTPATH = 90,
@@ -261,7 +260,13 @@ export declare enum PRESENCE_ACTIONS {
     NOT_SUBSCRIBED = 100,
 }
 export declare const ACTIONS: {
-    [x: number]: typeof PARSER_ACTIONS | typeof CONNECTION_ACTIONS | typeof AUTH_ACTIONS | typeof EVENT_ACTIONS | typeof RECORD_ACTIONS | typeof RPC_ACTIONS | typeof PRESENCE_ACTIONS;
+    [TOPIC.PARSER]: typeof PARSER_ACTIONS;
+    [TOPIC.CONNECTION]: typeof CONNECTION_ACTIONS;
+    [TOPIC.AUTH]: typeof AUTH_ACTIONS;
+    [TOPIC.EVENT]: typeof EVENT_ACTIONS;
+    [TOPIC.RECORD]: typeof RECORD_ACTIONS;
+    [TOPIC.RPC]: typeof RPC_ACTIONS;
+    [TOPIC.PRESENCE]: typeof PRESENCE_ACTIONS;
 };
 export declare enum EVENT {
     INFO = "INFO",
