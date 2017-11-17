@@ -15,7 +15,7 @@ exports.socketFactory = (url, options) => {
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => { };
     socket.onmessage = (raw) => {
-        const parseResults = message_parser_1.parse(raw.data);
+        const parseResults = message_parser_1.parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data)) : raw.data);
         socket.onparsedmessages(parseResults);
     };
     socket.sendParsedMessage = (message) => {
