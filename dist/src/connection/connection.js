@@ -14,7 +14,7 @@ class Connection {
         this.handlers = new Map();
         this.isConnected = false;
         // tslint:disable-next-line:no-empty
-        this.authCallback = () => { };
+        this.authCallback = null;
         this.emitter = emitter;
         this.internalEmitter = new Emitter();
         let isReconnecting = false;
@@ -90,9 +90,14 @@ class Connection {
      *                E.g. { username:<String>, password:<String> }
      * @param   {Function} callback   A callback that will be invoked with the authenticationr result
      */
-    authenticate(authParams, callback) {
-        if (typeof authParams !== 'object') {
-            throw new Error('invalid argument authParams');
+    authenticate(authParamsOrCallback, callback) {
+        if (authParamsOrCallback &&
+            typeof authParamsOrCallback !== 'object' &&
+            typeof authParamsOrCallback !== 'function') {
+            throw new Error('invalid argument authParamsOrCallback');
+        }
+        if (callback && typeof callback !== 'function') {
+            throw new Error('invalid argument callback');
         }
         if (this.stateMachine.state === constants_1.CONNECTION_STATE.CHALLENGE_DENIED ||
             this.stateMachine.state === constants_1.CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS ||
@@ -100,11 +105,17 @@ class Connection {
             this.services.logger.error({ topic: message_constants_1.TOPIC.CONNECTION }, constants_1.EVENT.IS_CLOSED);
             return;
         }
-        if (authParams) {
-            this.authParams = authParams;
+        if (authParamsOrCallback) {
+            this.authParams = typeof authParamsOrCallback === 'object' ? authParamsOrCallback : {};
         }
-        if (callback) {
+        if (authParamsOrCallback && typeof authParamsOrCallback === 'function') {
+            this.authCallback = authParamsOrCallback;
+        }
+        else if (callback) {
             this.authCallback = callback;
+        }
+        else {
+            this.authCallback = () => { };
         }
         // if (this.stateMachine.state === CONNECTION_STATE.CLOSED && !this.endpoint) {
         //   this.createEndpoint()
@@ -226,7 +237,6 @@ class Connection {
     onMessages(parseResults) {
         parseResults.forEach(parseResult => {
             if (parseResult.parseError) {
-                console.log('parser error', parseResult);
                 this.services.logger.error({ topic: message_constants_1.TOPIC.PARSER }, parseResult.action, parseResult.raw && parseResult.raw.toString());
                 return;
             }
@@ -398,18 +408,42 @@ class Connection {
         }
         if (message.action === message_constants_1.AUTH_ACTIONS.AUTH_UNSUCCESSFUL) {
             this.stateMachine.transition("unsuccesful-login" /* UNSUCCESFUL_LOGIN */);
-            this.authCallback(false, { reason: constants_1.EVENT[constants_1.EVENT.INVALID_AUTHENTICATION_DETAILS] });
+            this.onAuthUnSuccessful();
             return;
         }
         if (message.action === message_constants_1.AUTH_ACTIONS.AUTH_SUCCESSFUL) {
             this.stateMachine.transition("succesful-login" /* SUCCESFUL_LOGIN */);
-            this.authCallback(true, message.parsedData || null);
+            this.onAuthSuccessful(message.parsedData);
             return;
         }
     }
     onAwaitingAuthentication() {
         if (this.authParams) {
             this.sendAuthParams();
+        }
+    }
+    onAuthSuccessful(clientData) {
+        this.updateClientData(clientData);
+        if (this.authCallback === null) {
+            return;
+        }
+        this.authCallback(true, this.clientData);
+        this.authCallback = null;
+    }
+    onAuthUnSuccessful() {
+        const reason = { reason: constants_1.EVENT[constants_1.EVENT.INVALID_AUTHENTICATION_DETAILS] };
+        if (this.authCallback === null) {
+            this.emitter.emit(constants_1.EVENT.REAUTHENTICATION_FAILURE, reason);
+            return;
+        }
+        this.authCallback(false, reason);
+        this.authCallback = null;
+    }
+    updateClientData(data) {
+        const newClientData = data || null;
+        if (!utils.deepEquals(this.clientData, data)) {
+            this.emitter.emit(constants_1.EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData));
+            this.clientData = newClientData;
         }
     }
 }
