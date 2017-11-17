@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+require('source-map-support').install();
 const client_options_1 = require("./client-options");
 const constants_1 = require("./constants");
 exports.EVENT = constants_1.EVENT;

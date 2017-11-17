@@ -22,6 +22,7 @@ export declare class SingleNotifier {
     private action;
     private topic;
     private timeoutDuration;
+    private internalRequests;
     constructor(services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number);
     /**
    * Add a request. If one has already been made it will skip the server request
@@ -34,5 +35,14 @@ export declare class SingleNotifier {
    * @returns {void}
    */
     request(name: string, response: SingleNotifierResponse): void;
+    /**
+     * Adds a callback to a (possibly) inflight request that will be called
+     * on the response.
+     *
+     * @param name
+     * @param response
+     */
+    register(name: string, callback: (message: Message) => void): void;
     recieve(message: Message, error?: any, data?: any): void;
+    private onConnectionLost();
 }

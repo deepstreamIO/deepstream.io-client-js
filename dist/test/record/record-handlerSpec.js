@@ -217,10 +217,10 @@ describe('Record handler', () => {
         it('handles record not found error messages', () => __awaiter(this, void 0, void 0, function* () {
             handle({
                 topic: message_constants_1.TOPIC.RECORD,
-                action: message_constants_1.RECORD_ACTIONS.RECORD_NOT_FOUND,
+                action: message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE,
                 originalAction: message_constants_1.RECORD_ACTIONS.HEAD,
-                name,
-                isError: true
+                version: -1,
+                name
             });
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.calledOnce(callbackSpy);

@@ -38,6 +38,7 @@ class PresenceHandler {
         this.resubscribe = this.resubscribe.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.PRESENCE, this.handle.bind(this));
         this.services.connection.onReestablished(this.resubscribe.bind(this));
+        this.services.connection.onLost(this.onConnectionLost.bind(this));
         this.counter = 0;
         this.pendingSubscribes = new Set();
         this.pendingUnsubscribes = new Set();
@@ -259,6 +260,12 @@ class PresenceHandler {
                 callback: this.flush
             });
         }
+    }
+    onConnectionLost() {
+        this.queryEmitter.eventNames().forEach(correlationId => {
+            this.queryEmitter.emit(correlationId, client_1.EVENT.CLIENT_OFFLINE);
+        });
+        this.queryAllEmitter.emit(ONLY_EVENT, client_1.EVENT.CLIENT_OFFLINE);
     }
 }
 exports.PresenceHandler = PresenceHandler;

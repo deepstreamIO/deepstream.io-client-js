@@ -27,13 +27,17 @@ export class SingleNotifier {
   private action: ALL_ACTIONS
   private topic: TOPIC
   private timeoutDuration: number
+  private internalRequests: Map<string, Array<(message: Message) => void>>
 
   constructor (services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number) {
     this.services = services
     this.topic = topic
     this.action = action
     this.timeoutDuration = timeoutDuration
-    this.requests = new Map<string, Array<SingleNotifierResponse>>()
+    this.requests = new Map()
+    this.internalRequests = new Map()
+
+    this.services.connection.onLost(this.onConnectionLost.bind(this))
   }
 
     /**
@@ -70,14 +74,36 @@ export class SingleNotifier {
     }
   }
 
+  /**
+   * Adds a callback to a (possibly) inflight request that will be called
+   * on the response.
+   *
+   * @param name
+   * @param response
+   */
+  public register (name: string, callback: (message: Message) => void): void {
+    const request = this.internalRequests.get(name)
+    if (!request) {
+      this.internalRequests.set(name, [callback])
+    } else {
+      request.push(callback)
+    }
+  }
+
   public recieve (message: Message, error?: any, data?: any): void {
     const name = message.name as string
-    const responses = this.requests.get(name)
-    if (!responses) {
-      this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
+    const responses = this.requests.get(name) || []
+    const internalResponses = this.internalRequests.get(name) || []
+    if (!responses && !internalResponses) {
       return
     }
 
+    for (let i = 0; i < internalResponses.length; i++) {
+      internalResponses[i](message)
+    }
+    this.internalRequests.delete(name)
+
+    // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
     for (let i = 0; i < responses.length; i++) {
       const response = responses[i]
       if (response.callback) {
@@ -89,5 +115,19 @@ export class SingleNotifier {
       }
     }
     this.requests.delete(name)
+    return
+  }
+
+  private onConnectionLost (): void {
+    this.requests.forEach(responses => {
+      responses.forEach(response => {
+        if (response.callback) {
+          response.callback(EVENT.CLIENT_OFFLINE)
+        } else if (response.reject) {
+          response.reject(EVENT.CLIENT_OFFLINE)
+        }
+      })
+    })
+    this.requests.clear()
   }
 }

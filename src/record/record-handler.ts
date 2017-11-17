@@ -3,13 +3,21 @@ import { EVENT } from '../constants'
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
+import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
 import { SingleNotifier } from './single-notifier'
+import { WriteAcknowledgementService } from './write-ack-service'
 import * as Emitter from 'component-emitter2'
+
+export interface RecordServices {
+  writeAckService: WriteAcknowledgementService
+  readRegistry: SingleNotifier,
+  headRegistry: SingleNotifier
+}
 
 export class RecordHandler {
   private services: Services
@@ -17,8 +25,7 @@ export class RecordHandler {
   private options: Options
   private listener: Listener
   private recordCores: Map<string, RecordCore>
-  private readRegistry: SingleNotifier
-  private headRegistry: SingleNotifier
+  private recordServices: RecordServices
 
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
@@ -27,8 +34,12 @@ export class RecordHandler {
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
     this.recordCores = new Map()
-    this.readRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout)
-    this.headRegistry = new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
+
+    this.recordServices = {
+      writeAckService: new WriteAcknowledgementService(services),
+      readRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout),
+      headRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
+    } as RecordServices
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
@@ -94,9 +105,9 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot (name: string): Promise<number>
+  public snapshot (name: string): Promise<any>
   public snapshot (name: string, callback: (error: string | null, data: any) => void): void
-  public snapshot (name: string, callback?: (error: string | null, data: any) => void): void | Promise<number> {
+  public snapshot (name: string, callback?: (error: string | null, data: any) => void): void | Promise<any> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -105,19 +116,25 @@ export class RecordHandler {
     }
 
     const recordCore = this.recordCores.get(name)
-    if (recordCore && recordCore.isReady) {
+    if (recordCore) {
       if (callback) {
-        callback(null, recordCore.get())
-        return
+        recordCore.whenReady(null, () => {
+          callback(null, recordCore.get())
+        })
       } else {
-        return Promise.resolve(recordCore.get())
+        return new Promise((resolve, reject) => {
+          recordCore.whenReady(null, () => {
+            resolve(recordCore.get())
+          })
+        })
       }
+      return
     }
     if (callback) {
-      this.readRegistry.request(name, { callback })
+      this.recordServices.readRegistry.request(name, { callback })
     } else {
       return new Promise((resolve, reject) => {
-        this.readRegistry.request(name, { resolve, reject })
+        this.recordServices.readRegistry.request(name, { resolve, reject })
       })
     }
   }
@@ -138,28 +155,15 @@ export class RecordHandler {
       throw new Error('invalid argument: callback')
     }
 
+    let cb
     if (!callback) {
       return new Promise ((resolve, reject) => {
-        this.head(name, (error: string | null, version: number) => {
-          if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
-            resolve(false)
-          } else if (error) {
-            reject(error)
-          } else {
-            resolve(version !== -1)
-          }
-        })
+        cb = (error: string | null, version: number) => error ? reject(error) : resolve(version !== -1)
+        this.head(name, cb)
       })
     }
-    this.head(name, (error: string | null, version: number) => {
-      if (error && error === RECORD_ACTION[RECORD_ACTION.RECORD_NOT_FOUND]) {
-        callback(null, false)
-      } else if (error) {
-        callback(error, null)
-      } else {
-        callback(null, version !== -1)
-      }
-    })
+    cb = (error: string | null, version: number) => error ? callback(error, null) : callback(null, version !== -1)
+    this.head(name, cb)
   }
 
   /**
@@ -179,19 +183,26 @@ export class RecordHandler {
     }
 
     const recordCore = this.recordCores.get(name)
-    if (recordCore && recordCore.isReady) {
+    if (recordCore) {
       if (callback) {
-        callback(null, recordCore.version)
-        return
+        recordCore.whenReady(null, () => {
+          callback(null, recordCore.version)
+        })
+      } else {
+        return new Promise((resolve, reject) => {
+          recordCore.whenReady(null, () => {
+            resolve(recordCore.version)
+          })
+        })
       }
-      return Promise.resolve(recordCore.version)
+      return
     }
 
     if (callback) {
-      this.headRegistry.request(name, { callback })
+      this.recordServices.headRegistry.request(name, { callback })
     } else {
       return new Promise((resolve, reject) => {
-        this.headRegistry.request(name, { resolve, reject })
+        this.recordServices.headRegistry.request(name, { resolve, reject })
       })
     }
   }
@@ -210,16 +221,17 @@ export class RecordHandler {
    * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
    *                    with the result of the write
    */
-  public setDataWithAck (recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<void> | void
-  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<void> | void {
+  public setDataWithAck (recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void
+  public setDataWithAck (recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void
+  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<string> | void {
     const args = utils.normalizeSetArguments(arguments, 1)
-    if (args.callback) {
+    if (!args.callback) {
       return new Promise((resolve, reject) => {
         args.callback = error => error === null ? resolve() : reject(error)
-        this.setData(recordName, args)
+        this.sendSetData(recordName, args)
       })
     }
-    this.setData(recordName, args)
+    this.sendSetData(recordName, args)
   }
 
   /**
@@ -237,12 +249,19 @@ export class RecordHandler {
    * @param {Function} callback if provided this will be called with the result of the
    *                            write
    */
+  public setData (recordName: string, data: object): void
   public setData (recordName: string, path: string, data: any, callback: WriteAckCallback): void
-  public setData (recordName: string, args: utils.RecordSetArguments): void
   public setData (recordName: string, pathOrData: string | object, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
   public setData (recordName: string): void {
-    const { path, data, callback } = utils.normalizeSetArguments(arguments, 1)
+    const args = utils.normalizeSetArguments(arguments, 1)
+    this.sendSetData(recordName, args)
+  }
 
+  private sendSetData (recordName: string, args: utils.RecordSetArguments): void {
+    const { path, data, callback } = args
+    if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
+      throw new Error('invalid argument: recordName must be an non empty string')
+    }
     if (!path && (data === null || typeof data !== 'object')) {
       throw new Error('invalid argument: data must be an object when no path is provided')
     }
@@ -253,23 +272,31 @@ export class RecordHandler {
       return
     }
 
-    if (callback) {
-      // register with write ack service
-    }
-
     let action
     if (path) {
-      action = callback ? RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK : RECORD_ACTION.CREATEANDPATCH
+      if (data === undefined) {
+        action = RECORD_ACTION.ERASE
+      } else {
+        action = RECORD_ACTION.CREATEANDPATCH
+      }
     } else {
-      action = callback ? RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK : RECORD_ACTION.CREATEANDUPDATE
+      action = RECORD_ACTION.CREATEANDUPDATE
     }
 
-    this.services.connection.sendMessage({
+    const message = {
       topic: TOPIC.RECORD,
       action,
       name: recordName,
-      version: -1
-    })
+      path,
+      version: -1,
+      parsedData: data
+    }
+
+    if (callback) {
+      this.recordServices.writeAckService.send(message, callback)
+    } else {
+      this.services.connection.sendMessage(message)
+    }
   }
 
   /**
@@ -286,32 +313,16 @@ export class RecordHandler {
       return
     }
 
-    const recordCore = this.recordCores.get(message.name)
-    if (recordCore) {
-      recordCore.handle(message)
+    if (isWriteAck(message.action) || isWriteAck(message.originalAction as RECORD_ACTION)) {
+      this.recordServices.writeAckService.recieve(message)
       return
     }
 
-    if (message.action === RECORD_ACTION.VERSION_EXISTS) {
-      // do something
-      return
-    }
-
-    if (
-      message.action === RECORD_ACTION.MESSAGE_DENIED ||
-      message.action === RECORD_ACTION.MESSAGE_PERMISSION_ERROR
-    ) {
-      // do something
-    }
-
-    if (
-      message.action === RECORD_ACTION.READ_RESPONSE ||
-      message.originalAction === RECORD_ACTION.READ
-    ) {
+    if (message.action === RECORD_ACTION.READ_RESPONSE || message.originalAction === RECORD_ACTION.READ) {
       if (message.isError) {
-        this.readRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
+        this.recordServices.readRegistry.recieve(message, RECORD_ACTION[message.action])
       } else {
-        this.readRegistry.recieve(message, null, message.parsedData)
+        this.recordServices.readRegistry.recieve(message, null, message.parsedData)
       }
       return
     }
@@ -321,19 +332,15 @@ export class RecordHandler {
       message.originalAction === RECORD_ACTION.HEAD
     ) {
       if (message.isError) {
-        this.headRegistry.recieve(message, RECORD_ACTION[message.action], undefined)
+        this.recordServices.headRegistry.recieve(message, RECORD_ACTION[message.action])
       } else {
-        this.headRegistry.recieve(message, null, message.version)
+        this.recordServices.headRegistry.recieve(message, null, message.version)
       }
-      return
     }
 
-    if (message.action === RECORD_ACTION.DELETED) {
-      // do something
-    }
-
-    if (message.action === RECORD_ACTION.WRITE_ACKNOWLEDGEMENT) {
-      // handle write ack
+    const recordCore = this.recordCores.get(message.name)
+    if (recordCore) {
+      recordCore.handle(message)
       return
     }
 
@@ -342,6 +349,11 @@ export class RecordHandler {
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
     ) {
       // record can receive a HAS_PROVIDER after discarding the record
+      return
+    }
+
+    if (message.isError) {
+      this.services.logger.error(message)
       return
     }
 
@@ -359,7 +371,7 @@ export class RecordHandler {
   private getRecordCore (recordName: string): RecordCore {
     let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
-      recordCore = new RecordCore(recordName, this.services, this.options, this.removeRecord.bind(this))
+      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this))
       this.recordCores.set(recordName, recordCore)
     } else {
       recordCore.usages++

@@ -4,6 +4,7 @@ const sinon_1 = require("sinon");
 const constants_1 = require("../src/constants");
 const timer_registry_1 = require("../src/util/timer-registry");
 const single_notifier_1 = require("../src/record/single-notifier");
+const write_ack_service_1 = require("../src/record/write-ack-service");
 let lastMessageSent;
 exports.getLastMessageSent = () => lastMessageSent;
 exports.getServicesMock = () => {
@@ -118,6 +119,14 @@ exports.getSingleNotifierMock = () => {
     return {
         singleNotifier,
         singleNotifierMock
+    };
+};
+exports.getWriteAckNotifierMock = () => {
+    const writeAckNotifier = write_ack_service_1.WriteAcknowledgementService.prototype;
+    const writeAckNotifierMock = sinon_1.mock(writeAckNotifier);
+    return {
+        writeAckNotifier,
+        writeAckNotifierMock
     };
 };
 //# sourceMappingURL=mocks.js.map

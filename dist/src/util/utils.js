@@ -140,8 +140,8 @@ exports.normalizeSetArguments = (args, startIndex = 0) => {
     }
     if (args.length === startIndex + 2) {
         result = { path: undefined, data: undefined, callback: undefined };
-        if (!isCallback(args[startIndex + 1]) && isNestedData(args[startIndex + 1])) {
-            result.path = isPath(args[startIndex]) ? args[startIndex] : false;
+        if (!isCallback(args[startIndex]) && isNestedData(args[startIndex])) {
+            result.path = isPath(args[startIndex]) ? args[startIndex] : undefined;
         }
         if (isPath(args[startIndex])) {
             result.data = isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined;
@@ -155,19 +155,21 @@ exports.normalizeSetArguments = (args, startIndex = 0) => {
     }
     if (args.length === startIndex + 3) {
         result = {
-            path: isPath(args[startIndex]) ? args[startIndex] : false,
-            data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : false,
-            callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : false
+            path: isPath(args[startIndex]) ? args[startIndex] : undefined,
+            data: isNestedData(args[startIndex + 1]) ? args[startIndex + 1] : undefined,
+            callback: isCallback(args[startIndex + 2]) ? args[startIndex + 2] : undefined
         };
     }
     if (result) {
-        if (result.path !== undefined && result.path.length === 0 || result.path === false) {
+        if (result.path !== undefined && result.path.length === 0 ||
+            (result.path === undefined && !result.data)) {
             throw Error('Invalid set path argument');
         }
-        if (result.data === undefined && !result.path || result.data === false) {
+        if (result.data === undefined && result.path === undefined) {
             throw Error('Invalid set data argument');
         }
-        if (result.callback !== undefined && result.callback === false) {
+        if (result.callback !== undefined && result.callback === false ||
+            result.callback === undefined && args.length === startIndex + 3) {
             throw Error('Invalid set callback argument');
         }
         return result;

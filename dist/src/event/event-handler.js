@@ -128,6 +128,10 @@ class EventHandler {
             this.listeners.handle(message);
             return;
         }
+        if (message.action === message_constants_1.EVENT_ACTIONS.INVALID_LISTEN_REGEX) {
+            this.services.logger.error(message, message_constants_1.EVENT_ACTIONS.INVALID_LISTEN_REGEX);
+            return;
+        }
         this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);
     }
     /**

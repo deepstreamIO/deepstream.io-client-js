@@ -1,4 +1,3 @@
-import * as utils from '../util/utils';
 import { Services } from '../client';
 import { Options } from '../client-options';
 import { WriteAckCallback } from './record-core';
@@ -6,14 +5,20 @@ import { Record } from './record';
 import { AnonymousRecord } from './anonymous-record';
 import { List } from './list';
 import { Listener, ListenCallback } from '../util/listener';
+import { SingleNotifier } from './single-notifier';
+import { WriteAcknowledgementService } from './write-ack-service';
+export interface RecordServices {
+    writeAckService: WriteAcknowledgementService;
+    readRegistry: SingleNotifier;
+    headRegistry: SingleNotifier;
+}
 export declare class RecordHandler {
     private services;
     private emitter;
     private options;
     private listener;
     private recordCores;
-    private readRegistry;
-    private headRegistry;
+    private recordServices;
     constructor(services: Services, options: Options, listener?: Listener);
     /**
    * Returns an existing record or creates a new one.
@@ -60,7 +65,7 @@ export declare class RecordHandler {
      * @param   {String}  name the unique name of the record
      * @param   {Function}  callback
      */
-    snapshot(name: string): Promise<number>;
+    snapshot(name: string): Promise<any>;
     snapshot(name: string, callback: (error: string | null, data: any) => void): void;
     /**
      * Allows the user to query to see whether or not the record exists.
@@ -92,7 +97,8 @@ export declare class RecordHandler {
      * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
      *                    with the result of the write
      */
-    setDataWithAck(recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<void> | void;
+    setDataWithAck(recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
+    setDataWithAck(recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
     /**
      * Allows setting the data for a record without being subscribed to it. If
      * the client is subscribed to the record locally, the update will be proxied
@@ -108,9 +114,10 @@ export declare class RecordHandler {
      * @param {Function} callback if provided this will be called with the result of the
      *                            write
      */
+    setData(recordName: string, data: object): void;
     setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void;
-    setData(recordName: string, args: utils.RecordSetArguments): void;
     setData(recordName: string, pathOrData: string | object, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
+    private sendSetData(recordName, args);
     /**
      * Will be called by the client for incoming messages on the RECORD topic
      *

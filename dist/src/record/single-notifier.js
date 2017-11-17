@@ -19,6 +19,8 @@ class SingleNotifier {
         this.action = action;
         this.timeoutDuration = timeoutDuration;
         this.requests = new Map();
+        this.internalRequests = new Map();
+        this.services.connection.onLost(this.onConnectionLost.bind(this));
     }
     /**
    * Add a request. If one has already been made it will skip the server request
@@ -55,13 +57,34 @@ class SingleNotifier {
             req.push(response);
         }
     }
+    /**
+     * Adds a callback to a (possibly) inflight request that will be called
+     * on the response.
+     *
+     * @param name
+     * @param response
+     */
+    register(name, callback) {
+        const request = this.internalRequests.get(name);
+        if (!request) {
+            this.internalRequests.set(name, [callback]);
+        }
+        else {
+            request.push(callback);
+        }
+    }
     recieve(message, error, data) {
         const name = message.name;
-        const responses = this.requests.get(name);
-        if (!responses) {
-            this.services.logger.error(message, client_1.EVENT.UNSOLICITED_MESSAGE);
+        const responses = this.requests.get(name) || [];
+        const internalResponses = this.internalRequests.get(name) || [];
+        if (!responses && !internalResponses) {
             return;
         }
+        for (let i = 0; i < internalResponses.length; i++) {
+            internalResponses[i](message);
+        }
+        this.internalRequests.delete(name);
+        // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
         for (let i = 0; i < responses.length; i++) {
             const response = responses[i];
             if (response.callback) {
@@ -75,6 +98,20 @@ class SingleNotifier {
             }
         }
         this.requests.delete(name);
+        return;
+    }
+    onConnectionLost() {
+        this.requests.forEach(responses => {
+            responses.forEach(response => {
+                if (response.callback) {
+                    response.callback(client_1.EVENT.CLIENT_OFFLINE);
+                }
+                else if (response.reject) {
+                    response.reject(client_1.EVENT.CLIENT_OFFLINE);
+                }
+            });
+        });
+        this.requests.clear();
     }
 }
 exports.SingleNotifier = SingleNotifier;
