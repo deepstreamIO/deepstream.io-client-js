@@ -116,7 +116,7 @@ describe('record setData online', () => {
                 .once()
                 .withExactArgs({
                 topic,
-                action: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK,
+                action: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE,
                 name,
                 path: undefined,
                 parsedData: data,
@@ -130,7 +130,7 @@ describe('record setData online', () => {
                 .once()
                 .withExactArgs({
                 topic,
-                action: message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK,
+                action: message_constants_1.RECORD_ACTIONS.CREATEANDPATCH,
                 name,
                 path,
                 parsedData: data,
@@ -144,7 +144,7 @@ describe('record setData online', () => {
                 .once()
                 .withExactArgs({
                 topic,
-                action: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK,
+                action: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE,
                 name,
                 path: undefined,
                 parsedData: data,
@@ -159,7 +159,7 @@ describe('record setData online', () => {
                 .once()
                 .withExactArgs({
                 topic,
-                action: message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK,
+                action: message_constants_1.RECORD_ACTIONS.CREATEANDPATCH,
                 name,
                 path,
                 parsedData: data,
@@ -174,7 +174,7 @@ describe('record setData online', () => {
                 .once()
                 .withExactArgs({
                 topic,
-                action: message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK,
+                action: message_constants_1.RECORD_ACTIONS.ERASE,
                 name,
                 path,
                 version: -1,
@@ -188,7 +188,7 @@ describe('record setData online', () => {
                 .once()
                 .withExactArgs({
                 topic,
-                action: message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK,
+                action: message_constants_1.RECORD_ACTIONS.ERASE,
                 name,
                 path,
                 version: -1,

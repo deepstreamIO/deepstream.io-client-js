@@ -21,6 +21,6 @@ export declare class WriteAcknowledgementService {
    * @returns {void}
    */
     send(message: Message, callback: WriteAckCallback): void;
-    recieve(message: Message): boolean;
+    recieve(message: Message): void;
     private onConnectionLost();
 }

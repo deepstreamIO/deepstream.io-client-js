@@ -78,7 +78,7 @@ class SingleNotifier {
         const responses = this.requests.get(name) || [];
         const internalResponses = this.internalRequests.get(name) || [];
         if (!responses && !internalResponses) {
-            return false;
+            return;
         }
         for (let i = 0; i < internalResponses.length; i++) {
             internalResponses[i](message);
@@ -98,7 +98,7 @@ class SingleNotifier {
             }
         }
         this.requests.delete(name);
-        return true;
+        return;
     }
     onConnectionLost() {
         this.requests.forEach(responses => {

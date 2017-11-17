@@ -44,14 +44,14 @@ export class WriteAcknowledgementService {
     this.count++
   }
 
-  public recieve (message: Message): boolean {
+  public recieve (message: Message): void {
     const id = message.correlationId as string
     const response = this.responses.get(id)
     if (
       !response ||
       (message.action !== RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT && !message.isError)
     ) {
-      return false
+      return
     }
 
     message.isError
@@ -59,8 +59,6 @@ export class WriteAcknowledgementService {
       : response(null)
 
     this.responses.delete(id)
-
-    return true
   }
 
   private onConnectionLost (): void {

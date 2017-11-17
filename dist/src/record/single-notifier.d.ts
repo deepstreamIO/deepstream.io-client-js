@@ -43,6 +43,6 @@ export declare class SingleNotifier {
      * @param response
      */
     register(name: string, callback: (message: Message) => void): void;
-    recieve(message: Message, error?: any, data?: any): boolean;
+    recieve(message: Message, error?: any, data?: any): void;
     private onConnectionLost();
 }

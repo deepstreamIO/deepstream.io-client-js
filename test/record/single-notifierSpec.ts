@@ -102,9 +102,8 @@ describe('Single Notifier', () => {
         name: 'something',
         isError: true
       }
-      const processed = singleNotifier.recieve(message, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
+      singleNotifier.recieve(message, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
 
-      expect(processed).to.be.false
       assert.notCalled(callbackSpy)
       assert.notCalled(resolveSpy)
       assert.notCalled(rejectSpy)
@@ -114,7 +113,7 @@ describe('Single Notifier', () => {
 
     it('responds callback and promise requests with success response', async () => {
       const parsedData = { some: 'data' }
-      const processed = singleNotifier.recieve({
+      singleNotifier.recieve({
         topic,
         action,
         name,
@@ -122,7 +121,6 @@ describe('Single Notifier', () => {
         parsedData
       }, undefined, parsedData)
 
-      expect(processed).to.be.true
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, undefined, parsedData)
 
@@ -134,14 +132,13 @@ describe('Single Notifier', () => {
     })
 
     it('responds callback and promise requests with error response', async () => {
-      const processed = singleNotifier.recieve({
+      singleNotifier.recieve({
         topic,
         action: RECORD_ACTIONS.MESSAGE_DENIED,
         name,
         isError: true
       }, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
 
-      expect(processed).to.be.true
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
 

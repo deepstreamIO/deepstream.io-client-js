@@ -90,12 +90,12 @@ export class SingleNotifier {
     }
   }
 
-  public recieve (message: Message, error?: any, data?: any): boolean {
+  public recieve (message: Message, error?: any, data?: any): void {
     const name = message.name as string
     const responses = this.requests.get(name) || []
     const internalResponses = this.internalRequests.get(name) || []
     if (!responses && !internalResponses) {
-      return false
+      return
     }
 
     for (let i = 0; i < internalResponses.length; i++) {
@@ -115,7 +115,7 @@ export class SingleNotifier {
       }
     }
     this.requests.delete(name)
-    return true
+    return
   }
 
   private onConnectionLost (): void {

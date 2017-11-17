@@ -135,7 +135,7 @@ describe('record setData online', () => {
         .once()
         .withExactArgs({
           topic,
-          action: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
+          action: RECORD_ACTION.CREATEANDUPDATE,
           name,
           path: undefined,
           parsedData: data,
@@ -151,7 +151,7 @@ describe('record setData online', () => {
         .once()
         .withExactArgs({
           topic,
-          action: RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK,
+          action: RECORD_ACTION.CREATEANDPATCH,
           name,
           path,
           parsedData: data,
@@ -167,7 +167,7 @@ describe('record setData online', () => {
         .once()
         .withExactArgs({
           topic,
-          action: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
+          action: RECORD_ACTION.CREATEANDUPDATE,
           name,
           path: undefined,
           parsedData: data,
@@ -184,7 +184,7 @@ describe('record setData online', () => {
         .once()
         .withExactArgs({
           topic,
-          action: RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK,
+          action: RECORD_ACTION.CREATEANDPATCH,
           name,
           path,
           parsedData: data,
@@ -201,7 +201,7 @@ describe('record setData online', () => {
         .once()
         .withExactArgs({
           topic,
-          action: RECORD_ACTION.ERASE_WITH_WRITE_ACK,
+          action: RECORD_ACTION.ERASE,
           name,
           path,
           version: -1,
@@ -217,7 +217,7 @@ describe('record setData online', () => {
         .once()
         .withExactArgs({
           topic,
-          action: RECORD_ACTION.ERASE_WITH_WRITE_ACK,
+          action: RECORD_ACTION.ERASE,
           name,
           path,
           version: -1,

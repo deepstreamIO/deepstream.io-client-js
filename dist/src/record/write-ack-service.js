@@ -39,13 +39,12 @@ class WriteAcknowledgementService {
         const response = this.responses.get(id);
         if (!response ||
             (message.action !== message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT && !message.isError)) {
-            return false;
+            return;
         }
         message.isError
             ? response(message_constants_1.RECORD_ACTIONS[message.action])
             : response(null);
         this.responses.delete(id);
-        return true;
     }
     onConnectionLost() {
         this.responses.forEach(response => {

@@ -9,7 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const bluebird_1 = require("bluebird");
-const chai_1 = require("chai");
 const sinon_1 = require("sinon");
 const mocks_1 = require("../mocks");
 const constants_1 = require("../../src/constants");
@@ -17,7 +16,8 @@ const message_constants_1 = require("../../binary-protocol/src/message-constants
 const write_ack_service_1 = require("../../src/record/write-ack-service");
 describe('Write Ack Notifier', () => {
     const topic = message_constants_1.TOPIC.RECORD;
-    const action = message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK;
+    const action = message_constants_1.RECORD_ACTIONS.CREATEANDPATCH;
+    const ackAction = message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK;
     const name = 'record';
     let services;
     let writeAckService;
@@ -66,11 +66,11 @@ describe('Write Ack Notifier', () => {
         services.connectionMock
             .expects('sendMessage')
             .once()
-            .withExactArgs(Object.assign({}, messageBody, { correlationId: '1' }));
+            .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '1' }));
         services.connectionMock
             .expects('sendMessage')
             .once()
-            .withExactArgs(Object.assign({}, messageBody, { correlationId: '2' }));
+            .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '2' }));
         writeAckService.send(messageBody, () => { });
         writeAckService.send(messageBody, () => { });
     });
@@ -95,7 +95,6 @@ describe('Write Ack Notifier', () => {
             const processed = writeAckService.recieve(msg);
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.notCalled(callbackSpy);
-            chai_1.expect(processed).to.be.false;
         }));
         it('calls ack callback when server sends ack message', () => __awaiter(this, void 0, void 0, function* () {
             const processed = writeAckService.recieve({
@@ -105,7 +104,6 @@ describe('Write Ack Notifier', () => {
                 originalAction: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK
             });
             yield bluebird_1.Promise.delay(1);
-            chai_1.expect(processed).to.be.true;
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWith(callbackSpy);
         }));
@@ -116,17 +114,15 @@ describe('Write Ack Notifier', () => {
                 correlationId,
                 originalAction: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK
             };
-            const processed1 = writeAckService.recieve(msg);
-            const processed2 = writeAckService.recieve(msg);
+            writeAckService.recieve(msg);
+            writeAckService.recieve(msg);
             yield bluebird_1.Promise.delay(1);
-            chai_1.expect(processed1).to.be.true;
-            chai_1.expect(processed2).to.be.false;
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWith(callbackSpy);
         }));
         it('calls ack callback with error when server sends error message', () => __awaiter(this, void 0, void 0, function* () {
             const errorAction = message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED;
-            const processed = writeAckService.recieve({
+            writeAckService.recieve({
                 topic,
                 action: errorAction,
                 correlationId,
@@ -134,7 +130,6 @@ describe('Write Ack Notifier', () => {
                 isError: true
             });
             yield bluebird_1.Promise.delay(1);
-            chai_1.expect(processed).to.be.true;
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWith(callbackSpy, message_constants_1.RECORD_ACTIONS[errorAction]);
         }));

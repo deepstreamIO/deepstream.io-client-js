@@ -3,13 +3,14 @@ import { expect } from 'chai'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../mocks'
 import { EVENT, CONNECTION_STATE } from '../../src/constants'
-import { TOPIC, RECORD_ACTIONS, RecordMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RECORD_ACTIONS as RA, RecordMessage } from '../../binary-protocol/src/message-constants'
 
 import { WriteAcknowledgementService } from '../../src/record/write-ack-service'
 
 describe('Write Ack Notifier', () => {
   const topic = TOPIC.RECORD
-  const action = RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK
+  const action = RA.CREATEANDPATCH
+  const ackAction = RA.CREATEANDPATCH_WITH_WRITE_ACK
   const name = 'record'
 
   let services: any
@@ -68,11 +69,11 @@ describe('Write Ack Notifier', () => {
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { correlationId: '1' }))
+      .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '1' }))
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { correlationId: '2' }))
+      .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '2' }))
 
     writeAckService.send(messageBody, () => {})
     writeAckService.send(messageBody, () => {})
@@ -104,19 +105,17 @@ describe('Write Ack Notifier', () => {
       await BBPromise.delay(1)
 
       assert.notCalled(callbackSpy)
-      expect(processed).to.be.false
     })
 
     it('calls ack callback when server sends ack message', async () => {
       const processed = writeAckService.recieve({
         topic,
-        action: RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
+        action: RA.WRITE_ACKNOWLEDGEMENT,
         correlationId,
-        originalAction: RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK
+        originalAction: RA.CREATEANDUPDATE_WITH_WRITE_ACK
       })
       await BBPromise.delay(1)
 
-      expect(processed).to.be.true
       assert.calledOnce(callbackSpy)
       assert.calledWith(callbackSpy)
     })
@@ -124,34 +123,31 @@ describe('Write Ack Notifier', () => {
     it('doesn\'t call callback twice', async () => {
       const msg = {
         topic,
-        action: RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
+        action: RA.WRITE_ACKNOWLEDGEMENT,
         correlationId,
-        originalAction: RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK
+        originalAction: RA.CREATEANDUPDATE_WITH_WRITE_ACK
       }
-      const processed1 = writeAckService.recieve(msg)
-      const processed2 = writeAckService.recieve(msg)
+      writeAckService.recieve(msg)
+      writeAckService.recieve(msg)
       await BBPromise.delay(1)
 
-      expect(processed1).to.be.true
-      expect(processed2).to.be.false
       assert.calledOnce(callbackSpy)
       assert.calledWith(callbackSpy)
     })
 
     it('calls ack callback with error when server sends error message', async () => {
-      const errorAction = RECORD_ACTIONS.MESSAGE_DENIED
-      const processed = writeAckService.recieve({
+      const errorAction = RA.MESSAGE_DENIED
+      writeAckService.recieve({
         topic,
         action: errorAction,
         correlationId,
-        originalAction: RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK,
+        originalAction: RA.CREATEANDUPDATE_WITH_WRITE_ACK,
         isError: true
       })
       await BBPromise.delay(1)
 
-      expect(processed).to.be.true
       assert.calledOnce(callbackSpy)
-      assert.calledWith(callbackSpy, RECORD_ACTIONS[errorAction])
+      assert.calledWith(callbackSpy, RA[errorAction])
     })
 
   })
