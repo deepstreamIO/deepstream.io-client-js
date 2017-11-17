@@ -29,7 +29,7 @@
                 <b-col lg="12">
                     <b-card-group v-if="clients.length > 0">
                         <b-card class="no-borders mb-0 mt-0" v-for="c in clients" :key="c.id" header-tag="header" footer-tag="footer">
-                            <Client :listener="listener" :client="clients[c.id - 1].client" :server-address="clients[c.id - 1].serverAddress"/>
+                            <Client :listener="listener" :client="c.client" :server-address="c.serverAddress"/>
                         </b-card>
                     </b-card-group>
                     <b-card-group v-if="clients.length === 0">
@@ -54,6 +54,8 @@ import * as ds from "../../dist/deepstream.js"
 const URL_REGEX = /[-a-zA-Z0-9@:%._\+~#=]{2,256}[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g
 
 let timerId = null
+
+let listener = null
 
 export default {
   name: "app",
@@ -81,14 +83,19 @@ export default {
   },
   computed: {
     listener: function () {
-      return ds.deepstream('localhost:6020')
+      if (!listener) {
+        listener = ds.deepstream('localhost:6020')
+        listener.login({username: 'listener'})
+      }
+
+      return listener
     }
   },
   components: { Client },
   methods: {
     createClient: function (address) {
       const serverAddress = address || this.server.address
-      const client = ds.deepstream(address, { lazyConnect: true })
+      const client = ds.deepstream(serverAddress, { lazyConnect: true })
 
       return { client, serverAddress }  
     },

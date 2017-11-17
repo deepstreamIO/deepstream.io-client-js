@@ -6,6 +6,7 @@
             <Auth :client="client"/>
             <Events :listener="listener" :client="client"/>
             <Rpcs :client="client"/>
+            <Presence :client="client" :server-address="serverAddress"/>
         </div>
       </b-row>
     </div>
@@ -16,6 +17,7 @@ import Auth from "./Auth.vue";
 import Connection from "./Connection.vue";
 import Events from "./Events.vue";
 import Rpcs from "./Rpcs.vue";
+import Presence from "./Presence.vue";
 
 export default {
   name: "client",
@@ -34,7 +36,8 @@ export default {
     Connection,
     Auth,
     Events,
-    Rpcs
+    Rpcs,
+    Presence
   }
 };
 </script>
