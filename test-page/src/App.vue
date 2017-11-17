@@ -49,7 +49,7 @@
 <script>
 import { Nav } from "bootstrap-vue/es/components"
 import Client from "./Client.vue"
-import * as ds from "../../dsioclientjsv4/dist/deepstream.js"
+import * as ds from "../../dist/deepstream.js"
 
 const URL_REGEX = /[-a-zA-Z0-9@:%._\+~#=]{2,256}[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g
 
