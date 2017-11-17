@@ -65,7 +65,7 @@ export declare class RecordHandler {
      * @param   {String}  name the unique name of the record
      * @param   {Function}  callback
      */
-    snapshot(name: string): Promise<number>;
+    snapshot(name: string): Promise<any>;
     snapshot(name: string, callback: (error: string | null, data: any) => void): void;
     /**
      * Allows the user to query to see whether or not the record exists.
