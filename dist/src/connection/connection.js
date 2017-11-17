@@ -442,7 +442,6 @@ class Connection {
     updateClientData(data) {
         const newClientData = data || null;
         if (!utils.deepEquals(this.clientData, data)) {
-            console.log('emit', newClientData);
             this.emitter.emit(constants_1.EVENT.CLIENT_DATA_CHANGED, newClientData);
             this.clientData = newClientData;
         }
