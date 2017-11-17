@@ -128,13 +128,14 @@ export declare class RecordCore extends Emitter {
      * Transition States
      */
     private onSubscribing();
-    private handleReadResponse(message);
     private onResubscribing();
     private onOfflineLoading();
     private onReady();
     private onUnsubscribed();
     private onDeleted();
-    handle(message: RecordMessage): boolean;
+    handle(message: RecordMessage): void;
+    private handleReadResponse(message);
+    private handleHeadResponse(message);
     private sendRead();
     private saveUpdate();
     private sendUpdate(path, data, callback);

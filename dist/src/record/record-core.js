@@ -292,16 +292,8 @@ class RecordCore extends Emitter {
             name: this.name
         });
     }
-    handleReadResponse(message) {
-        if (this.stateMachine.state === 5 /* MERGING */) {
-            this.recoverRecord(message.version, message.parsedData, message);
-            return;
-        }
-        this.version = message.version;
-        this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
-        this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
-    }
     onResubscribing() {
+        this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this));
         this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RECORD,
@@ -357,24 +349,9 @@ class RecordCore extends Emitter {
         this.destroy();
     }
     handle(message) {
-        if (message.action === message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE) {
-            if (this.version === message.version) {
-                this.stateMachine.transition(3 /* RESUBSCRIBED */);
-                return true;
-            }
-            if (this.version + 1 === message.version) {
-                this.version = message.version;
-                this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
-                this.stateMachine.transition(3 /* RESUBSCRIBED */);
-                return true;
-            }
-            this.stateMachine.transition(4 /* INVALID_VERSION */);
-            this.sendRead();
-            return true;
-        }
         if (message.action === message_constants_1.RECORD_ACTIONS.PATCH || message.action === message_constants_1.RECORD_ACTIONS.UPDATE || message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
             this.applyUpdate(message);
-            return true;
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS) {
             this.stateMachine.transition(message.action);
@@ -384,16 +361,16 @@ class RecordCore extends Emitter {
             else if (this.deleteResponse.resolve) {
                 this.deleteResponse.resolve();
             }
-            return true;
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.DELETED) {
             this.stateMachine.transition(message.action);
-            return true;
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.VERSION_EXISTS) {
             // what kind of message is version exists?
             // this.recoverRecord(message)
-            return true;
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED) {
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH ||
@@ -402,7 +379,8 @@ class RecordCore extends Emitter {
                 message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.CREATE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.READ ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD) {
+                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDHEAD) {
                 this.emit(constants_1.EVENT.RECORD_ERROR, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], message_constants_1.RECORD_ACTIONS[message.originalAction]);
             }
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE) {
@@ -413,15 +391,37 @@ class RecordCore extends Emitter {
                     this.deleteResponse.reject(message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]);
                 }
             }
-            return true;
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
             this.hasProvider = message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER;
             this.emit(constants_1.EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider);
-            return true;
+            return;
         }
-        return false;
+    }
+    handleReadResponse(message) {
+        if (this.stateMachine.state === 5 /* MERGING */) {
+            this.recoverRecord(message.version, message.parsedData, message);
+            return;
+        }
+        this.version = message.version;
+        this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
+        this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
+    }
+    handleHeadResponse(message) {
+        if (this.version === message.version) {
+            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+        }
+        else if (this.version + 1 === message.version) {
+            this.version = message.version;
+            this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
+            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+        }
+        else {
+            this.stateMachine.transition(4 /* INVALID_VERSION */);
+            this.sendRead();
+        }
     }
     sendRead() {
         this.services.connection.sendMessage({

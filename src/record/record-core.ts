@@ -373,17 +373,8 @@ export class RecordCore extends Emitter {
     })
   }
 
-  private handleReadResponse (message: RecordMessage): void {
-    if (this.stateMachine.state === RECORD_STATE.MERGING) {
-      this.recoverRecord(message.version as number, message.parsedData, message)
-      return
-    }
-    this.version = message.version as number
-    this.applyChange(setPath(this.data, null, message.parsedData))
-    this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
-  }
-
   private onResubscribing (): void {
+    this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this))
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -442,28 +433,10 @@ export class RecordCore extends Emitter {
     this.destroy()
   }
 
-  public handle (message: RecordMessage): boolean {
-
-
-    if (message.action === RECORD_ACTION.HEAD_RESPONSE) {
-      if (this.version === message.version as number) {
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-        return true
-      }
-      if (this.version + 1 === message.version as number) {
-        this.version = message.version as number
-        this.applyChange(setPath(this.data, null, message.parsedData))
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-        return true
-      }
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
-      this.sendRead()
-      return true
-    }
-
+  public handle (message: RecordMessage): void {
     if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
       this.applyUpdate(message as RecordWriteMessage)
-      return true
+      return
     }
 
     if (message.action === RECORD_ACTION.DELETE_SUCCESS) {
@@ -473,18 +446,18 @@ export class RecordCore extends Emitter {
       } else if (this.deleteResponse.resolve) {
         this.deleteResponse.resolve()
       }
-      return true
+      return
     }
 
     if (message.action === RECORD_ACTION.DELETED) {
       this.stateMachine.transition(message.action)
-      return true
+      return
     }
 
     if (message.action === RECORD_ACTION.VERSION_EXISTS) {
       // what kind of message is version exists?
       // this.recoverRecord(message)
-      return true
+      return
     }
 
     if (message.action === RECORD_ACTION.MESSAGE_DENIED) {
@@ -495,7 +468,8 @@ export class RecordCore extends Emitter {
         message.originalAction === RECORD_ACTION.DELETE ||
         message.originalAction === RECORD_ACTION.CREATE ||
         message.originalAction === RECORD_ACTION.READ ||
-        message.originalAction === RECORD_ACTION.SUBSCRIBECREATEANDREAD
+        message.originalAction === RECORD_ACTION.SUBSCRIBECREATEANDREAD ||
+        message.originalAction === RECORD_ACTION.SUBSCRIBEANDHEAD
       ) {
         this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], RECORD_ACTION[message.originalAction])
       }
@@ -507,7 +481,7 @@ export class RecordCore extends Emitter {
           this.deleteResponse.reject(RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED])
         }
       }
-      return true
+      return
     }
 
     if (
@@ -516,10 +490,31 @@ export class RecordCore extends Emitter {
     ) {
       this.hasProvider = message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER
       this.emit(EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider)
-      return true
+      return
     }
+  }
 
-    return false
+  private handleReadResponse (message: RecordMessage): void {
+    if (this.stateMachine.state === RECORD_STATE.MERGING) {
+      this.recoverRecord(message.version as number, message.parsedData, message)
+      return
+    }
+    this.version = message.version as number
+    this.applyChange(setPath(this.data, null, message.parsedData))
+    this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
+  }
+
+  private handleHeadResponse (message: RecordMessage): void {
+    if (this.version === message.version as number) {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+    } else if (this.version + 1 === message.version as number) {
+      this.version = message.version as number
+      this.applyChange(setPath(this.data, null, message.parsedData))
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+    } else {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
+      this.sendRead()
+    }
   }
 
   private sendRead () {

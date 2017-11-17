@@ -99,14 +99,12 @@ export class SingleNotifier {
     }
 
     for (let i = 0; i < internalResponses.length; i++) {
-      console.log('calling')
       internalResponses[i](message)
     }
     this.internalRequests.delete(name)
 
     // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
     for (let i = 0; i < responses.length; i++) {
-      console.log('calling')
       const response = responses[i]
       if (response.callback) {
         response.callback(error, data)
