@@ -1,0 +1,22 @@
+* {
+    font: 12px;
+}
+
+p.card-desc {
+    font-size: 12px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-weight: bold;
+}
+
+.wrapper {
+    padding: 5px;
+}
+
+.sm-text {
+    font-size: 12px;
+}
+
+.square-border {
+    border-radius: 0px !important;
+}
