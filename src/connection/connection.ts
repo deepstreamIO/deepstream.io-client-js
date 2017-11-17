@@ -558,7 +558,7 @@ export class Connection {
   private updateClientData (data: any) {
     const newClientData = data || null
     if (!utils.deepEquals(this.clientData, data)) {
-      this.emitter.emit(EVENT.CLIENT_DATA_CHANGED, newClientData)
+      this.emitter.emit(EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData))
       this.clientData = newClientData
     }
   }
