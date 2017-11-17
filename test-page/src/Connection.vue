@@ -1,17 +1,16 @@
 <template>
     <div class="connection">
         <div class="wrapper">
-            <b-card class="square-border" header-tag="header" footer-tag="footer">
+            <b-card class="square-border text-center" header-tag="header" footer-tag="footer">
                 <p class="mb-0 mt-0">
                     <strong>Connection</strong>
                 </p>
                 <br>
-                <p class="card-desc">Enter deepstream.io server address to establish a connection</p>
-                <b-form inline>
 
+                <b-form inline>
                     <b-container>
                         <b-row>
-                            <b-col lg="8">
+                            <b-col lg="8" offset-lg="2">
                                 <b-form-group description="Deepstream server address">
                                     <b-input-group>
                                         <b-form-input :block="true" disabled size="sm" v-model="serverAddress" type="text" placeholder="hostname"></b-form-input>
