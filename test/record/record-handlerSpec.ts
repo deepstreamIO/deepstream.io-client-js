@@ -262,10 +262,10 @@ describe('Record handler', () => {
     it('handles record not found error messages', async () => {
       handle({
         topic: TOPIC.RECORD,
-        action: RECORD_ACTIONS.RECORD_NOT_FOUND,
+        action: RECORD_ACTIONS.HEAD_RESPONSE,
         originalAction: RECORD_ACTIONS.HEAD,
-        name,
-        isError: true
+        version: -1,
+        name
       })
 
       await BBPromise.delay(1)

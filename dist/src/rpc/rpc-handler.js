@@ -13,6 +13,7 @@ class RPCHandler {
         this.providers = new Map();
         this.services.connection.registerHandler(message_constants_1.TOPIC.RPC, this.handle.bind(this));
         this.services.connection.onReestablished(this.reprovide.bind(this));
+        this.services.connection.onLost(this.onConnectionLost.bind(this));
     }
     /**
      * Registers a callback function as a RPC provider. If another connected client calls
@@ -197,6 +198,12 @@ class RPCHandler {
         };
         this.services.timeoutRegistry.add({ message });
         this.services.connection.sendMessage(message);
+    }
+    onConnectionLost() {
+        this.rpcs.forEach(rpc => {
+            rpc.error(constants_1.EVENT.CLIENT_OFFLINE);
+        });
+        this.rpcs.clear();
     }
 }
 exports.RPCHandler = RPCHandler;

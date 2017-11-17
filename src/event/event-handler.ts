@@ -154,6 +154,11 @@ private handle (message: EventMessage): void {
       return
     }
 
+    if (message.action === EVENT_ACTION.INVALID_LISTEN_REGEX) {
+      this.services.logger.error(message, EVENT_ACTION.INVALID_LISTEN_REGEX)
+      return
+    }
+
     this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
   }
 

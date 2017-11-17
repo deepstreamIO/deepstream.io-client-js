@@ -7,13 +7,13 @@ const Emitter = require("component-emitter2");
 const utils = require("../util/utils");
 const state_machine_1 = require("../util/state-machine");
 class RecordCore extends Emitter {
-    constructor(name, services, options, whenComplete) {
+    constructor(name, services, options, recordServices, whenComplete) {
         super();
         this.services = services;
         this.options = options;
+        this.recordServices = recordServices;
         this.emitter = new Emitter();
         this.data = Object.create(null);
-        this.writeCallbacks = new Map();
         this.name = name;
         this.whenComplete = whenComplete;
         this.references = 1;
@@ -117,21 +117,12 @@ class RecordCore extends Emitter {
             }
             return;
         }
-        let writeSuccess = false;
-        if (callback) {
-            writeSuccess = true;
-            if (this.services.connection.isConnected) {
-                this.setupWriteCallback(this.version, callback);
-            }
-            else {
-                this.services.timerRegistry.requestIdleCallback(() => callback(constants_1.EVENT.CLIENT_OFFLINE));
-            }
-        }
         this.applyChange(newValue);
         if (this.services.connection.isConnected) {
-            this.sendUpdate(path, data, writeSuccess);
+            this.sendUpdate(path, data, callback);
         }
         else {
+            // todo: set, but...
             this.saveUpdate();
         }
     }
@@ -280,6 +271,7 @@ class RecordCore extends Emitter {
      * Transition States
      */
     onSubscribing() {
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RECORD,
@@ -301,6 +293,7 @@ class RecordCore extends Emitter {
         });
     }
     onResubscribing() {
+        this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this));
         this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RECORD,
@@ -356,32 +349,7 @@ class RecordCore extends Emitter {
         this.destroy();
     }
     handle(message) {
-        if (message.action === message_constants_1.RECORD_ACTIONS.READ_RESPONSE) {
-            if (this.stateMachine.state === 5 /* MERGING */) {
-                this.recoverRecord(message.version, message.parsedData, message);
-                return;
-            }
-            this.version = message.version;
-            this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
-            this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
-            return;
-        }
-        if (message.action === message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE) {
-            if (this.version === message.version) {
-                this.stateMachine.transition(3 /* RESUBSCRIBED */);
-                return;
-            }
-            if (this.version + 1 === message.version) {
-                this.version = message.version;
-                this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
-                this.stateMachine.transition(3 /* RESUBSCRIBED */);
-                return;
-            }
-            this.stateMachine.transition(4 /* INVALID_VERSION */);
-            this.sendRead();
-            return;
-        }
-        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH || message.action === message_constants_1.RECORD_ACTIONS.UPDATE) {
+        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH || message.action === message_constants_1.RECORD_ACTIONS.UPDATE || message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
             this.applyUpdate(message);
             return;
         }
@@ -397,6 +365,7 @@ class RecordCore extends Emitter {
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.DELETED) {
             this.stateMachine.transition(message.action);
+            return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.VERSION_EXISTS) {
             // what kind of message is version exists?
@@ -409,7 +378,9 @@ class RecordCore extends Emitter {
                 message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.CREATE ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.READ) {
+                message.originalAction === message_constants_1.RECORD_ACTIONS.READ ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDHEAD) {
                 this.emit(constants_1.EVENT.RECORD_ERROR, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], message_constants_1.RECORD_ACTIONS[message.originalAction]);
             }
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE) {
@@ -422,15 +393,34 @@ class RecordCore extends Emitter {
             }
             return;
         }
-        if (message.action === message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT) {
-            this.handleWriteAcknowledgements(message);
-            return;
-        }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
             this.hasProvider = message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER;
             this.emit(constants_1.EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider);
             return;
+        }
+    }
+    handleReadResponse(message) {
+        if (this.stateMachine.state === 5 /* MERGING */) {
+            this.recoverRecord(message.version, message.parsedData, message);
+            return;
+        }
+        this.version = message.version;
+        this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
+        this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
+    }
+    handleHeadResponse(message) {
+        if (this.version === message.version) {
+            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+        }
+        else if (this.version + 1 === message.version) {
+            this.version = message.version;
+            this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
+            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+        }
+        else {
+            this.stateMachine.transition(4 /* INVALID_VERSION */);
+            this.sendRead();
         }
     }
     sendRead() {
@@ -440,18 +430,6 @@ class RecordCore extends Emitter {
             name: this.name
         });
     }
-    handleWriteAcknowledgements(message) {
-        const versions = message.parsedData[0];
-        const error = message.parsedData[1];
-        for (let i = 0; i < versions.length; i++) {
-            const version = versions[i];
-            const callback = this.writeCallbacks.get(version);
-            if (callback) {
-                this.writeCallbacks.delete(version);
-                callback(error);
-            }
-        }
-    }
     saveUpdate() {
         if (!this.offlineDirty) {
             this.version++;
@@ -459,36 +437,31 @@ class RecordCore extends Emitter {
         }
         this.services.storage.set(this.name, this.version, this.data, () => { });
     }
-    sendUpdate(path = null, data, writeSuccess) {
+    sendUpdate(path = null, data, callback) {
         this.version++;
-        if (data === undefined && path !== null) {
-            this.services.connection.sendMessage({
-                topic: message_constants_1.TOPIC.RECORD,
-                action: writeSuccess ? message_constants_1.RECORD_ACTIONS.ERASE_WITH_WRITE_ACK : message_constants_1.RECORD_ACTIONS.ERASE,
-                name: this.name,
-                path,
-                version: this.version
-            });
-            return;
-        }
-        if (path === null) {
-            this.services.connection.sendMessage({
-                topic: message_constants_1.TOPIC.RECORD,
-                action: writeSuccess ? message_constants_1.RECORD_ACTIONS.UPDATE_WITH_WRITE_ACK : message_constants_1.RECORD_ACTIONS.UPDATE,
-                name: this.name,
-                parsedData: data,
-                version: this.version
-            });
-            return;
-        }
-        this.services.connection.sendMessage({
+        const message = {
             topic: message_constants_1.TOPIC.RECORD,
-            action: writeSuccess ? message_constants_1.RECORD_ACTIONS.PATCH_WITH_WRITE_ACK : message_constants_1.RECORD_ACTIONS.PATCH,
-            name: this.name,
-            path,
-            parsedData: data,
-            version: this.version
-        });
+            version: this.version,
+            name: this.name
+        };
+        let action;
+        if (path) {
+            if (data === undefined) {
+                Object.assign(message, { action: message_constants_1.RECORD_ACTIONS.ERASE, path });
+            }
+            else {
+                Object.assign(message, { action: message_constants_1.RECORD_ACTIONS.PATCH, path, parsedData: data });
+            }
+        }
+        else {
+            Object.assign(message, { action: message_constants_1.RECORD_ACTIONS.UPDATE, parsedData: data });
+        }
+        if (callback) {
+            this.recordServices.writeAckService.send(message, callback);
+        }
+        else {
+            this.services.connection.sendMessage(message);
+        }
     }
     /**
      * Applies incoming updates and patches to the record's dataset
@@ -513,7 +486,16 @@ class RecordCore extends Emitter {
             return;
         }
         this.version = version;
-        const newData = json_path_1.setValue(this.data, message.path || null, data);
+        let newData;
+        if (message.action === message_constants_1.RECORD_ACTIONS.PATCH) {
+            newData = json_path_1.setValue(this.data, message.path, data);
+        }
+        else if (message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
+            newData = json_path_1.setValue(this.data, message.path, undefined);
+        }
+        else {
+            newData = json_path_1.setValue(this.data, null, data);
+        }
         this.applyChange(newData);
     }
     /**
@@ -601,21 +583,14 @@ class RecordCore extends Emitter {
         const newValue = json_path_1.setValue(oldValue, null, data);
         if (utils.deepEquals(data, remoteData)) {
             this.applyChange(data);
-            const callback = this.writeCallbacks.get(remoteVersion);
-            if (callback !== undefined) {
-                callback(null);
-                this.writeCallbacks.delete(remoteVersion);
-            }
-            return;
+            // const callback = this.writeCallbacks.get(remoteVersion)
+            // if (callback !== undefined) {
+            //   callback(null)
+            //   this.writeCallbacks.delete(remoteVersion)
+            // }
+            // return
         }
-        if (message.isWriteAck) {
-            const callback = this.writeCallbacks.get(oldVersion);
-            if (callback) {
-                this.writeCallbacks.delete(remoteVersion);
-                this.setupWriteCallback(this.version, callback);
-            }
-        }
-        this.sendUpdate(null, data, message.isWriteAck);
+        // this.sendUpdate(null, data, message.isWriteAck)
         this.applyChange(newValue);
     }
     /**
@@ -628,9 +603,6 @@ class RecordCore extends Emitter {
             return true;
         }
         return false;
-    }
-    setupWriteCallback(version, callback) {
-        this.writeCallbacks.set(this.version + 1, callback);
     }
     /**
      * Destroys the record and nulls all

@@ -36,4 +36,5 @@ export declare class PresenceHandler {
     private subscribeToAllChanges();
     private unsubscribeToAllChanges();
     private registerFlushTimeout();
+    private onConnectionLost();
 }

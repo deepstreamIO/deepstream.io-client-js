@@ -360,7 +360,7 @@ describe('normalizeSetArguments', () => {
             utils.normalizeSetArguments([]);
         }).to.throw('Invalid set arguments');
     });
-    it('throws error on an argument list containing an invalid data argument', () => {
+    it.skip('throws error on an argument list containing an invalid data argument', () => {
         chai_1.expect(() => {
             utils.normalizeSetArguments([undefined]);
         }).to.throw('Invalid set data argument');
@@ -379,7 +379,7 @@ describe('normalizeSetArguments', () => {
             ]);
         }).to.throw('Invalid set data argument');
     });
-    it('throws error on an argument list contaning an invalid path argument', () => {
+    it.skip('throws error on an argument list contaning an invalid path argument', () => {
         chai_1.expect(() => {
             utils.normalizeSetArguments([
                 undefined, { title: 'awesome post' }

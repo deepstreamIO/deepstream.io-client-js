@@ -3,6 +3,7 @@ import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
 import { MergeStrategy, REMOTE_WINS } from './merge-strategy'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
+import { RecordServices } from './record-handler'
 import { get as getPath, setValue as setPath } from './json-path'
 import * as Emitter from 'component-emitter2'
 import * as utils from '../util/utils'
@@ -44,10 +45,10 @@ export class RecordCore extends Emitter {
   private references: number
   private services: Services
   private options: Options
+  private recordServices: RecordServices
   private emitter: Emitter
   private data: object
   private mergeStrategy: MergeStrategy
-  private writeCallbacks: Map<number, (error: string | null) => void>
   private stateMachine: StateMachine
   private responseTimeout: number
   private discardTimeout: number
@@ -60,13 +61,13 @@ export class RecordCore extends Emitter {
   }
   private whenComplete: (recordName: string) => void
 
-  constructor (name: string, services: Services, options: Options, whenComplete: (recordName: string) => void) {
+  constructor (name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void) {
     super()
     this.services = services
     this.options = options
+    this.recordServices = recordServices
     this.emitter = new Emitter()
     this.data = Object.create(null)
-    this.writeCallbacks = new Map()
     this.name = name
     this.whenComplete = whenComplete
     this.references = 1
@@ -185,23 +186,12 @@ export class RecordCore extends Emitter {
       return
     }
 
-    let writeSuccess = false
-    if (callback) {
-      writeSuccess = true
-      if (this.services.connection.isConnected) {
-        this.setupWriteCallback(this.version, callback)
-      } else {
-        this.services.timerRegistry.requestIdleCallback(
-          () => callback(EVENT.CLIENT_OFFLINE)
-        )
-      }
-    }
-
     this.applyChange(newValue)
 
     if (this.services.connection.isConnected) {
-      this.sendUpdate(path, data, writeSuccess)
+      this.sendUpdate(path, data, callback)
     } else {
+      // todo: set, but...
       this.saveUpdate()
     }
   }
@@ -360,6 +350,7 @@ export class RecordCore extends Emitter {
    */
 
   private onSubscribing (): void {
+    this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -374,6 +365,7 @@ export class RecordCore extends Emitter {
         name: this.name
       }
     })
+
     this.services.connection.sendMessage({
       topic: TOPIC.RECORD,
       action: RECORD_ACTION.SUBSCRIBECREATEANDREAD,
@@ -382,6 +374,7 @@ export class RecordCore extends Emitter {
   }
 
   private onResubscribing (): void {
+    this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this))
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -440,35 +433,8 @@ export class RecordCore extends Emitter {
     this.destroy()
   }
 
-  public handle (message: RecordMessage) {
-    if (message.action === RECORD_ACTION.READ_RESPONSE) {
-      if (this.stateMachine.state === RECORD_STATE.MERGING) {
-        this.recoverRecord(message.version as number, message.parsedData, message)
-        return
-      }
-      this.version = message.version as number
-      this.applyChange(setPath(this.data, null, message.parsedData))
-      this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
-      return
-    }
-
-    if (message.action === RECORD_ACTION.HEAD_RESPONSE) {
-      if (this.version === message.version as number) {
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-        return
-      }
-      if (this.version + 1 === message.version as number) {
-        this.version = message.version as number
-        this.applyChange(setPath(this.data, null, message.parsedData))
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-        return
-      }
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
-      this.sendRead()
-      return
-    }
-
-    if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE) {
+  public handle (message: RecordMessage): void {
+    if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
       this.applyUpdate(message as RecordWriteMessage)
       return
     }
@@ -485,8 +451,8 @@ export class RecordCore extends Emitter {
 
     if (message.action === RECORD_ACTION.DELETED) {
       this.stateMachine.transition(message.action)
+      return
     }
-
 
     if (message.action === RECORD_ACTION.VERSION_EXISTS) {
       // what kind of message is version exists?
@@ -501,7 +467,9 @@ export class RecordCore extends Emitter {
         message.originalAction === RECORD_ACTION.ERASE ||
         message.originalAction === RECORD_ACTION.DELETE ||
         message.originalAction === RECORD_ACTION.CREATE ||
-        message.originalAction === RECORD_ACTION.READ
+        message.originalAction === RECORD_ACTION.READ ||
+        message.originalAction === RECORD_ACTION.SUBSCRIBECREATEANDREAD ||
+        message.originalAction === RECORD_ACTION.SUBSCRIBEANDHEAD
       ) {
         this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], RECORD_ACTION[message.originalAction])
       }
@@ -516,11 +484,6 @@ export class RecordCore extends Emitter {
       return
     }
 
-    if (message.action === RECORD_ACTION.WRITE_ACKNOWLEDGEMENT) {
-      this.handleWriteAcknowledgements(message)
-      return
-    }
-
     if (
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER ||
       message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
@@ -528,6 +491,29 @@ export class RecordCore extends Emitter {
       this.hasProvider = message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER
       this.emit(EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider)
       return
+    }
+  }
+
+  private handleReadResponse (message: RecordMessage): void {
+    if (this.stateMachine.state === RECORD_STATE.MERGING) {
+      this.recoverRecord(message.version as number, message.parsedData, message)
+      return
+    }
+    this.version = message.version as number
+    this.applyChange(setPath(this.data, null, message.parsedData))
+    this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
+  }
+
+  private handleHeadResponse (message: RecordMessage): void {
+    if (this.version === message.version as number) {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+    } else if (this.version + 1 === message.version as number) {
+      this.version = message.version as number
+      this.applyChange(setPath(this.data, null, message.parsedData))
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+    } else {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
+      this.sendRead()
     }
   }
 
@@ -539,19 +525,6 @@ export class RecordCore extends Emitter {
     })
   }
 
-  private handleWriteAcknowledgements (message: RecordMessage) {
-    const versions: Array<number> = message.parsedData[0]
-    const error: string = message.parsedData[1]
-    for (let i = 0; i < versions.length; i++) {
-      const version = versions[i]
-      const callback = this.writeCallbacks.get(version)
-      if (callback) {
-        this.writeCallbacks.delete(version)
-        callback(error)
-      }
-    }
-  }
-
   private saveUpdate (): void {
     if (!this.offlineDirty) {
       this.version++
@@ -560,39 +533,31 @@ export class RecordCore extends Emitter {
     this.services.storage.set(this.name, this.version, this.data, () => {})
   }
 
-  private sendUpdate (path: string | null = null, data: any, writeSuccess: boolean) {
+  private sendUpdate (path: string | null = null, data: any, callback: WriteAckCallback | undefined) {
     this.version++
 
-    if (data === undefined && path !== null) {
-      this.services.connection.sendMessage({
-        topic: TOPIC.RECORD,
-        action: writeSuccess ? RECORD_ACTION.ERASE_WITH_WRITE_ACK : RECORD_ACTION.ERASE,
-        name: this.name,
-        path,
-        version: this.version
-      })
-      return
-    }
-
-    if (path === null) {
-      this.services.connection.sendMessage({
-        topic: TOPIC.RECORD,
-        action: writeSuccess ? RECORD_ACTION.UPDATE_WITH_WRITE_ACK : RECORD_ACTION.UPDATE,
-        name: this.name,
-        parsedData: data,
-        version: this.version
-      })
-      return
-    }
-
-    this.services.connection.sendMessage({
+    const message = {
       topic: TOPIC.RECORD,
-      action: writeSuccess ? RECORD_ACTION.PATCH_WITH_WRITE_ACK : RECORD_ACTION.PATCH,
-      name: this.name,
-      path,
-      parsedData: data,
-      version: this.version
-    })
+      version: this.version,
+      name: this.name
+    }
+
+    let action
+    if (path) {
+      if (data === undefined) {
+        Object.assign(message, { action: RECORD_ACTION.ERASE, path })
+      } else {
+        Object.assign(message, { action: RECORD_ACTION.PATCH, path, parsedData: data })
+      }
+    } else {
+      Object.assign(message, { action: RECORD_ACTION.UPDATE, parsedData: data })
+    }
+
+    if (callback) {
+      this.recordServices.writeAckService.send(message as RecordWriteMessage, callback)
+    } else {
+      this.services.connection.sendMessage(message as RecordWriteMessage)
+    }
   }
 
   /**
@@ -618,7 +583,14 @@ export class RecordCore extends Emitter {
     }
 
     this.version = version
-    const newData = setPath(this.data, message.path || null, data)
+    let newData
+    if (message.action === RECORD_ACTION.PATCH) {
+      newData = setPath(this.data, message.path as string, data)
+    } else if (message.action === RECORD_ACTION.ERASE) {
+      newData = setPath(this.data, message.path as string, undefined)
+    } else {
+      newData = setPath(this.data, null, data)
+    }
     this.applyChange(newData)
   }
 
@@ -726,23 +698,15 @@ export class RecordCore extends Emitter {
     if (utils.deepEquals(data, remoteData)) {
       this.applyChange(data)
 
-      const callback = this.writeCallbacks.get(remoteVersion)
-      if (callback !== undefined) {
-        callback(null)
-        this.writeCallbacks.delete(remoteVersion)
-      }
-      return
+      // const callback = this.writeCallbacks.get(remoteVersion)
+      // if (callback !== undefined) {
+      //   callback(null)
+      //   this.writeCallbacks.delete(remoteVersion)
+      // }
+      // return
     }
 
-    if (message.isWriteAck) {
-      const callback = this.writeCallbacks.get(oldVersion)
-      if (callback) {
-        this.writeCallbacks.delete(remoteVersion)
-        this.setupWriteCallback(this.version, callback)
-      }
-    }
-
-    this.sendUpdate(null, data, message.isWriteAck)
+    // this.sendUpdate(null, data, message.isWriteAck)
     this.applyChange(newValue)
   }
 
@@ -761,10 +725,6 @@ export class RecordCore extends Emitter {
     }
 
     return false
-  }
-
-  private setupWriteCallback (version: number, callback: WriteAckCallback) {
-    this.writeCallbacks.set(this.version + 1, callback)
   }
 
   /**

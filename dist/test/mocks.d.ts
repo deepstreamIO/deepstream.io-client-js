@@ -3,6 +3,7 @@ import { SinonMock, SinonStub } from 'sinon';
 import { TimerRegistry } from '../src/util/timer-registry';
 import { Message } from '../binary-protocol/src/message-constants';
 import { SingleNotifier } from '../src/record/single-notifier';
+import { WriteAcknowledgementService } from '../src/record/write-ack-service';
 export declare const getLastMessageSent: () => Message;
 export declare const getServicesMock: () => {
     socketFactory: (url: string, options: object) => any;
@@ -51,4 +52,8 @@ export declare const getListenerMock: () => {
 export declare const getSingleNotifierMock: () => {
     singleNotifier: SingleNotifier;
     singleNotifierMock: SinonMock;
+};
+export declare const getWriteAckNotifierMock: () => {
+    writeAckNotifier: WriteAcknowledgementService;
+    writeAckNotifierMock: SinonMock;
 };
