@@ -441,11 +441,11 @@ class Connection {
     }
     updateClientData(data) {
         const newClientData = data || null;
-        if (this.clientData !== undefined &&
-            !utils.deepEquals(this.clientData, newClientData)) {
+        if (!utils.deepEquals(this.clientData, data)) {
+            console.log('emit', newClientData);
             this.emitter.emit(constants_1.EVENT.CLIENT_DATA_CHANGED, newClientData);
+            this.clientData = newClientData;
         }
-        this.clientData = newClientData;
     }
 }
 exports.Connection = Connection;

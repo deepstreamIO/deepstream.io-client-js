@@ -228,32 +228,6 @@ describe('connection', () => {
         yield receiveChallengeAccept();
         yield receiveConnectionError();
     }));
-    it('emits clientDataChanged if the client data is different after reconnection', () => __awaiter(this, void 0, void 0, function* () {
-        const newClientData = { data: 'changed' };
-        emitterMock
-            .expects('emit')
-            .once()
-            .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.RECONNECTING);
-        emitterMock
-            .expects('emit')
-            .once()
-            .withExactArgs(constants_1.EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData));
-        yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
-        yield receiveChallengeAccept();
-        yield sendAuth();
-        yield receiveAuthResponse();
-        yield receiveConnectionError();
-        yield bluebird_1.Promise.delay(0);
-        yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
-        yield receiveChallengeAcceptAndResendAuth();
-        yield receiveAuthResponse(Object.assign({}, newClientData));
-        yield bluebird_1.Promise.delay(0);
-        sinon_1.assert.calledOnce(authCallback);
-    }));
     it('emits reAuthenticationFailure if reauthentication is rejected', () => __awaiter(this, void 0, void 0, function* () {
         const newClientData = { data: 'changed' };
         emitterMock
@@ -416,13 +390,17 @@ describe('connection', () => {
     }
     function receiveAuthResponse(data) {
         return __awaiter(this, void 0, void 0, function* () {
+            const receivedClientData = data || clientData;
             emitterMock.expects('emit')
                 .once()
                 .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.OPEN);
+            emitterMock.expects('emit')
+                .once()
+                .withExactArgs(constants_1.EVENT.CLIENT_DATA_CHANGED, Object.assign({}, receivedClientData));
             socket.simulateMessages([{
                     topic: message_constants_1.TOPIC.AUTH,
                     action: message_constants_1.AUTH_ACTIONS.AUTH_SUCCESSFUL,
-                    parsedData: data || clientData
+                    parsedData: Object.assign({}, receivedClientData)
                 }]);
             yield bluebird_1.Promise.delay(5);
         });

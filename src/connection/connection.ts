@@ -557,12 +557,10 @@ export class Connection {
 
   private updateClientData (data: any) {
     const newClientData = data || null
-    if (
-      this.clientData !== undefined &&
-      !utils.deepEquals(this.clientData, newClientData)
-    ) {
+    if (!utils.deepEquals(this.clientData, data)) {
+      console.log('emit', newClientData)
       this.emitter.emit(EVENT.CLIENT_DATA_CHANGED, newClientData)
+      this.clientData = newClientData
     }
-    this.clientData = newClientData
   }
 }

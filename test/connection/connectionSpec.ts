@@ -291,37 +291,6 @@ describe('connection', () => {
     await receiveConnectionError()
   })
 
-  it('emits clientDataChanged if the client data is different after reconnection', async () => {
-    const newClientData = { data: 'changed' }
-    emitterMock
-      .expects('emit')
-      .once()
-      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
-    emitterMock
-      .expects('emit')
-      .once()
-      .withExactArgs(EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData))
-
-    await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
-    await receiveChallengeAccept()
-    await sendAuth()
-    await receiveAuthResponse()
-
-    await receiveConnectionError()
-    await BBPromise.delay(0)
-
-    await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
-    await receiveChallengeAcceptAndResendAuth()
-    await receiveAuthResponse(Object.assign({}, newClientData))
-
-    await BBPromise.delay(0)
-    assert.calledOnce(authCallback)
-  })
-
   it('emits reAuthenticationFailure if reauthentication is rejected', async () => {
     const newClientData = { data: 'changed' }
     emitterMock
@@ -494,14 +463,19 @@ describe('connection', () => {
   }
 
   async function receiveAuthResponse (data?: object) {
+    const receivedClientData = data || clientData
     emitterMock.expects('emit')
       .once()
       .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.OPEN)
 
+    emitterMock.expects('emit')
+      .once()
+      .withExactArgs(EVENT.CLIENT_DATA_CHANGED, Object.assign({}, receivedClientData))
+
     socket.simulateMessages([{
       topic: TOPIC.AUTH,
       action: AUTH_ACTION.AUTH_SUCCESSFUL,
-      parsedData: data || clientData
+      parsedData: Object.assign({}, receivedClientData)
     }])
 
     await BBPromise.delay(5)
