@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const utils = require("../util/utils");
 const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
-const constants_2 = require("../../binary-protocol/src/constants");
+const utils_1 = require("../../binary-protocol/src/utils");
 const record_core_1 = require("./record-core");
 const record_1 = require("./record");
 const anonymous_record_1 = require("./anonymous-record");
@@ -115,13 +115,14 @@ class RecordHandler {
         if (callback !== undefined && typeof callback !== 'function') {
             throw new Error('invalid argument: callback');
         }
+        let cb;
         if (!callback) {
             return new Promise((resolve, reject) => {
-                const cb = (error, version) => error ? reject(error) : resolve(version !== -1);
+                cb = (error, version) => error ? reject(error) : resolve(version !== -1);
                 this.head(name, cb);
             });
         }
-        const cb = (error, version) => error ? callback(error, null) : callback(null, version !== -1);
+        cb = (error, version) => error ? callback(error, null) : callback(null, version !== -1);
         this.head(name, cb);
     }
     head(name, callback) {
@@ -221,7 +222,7 @@ class RecordHandler {
             this.listener.handle(message);
             return;
         }
-        if (constants_2.isWriteAck(message.action) || constants_2.isWriteAck(message.originalAction)) {
+        if (utils_1.isWriteAck(message.action) || utils_1.isWriteAck(message.originalAction)) {
             this.recordServices.writeAckService.recieve(message);
             return;
         }

@@ -3,7 +3,7 @@ import { EVENT } from '../constants'
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
-import { isWriteAck } from '../../binary-protocol/src/constants'
+import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
@@ -155,13 +155,14 @@ export class RecordHandler {
       throw new Error('invalid argument: callback')
     }
 
+    let cb
     if (!callback) {
       return new Promise ((resolve, reject) => {
-        const cb = (error: string | null, version: number) => error ? reject(error) : resolve(version !== -1)
+        cb = (error: string | null, version: number) => error ? reject(error) : resolve(version !== -1)
         this.head(name, cb)
       })
     }
-    const cb = (error: string | null, version: number) => error ? callback(error, null) : callback(null, version !== -1)
+    cb = (error: string | null, version: number) => error ? callback(error, null) : callback(null, version !== -1)
     this.head(name, cb)
   }
 

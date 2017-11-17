@@ -1,5 +1,5 @@
 import { RECORD_ACTIONS, Message } from '../../binary-protocol/src/message-constants'
-import { actionToWriteAck } from '../../binary-protocol/src/constants'
+import { ACTION_TO_WRITE_ACK } from '../../binary-protocol/src/utils'
 
 import { Services, Client, EVENT } from '../client'
 import { Options } from '../client-options'
@@ -40,7 +40,7 @@ export class WriteAcknowledgementService {
     }
     const correlationId = this.count.toString()
     this.responses.set(correlationId, callback)
-    this.services.connection.sendMessage(Object.assign({}, message, { correlationId, action: actionToWriteAck[message.action] } ))
+    this.services.connection.sendMessage(Object.assign({}, message, { correlationId, action: ACTION_TO_WRITE_ACK[message.action] } ))
     this.count++
   }
 

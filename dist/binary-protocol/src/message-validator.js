@@ -1,6 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("./message-constants");
+/*
+ * Specification of  fields within Meta Params used for message validation
+ * (see `validateMeta`)
+ *
+ * META_PARAMS_SPEC[topic][action] => [required, optional]
+ * The keys in `required` must be present in all instances of the message
+ * The keys in `optional` may be present in some instances of the message
+ */
 exports.META_PARAMS_SPEC = {
     [message_constants_1.TOPIC.PARSER]: {
         [message_constants_1.PARSER_ACTIONS.UNKNOWN_TOPIC]: [[message_constants_1.META_KEYS.originalTopic], []],
@@ -71,7 +79,6 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.RECORD_ACTIONS.RECORD_NOT_FOUND]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], []],
         [message_constants_1.RECORD_ACTIONS.INVALID_VERSION]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], [message_constants_1.META_KEYS.correlationId]],
         [message_constants_1.RECORD_ACTIONS.INVALID_PATCH_ON_HOTPATH]: [[message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
-        [message_constants_1.RECORD_ACTIONS.CREATE]: [[], []],
         [message_constants_1.RECORD_ACTIONS.LISTEN]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.LISTEN_ACK]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.UNLISTEN]: [[message_constants_1.META_KEYS.name], []],
@@ -80,9 +87,10 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.subscription], []],
         [message_constants_1.RECORD_ACTIONS.LISTEN_ACCEPT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.subscription], []],
         [message_constants_1.RECORD_ACTIONS.LISTEN_REJECT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.subscription], []],
+        [message_constants_1.RECORD_ACTIONS.INVALID_LISTEN_REGEX]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.MESSAGE_PERMISSION_ERROR]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
         [message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
-        [message_constants_1.RECORD_ACTIONS.INVALID_MESSAGE_DATA]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], [message_constants_1.META_KEYS.correlationId]],
+        [message_constants_1.RECORD_ACTIONS.INVALID_MESSAGE_DATA]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
     },
     [message_constants_1.TOPIC.RPC]: {
         [message_constants_1.RPC_ACTIONS.REQUEST_ERROR]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], [message_constants_1.META_KEYS.reason]],
@@ -124,6 +132,7 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.EVENT_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.subscription], []],
         [message_constants_1.EVENT_ACTIONS.LISTEN_ACCEPT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.subscription], []],
         [message_constants_1.EVENT_ACTIONS.LISTEN_REJECT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.subscription], []],
+        [message_constants_1.EVENT_ACTIONS.INVALID_LISTEN_REGEX]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.EVENT_ACTIONS.MESSAGE_PERMISSION_ERROR]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name], []],
         [message_constants_1.EVENT_ACTIONS.MESSAGE_DENIED]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name], []],
         [message_constants_1.EVENT_ACTIONS.INVALID_MESSAGE_DATA]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], []],
@@ -172,7 +181,6 @@ const payloadMap = {
         message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE_WITH_WRITE_ACK,
         message_constants_1.RECORD_ACTIONS.CREATEANDPATCH,
         message_constants_1.RECORD_ACTIONS.CREATEANDPATCH_WITH_WRITE_ACK,
-        message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
         message_constants_1.RECORD_ACTIONS.VERSION_EXISTS,
     ],
     [message_constants_1.TOPIC.RPC]: [
@@ -183,11 +191,7 @@ const payloadMap = {
         message_constants_1.EVENT_ACTIONS.EMIT,
     ],
     [message_constants_1.TOPIC.PRESENCE]: [
-        message_constants_1.PRESENCE_ACTIONS.SUBSCRIBE,
-        message_constants_1.PRESENCE_ACTIONS.UNSUBSCRIBE,
-        message_constants_1.PRESENCE_ACTIONS.QUERY,
         message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE,
-        message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE,
     ]
 };
 const ackMap = {

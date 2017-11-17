@@ -1,7 +1,7 @@
 import { TOPIC, ALL_ACTIONS, META_KEYS as M } from './message-constants';
 export declare const META_PARAMS_SPEC: {
-    [t: number]: {
-        [a: number]: [Array<M>, Array<M>];
+    [topic: number]: {
+        [action: number]: [Array<M>, Array<M>];
     };
 };
 export declare const hasPayload: (topic: TOPIC, action: ALL_ACTIONS) => boolean;
