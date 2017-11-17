@@ -5,6 +5,7 @@
             <Connection :client="client" :server-address="serverAddress"/>
             <ErrorLogger :client="client"/>
             <Auth :client="client"/>
+            <Records :listener="listener" :client="client"/>
             <Events :listener="listener" :client="client"/>
             <Rpcs :client="client"/>
             <Presence :client="client" :server-address="serverAddress"/>
@@ -14,6 +15,7 @@
 </template>
 
 <script>
+import Records from "./Records.vue"
 import Auth from "./Auth.vue"
 import Connection from "./Connection.vue"
 import Events from "./Events.vue"
@@ -36,6 +38,7 @@ export default {
   },
   components: {
     Connection,
+    Records,
     Auth,
     Events,
     Rpcs,
