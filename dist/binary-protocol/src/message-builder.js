@@ -35,14 +35,15 @@
 /* tslint:disable:no-bitwise */
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("./message-constants");
+const utils_1 = require("./utils");
 const constants_1 = require("./constants");
 const message_validator_1 = require("./message-validator");
 function getMessage(msg, isAck) {
     const message = msg;
     let action = message.action;
     // convert action to write ack if necessary
-    if (message.isWriteAck && !constants_1.isWriteAck(message.action)) {
-        action = constants_1.actionToWriteAck[message.action];
+    if (message.isWriteAck && !utils_1.isWriteAck(message.action)) {
+        action = utils_1.ACTION_TO_WRITE_ACK[message.action];
     }
     if (message.isAck || isAck) {
         action |= 0x80;

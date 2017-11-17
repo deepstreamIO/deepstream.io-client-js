@@ -1,6 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("./message-constants");
+/*
+ * Specification of  fields within Meta Params used for message validation
+ * (see `validateMeta`)
+ *
+ * META_PARAMS_SPEC[topic][action] => [required, optional]
+ * The keys in `required` must be present in all instances of the message
+ * The keys in `optional` may be present in some instances of the message
+ */
 exports.META_PARAMS_SPEC = {
     [message_constants_1.TOPIC.PARSER]: {
         [message_constants_1.PARSER_ACTIONS.UNKNOWN_TOPIC]: [[message_constants_1.META_KEYS.originalTopic], []],

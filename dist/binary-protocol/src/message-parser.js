@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("./message-constants");
 const constants_1 = require("./constants");
+const utils_1 = require("./utils");
 const message_validator_1 = require("./message-validator");
 function isError(message) {
     return (message.action >= 0x50 && message.action < 0x70) || message.topic === message_constants_1.TOPIC.PARSER;
@@ -174,10 +175,11 @@ function parseMessage(rawMessage) {
     // }
     message.isAck = rawAction >= 0x80;
     message.isError = isError(message);
-    if (message.topic === message_constants_1.TOPIC.RECORD
-        && rawAction >= 0x10
-        && rawAction < 0x20) {
-        message.isWriteAck = constants_1.isWriteAck(message.action);
+    if (message.topic === message_constants_1.TOPIC.RECORD) {
+        const originalAction = message.originalAction;
+        if (utils_1.isWriteAck(rawAction) || (originalAction && utils_1.isWriteAck(originalAction))) {
+            message.isWriteAck = true;
+        }
     }
     return message;
 }
