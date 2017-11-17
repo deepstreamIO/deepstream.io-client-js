@@ -3,7 +3,6 @@
         <b-card class="square-border" header-tag="header" footer-tag="footer">
             <p class="mb-0 mt-0"> <strong>RPCs</strong> </p>
             <br>
-            <p class="card-desc"> description </p>
 
             <b-container>
 
@@ -13,36 +12,42 @@
                             <tbody>
                                 <tr v-for="rpc in rpcs" :key="rpc.id">
                                     <td>
-                                        <strong> {{ rpc.name }}: </strong>
-                                    </td>
-                                    <td v-if="rpc.data.length" class="sm-text">
-                                        <span class="light-font" v-for="d in rpc.data" :key="d.id">
-                                                {{d.content}}
-                                        </span>
-                                    </td>
-                                    <td v-if="!rpc.data.length" class="sm-text">
-                                        <span class="light-font"> <em>will display rpc result</em> </span>
+                                        <strong class="esm-text"> {{ rpc.name }} </strong>
                                     </td>
                                     <td v-if="!rpc.provided" class="sm-text">
                                         <b-button @click="provide(rpc)" size="sm" class="sm-text" variant="link">provide</b-button>
                                     </td>
                                     <td v-if="rpc.provided" class="sm-text">
+                                        <b-button @click="unprovide(rpc)" size="sm" class="sm-text" variant="link">unprovide</b-button>
+                                    </td>
+                                    <td v-if="rpc.provided" class="sm-text">
                                         <b-input-group>
-                                            <b-form-input :block="true" size="sm" v-model="rpc.model" type="text" placeholder="data"></b-form-input>
+                                            <b-form-input class="esm-text" :block="true" size="sm" v-model="rpc.model" type="text" placeholder="data"></b-form-input>
                                             <b-input-group-button slot="right">
                                                 <b-button @click="make(rpc)" size="sm" class="sm-text" variant="link">make</b-button>
                                             </b-input-group-button>
                                         </b-input-group>
                                     </td>
-                                    <td v-if="rpc.provided" class="sm-text">
-                                        <b-button @click="unprovide(rpc)" size="sm" class="sm-text" variant="link">unprovide</b-button>
+                                    <td v-if="rpc.data.length >= 3">
+                                        <b-button @click="rpc.data = []" size="sm" class="sm-text" variant="link">clear</b-button>
+                                    </td>
+                                    <td v-if="rpc.data.length" class="sm-text">
+                                        <span class="light-font" v-for="d in rpc.data" :key="d.id">
+                                            <pre> {{d.content}} </pre>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <br>
+                                    </td>
+                                    <td v-if="!rpc.data.length" class="sm-text">
+                                        <span class="light-font"> <em>provide & make to see result</em> </span>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </b-col>
                 </b-row>
-                
+                <b-row> <br> </b-row>
                 <b-row>
                     <b-col>
                         <p class="card-desc">Press play and record memory for potential leaks</p>
@@ -198,5 +203,9 @@ export default {
 </script>
 
 <style scoped>
-
+.esm-text {
+  padding-top: 5px;
+  font-size: 12px;
+  /* font-weight: bold; */
+}
 </style>

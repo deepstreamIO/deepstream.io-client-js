@@ -8,86 +8,98 @@
 
             <b-row>
                 <b-col>
-                    <p class="card-desc">Enter deepstream.io server address to establish a events</p>
+                    <p class="card-desc">
+                        <strong>Enable event listening: </strong>
+                    </p>
                 </b-col>
-                <b-col lg="2" offset-lg="3">
+                <b-col lg="2" class="pull-right">
                     <b-button :checked="isListening" size="sm" variant="outline-danger" v-on:click="toggleListening()">{{isListening ? 'Listening...' : 'Listen'}}</b-button>
                 </b-col>
             </b-row>
+            <b-row>
+                <br>
+            </b-row>
+            <b-row>
+                <b-form>
+                    <b-form-group>
+                        <b-container>
+                            <b-row>
+                                <b-col lg="2">
+                                    <label class="esm-text"> <em>Emit an event</em></label>
+                                </b-col>
+                                <b-col lg="4">
+                                    <b-form-group>
+                                        <b-form-input size="sm" v-model="emitEventName" type="text" placeholder="event name"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col lg="4">
+                                    <b-form-group>
+                                        <b-form-input size="sm" v-model="emitEventData" type="text" placeholder="event data"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col lg="2">
+                                    <b-form-group>
+                                        <b-button size="sm" variant="outline-primary" @click="emit()"> emit </b-button>
+                                    </b-form-group>
+                                </b-col>
+                            </b-row>
+                        </b-container>
+                    </b-form-group>
+                    
+                    <b-form-group>
+                        <b-container>
+                            <b-row>
+                                <b-col lg="2">
+                                    <label class="esm-text"> <em>Subscribe to an event</em> </label>
+                                </b-col>
+                                <b-col lg="8">
+                                    <b-form-group>
+                                        <b-form-input size="sm" v-model="subscribeEventName" type="text" placeholder="Event name"></b-form-input>
+                                    </b-form-group>
+                                </b-col>
+                                <b-col lg="2">
+                                    <b-button size="sm" variant="outline-primary" @click="subscribe()"> subscribe </b-button>
+                                </b-col>
+                            </b-row>
+                        </b-container>
+                    </b-form-group>
+
+                    <b-form-group>
+                        <b-container>
+                            <b-row>
+                                <b-col lg="3">
+                                    <label class="esm-text">
+                                        <em> Subscribed events </em>
+                                    </label>
+                                </b-col>
+                                    
+                                <b-col lg="9">
+                                    <p class="esm-text" v-if="subscribedEvents.length === 0">
+                                        <em>No events</em>
+                                    </p>
+                                    <table v-if="subscribedEvents.length" class="events-table">
+                                        <tbody>
+                                            <tr v-for="e in subscribedEvents" :key="e.id">
+                                                <td>{{ e.name }}</td>
+                                                <td>
+                                                    <span class="light-font" v-for="d in e.data" :key="d.id">
+                                                        {{d.content}},
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <b-button @click="unsubscribe(e)" size="sm" variant="link"> unsubscribe </b-button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </b-col>
+                            </b-row>
+                        </b-container>
+                    </b-form-group>
+                </b-form>
+            </b-row>
             
-            <b-form>
-                <b-form-group>
-                    <b-container>
-                        <b-row>
-                            <b-col lg="2">
-                                <label class="esm-text"> Emit</label>
-                            </b-col>
-                            <b-col lg="4">
-                                <b-form-group>
-                                    <b-form-input size="sm" v-model="emitEventName" type="text" placeholder="event name"></b-form-input>
-                                </b-form-group>
-                            </b-col>
-                            <b-col lg="4">
-                                <b-form-group>
-                                    <b-form-input size="sm" v-model="emitEventData" type="text" placeholder="event data"></b-form-input>
-                                </b-form-group>
-                            </b-col>
-                            <b-col lg="2">
-                                <b-form-group>
-                                    <b-button size="sm" variant="outline-primary" @click="emit()"> emit </b-button>
-                                </b-form-group>
-                            </b-col>
-                        </b-row>
-                    </b-container>
-                </b-form-group>
-                
-                <b-form-group>
-                    <b-container>
-                        <b-row>
-                            <b-col lg="2">
-                                <label class="esm-text"> Subscribe</label>
-                            </b-col>
-                            <b-col lg="7">
-                                <b-form-group>
-                                    <b-form-input size="sm" v-model="subscribeEventName" type="text" placeholder="Event name"></b-form-input>
-                                </b-form-group>
-                            </b-col>
-                            <b-col lg="2">
-                                <b-button size="sm" variant="outline-primary" @click="subscribe()"> subscribe </b-button>
-                            </b-col>
-                        </b-row>
-                    </b-container>
-                </b-form-group>
-
-                <b-form-group>
-                    <b-container>
-                        <b-row>
-                            <b-col lg="3">
-                                <label class="esm-text">Events:</label>
-                            </b-col>
-                                
-                            <b-col lg="9">
-                                <table class="events-table">
-                                    <tbody>
-                                        <tr v-for="e in subscribedEvents" :key="e.id">
-                                            <td>{{ e.name }}</td>
-                                            <td>
-                                                <span class="light-font" v-for="d in e.data" :key="d.id">
-                                                    {{d.content}},
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <b-button @click="unsubscribe(e)" size="sm" variant="link"> unsubscribe </b-button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </b-col>
-                        </b-row>
-                    </b-container>
-                </b-form-group>
-            </b-form>
-
+            <b-row> <br> </b-row>
             <b-row>
                 <b-col>
                     <p class="card-desc">Press play and record memory for potential leaks</p>
