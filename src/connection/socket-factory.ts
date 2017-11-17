@@ -24,7 +24,7 @@ export const socketFactory = (url: string, options: any): Socket => {
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => {}
     socket.onmessage = (raw: {data: Buffer}) => {
-        const parseResults = parse(raw.data)
+        const parseResults = parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data)) :raw.data)
         socket.onparsedmessages(parseResults)
     }
     socket.sendParsedMessage = (message: Message): void => {
