@@ -170,7 +170,7 @@
                                                 class="sm-text"
                                                 :block="true"
                                                 size="sm"
-                                                :value="r.updates.map(x => x.update).join(',')"
+                                                :value="r.updates[s.path].map(x => x.update).join(',')"
                                                 type="text"
                                                 placeholder="path">
                                         </b-form-input>
@@ -220,7 +220,7 @@ export default {
             loading: false,
             instance: null,
             subscribePath: '',
-            updates: [],
+            updates: {},
             subscriptions: [],
             set: {
                 path: '',
@@ -248,7 +248,7 @@ export default {
             loading: false,
             instance: null,
             subscribePath: '',
-            updates: [],
+            updates: {},
             subscriptions: [],
             set: {
                 path: '',
@@ -291,26 +291,28 @@ export default {
         }
     },
     subscribe: function (record) {
-        if (record.subscribePath) {
-            record.instance.subscribe(record.subscribePath, update => {
-                record.updates.push({id: record.updates.length + 1, update})
-            })
+        const path = record.subscribePath
 
-            let isdup = isDuplicate(record.subscriptions, {path: record.subscribePath}, 'path')
+        if (path) {
+            if (!(path in record.updates)) {
+                record.updates[path] = []
 
-            if (!isdup) {
-                record.subscriptions.push({
-                    id: record.subscriptions.length + 1,
-                    path: record.subscribePath
+                record.instance.subscribe(path, update => {
+                    record.updates[path].push({id: record.updates[path].length + 1, update})
                 })
-                console.log(record.subscriptions)
+    
+                let isdup = isDuplicate(record.subscriptions, { path }, 'path')
+    
+                if (!isdup) {
+                    record.subscriptions.push({ id: record.subscriptions.length + 1, path })
+                }
             }
         }
     },
     unsubscribe: function (record) {
         record.instance.unsubscribe(record.subscribePath)
         record.subscribePath = '',
-        record.updates = []
+        record.updates = {  }
     },
     setRecord: function(record) {
         if (record.set.path.length && record.set.data.length) {
