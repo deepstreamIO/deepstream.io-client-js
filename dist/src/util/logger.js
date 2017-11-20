@@ -11,7 +11,18 @@ class Logger {
     }
     warn(message, event, meta) {
         // tslint:disable-next-line:no-console
-        console.warn('warn', message, event, meta);
+        let warnMessage = `Warning: ${message_constants_1.TOPIC[message.topic]}`;
+        const action = message.action;
+        if (action) {
+            warnMessage += ` (${message_constants_1.ACTIONS[message.topic][action]})`;
+        }
+        if (event) {
+            warnMessage += `: ${event}`;
+        }
+        if (meta) {
+            warnMessage += ` – ${typeof meta === 'string' ? meta : JSON.stringify(meta)}`;
+        }
+        console.warn(warnMessage);
     }
     error(message, event, meta) {
         // tslint:disable-next-line:no-console
