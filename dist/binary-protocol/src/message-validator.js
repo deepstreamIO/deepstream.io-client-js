@@ -19,8 +19,7 @@ exports.META_PARAMS_SPEC = {
     [message_constants_1.TOPIC.CONNECTION]: {
         [message_constants_1.CONNECTION_ACTIONS.PING]: [[], []],
         [message_constants_1.CONNECTION_ACTIONS.PONG]: [[], []],
-        [message_constants_1.CONNECTION_ACTIONS.CHALLENGE]: [[], []],
-        [message_constants_1.CONNECTION_ACTIONS.CHALLENGE_RESPONSE]: [[], [message_constants_1.META_KEYS.url]],
+        [message_constants_1.CONNECTION_ACTIONS.CHALLENGE]: [[message_constants_1.META_KEYS.url, message_constants_1.META_KEYS.protocolVersion], []],
         [message_constants_1.CONNECTION_ACTIONS.ACCEPT]: [[], []],
         [message_constants_1.CONNECTION_ACTIONS.REJECT]: [[], []],
         [message_constants_1.CONNECTION_ACTIONS.REDIRECT]: [[message_constants_1.META_KEYS.url], []],

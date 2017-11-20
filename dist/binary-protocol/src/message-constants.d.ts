@@ -12,6 +12,7 @@ export declare enum META_KEYS {
     url = "u",
     originalTopic = "t",
     originalAction = "a",
+    protocolVersion = "x",
 }
 export declare enum PAYLOAD_ENCODING {
     JSON = "j",
@@ -38,6 +39,7 @@ export interface Message {
     version?: number;
     reason?: string;
     url?: string;
+    protocolVersion?: string;
 }
 export interface SubscriptionMessage extends Message {
     name: string;
@@ -119,7 +121,6 @@ export declare enum CONNECTION_ACTIONS {
     PONG = 2,
     ACCEPT = 3,
     CHALLENGE = 4,
-    CHALLENGE_RESPONSE = 5,
     REJECT = 6,
     REDIRECT = 7,
     CLOSING = 8,
@@ -262,13 +263,7 @@ export declare enum PRESENCE_ACTIONS {
     NOT_SUBSCRIBED = 100,
 }
 export declare const ACTIONS: {
-    [TOPIC.PARSER]: typeof PARSER_ACTIONS;
-    [TOPIC.CONNECTION]: typeof CONNECTION_ACTIONS;
-    [TOPIC.AUTH]: typeof AUTH_ACTIONS;
-    [TOPIC.EVENT]: typeof EVENT_ACTIONS;
-    [TOPIC.RECORD]: typeof RECORD_ACTIONS;
-    [TOPIC.RPC]: typeof RPC_ACTIONS;
-    [TOPIC.PRESENCE]: typeof PRESENCE_ACTIONS;
+    [x: number]: typeof PARSER_ACTIONS | typeof CONNECTION_ACTIONS | typeof AUTH_ACTIONS | typeof EVENT_ACTIONS | typeof RECORD_ACTIONS | typeof RPC_ACTIONS | typeof PRESENCE_ACTIONS;
 };
 export declare enum EVENT {
     INFO = "INFO",

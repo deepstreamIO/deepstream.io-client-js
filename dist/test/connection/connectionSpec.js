@@ -59,8 +59,7 @@ describe('connection', () => {
     });
     it('supports happiest path', () => __awaiter(this, void 0, void 0, function* () {
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield sendAuth();
         yield receiveAuthResponse();
@@ -89,12 +88,10 @@ describe('connection', () => {
     }));
     it('get redirected to server B while connecting to server A, reconnect to server A when connection to server B is lost', () => __awaiter(this, void 0, void 0, function* () {
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveRedirect();
         yield openConnectionToRedirectedServer();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield loseConnection();
         yield reconnectToInitialServer();
@@ -105,8 +102,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.CHALLENGE_DENIED);
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeReject();
     }));
     it('handles authentication when challenge was denied', () => __awaiter(this, void 0, void 0, function* () {
@@ -119,8 +115,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.CHALLENGE_DENIED);
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeReject();
         connection.authenticate(authData, authCallback);
         sinon_1.assert.callCount(authCallback, 0);
@@ -128,8 +123,7 @@ describe('connection', () => {
     }));
     it('handles successful authentication', () => __awaiter(this, void 0, void 0, function* () {
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield sendAuth();
         yield receiveAuthResponse();
@@ -142,8 +136,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION);
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield sendAuth();
         yield receiveAuthRejectResponse();
@@ -156,8 +149,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.TOO_MANY_AUTH_ATTEMPTS);
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield sendAuth();
         yield receiveTooManyAuthAttempts();
@@ -175,15 +167,13 @@ describe('connection', () => {
         //     EVENT.AUTHENTICATION_TIMEOUT
         // )
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield receiveAuthenticationTimeout();
     }));
     it('try to authenticate with invalid data and receive error', () => __awaiter(this, void 0, void 0, function* () {
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield sendBadAuthDataAndReceiveError();
     }));
@@ -201,8 +191,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(constants_1.EVENT[constants_1.EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], 3);
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         // try to reconnect first time
         yield receiveConnectionError();
@@ -223,8 +212,7 @@ describe('connection', () => {
             .once()
             .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.RECONNECTING);
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield receiveConnectionError();
     }));
@@ -243,16 +231,14 @@ describe('connection', () => {
             .once()
             .withExactArgs(constants_1.EVENT.REAUTHENTICATION_FAILURE, { reason: constants_1.EVENT.INVALID_AUTHENTICATION_DETAILS });
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAccept();
         yield sendAuth();
         yield receiveAuthResponse();
         yield receiveConnectionError();
         yield bluebird_1.Promise.delay(0);
         yield awaitConnectionAck();
-        yield receiveChallengeRequest();
-        yield sendChallengeResponse();
+        yield sendChallenge();
         yield receiveChallengeAcceptAndResendAuth();
         yield receiveAuthRejectResponse();
         yield bluebird_1.Promise.delay(0);
@@ -269,31 +255,22 @@ describe('connection', () => {
             emitterMock.expects('emit')
                 .once()
                 .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.AWAITING_CONNECTION);
+            emitterMock.expects('emit')
+                .once()
+                .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.CHALLENGING);
             chai_1.expect(socket.url).to.equal(initialUrl);
             socket.simulateOpen();
             yield bluebird_1.Promise.delay(0);
         });
     }
-    function receiveChallengeRequest() {
-        return __awaiter(this, void 0, void 0, function* () {
-            emitterMock.expects('emit')
-                .once()
-                .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.CHALLENGING);
-            socket.simulateMessages([{
-                    topic: message_constants_1.TOPIC.CONNECTION,
-                    action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE
-                }]);
-            yield bluebird_1.Promise.delay(0);
-        });
-    }
-    function sendChallengeResponse() {
+    function sendChallenge() {
         return __awaiter(this, void 0, void 0, function* () {
             socketMock
                 .expects('sendParsedMessage')
                 .once()
                 .withExactArgs([{
                     topic: message_constants_1.TOPIC.CONNECTION,
-                    action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE_RESPONSE,
+                    action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE,
                     url
                 }]);
             yield bluebird_1.Promise.delay(0);
@@ -489,6 +466,10 @@ describe('connection', () => {
                 .expects('emit')
                 .once()
                 .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.AWAITING_CONNECTION);
+            emitterMock
+                .expects('emit')
+                .once()
+                .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.CHALLENGING);
             getSocketMock();
             chai_1.expect(socket.url).to.equal(otherUrl);
             socket.simulateOpen();
@@ -525,7 +506,7 @@ describe('connection', () => {
                 .once()
                 .withExactArgs({
                 topic: message_constants_1.TOPIC.CONNECTION,
-                action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE_RESPONSE,
+                action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE,
                 url
             });
             socket.simulateOpen();
