@@ -81,6 +81,18 @@ export class AnonymousRecord extends Emitter  {
         }
     }
 
+    public erase (path: string): void {
+        if (this.record) {
+            return this.record.set(utils.normalizeSetArguments(arguments))
+        }
+    }
+
+    public eraseWithAck (path: string, callback?: ((error: string) => void)): Promise<void> | void {
+        if (this.record) {
+            return this.record.setWithAck(utils.normalizeSetArguments(arguments))
+        }
+    }
+
     public subscribe (path: string, callback: (data: any) => void, triggerNow?: boolean) {
         const parameters = utils.normalizeArguments(arguments)
         this.subscriptions.push(parameters)

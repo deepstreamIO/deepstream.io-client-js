@@ -44,9 +44,43 @@ export class Record extends Emitter  {
         return this.record.set(utils.normalizeSetArguments(arguments))
     }
 
+    public setWithAck (data: any): Promise<void>
+    public setWithAck (data: any, callback: ((error: string) => void)): void
+    public setWithAck (path: string, data: any): Promise<void>
+    public setWithAck (path: string, data: any, callback: ((error: string) => void)): void
     public setWithAck (data: any, callback?: ((error: string) => void)): Promise<void> | void
-    public setWithAck (path: string, data: any, callback?: ((error: string) => void)): Promise<void> | void {
+    public setWithAck (path: string | any, data?: any, callback?: ((error: string) => void)): Promise<void> | void {
         return this.record.setWithAck(utils.normalizeSetArguments(arguments))
+    }
+
+    /**
+     * Deletes a path from the record. Equivalent to doing `record.set(path, undefined)`
+     *
+     * @param {String} path The path to be deleted
+     */
+    public erase (path: string): void {
+        if (!path) {
+            throw new Error('unable to erase record data without path, consider using `delete`')
+        }
+        this.set(path, undefined)
+    }
+
+    /**
+     * Deletes a path from the record and either takes a callback that will be called when the
+     * write has been done or returns a promise that will resolve when the write is done.
+     */
+    public eraseWithAck (path: string): Promise<void>
+    public eraseWithAck (path: string, callback: ((error: string) => void)): void
+    public eraseWithAck (path: string, callback?: ((error: string) => void)): Promise<void> | void {
+        if (!path) {
+            throw new Error('unable to erase record data without path, consider using `delete`')
+        }
+
+        if (callback) {
+            this.setWithAck(path, undefined, callback)
+        } else {
+            return this.setWithAck(path, undefined)
+        }
     }
 
     public subscribe (path: string, callback: (data: any) => void, triggerNow?: boolean) {
