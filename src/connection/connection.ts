@@ -46,7 +46,8 @@ export class Connection {
   private options: Options
   private stateMachine: StateMachine
   private authParams: object | null
-  private authCallback: AuthenticationCallback
+  private clientData: object
+  private authCallback: AuthenticationCallback | null
   private originalUrl: string
   private url: string
   private heartbeatInterval: number
@@ -65,7 +66,7 @@ export class Connection {
     this.handlers = new Map()
     this.isConnected = false
     // tslint:disable-next-line:no-empty
-    this.authCallback = () => {}
+    this.authCallback = null
     this.emitter = emitter
     this.internalEmitter = new Emitter()
 
@@ -150,9 +151,16 @@ export class Connection {
    *                E.g. { username:<String>, password:<String> }
    * @param   {Function} callback   A callback that will be invoked with the authenticationr result
    */
-  public authenticate (authParams?: object | null, callback?: AuthenticationCallback | null): void {
-    if (typeof authParams !== 'object') {
-      throw new Error('invalid argument authParams')
+  public authenticate (authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void {
+    if (
+      authParamsOrCallback &&
+      typeof authParamsOrCallback !== 'object' &&
+      typeof authParamsOrCallback !== 'function'
+    ) {
+      throw new Error('invalid argument authParamsOrCallback')
+    }
+    if (callback && typeof callback !== 'function') {
+      throw new Error('invalid argument callback')
     }
 
     if (
@@ -164,11 +172,16 @@ export class Connection {
       return
     }
 
-    if (authParams) {
-      this.authParams = authParams
+    if (authParamsOrCallback) {
+      this.authParams = typeof authParamsOrCallback === 'object' ? authParamsOrCallback : {}
     }
-    if (callback) {
+
+    if (authParamsOrCallback && typeof authParamsOrCallback === 'function') {
+      this.authCallback = authParamsOrCallback
+    } else if (callback) {
       this.authCallback = callback
+    } else {
+      this.authCallback = () => {}
     }
 
     // if (this.stateMachine.state === CONNECTION_STATE.CLOSED && !this.endpoint) {
@@ -504,13 +517,13 @@ export class Connection {
 
     if (message.action === AUTH_ACTION.AUTH_UNSUCCESSFUL) {
       this.stateMachine.transition(TRANSITIONS.UNSUCCESFUL_LOGIN)
-      this.authCallback(false, { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] })
+      this.onAuthUnSuccessful()
       return
     }
 
     if (message.action === AUTH_ACTION.AUTH_SUCCESSFUL) {
       this.stateMachine.transition(TRANSITIONS.SUCCESFUL_LOGIN)
-      this.authCallback(true, message.parsedData || null)
+      this.onAuthSuccessful(message.parsedData)
       return
     }
   }
@@ -518,6 +531,35 @@ export class Connection {
   private onAwaitingAuthentication (): void {
     if (this.authParams) {
       this.sendAuthParams()
+    }
+  }
+
+  private onAuthSuccessful (clientData: any): void {
+    this.updateClientData(clientData)
+    if (this.authCallback === null) {
+      return
+    }
+
+    this.authCallback(true, this.clientData)
+    this.authCallback = null
+  }
+
+  private onAuthUnSuccessful (): void {
+    const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] }
+    if (this.authCallback === null) {
+      this.emitter.emit(EVENT.REAUTHENTICATION_FAILURE, reason)
+      return
+    }
+
+    this.authCallback(false, reason)
+    this.authCallback = null
+  }
+
+  private updateClientData (data: any) {
+    const newClientData = data || null
+    if (!utils.deepEquals(this.clientData, data)) {
+      this.emitter.emit(EVENT.CLIENT_DATA_CHANGED, Object.assign({}, newClientData))
+      this.clientData = newClientData
     }
   }
 }
