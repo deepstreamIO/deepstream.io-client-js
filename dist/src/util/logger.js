@@ -17,7 +17,7 @@ class Logger {
             warnMessage += ` (${message_constants_1.ACTIONS[message.topic][action]})`;
         }
         if (event) {
-            warnMessage += `: ${event}`;
+            warnMessage += `: ${constants_1.EVENT[event]}`;
         }
         if (meta) {
             warnMessage += ` – ${typeof meta === 'string' ? meta : JSON.stringify(meta)}`;
