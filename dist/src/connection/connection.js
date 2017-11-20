@@ -226,7 +226,6 @@ class Connection {
     onMessages(parseResults) {
         parseResults.forEach(parseResult => {
             if (parseResult.parseError) {
-                console.log('parser error', parseResult);
                 this.services.logger.error({ topic: message_constants_1.TOPIC.PARSER }, parseResult.action, parseResult.raw && parseResult.raw.toString());
                 return;
             }

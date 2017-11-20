@@ -61,8 +61,32 @@ export class Client extends EventEmitter {
     this.presence = new PresenceHandler(this.services, this.options)
   }
 
-  public login (details?: object, callback?: AuthenticationCallback) {
-    this.services.connection.authenticate(details, callback)
+  public login (): Promise<object>
+  public login (callback: AuthenticationCallback): void
+  public login (details: object): Promise<object>
+  public login (details: object, callback: AuthenticationCallback): void
+  public login (detailsOrCallback?: object | AuthenticationCallback, callback?: AuthenticationCallback): void | Promise<object> {
+    if (detailsOrCallback && typeof detailsOrCallback === 'object') {
+      if (callback) {
+        this.services.connection.authenticate(detailsOrCallback, callback)
+      } else {
+        return new Promise((resolve, reject) => {
+          this.services.connection.authenticate(detailsOrCallback, (success, data) => {
+            success ? resolve(data) : reject(data)
+          })
+        })
+      }
+    } else {
+      if (typeof detailsOrCallback === 'function') {
+        this.services.connection.authenticate({}, detailsOrCallback)
+      } else {
+        return new Promise((resolve, reject) => {
+          this.services.connection.authenticate({}, (success, data) => {
+            success ? resolve(data) : reject(data)
+          })
+        })
+      }
+    }
   }
 
   public getConnectionState (): CONNECTION_STATE {

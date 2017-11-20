@@ -31,7 +31,10 @@ export declare class Client extends EventEmitter {
     private services;
     private options;
     constructor(url: string, options?: any);
-    login(details?: object, callback?: AuthenticationCallback): void;
+    login(): Promise<object>;
+    login(callback: AuthenticationCallback): void;
+    login(details: object): Promise<object>;
+    login(details: object, callback: AuthenticationCallback): void;
     getConnectionState(): CONNECTION_STATE;
     close(): void;
     /**
