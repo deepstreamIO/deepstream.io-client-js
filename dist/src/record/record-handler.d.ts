@@ -114,9 +114,9 @@ export declare class RecordHandler {
      * @param {Function} callback if provided this will be called with the result of the
      *                            write
      */
-    setData(recordName: string, data: object): void;
+    setData(recordName: string, data: any): void;
     setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void;
-    setData(recordName: string, pathOrData: string | object, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
+    setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
     private sendSetData(recordName, args);
     /**
      * Will be called by the client for incoming messages on the RECORD topic

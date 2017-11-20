@@ -249,9 +249,9 @@ export class RecordHandler {
    * @param {Function} callback if provided this will be called with the result of the
    *                            write
    */
-  public setData (recordName: string, data: object): void
+  public setData (recordName: string, data: any): void
   public setData (recordName: string, path: string, data: any, callback: WriteAckCallback): void
-  public setData (recordName: string, pathOrData: string | object, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
+  public setData (recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
   public setData (recordName: string): void {
     const args = utils.normalizeSetArguments(arguments, 1)
     this.sendSetData(recordName, args)

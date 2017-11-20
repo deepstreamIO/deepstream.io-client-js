@@ -444,7 +444,6 @@ class RecordCore extends Emitter {
             version: this.version,
             name: this.name
         };
-        let action;
         if (path) {
             if (data === undefined) {
                 Object.assign(message, { action: message_constants_1.RECORD_ACTIONS.ERASE, path });
