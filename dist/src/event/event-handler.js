@@ -117,9 +117,17 @@ class EventHandler {
             }
             return;
         }
-        if (message.action === message_constants_1.EVENT_ACTIONS.NOT_SUBSCRIBED ||
-            message.action === message_constants_1.EVENT_ACTIONS.MULTIPLE_SUBSCRIPTIONS) {
-            this.services.timeoutRegistry.remove(message);
+        if (message.action === message_constants_1.EVENT_ACTIONS.MULTIPLE_SUBSCRIPTIONS) {
+            this.services.timeoutRegistry.remove(Object.assign({}, message, {
+                action: message_constants_1.EVENT_ACTIONS.SUBSCRIBE
+            }));
+            this.services.logger.warn(message);
+            return;
+        }
+        if (message.action === message_constants_1.EVENT_ACTIONS.NOT_SUBSCRIBED) {
+            this.services.timeoutRegistry.remove(Object.assign({}, message, {
+                action: message_constants_1.EVENT_ACTIONS.SUBSCRIBE
+            }));
             this.services.logger.warn(message);
             return;
         }
@@ -129,7 +137,7 @@ class EventHandler {
             return;
         }
         if (message.action === message_constants_1.EVENT_ACTIONS.INVALID_LISTEN_REGEX) {
-            this.services.logger.error(message, message_constants_1.EVENT_ACTIONS.INVALID_LISTEN_REGEX);
+            this.services.logger.error(message);
             return;
         }
         this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);

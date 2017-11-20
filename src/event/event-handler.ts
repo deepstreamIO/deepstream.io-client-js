@@ -137,13 +137,24 @@ private handle (message: EventMessage): void {
       return
     }
 
-    if (
-      message.action === EVENT_ACTION.NOT_SUBSCRIBED ||
-      message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS
-    ) {
-        this.services.timeoutRegistry.remove(message)
-        this.services.logger.warn(message)
-        return
+    if (message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS) {
+      this.services.timeoutRegistry.remove(
+        Object.assign({}, message, {
+          action: EVENT_ACTION.SUBSCRIBE
+        })
+      )
+      this.services.logger.warn(message)
+      return
+    }
+
+    if (message.action === EVENT_ACTION.NOT_SUBSCRIBED) {
+      this.services.timeoutRegistry.remove(
+        Object.assign({}, message, {
+          action: EVENT_ACTION.SUBSCRIBE
+        })
+      )
+      this.services.logger.warn(message)
+      return
     }
 
     if (
@@ -155,7 +166,7 @@ private handle (message: EventMessage): void {
     }
 
     if (message.action === EVENT_ACTION.INVALID_LISTEN_REGEX) {
-      this.services.logger.error(message, EVENT_ACTION.INVALID_LISTEN_REGEX)
+      this.services.logger.error(message)
       return
     }
 
