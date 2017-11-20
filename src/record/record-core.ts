@@ -422,7 +422,7 @@ export class RecordCore extends Emitter {
         action: RECORD_ACTION.UNSUBSCRIBE,
         name: this.name
       }
-      this.services.timeoutRegistry.add({ message })
+      this.discardTimeout = this.services.timeoutRegistry.add({ message })
       this.services.connection.sendMessage(message)
     }
     this.emit(EVENT.RECORD_DISCARDED)
