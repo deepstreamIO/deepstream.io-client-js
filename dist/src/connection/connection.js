@@ -173,6 +173,13 @@ class Connection {
         this.lastHeartBeat = Date.now();
         this.checkHeartBeat();
         this.stateMachine.transition("connected" /* CONNECTED */);
+        this.sendMessage({
+            topic: message_constants_1.TOPIC.CONNECTION,
+            action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE,
+            url: this.originalUrl,
+            protocolVersion: '0.1a'
+        });
+        this.stateMachine.transition("challenge" /* CHALLENGE */);
     }
     /**
      * Callback for generic connection errors. Forwards
@@ -365,15 +372,6 @@ class Connection {
         }
         if (message.action === message_constants_1.CONNECTION_ACTIONS.ACCEPT) {
             this.stateMachine.transition("accepted" /* CHALLENGE_ACCEPTED */);
-            return;
-        }
-        if (message.action === message_constants_1.CONNECTION_ACTIONS.CHALLENGE) {
-            this.stateMachine.transition("challenge" /* CHALLENGE */);
-            this.sendMessage({
-                topic: message_constants_1.TOPIC.CONNECTION,
-                action: message_constants_1.CONNECTION_ACTIONS.CHALLENGE_RESPONSE,
-                url: this.originalUrl
-            });
             return;
         }
         if (message.action === message_constants_1.CONNECTION_ACTIONS.REJECT) {

@@ -64,8 +64,7 @@ describe('connection', () => {
 
   it('supports happiest path', async () => {
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await sendAuth()
     await receiveAuthResponse()
@@ -102,14 +101,12 @@ describe('connection', () => {
 
   it('get redirected to server B while connecting to server A, reconnect to server A when connection to server B is lost', async () => {
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveRedirect()
 
     await openConnectionToRedirectedServer()
 
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await loseConnection()
     await reconnectToInitialServer()
@@ -125,8 +122,7 @@ describe('connection', () => {
       )
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeReject()
   })
 
@@ -148,8 +144,7 @@ describe('connection', () => {
       )
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeReject()
 
     connection.authenticate(authData, authCallback)
@@ -161,8 +156,7 @@ describe('connection', () => {
 
   it('handles successful authentication', async () => {
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await sendAuth()
     await receiveAuthResponse()
@@ -181,8 +175,7 @@ describe('connection', () => {
       )
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await sendAuth()
     await receiveAuthRejectResponse()
@@ -201,8 +194,7 @@ describe('connection', () => {
     )
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await sendAuth()
     await receiveTooManyAuthAttempts()
@@ -226,16 +218,14 @@ describe('connection', () => {
     // )
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await receiveAuthenticationTimeout()
   })
 
   it('try to authenticate with invalid data and receive error', async () => {
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await sendBadAuthDataAndReceiveError()
   })
@@ -257,8 +247,7 @@ describe('connection', () => {
       .withExactArgs(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], 3)
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
 
     // try to reconnect first time
@@ -285,8 +274,7 @@ describe('connection', () => {
       .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await receiveConnectionError()
   })
@@ -308,8 +296,7 @@ describe('connection', () => {
       .withExactArgs(EVENT.REAUTHENTICATION_FAILURE, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAccept()
     await sendAuth()
     await receiveAuthResponse()
@@ -318,8 +305,7 @@ describe('connection', () => {
     await BBPromise.delay(0)
 
     await awaitConnectionAck()
-    await receiveChallengeRequest()
-    await sendChallengeResponse()
+    await sendChallenge()
     await receiveChallengeAcceptAndResendAuth()
     await receiveAuthRejectResponse()
 
@@ -336,32 +322,22 @@ describe('connection', () => {
     emitterMock.expects('emit')
       .once()
       .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_CONNECTION)
+    emitterMock.expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CHALLENGING)
 
     expect(socket.url).to.equal(initialUrl)
     socket.simulateOpen()
     await BBPromise.delay(0)
   }
 
-  async function receiveChallengeRequest () {
-    emitterMock.expects('emit')
-      .once()
-      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CHALLENGING)
-
-    socket.simulateMessages([{
-      topic: TOPIC.CONNECTION,
-      action: CONNECTION_ACTION.CHALLENGE
-    }])
-
-    await BBPromise.delay(0)
-  }
-
-  async function sendChallengeResponse () {
+  async function sendChallenge () {
     socketMock
       .expects('sendParsedMessage')
       .once()
       .withExactArgs([{
         topic: TOPIC.CONNECTION,
-        action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
+        action: CONNECTION_ACTION.CHALLENGE,
         url
       }])
 
@@ -572,6 +548,10 @@ describe('connection', () => {
       .expects('emit')
       .once()
       .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AWAITING_CONNECTION)
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.CHALLENGING)
 
     getSocketMock()
     expect(socket.url).to.equal(otherUrl)
@@ -609,7 +589,7 @@ describe('connection', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.CONNECTION,
-        action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
+        action: CONNECTION_ACTION.CHALLENGE,
         url
       })
 

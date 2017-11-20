@@ -248,6 +248,13 @@ export class Connection {
     this.lastHeartBeat = Date.now()
     this.checkHeartBeat()
     this.stateMachine.transition(TRANSITIONS.CONNECTED)
+    this.sendMessage({
+      topic: TOPIC.CONNECTION,
+      action: CONNECTION_ACTION.CHALLENGE,
+      url: this.originalUrl,
+      protocolVersion: '0.1a'
+    })
+    this.stateMachine.transition(TRANSITIONS.CHALLENGE)
   }
 
   /**
@@ -468,16 +475,6 @@ export class Connection {
 
     if (message.action === CONNECTION_ACTION.ACCEPT) {
       this.stateMachine.transition(TRANSITIONS.CHALLENGE_ACCEPTED)
-      return
-    }
-
-    if (message.action === CONNECTION_ACTION.CHALLENGE) {
-      this.stateMachine.transition(TRANSITIONS.CHALLENGE)
-      this.sendMessage({
-        topic: TOPIC.CONNECTION,
-        action: CONNECTION_ACTION.CHALLENGE_RESPONSE,
-        url: this.originalUrl
-      })
       return
     }
 

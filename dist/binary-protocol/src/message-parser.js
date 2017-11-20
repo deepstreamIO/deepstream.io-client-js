@@ -175,11 +175,8 @@ function parseMessage(rawMessage) {
     // }
     message.isAck = rawAction >= 0x80;
     message.isError = isError(message);
-    if (message.topic === message_constants_1.TOPIC.RECORD) {
-        const originalAction = message.originalAction;
-        if (utils_1.isWriteAck(rawAction) || (originalAction && utils_1.isWriteAck(originalAction))) {
-            message.isWriteAck = true;
-        }
+    if (message.topic === message_constants_1.TOPIC.RECORD && utils_1.isWriteAck(rawAction)) {
+        message.isWriteAck = true;
     }
     return message;
 }
