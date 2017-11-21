@@ -12,7 +12,7 @@ This release of the client includes a full rewrite in TypeScript and a move away
 client.on('clientDataChanged', clientData => { ... })
 ```
 
-- **reAuthenticationFailure**: emitted when a client is unable to authenticate with the server after a reconnection. This will only be called for automatic reconnection attempts during connection loss or similar, if calling the `login` function authentication is as normal
+- **reauthenticationFailure**: emitted when a client is unable to authenticate with the server after a reconnection. This will only be called for automatic reconnection attempts during connection loss or similar, if calling the `login` function authentication is as normal
 
 ```javascript
 client.on('reAuthenticationFailure', reason => { ... })
