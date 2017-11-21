@@ -18,7 +18,9 @@ export const socketFactory = (url: string, options: any): Socket => {
         const parseResults = parse(raw.data)
         // parseResults.forEach(element => {
         //     const msg = element as Message
-        //     console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
+        //     if (msg.action !== CONNECTION_ACTIONS.PONG && msg.action !== CONNECTION_ACTIONS.PING) {
+        //         console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
+        //     }
         // })
         socket.onparsedmessages(parseResults)
     }
@@ -29,7 +31,9 @@ export const socketFactory = (url: string, options: any): Socket => {
             return
         }
         message.data = JSON.stringify(message.parsedData)
-        // console.log('>>>', TOPIC[message.topic], (ACTIONS as any)[message.topic][message.action], message.parsedData, message.reason, message.name)
+        // if (message.action !== CONNECTION_ACTIONS.PONG && message.action !== CONNECTION_ACTIONS.PING) {
+        //     console.log('>>>', TOPIC[message.topic], (ACTIONS as any)[message.topic][message.action], message.parsedData, message.data, message.name)
+        // }
         socket.send(getMessage(message, false))
     }
     return socket

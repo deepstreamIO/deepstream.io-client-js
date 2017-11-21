@@ -1,4 +1,5 @@
 import { TOPIC, Message, EVENT_ACTIONS, ALL_ACTIONS } from '../../binary-protocol/src/message-constants'
+import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 
 import { Services, Client, EVENT } from '../client'
 import { Options } from '../client-options'

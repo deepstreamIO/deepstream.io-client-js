@@ -159,12 +159,12 @@ class PresenceHandler {
         }
         if (message.action === message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE) {
             this.queryAllEmitter.emit(ONLY_EVENT, null, message.names);
-            this.services.timeoutRegistry.remove(Object.assign({}, message, { action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL }));
+            this.services.timeoutRegistry.remove(message);
             return;
         }
         if (message.action === message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE) {
             this.queryEmitter.emit(message.correlationId, null, message.parsedData);
-            this.services.timeoutRegistry.remove(Object.assign({}, message, { action: message_constants_1.PRESENCE_ACTIONS.QUERY }));
+            this.services.timeoutRegistry.remove(message);
             return;
         }
         if (message.action === message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN) {
