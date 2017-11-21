@@ -59,6 +59,16 @@ class AnonymousRecord extends Emitter {
             return this.record.setWithAck(utils.normalizeSetArguments(arguments));
         }
     }
+    erase(path) {
+        if (this.record) {
+            return this.record.set(utils.normalizeSetArguments(arguments));
+        }
+    }
+    eraseWithAck(path, callback) {
+        if (this.record) {
+            return this.record.setWithAck(utils.normalizeSetArguments(arguments));
+        }
+    }
     subscribe(path, callback, triggerNow) {
         const parameters = utils.normalizeArguments(arguments);
         this.subscriptions.push(parameters);

@@ -410,6 +410,7 @@ export class RecordCore extends Emitter {
   }
 
   private onReady (): void {
+    this.services.timeoutRegistry.clear(this.responseTimeout)
     this.isReady = true
     this.emit(EVENT.RECORD_READY)
   }
@@ -421,7 +422,7 @@ export class RecordCore extends Emitter {
         action: RECORD_ACTION.UNSUBSCRIBE,
         name: this.name
       }
-      this.services.timeoutRegistry.add({ message })
+      this.discardTimeout = this.services.timeoutRegistry.add({ message })
       this.services.connection.sendMessage(message)
     }
     this.emit(EVENT.RECORD_DISCARDED)
@@ -434,6 +435,11 @@ export class RecordCore extends Emitter {
   }
 
   public handle (message: RecordMessage): void {
+    if (message.isAck) {
+      this.services.timeoutRegistry.remove(message)
+      return
+    }
+
     if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
       this.applyUpdate(message as RecordWriteMessage)
       return

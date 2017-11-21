@@ -14,6 +14,8 @@ export declare class AnonymousRecord extends Emitter {
     get(path?: string): any;
     set(data: any, callback?: WriteAckCallback): void;
     setWithAck(data: any, callback?: ((error: string) => void)): Promise<void> | void;
+    erase(path: string): void;
+    eraseWithAck(path: string, callback?: ((error: string) => void)): Promise<void> | void;
     subscribe(path: string, callback: (data: any) => void, triggerNow?: boolean): void;
     unsubscribe(path: string, callback: (data: any) => void): void;
     discard(): void;

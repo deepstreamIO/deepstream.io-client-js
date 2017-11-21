@@ -74,6 +74,7 @@ class SingleNotifier {
         }
     }
     recieve(message, error, data) {
+        this.services.timeoutRegistry.remove(message);
         const name = message.name;
         const responses = this.requests.get(name) || [];
         const internalResponses = this.internalRequests.get(name) || [];

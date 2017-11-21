@@ -328,6 +328,7 @@ class RecordCore extends Emitter {
         });
     }
     onReady() {
+        this.services.timeoutRegistry.clear(this.responseTimeout);
         this.isReady = true;
         this.emit(constants_1.EVENT.RECORD_READY);
     }
@@ -338,7 +339,7 @@ class RecordCore extends Emitter {
                 action: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE,
                 name: this.name
             };
-            this.services.timeoutRegistry.add({ message });
+            this.discardTimeout = this.services.timeoutRegistry.add({ message });
             this.services.connection.sendMessage(message);
         }
         this.emit(constants_1.EVENT.RECORD_DISCARDED);
@@ -349,6 +350,10 @@ class RecordCore extends Emitter {
         this.destroy();
     }
     handle(message) {
+        if (message.isAck) {
+            this.services.timeoutRegistry.remove(message);
+            return;
+        }
         if (message.action === message_constants_1.RECORD_ACTIONS.PATCH || message.action === message_constants_1.RECORD_ACTIONS.UPDATE || message.action === message_constants_1.RECORD_ACTIONS.ERASE) {
             this.applyUpdate(message);
             return;

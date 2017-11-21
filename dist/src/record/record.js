@@ -34,6 +34,28 @@ class Record extends Emitter {
     setWithAck(path, data, callback) {
         return this.record.setWithAck(utils.normalizeSetArguments(arguments));
     }
+    /**
+     * Deletes a path from the record. Equivalent to doing `record.set(path, undefined)`
+     *
+     * @param {String} path The path to be deleted
+     */
+    erase(path) {
+        if (!path) {
+            throw new Error('unable to erase record data without path, consider using `delete`');
+        }
+        this.set(path, undefined);
+    }
+    eraseWithAck(path, callback) {
+        if (!path) {
+            throw new Error('unable to erase record data without path, consider using `delete`');
+        }
+        if (callback) {
+            this.setWithAck(path, undefined, callback);
+        }
+        else {
+            return this.setWithAck(path, undefined);
+        }
+    }
     subscribe(path, callback, triggerNow) {
         const parameters = utils.normalizeArguments(arguments);
         this.subscriptions.push(parameters);
