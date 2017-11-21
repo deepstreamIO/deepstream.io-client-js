@@ -1,3 +1,172 @@
+# [4.0.0-beta.1] - 2017-11-21
+
+This release of the client includes a full rewrite in TypeScript and a move away from the old text-based protocol to the Universal Realtime Protocol (URP). This means the client is not compatible with [deepstream.io](https://github.com/deepstreamio/deepstream.io) prior to version v4.0.0.
+
+## Features
+
+### Additional events
+
+- **clientDataChanged**: emitted every time the server sends new the client new data after authenticating
+
+```javascript
+client.on('clientDataChanged', clientData => { ... })
+```
+
+- **reAuthenticationFailure**: emitted when a client is unable to authenticate with the server after a reconnection. This will only be called for automatic reconnection attempts during connection loss or similar, if calling the `login` function authentication is as normal
+
+```javascript
+client.on('reAuthenticationFailure', reason => { ... })
+```
+
+## Improvements
+
+### Promisified API's
+
+- Presence
+```javascript
+client.presence.getAll()
+  .then(users => {})
+  .catch(error => {})
+
+client.presence.getAll(users)
+  .then(users => {})
+  .catch(error => {})
+```
+
+- RPC
+```javascript
+client.rpc.make(name, data)
+  .then(data => {})
+  .catch(error => {})
+```
+
+- Record Factory
+
+```javascript
+client.record.snapshot(recordName)
+  .then(data => {})
+  .catch(error => {})
+
+client.record.has(recordName)
+  .then(exists => {})
+  .catch(error => {})
+
+client.record.head(recordName)
+  .then(version => {})
+  .catch(error => {})
+```
+
+- Record
+
+```javascript
+record.whenReady()
+  .then(() => {})
+record.delete()
+  .then(() => {})
+  .catch(error => {})
+```
+
+### Improved record error handling
+
+Permission errors of any kind are now routed to the record instance that had the error. Consider the following snippet
+
+```javascript
+client.on('error', (description, event, topic) => { ... })
+const record = client.record.getRecord('permission-error')
+record.set('firstname', 'Homer')
+```
+
+In this instance all errors are passed to the global client error handler. When dealing with multiple records, it is difficult to correlate errors to different records. We now support the following
+
+```javascript
+const record = client.record.getRecord('permission-error')
+record.on('error', (description, event, topic) => { ... })
+record.set('firstname', 'Homer')
+```
+
+### TypeScript
+
+This release includes a full rewrite of the client in TypeScript, fixing many bugs and improving the client quality.
+
+### Client-server binary protocol
+
+A full implementation of the Universal Realtime Protocol (URP) to match deepstream v4.
+
+## Breaking changes
+
+### Chaining
+
+Many functions are no longer chainable (returning an instance of the client or a record) due to supporting promises. This means calls like `client.login` and will return a promise if no callback is provided.
+
+### Module exports
+
+Previously a function was exported that allowed creating an instance of the client as follows
+
+```javascript
+const deepstream = require('deepstream.io-client-js')
+const client = deepstream('DEEPSTREAM_URL')
+// constants also accessible via deepstream.C
+```
+
+We now support the following
+
+```javascript
+const { deepstream, C, EVENT, CONNECTION_STATE } = require('deepstream.io-client-js')
+```
+
+### Login
+
+As mentioned higher up, the callback passed to the login function now is called just once. In order to handle client reconnections the `clientDataChanged` and `reAuthenticationFailure` events should be used instead.
+
+### Listening
+
+The `isSubscribed` flag in the listener callback was removed and now the response object
+has an `onStop` function which will be called when there are no more subscribers on the topic.
+
+With this change the same context is kept when a subscription is found or removed
+and the listen callback now is called just once.
+
+For those familiar with listening, this
+
+```javascript
+client.record.listen('^news/.*', (match, isSubscribed, response) => {
+  if (isSubscribed) {
+    if (/* able to provide for this match */) {
+      response.accept()
+      // start providing data
+    } else {
+      response.reject()
+    }
+    return
+  }
+  // stop providing data
+})
+```
+
+turns into this:
+
+```javascript
+client.record.listen('^news/.*', (match, response) => {
+  if (/* unable to provide for this match */) {
+    response.reject()
+    return
+  }
+  response.accept()
+  response.onStop((match) => {
+    // stop providing data
+  })
+  // start providing data
+})
+```
+- Presence
+
+The callback for `client.presence.getAll` is now called with an error parameter in standard JavaScript convention
+
+```javascript
+client.presence.getAll((error, userList) => { ... })
+client.presence.getAll(users, (error, userMap) => { ... })
+```
+
 ## [2.3.0] - 2017-09-25
 
 ### Features
