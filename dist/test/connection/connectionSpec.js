@@ -216,7 +216,7 @@ describe('connection', () => {
         yield receiveChallengeAccept();
         yield receiveConnectionError();
     }));
-    it('emits reAuthenticationFailure if reauthentication is rejected', () => __awaiter(this, void 0, void 0, function* () {
+    it('emits reauthenticationFailure if reauthentication is rejected', () => __awaiter(this, void 0, void 0, function* () {
         const newClientData = { data: 'changed' };
         emitterMock
             .expects('emit')
