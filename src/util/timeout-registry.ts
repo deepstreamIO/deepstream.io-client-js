@@ -7,6 +7,7 @@ import {
   RPC_ACTIONS as RPC_ACTION,
   Message
 } from '../../binary-protocol/src/message-constants'
+import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 
 import * as EventEmitter from 'component-emitter2'
 
@@ -85,7 +86,13 @@ export class TimeoutRegistry extends EventEmitter {
    * Remove an entry
    */
   public remove (message: Message): void {
-    const uniqueName = this.getUniqueName(message)
+    let requestMsg
+    if (message.isAck || message.isError) {
+      requestMsg = message
+    } else {
+      requestMsg = Object.assign({}, message, { action: RESPONSE_TO_REQUEST[message.action] })
+    }
+    const uniqueName = this.getUniqueName(requestMsg)
     for (const [timerId, timeout] of this.register) {
       if (timeout.uniqueName === uniqueName) {
         clearTimeout(timerId)

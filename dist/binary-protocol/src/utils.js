@@ -29,4 +29,11 @@ function reverseMapNumeric(map) {
 }
 exports.reverseMapNumeric = reverseMapNumeric;
 exports.WRITE_ACK_TO_ACTION = reverseMapNumeric(exports.ACTION_TO_WRITE_ACK);
+exports.RESPONSE_TO_REQUEST = {
+    [message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE]: message_constants_1.RECORD_ACTIONS.HEAD,
+    [message_constants_1.RECORD_ACTIONS.READ_RESPONSE]: message_constants_1.RECORD_ACTIONS.READ,
+    [message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS]: message_constants_1.RECORD_ACTIONS.DELETE,
+    [message_constants_1.PRESENCE_ACTIONS.QUERY]: message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE,
+    [message_constants_1.PRESENCE_ACTIONS.QUERY_ALL]: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE
+};
 //# sourceMappingURL=utils.js.map
