@@ -19,7 +19,7 @@ var EVENT;
     EVENT["CONNECTION_REESTABLISHED"] = "connectionReestablished";
     EVENT["CONNECTION_STATE_CHANGED"] = "connectionStateChanged";
     EVENT["CLIENT_DATA_CHANGED"] = "clientDataChanged";
-    EVENT["REAUTHENTICATION_FAILURE"] = "reAuthenticationFailure";
+    EVENT["REAUTHENTICATION_FAILURE"] = "reauthenticationFailure";
     EVENT["AUTHENTICATION_TIMEOUT"] = "AUTHENTICATION_TIMEOUT";
     EVENT["RECORD_ERROR"] = "error";
     EVENT["RECORD_READY"] = "ready";

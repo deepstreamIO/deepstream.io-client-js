@@ -17,7 +17,7 @@ export enum EVENT {
     CONNECTION_REESTABLISHED = 'connectionReestablished',
     CONNECTION_STATE_CHANGED = 'connectionStateChanged',
     CLIENT_DATA_CHANGED = 'clientDataChanged',
-    REAUTHENTICATION_FAILURE = 'reAuthenticationFailure',
+    REAUTHENTICATION_FAILURE = 'reauthenticationFailure',
     AUTHENTICATION_TIMEOUT = 'AUTHENTICATION_TIMEOUT',
 
     RECORD_ERROR = 'error',
