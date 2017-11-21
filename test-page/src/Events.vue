@@ -226,6 +226,7 @@ export default {
             intervals = []
         }
     },
+
     toggleScenario: function() {
         this.$data.scenarioData.isplaying = !this.$data.scenarioData.isplaying
 
@@ -239,7 +240,7 @@ export default {
 
         console.log('Playing Events Scenario ...')
     
-        const scenario = this.scenario()
+        const scenario = this.getScenario()
 
         scenario.subscribeToEvents()
         scenario.emitEvents()
@@ -251,11 +252,11 @@ export default {
             
             console.log('<- done')
 
-        }, 2 * 1000)
+        }, 2 * 60 * 1000)
         
     },
 
-    scenario: function () {
+    getScenario: function () {
         let scenario = {}
 
         scenario.intervalId = null
@@ -280,7 +281,7 @@ export default {
             for (let evt of comp.$data.scenarioData.events) {
                 comp.client.event.emit(evt.name, 'message sent from', evt.name)
             }
-        }, 10)
+        }, 50)
     },
 
     __unsubFromEvents: function (scenario) {

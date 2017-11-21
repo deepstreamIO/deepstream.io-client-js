@@ -53,7 +53,7 @@
                         <p class="card-desc">Press play and record memory for potential leaks</p>
                     </b-col>
                     <b-col lg="2" offset-lg="3">
-                        <b-button :disabled="isPlaying" :checked="isPlaying" size="sm" variant="outline-primary" v-on:click="toggleScenario()">{{isPlaying ? 'Playing...' : 'Play'}}</b-button>
+                        <b-button class="sm-text" :disabled="isPlaying" :checked="isPlaying" size="sm" variant="outline-primary" v-on:click="toggleScenario()">{{isPlaying ? 'Playing...' : 'Play'}}</b-button>
                     </b-col>
                 </b-row>
 
@@ -167,7 +167,7 @@ export default {
                     comp.client.rpc.make(rpc.name, { a: (i * 2) * 2 }, rpc.makeHandler)
                 }
             }
-        }, 10)
+        }, 50)
     },
     
     __unprovideRpcs: function (scenario) {
@@ -196,7 +196,7 @@ export default {
             this.$data.scenarioData.isplaying = false
             
             console.log('<- done')
-        }, 2 * 1000)
+        }, 2 * 60 * 1000)
     }
   }
 };

@@ -189,6 +189,15 @@
                     </table>
                 </b-col>
             </b-row>
+            <b-row> <br> </b-row>
+            <b-row>
+                <b-col>
+                    <p class="card-desc">Press play and record memory for potential leaks</p>
+                </b-col>
+                <b-col lg="2" offset-lg="3">
+                    <b-button class="sm-text" :disabled="isPlaying" :checked="isPlaying" size="sm" variant="outline-primary" v-on:click="toggleScenario()">{{isPlaying ? 'Playing...' : 'Play'}}</b-button>
+                </b-col>
+            </b-row>
         </b-card>
     </div>
 </template>
@@ -196,6 +205,58 @@
 <script>
 import { Card } from "bootstrap-vue/es/components"
 import * as ds from '../../dist/deepstream.js'
+
+const carRecordScheme = {
+    id: null,
+    brand: null,
+    model: null,
+    version: null
+}
+
+const recordSubscriptionHandler = function (path, update) {
+    console.log(path, ': value has been updated to:', update)
+}
+
+const Record = {
+    name: '',
+    scheme: carRecordScheme,
+    subscriptionHandler: recordSubscriptionHandler,
+    instance: null,
+    latestSnapshot: null
+}
+
+const scenarioData = {
+    isplaying: false,
+    records: [
+        Object.assign(Record, {
+            name: 'cars/123'
+        }),
+        Object.assign(Record, {
+            name: 'cars/456'
+        }),
+        Object.assign(Record, {
+            name: 'cars/789'
+        }),
+        Object.assign(Record, {
+            name: 'cars/741'
+        }),
+        Object.assign(Record, {
+            name: 'cars/852'
+        }),
+        Object.assign(Record, {
+            name: 'cars/852'
+        }),
+        Object.assign(Record, {
+            name: 'cars/963'
+        }),
+        Object.assign(Record, {
+            name: 'cars/537'
+        }),
+        Object.assign(Record, {
+            name: 'cars/159'
+        })
+    ]
+}
 
 const isDuplicate = (arr, obj, key) => {
     return arr.reduce((acc, o) => {
@@ -236,8 +297,14 @@ export default {
             done: true
         },
         records: [],
-        snapshot: null
+        snapshot: null,
+        scenarioData
     }
+  },
+  computed: {
+      isPlaying: function() {
+          return this.$data.scenarioData.isplaying
+      }
   },
   methods: {
     resetRecordVm: function () {
@@ -290,6 +357,7 @@ export default {
             })
         }
     },
+    
     subscribe: function (record) {
         const path = record.subscribePath
 
@@ -309,11 +377,13 @@ export default {
             }
         }
     },
+    
     unsubscribe: function (record) {
         record.instance.unsubscribe(record.subscribePath)
         record.subscribePath = '',
         record.updates = {  }
     },
+    
     setRecord: function(record) {
         if (record.set.path.length && record.set.data.length) {
             record.set.loading = true
@@ -326,11 +396,105 @@ export default {
             })
         }
     },
+
     snapshotRecord: function(record) {
         const comp = this
         comp.client.record.snapshot(record.name, (err, data) => {
             comp.$data.snapshot = JSON.stringify(data)
         })
+    },
+
+    toggleScenario: function() {
+        this.$data.scenarioData.isplaying = !this.$data.scenarioData.isplaying
+
+        if (this.isPlaying) {
+            this.playScenario()
+        }
+    },
+
+    playScenario: function () {
+        this.$data.scenarioData.isplaying = true
+
+        console.log('Playing Events Scenario ...')
+    
+        const scenario = this.getScenario()
+
+        scenario.createRecords()
+        scenario.subscribeToRecords()
+        scenario.setDataForRecords()
+        scenario.snapshotRecords()
+        
+        setTimeout(() => {
+            scenario.discardRecords()
+
+            this.$data.scenarioData.isplaying = false
+            
+            console.log('<- done')
+
+        }, 2 * 1000)
+        
+    },
+
+    getScenario: function () {
+        let scenario = {}
+
+        scenario.intervalId = null
+
+        scenario.createRecords = this.__createRecords.bind(this)
+        scenario.subscribeToRecords = this.__subscribeToRecords.bind(this)
+        scenario.setDataForRecords = this.__setDataForRecords.bind(this, scenario)
+        scenario.snapshotRecords = this.__snapshotRecords.bind(this)
+        scenario.discardRecords = this.__discardRecords.bind(this, scenario)
+
+        return scenario
+    },
+    __createRecords: function () {
+        for (let record of this.$data.scenarioData.records) {
+            record.instance = this.client.record.getRecord(record.name)
+        }
+    },
+    __subscribeToRecords: function () {
+        for (let record of this.$data.scenarioData.records) {
+            for (let path in record.scheme) {
+                record.instance.whenReady(() => {
+                    record.instance.subscribe(path, record.subscriptionHandler.bind(null, path))
+                })
+            }
+        }
+    },
+    __setDataForRecords: function (scenario) {
+        const comp = this
+        scenario.intervalId = setInterval(() => {
+            let i = 0
+            for (let record of comp.$data.scenarioData.records) {
+                for (let path in record.scheme) {
+                    record.instance.whenReady(() => {
+                        record.instance.set(path, `${path} ${i}th value`, err => {
+                            if (err) {
+                                console.log('Error setting value for path', path, err)
+                            } else {
+                                console.log('Successfully sat value for', path)
+                            }
+                        })
+                    })
+                    i++
+                }
+            }
+        }, 50)
+    },
+    __snapshotRecords: function () {
+        for (let record of this.$data.scenarioData.records) {
+            this.client.record.snapshot(record.name, (err, data) => {
+                record.latestSnapshot = data
+            })
+        }
+    },
+    __discardRecords: function (scenario) {
+        for (let record of this.$data.scenarioData.records) {
+            record.instance.discard()
+        }
+        
+        clearInterval(scenario.intervalId)
     }
   }
 };
