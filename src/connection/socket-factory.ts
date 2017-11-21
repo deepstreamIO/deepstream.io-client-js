@@ -16,10 +16,10 @@ export const socketFactory = (url: string, options: any): Socket => {
     socket.onparsedmessage = () => {}
     socket.onmessage = (raw: {data: Buffer}) => {
         const parseResults = parse(raw.data)
-        // parseResults.forEach(element => {
-        //     const msg = element as Message
-        //      console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
-        // })
+        parseResults.forEach(element => {
+            const msg = element as Message
+            //  console.log('<<<', TOPIC[msg.topic], (ACTIONS as any)[msg.topic][msg.action], msg.parsedData, msg.data, msg.name)
+        })
         socket.onparsedmessages(parseResults)
     }
     socket.sendParsedMessage = (message: Message): void => {
