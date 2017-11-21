@@ -55,16 +55,17 @@ class TimeoutRegistry extends EventEmitter {
      */
     remove(message) {
         let requestMsg;
-        if (message.isAck || message.isError) {
+        const action = utils_1.RESPONSE_TO_REQUEST[message.topic][message.action];
+        if (!action) {
             requestMsg = message;
         }
         else {
-            requestMsg = Object.assign({}, message, { action: utils_1.RESPONSE_TO_REQUEST[message.action] });
+            requestMsg = Object.assign({}, message, { action });
         }
         const uniqueName = this.getUniqueName(requestMsg);
         for (const [timerId, timeout] of this.register) {
             if (timeout.uniqueName === uniqueName) {
-                clearTimeout(timerId);
+                this.services.timerRegistry.remove(timerId);
                 this.register.delete(timerId);
             }
         }

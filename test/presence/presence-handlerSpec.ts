@@ -319,11 +319,11 @@ describe('Presence handler', () => {
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY_ALL }))
+        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE }))
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_ALL }))
+        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE }))
 
       presenceHandler.handle(messageForCallback)
       presenceHandler.handle(messageForPromise)
@@ -384,11 +384,11 @@ describe('Presence handler', () => {
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY }))
+        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY_RESPONSE }))
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY }))
+        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_RESPONSE }))
 
       presenceHandler.handle(messageForCallback)
       presenceHandler.handle(messageForPromise)
