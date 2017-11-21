@@ -2,7 +2,14 @@
   "name": "deepstream.io-client-js",
   "version": "4.0.0-beta.1",
   "description": "the javascript client for deepstream.io",
+  "keywords": [
+    "deepstream",
+    "javascript",
+    "realtime",
+    "client"
+  ],
   "main": "dist/src/client.js",
+  "types": "dist/src/client.d.ts",
   "directories": {
     "test": "test"
   },
