@@ -29,6 +29,7 @@
                 <b-col :lg="clients.length < 2 ? '8' : '12'" :offset-lg="clients.length < 2 ? '2' : '0'">
                     <b-card-group v-if="clients.length > 0">
                         <b-card class="no-borders mb-0 mt-0" v-for="c in clients" :key="c.id" header-tag="header" footer-tag="footer">
+                            <b-button variant="link" @click="removeClient(c.id)">Remove client</b-button>
                             <Client :listener="listener" :client="c.client" :server-address="c.serverAddress"/>
                         </b-card>
                     </b-card-group>
@@ -115,8 +116,8 @@ export default {
       this.resetServerData()
     },
     
-    removeClient: function(e, cId) {
-      // this.clients = this.clients.filter(c => !(c.id === cId))
+    removeClient: function(cId) {
+      this.clients = this.clients.filter(c => !(c.id === cId))
     },
     
     getClient: function(cId) {

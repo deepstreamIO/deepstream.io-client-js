@@ -31,6 +31,9 @@ export default {
       console.log('listener logged in')
     })
   },
+  beforeDestroy: function() {
+    this.client.close()
+  },
   data() {
     return {
       title: "deepstream.io test dashboard"
