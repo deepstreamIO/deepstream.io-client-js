@@ -8,7 +8,7 @@
 
             <b-row>
                 <b-col lg="3">
-                    <p class="card-desc" v-if="snapshot.value.length" > snapshot of {{ snapshot.name }}: </p>
+                    <p class="card-desc" v-if="snapshot.value ? snapshot.value.length : false" > snapshot of {{ snapshotRecordName }}: </p>
                 </b-col>
                 <b-col lg="5">
                     <pre class="sm-text">{{snapshot.value}}</pre>
@@ -265,6 +265,7 @@ export default {
             name: '',
             value: ''
         },
+        snapshotRecordName: '',
         record: {
             name: '',
             ready: false,
@@ -392,6 +393,7 @@ export default {
         const comp = this
         comp.client.record.snapshot(comp.$data.snapshot.name, (err, data) => {
             comp.$data.snapshot.value = JSON.stringify(data)
+            comp.$data.snapshotRecordName = comp.$data.snapshot.name
         })
     },
 

@@ -31,7 +31,7 @@ export default {
     const comp = this
     comp.client.on('error', (error, event, topic) => {
         comp.$data.errorLog.push({
-            id: errorLogger.length + 1, 
+            id: comp.$data.errorLog.length + 1, 
             content: JSON.stringify({error, event, topic}) 
         })
     })
@@ -40,8 +40,7 @@ export default {
     return {
         errorLog: []
     }
-  },
-  computed: { },
+  }
 }
 </script>
 
