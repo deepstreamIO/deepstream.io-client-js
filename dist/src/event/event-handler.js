@@ -80,7 +80,7 @@ class EventHandler {
             this.services.connection.sendMessage(message);
         }
         else {
-            this.services.offlineQueue.submitMessage(message);
+            this.services.offlineQueue.submit(message);
         }
         this.emitter.emit(name, data);
     }

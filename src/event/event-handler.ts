@@ -95,7 +95,7 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
     if (this.services.connection.isConnected) {
       this.services.connection.sendMessage(message)
     } else {
-      this.services.offlineQueue.submitMessage(message)
+      this.services.offlineQueue.submit(message)
     }
 
     this.emitter.emit(name, data)

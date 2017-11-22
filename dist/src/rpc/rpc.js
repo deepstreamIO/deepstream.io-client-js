@@ -23,8 +23,7 @@ class RPC {
             parsedData: data
         };
         if (this.services.connection.isConnected === false) {
-            this.services.offlineQueue.submitMessage(message, () => response(constants_1.EVENT.CLIENT_OFFLINE));
-            this.services.offlineQueue.submitFunction(this.addTimeouts.bind(this));
+            this.services.offlineQueue.submit(message, () => this.addTimeouts(), () => response(constants_1.EVENT.CLIENT_OFFLINE));
         }
         else {
             this.addTimeouts();

@@ -165,8 +165,11 @@ export class PresenceHandler {
       this.services.connection.sendMessage(message)
       this.services.timeoutRegistry.add({ message })
     } else {
-      this.services.offlineQueue.submitMessage(message, () => emitter.emit(emitterAction, EVENT.CLIENT_OFFLINE))
-      this.services.offlineQueue.submitFunction(() => this.services.timeoutRegistry.add({ message }))
+      this.services.offlineQueue.submit(
+        message,
+        () => this.services.timeoutRegistry.add({ message }),
+        () => emitter.emit(emitterAction, EVENT.CLIENT_OFFLINE)
+      )
     }
 
     if (callback) {

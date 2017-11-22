@@ -10,21 +10,10 @@ class OfflineQueue {
         this.options = options;
         this.services = services;
         this.messageQueue = [];
-        this.functionQueue = [];
         this.onTimeout = this.onTimeout.bind(this);
     }
-    submitMessage(message, failureCallback) {
-        this.messageQueue.push({ message, callback: failureCallback });
-        if (!this.timeout) {
-            this.timeout = this.services.timerRegistry.add({
-                callback: this.onTimeout,
-                duration: this.options.offlineBufferTimeout,
-                context: this,
-            });
-        }
-    }
-    submitFunction(callback) {
-        this.functionQueue.push(callback);
+    submit(message, successCallback, failureCallback) {
+        this.messageQueue.push({ message, success: successCallback, failure: failureCallback });
         if (!this.timeout) {
             this.timeout = this.services.timerRegistry.add({
                 callback: this.onTimeout,
@@ -35,23 +24,24 @@ class OfflineQueue {
     }
     flush(message) {
         for (let i = 0; i < this.messageQueue.length; i++) {
+            const item = this.messageQueue[i];
             this.services.connection.sendMessage(this.messageQueue[i].message);
-        }
-        this.messageQueue = [];
-        for (let i = 0; i < this.functionQueue.length; i++) {
-            this.functionQueue[i]();
+            if (item.success) {
+                item.success();
+            }
         }
         this.services.timerRegistry.remove(this.timeout);
+        this.timeout = null;
     }
     onTimeout() {
         for (let i = 0; i < this.messageQueue.length; i++) {
             const msg = this.messageQueue[i];
-            if (msg.callback) {
-                msg.callback();
+            if (msg.failure) {
+                msg.failure();
             }
         }
         this.messageQueue = [];
-        this.functionQueue = [];
+        this.timeout = null;
     }
 }
 exports.default = OfflineQueue;

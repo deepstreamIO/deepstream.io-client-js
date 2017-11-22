@@ -36,8 +36,11 @@ export class RPC {
       }
 
       if (this.services.connection.isConnected === false) {
-        this.services.offlineQueue.submitMessage(message, () => response(EVENT.CLIENT_OFFLINE))
-        this.services.offlineQueue.submitFunction(this.addTimeouts.bind(this))
+        this.services.offlineQueue.submit(
+          message,
+          () => this.addTimeouts(),
+          () => response(EVENT.CLIENT_OFFLINE)
+        )
       } else {
         this.addTimeouts()
         this.services.connection.sendMessage(message)

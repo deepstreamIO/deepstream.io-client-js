@@ -20,31 +20,18 @@ export default class OfflineQueue {
 
   private options: Options
   private services: Services
-  private messageQueue: Array<{ message: Message, callback?: Function }>
-  private functionQueue: Array<Function>
-  private timeout: number
+  private messageQueue: Array<{ message: Message, success?: Function, failure?: Function }>
+  private timeout: number | null
 
   constructor (options: Options, services: Services) {
     this.options = options
     this.services = services
     this.messageQueue = []
-    this.functionQueue = []
     this.onTimeout = this.onTimeout.bind(this)
   }
 
-  public submitMessage (message: Message, failureCallback?: Function): void {
-    this.messageQueue.push({ message, callback: failureCallback })
-    if (!this.timeout) {
-      this.timeout = this.services.timerRegistry.add({
-        callback: this.onTimeout,
-        duration: this.options.offlineBufferTimeout,
-        context: this,
-      })
-    }
-  }
-
-  public submitFunction (callback: Function): void {
-    this.functionQueue.push(callback)
+  public submit (message: Message, successCallback?: Function, failureCallback?: Function): void {
+    this.messageQueue.push({ message, success: successCallback, failure: failureCallback })
     if (!this.timeout) {
       this.timeout = this.services.timerRegistry.add({
         callback: this.onTimeout,
@@ -56,24 +43,25 @@ export default class OfflineQueue {
 
   public flush (message: Message): void {
     for (let i = 0; i < this.messageQueue.length; i++) {
+      const item = this.messageQueue[i]
       this.services.connection.sendMessage(this.messageQueue[i].message)
+      if (item.success) {
+        item.success()
+      }
     }
-    this.messageQueue = []
-    for (let i = 0; i < this.functionQueue.length; i++) {
-      this.functionQueue[i]()
-    }
-    this.services.timerRegistry.remove(this.timeout)
+    this.services.timerRegistry.remove(this.timeout as number)
+    this.timeout = null
   }
 
   private onTimeout () {
     for (let i = 0; i < this.messageQueue.length; i++) {
       const msg = this.messageQueue[i]
-      if (msg.callback) {
-        msg.callback()
+      if (msg.failure) {
+        msg.failure()
       }
     }
     this.messageQueue = []
-    this.functionQueue = []
+    this.timeout = null
   }
 
 }

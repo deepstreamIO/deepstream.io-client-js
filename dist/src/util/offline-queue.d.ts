@@ -10,11 +10,9 @@ export default class OfflineQueue {
     private options;
     private services;
     private messageQueue;
-    private functionQueue;
     private timeout;
     constructor(options: Options, services: Services);
-    submitMessage(message: Message, failureCallback?: Function): void;
-    submitFunction(callback: Function): void;
+    submit(message: Message, successCallback?: Function, failureCallback?: Function): void;
     flush(message: Message): void;
     private onTimeout();
 }
