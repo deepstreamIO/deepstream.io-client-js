@@ -11,10 +11,11 @@ export declare class RPC {
     private services;
     private options;
     private name;
+    private correlationId;
     private response;
     private acceptTimeout;
     private responseTimeout;
-    constructor(name: string, correlationId: string, response: RPCMakeCallback, options: Options, services: Services);
+    constructor(name: string, correlationId: string, data: any, response: RPCMakeCallback, options: Options, services: Services);
     /**
      * Called once an ack message is received from the server
      */
@@ -27,6 +28,7 @@ export declare class RPC {
      * Called once an error is received from the server.
      */
     error(data: any): void;
+    private addTimeouts();
     /**
      * Callback for error messages received from the server. Once
      * an error is received the request is considered completed. Even

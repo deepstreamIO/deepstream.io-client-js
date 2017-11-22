@@ -3,6 +3,7 @@ import * as C from '../binary-protocol/src/message-constants';
 import { Logger } from './util/logger';
 import { TimeoutRegistry } from './util/timeout-registry';
 import { TimerRegistry } from './util/timer-registry';
+import OfflineQueue from './util/offline-queue';
 import { Connection, AuthenticationCallback } from './connection/connection';
 import { SocketFactory } from './connection/socket-factory';
 import { EventHandler } from './event/event-handler';
@@ -22,6 +23,7 @@ export interface Services {
     timerRegistry: TimerRegistry;
     socketFactory: SocketFactory;
     storage: RecordOfflineStore;
+    offlineQueue: OfflineQueue;
 }
 export declare class Client extends EventEmitter {
     event: EventHandler;

@@ -34,7 +34,9 @@ export class EventHandler {
     }
 
     if (!this.emitter.hasListeners(name)) {
-      this.sendSubscriptionMessage(name)
+      if (this.services.connection.isConnected) {
+        this.sendSubscriptionMessage(name)
+      }
     }
     this.emitter.on(name, callback)
   }
@@ -83,14 +85,19 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
       throw new Error('invalid argument name')
     }
 
-    if (this.services.connection.isConnected) {
-      this.services.connection.sendMessage({
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.EMIT,
-        name,
-        parsedData: data
-      })
+    const message = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.EMIT,
+      name,
+      parsedData: data
     }
+
+    if (this.services.connection.isConnected) {
+      this.services.connection.sendMessage(message)
+    } else {
+      this.services.offlineQueue.submitMessage(message)
+    }
+
     this.emitter.emit(name, data)
   }
 
@@ -189,6 +196,7 @@ private handle (message: EventMessage): void {
       action: EVENT_ACTION.SUBSCRIBE,
       name
     }
+
     this.services.timeoutRegistry.add({ message })
     this.services.connection.sendMessage(message)
   }

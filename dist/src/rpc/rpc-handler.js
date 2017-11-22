@@ -76,27 +76,13 @@ class RPCHandler {
         if (callback && typeof callback !== 'function') {
             throw new Error('invalid argument callback');
         }
-        if (this.services.connection.isConnected === false) {
-            if (callback) {
-                this.services.timerRegistry.requestIdleCallback(callback.bind(this, constants_1.EVENT.CLIENT_OFFLINE));
-                return;
-            }
-            return Promise.reject(constants_1.EVENT.CLIENT_OFFLINE);
-        }
         const correlationId = utils_1.getUid();
-        this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RPC,
-            action: message_constants_1.RPC_ACTIONS.REQUEST,
-            correlationId,
-            name,
-            parsedData: data
-        });
         if (callback) {
-            this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, callback, this.options, this.services));
+            this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, data, callback, this.options, this.services));
             return;
         }
         return new Promise((resolve, reject) => {
-            this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, (error, result) => {
+            this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, data, (error, result) => {
                 if (error) {
                     reject(error);
                 }

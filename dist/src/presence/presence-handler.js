@@ -106,13 +106,6 @@ class PresenceHandler {
     }
     getAll(...rest) {
         const { callback, users } = validateQueryArguments(rest);
-        if (!this.services.connection.isConnected) {
-            if (callback) {
-                this.services.timerRegistry.requestIdleCallback(callback.bind(this, client_1.EVENT.CLIENT_OFFLINE));
-                return;
-            }
-            return Promise.reject(client_1.EVENT.CLIENT_OFFLINE);
-        }
         let message;
         let emitter;
         let emitterAction;
@@ -135,8 +128,14 @@ class PresenceHandler {
             emitter = this.queryAllEmitter;
             emitterAction = ONLY_EVENT;
         }
-        this.services.connection.sendMessage(message);
-        this.services.timeoutRegistry.add({ message });
+        if (this.services.connection.isConnected) {
+            this.services.connection.sendMessage(message);
+            this.services.timeoutRegistry.add({ message });
+        }
+        else {
+            this.services.offlineQueue.submitMessage(message, () => emitter.emit(emitterAction, client_1.EVENT.CLIENT_OFFLINE));
+            this.services.offlineQueue.submitFunction(() => this.services.timeoutRegistry.add({ message }));
+        }
         if (callback) {
             emitter.once(emitterAction, callback);
             return;

@@ -138,14 +138,6 @@ export class PresenceHandler {
   public getAll (...rest: Array<any>): Promise<QueryResult | IndividualQueryResult> | void {
     const { callback, users } = validateQueryArguments(rest)
 
-    if (!this.services.connection.isConnected) {
-      if (callback) {
-        this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
-        return
-      }
-      return Promise.reject(EVENT.CLIENT_OFFLINE)
-    }
-
     let message: Message
     let emitter: Emitter
     let emitterAction: string
@@ -169,8 +161,13 @@ export class PresenceHandler {
       emitterAction = ONLY_EVENT
     }
 
-    this.services.connection.sendMessage(message)
-    this.services.timeoutRegistry.add({ message })
+    if (this.services.connection.isConnected) {
+      this.services.connection.sendMessage(message)
+      this.services.timeoutRegistry.add({ message })
+    } else {
+      this.services.offlineQueue.submitMessage(message, () => emitter.emit(emitterAction, EVENT.CLIENT_OFFLINE))
+      this.services.offlineQueue.submitFunction(() => this.services.timeoutRegistry.add({ message }))
+    }
 
     if (callback) {
       emitter.once(emitterAction, callback)

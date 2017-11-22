@@ -85,7 +85,7 @@ export class Connection {
 
           if (newState === CONNECTION_STATE.RECONNECTING) {
             isReconnecting = true
-            if (oldState !== CONNECTION_STATE.RECONNECTING) {
+            if (oldState !== CONNECTION_STATE.RECONNECTING && oldState !== CONNECTION_STATE.CLOSED) {
               this.internalEmitter.emit(EVENT.CONNECTION_LOST)
             }
           } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {

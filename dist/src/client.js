@@ -10,6 +10,7 @@ exports.C = C;
 const logger_1 = require("./util/logger");
 const timeout_registry_1 = require("./util/timeout-registry");
 const timer_registry_1 = require("./util/timer-registry");
+const offline_queue_1 = require("./util/offline-queue");
 const connection_1 = require("./connection/connection");
 const socket_factory_1 = require("./connection/socket-factory");
 const event_handler_1 = require("./event/event-handler");
@@ -27,8 +28,10 @@ class Client extends EventEmitter {
         services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);
         services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
         services.connection = new connection_1.Connection(services, this.options, url, this);
+        services.offlineQueue = new offline_queue_1.default(this.options, services);
         this.services = services;
         this.services.connection.onLost(services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry));
+        this.services.connection.onReestablished(services.offlineQueue.flush.bind(services.offlineQueue));
         this.event = new event_handler_1.EventHandler(this.services, this.options);
         this.rpc = new rpc_handler_1.RPCHandler(this.services, this.options);
         this.record = new record_handler_1.RecordHandler(this.services, this.options);

@@ -25,7 +25,9 @@ class EventHandler {
             throw new Error('invalid argument callback');
         }
         if (!this.emitter.hasListeners(name)) {
-            this.sendSubscriptionMessage(name);
+            if (this.services.connection.isConnected) {
+                this.sendSubscriptionMessage(name);
+            }
         }
         this.emitter.on(name, callback);
     }
@@ -68,13 +70,17 @@ class EventHandler {
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }
+        const message = {
+            topic: message_constants_1.TOPIC.EVENT,
+            action: message_constants_1.EVENT_ACTIONS.EMIT,
+            name,
+            parsedData: data
+        };
         if (this.services.connection.isConnected) {
-            this.services.connection.sendMessage({
-                topic: message_constants_1.TOPIC.EVENT,
-                action: message_constants_1.EVENT_ACTIONS.EMIT,
-                name,
-                parsedData: data
-            });
+            this.services.connection.sendMessage(message);
+        }
+        else {
+            this.services.offlineQueue.submitMessage(message);
         }
         this.emitter.emit(name, data);
     }

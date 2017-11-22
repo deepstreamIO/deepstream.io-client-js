@@ -29,7 +29,7 @@ class Connection {
                 emitter.emit(constants_1.EVENT.CONNECTION_STATE_CHANGED, newState);
                 if (newState === constants_1.CONNECTION_STATE.RECONNECTING) {
                     isReconnecting = true;
-                    if (oldState !== constants_1.CONNECTION_STATE.RECONNECTING) {
+                    if (oldState !== constants_1.CONNECTION_STATE.RECONNECTING && oldState !== constants_1.CONNECTION_STATE.CLOSED) {
                         this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST);
                     }
                 }

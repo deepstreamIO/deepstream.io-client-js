@@ -103,31 +103,15 @@ export class RPCHandler {
       throw new Error('invalid argument callback')
     }
 
-    if (this.services.connection.isConnected === false) {
-      if (callback) {
-        this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
-        return
-      }
-      return Promise.reject(EVENT.CLIENT_OFFLINE)
-    }
-
     const correlationId = getUid()
 
-    this.services.connection.sendMessage({
-      topic: TOPIC.RPC,
-      action: RPC_ACTION.REQUEST,
-      correlationId,
-      name,
-      parsedData: data
-    })
-
     if (callback) {
-      this.rpcs.set(correlationId, new RPC(name, correlationId, callback, this.options, this.services))
+      this.rpcs.set(correlationId, new RPC(name, correlationId, data, callback, this.options, this.services))
       return
     }
 
     return new Promise((resolve, reject) => {
-      this.rpcs.set(correlationId, new RPC(name, correlationId, (error: string, result: any) => {
+      this.rpcs.set(correlationId, new RPC(name, correlationId, data, (error: string, result: any) => {
         if (error) {
           reject(error)
         } else {

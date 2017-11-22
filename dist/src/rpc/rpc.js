@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const constants_1 = require("../constants");
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -8,33 +9,27 @@ const message_constants_1 = require("../../binary-protocol/src/message-constants
  * incoming response data
  */
 class RPC {
-    constructor(name, correlationId, response, options, services) {
+    constructor(name, correlationId, data, response, options, services) {
         this.options = options;
         this.services = services;
         this.name = name;
+        this.correlationId = correlationId;
         this.response = response;
-        this.acceptTimeout = this.services.timeoutRegistry.add({
-            message: {
-                topic: message_constants_1.TOPIC.RPC,
-                action: message_constants_1.RPC_ACTIONS.ACCEPT,
-                name,
-                correlationId
-            },
-            event: message_constants_1.RPC_ACTIONS.ACCEPT_TIMEOUT,
-            duration: this.options.rpcAcceptTimeout,
-            callback: this.onTimeout.bind(this)
-        });
-        this.responseTimeout = this.services.timeoutRegistry.add({
-            message: {
-                topic: message_constants_1.TOPIC.RPC,
-                action: message_constants_1.RPC_ACTIONS.REQUEST,
-                name,
-                correlationId
-            },
-            event: message_constants_1.RPC_ACTIONS.RESPONSE_TIMEOUT,
-            duration: this.options.rpcResponseTimeout,
-            callback: this.onTimeout.bind(this)
-        });
+        const message = {
+            topic: message_constants_1.TOPIC.RPC,
+            action: message_constants_1.RPC_ACTIONS.REQUEST,
+            correlationId,
+            name,
+            parsedData: data
+        };
+        if (this.services.connection.isConnected === false) {
+            this.services.offlineQueue.submitMessage(message, () => response(constants_1.EVENT.CLIENT_OFFLINE));
+            this.services.offlineQueue.submitFunction(this.addTimeouts.bind(this));
+        }
+        else {
+            this.addTimeouts();
+            this.services.connection.sendMessage(message);
+        }
     }
     /**
      * Called once an ack message is received from the server
@@ -55,6 +50,30 @@ class RPC {
     error(data) {
         this.response(data);
         this.complete();
+    }
+    addTimeouts() {
+        this.acceptTimeout = this.services.timeoutRegistry.add({
+            message: {
+                topic: message_constants_1.TOPIC.RPC,
+                action: message_constants_1.RPC_ACTIONS.ACCEPT,
+                name: this.name,
+                correlationId: this.correlationId
+            },
+            event: message_constants_1.RPC_ACTIONS.ACCEPT_TIMEOUT,
+            duration: this.options.rpcAcceptTimeout,
+            callback: this.onTimeout.bind(this)
+        });
+        this.responseTimeout = this.services.timeoutRegistry.add({
+            message: {
+                topic: message_constants_1.TOPIC.RPC,
+                action: message_constants_1.RPC_ACTIONS.REQUEST,
+                name: this.name,
+                correlationId: this.correlationId
+            },
+            event: message_constants_1.RPC_ACTIONS.RESPONSE_TIMEOUT,
+            duration: this.options.rpcResponseTimeout,
+            callback: this.onTimeout.bind(this)
+        });
     }
     /**
      * Callback for error messages received from the server. Once
