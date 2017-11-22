@@ -4,12 +4,13 @@
             <b-card class="square-border text-center" header-tag="header" footer-tag="footer">
                 <b-container>
                     <b-row>
-                        <b-col lg="8" offset-lg="2">
-                            <pre v-if="errorLog.length">
+                        <b-col lg="10" offset-lg="2">
+                            <b-alert v-if="errorLog.length" show variant="danger">
                                 <p v-for="error in errorLog" :key="error.id">
                                     {{ error.content }}
                                 </p>
-                            </pre>
+                            </b-alert>
+
                             <pre v-if="!errorLog.length">
                                 <p class="sm-text"> No errors </p>
                             </pre>
@@ -30,6 +31,7 @@ export default {
   created() {
     const comp = this
     comp.client.on('error', (error, event, topic) => {
+        
         comp.$data.errorLog.push({
             id: comp.$data.errorLog.length + 1, 
             content: JSON.stringify({error, event, topic}) 
