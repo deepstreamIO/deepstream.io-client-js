@@ -32,16 +32,18 @@ class RecordCore extends Emitter {
                 { name: 0 /* LOAD */, from: 0 /* INITIAL */, to: 3 /* LOADING_OFFLINE */, handler: this.onOfflineLoading.bind(this) },
                 { name: 1 /* LOADED */, from: 3 /* LOADING_OFFLINE */, to: 4 /* READY */, handler: this.onReady.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.READ_RESPONSE, from: 1 /* SUBSCRIBING */, to: 4 /* READY */, handler: this.onReady.bind(this) },
-                { name: 2 /* RESUBSCRIBE */, from: 4 /* READY */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
-                { name: 3 /* RESUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
-                { name: 4 /* INVALID_VERSION */, from: 2 /* RESUBSCRIBING */, to: 5 /* MERGING */ },
+                { name: 2 /* SUBSCRIBE */, from: 4 /* READY */, to: 1 /* SUBSCRIBING */, handler: this.onResubscribing.bind(this) },
+                { name: 3 /* SUBSCRIBED */, from: 1 /* SUBSCRIBING */, to: 4 /* READY */ },
+                { name: 4 /* RESUBSCRIBE */, from: 4 /* READY */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
+                { name: 5 /* RESUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
+                { name: 6 /* INVALID_VERSION */, from: 2 /* RESUBSCRIBING */, to: 5 /* MERGING */ },
                 { name: message_constants_1.RECORD_ACTIONS.DELETE, from: 4 /* READY */, to: 8 /* DELETING */ },
                 { name: message_constants_1.RECORD_ACTIONS.DELETED, from: 4 /* READY */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS, from: 8 /* DELETING */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE, from: 4 /* READY */, to: 6 /* UNSUBSCRIBING */ },
                 { name: message_constants_1.RECORD_ACTIONS.SUBSCRIBE, from: 6 /* UNSUBSCRIBING */, to: 4 /* READY */ },
                 { name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE_ACK, from: 6 /* UNSUBSCRIBING */, to: 7 /* UNSUBSCRIBED */, handler: this.onUnsubscribed.bind(this) },
-                { name: 4 /* INVALID_VERSION */, from: 4 /* READY */, to: 5 /* MERGING */ },
+                { name: 6 /* INVALID_VERSION */, from: 4 /* READY */, to: 5 /* MERGING */ },
             ]
         });
         if (this.services.connection.isConnected) {
@@ -419,27 +421,26 @@ class RecordCore extends Emitter {
     }
     handleHeadResponse(message) {
         const remoteVersion = message.version;
-        console.log('remoteVersion', remoteVersion, message.parsedData);
-        console.log('this.version', this.version, this.data);
-        if (remoteVersion === -1) {
-            // todo
+        if (remoteVersion === -1 && this.version === 1) {
+            this.sendCreateUpdate(this.data);
+            this.stateMachine.transition(3 /* SUBSCRIBED */);
         }
         else if (this.version > remoteVersion) {
             this.sendUpdate(null, this.data);
-            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+            this.stateMachine.transition(5 /* RESUBSCRIBED */);
         }
         else if (this.version === remoteVersion) {
-            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+            this.stateMachine.transition(5 /* RESUBSCRIBED */);
         }
         else if (this.version + 1 === remoteVersion) {
             //this.version = remoteVersion
             //this.applyChange(setPath(this.data, null, message.parsedData))
             this.sendRead();
             this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
-            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+            this.stateMachine.transition(5 /* RESUBSCRIBED */);
         }
         else {
-            this.stateMachine.transition(4 /* INVALID_VERSION */);
+            this.stateMachine.transition(6 /* INVALID_VERSION */);
             this.sendRead();
             this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         }
@@ -487,6 +488,15 @@ class RecordCore extends Emitter {
         else {
             this.services.connection.sendMessage(message);
         }
+    }
+    sendCreateUpdate(data) {
+        this.services.connection.sendMessage({
+            name: this.name,
+            topic: message_constants_1.TOPIC.RECORD,
+            action: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE,
+            version: -1,
+            parsedData: data
+        });
     }
     /**
      * Applies incoming updates and patches to the record's dataset
@@ -642,7 +652,11 @@ class RecordCore extends Emitter {
         this.whenComplete(this.name);
     }
     onConnReestablished() {
-        this.stateMachine.transition(2 /* RESUBSCRIBE */);
+        if (this.version === 1 && this.offlineDirty) {
+            this.stateMachine.transition(2 /* SUBSCRIBE */);
+            return;
+        }
+        this.stateMachine.transition(4 /* RESUBSCRIBE */);
     }
 }
 exports.RecordCore = RecordCore;

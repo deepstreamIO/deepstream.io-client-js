@@ -139,6 +139,7 @@ export declare class RecordCore extends Emitter {
     private sendRead();
     private saveUpdate();
     private sendUpdate(path, data, callback?);
+    private sendCreateUpdate(data);
     /**
      * Applies incoming updates and patches to the record's dataset
      */

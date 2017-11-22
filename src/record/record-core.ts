@@ -17,6 +17,8 @@ export type WriteAckCallback = (error: string | null) => void
 const enum RECORD_OFFLINE_ACTIONS {
   LOAD,
   LOADED,
+  SUBSCRIBE,
+  SUBSCRIBED,
   RESUBSCRIBE,
   RESUBSCRIBED,
   INVALID_VERSION
@@ -91,6 +93,8 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: this.onOfflineLoading.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RA.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
+          { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.SUBSCRIBING, handler: this.onResubscribing.bind(this) },
+          { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
@@ -523,10 +527,9 @@ export class RecordCore extends Emitter {
 
   private handleHeadResponse (message: RecordMessage): void {
     const remoteVersion = message.version as number
-    console.log('remoteVersion',remoteVersion, message.parsedData)
-    console.log('this.version',this.version, this.data)
-    if (remoteVersion === -1) {
-      // todo
+    if (remoteVersion === -1 && this.version === 1) {
+      this.sendCreateUpdate(this.data)
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.SUBSCRIBED)
     } else if (this.version > remoteVersion) {
       this.sendUpdate(null, this.data)
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
@@ -589,6 +592,16 @@ export class RecordCore extends Emitter {
     } else {
       this.services.connection.sendMessage(message as RecordWriteMessage)
     }
+  }
+
+  private sendCreateUpdate (data: any) {
+    this.services.connection.sendMessage({
+      name: this.name,
+      topic: TOPIC.RECORD,
+      action: RA.CREATEANDUPDATE,
+      version: -1,
+      parsedData: data
+    })
   }
 
   /**
@@ -772,6 +785,10 @@ export class RecordCore extends Emitter {
   }
 
   private onConnReestablished (): void {
+    if (this.version === 1 && this.offlineDirty) {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.SUBSCRIBE)
+      return
+    }
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
   }
 }
