@@ -18,6 +18,7 @@ import { Socket } from './socket-factory'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
+export type ResumeCallback = (error: object) => void
 
 const enum TRANSITIONS {
   CONNECTED = 'connected',
@@ -34,7 +35,10 @@ const enum TRANSITIONS {
   SUCCESFUL_LOGIN = 'succesful-login',
   ERROR = 'error',
   LOST = 'connection-lost',
-  AUTHENTICATION_TIMEOUT = 'authentication-timeout'
+  AUTHENTICATION_TIMEOUT = 'authentication-timeout',
+  PAUSE = 'pause',
+  OFFLINE = 'offline',
+  RESUME = 'resume'
 }
 
 export class Connection {
@@ -111,8 +115,11 @@ export class Connection {
           { name: TRANSITIONS.AUTHENTICATION_TIMEOUT, from: CONNECTION_STATE.AWAITING_AUTHENTICATION, to: CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
           { name: TRANSITIONS.RECONNECT, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.RECONNECTING },
           { name: TRANSITIONS.CLOSED, from: CONNECTION_STATE.CLOSING, to: CONNECTION_STATE.CLOSED },
+          { name: TRANSITIONS.OFFLINE, from: CONNECTION_STATE.PAUSING, to: CONNECTION_STATE.OFFLINE },
           { name: TRANSITIONS.ERROR, to: CONNECTION_STATE.RECONNECTING },
           { name: TRANSITIONS.LOST, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.RESUME, to: CONNECTION_STATE.RECONNECTING },
+          { name: TRANSITIONS.PAUSE, to: CONNECTION_STATE.PAUSING },
           { name: TRANSITIONS.CLOSE, to: CONNECTION_STATE.CLOSING },
         ]
       }
@@ -221,6 +228,19 @@ export class Connection {
     this.stateMachine.transition(TRANSITIONS.CLOSE)
   }
 
+  public pause (): void {
+    this.stateMachine.transition(TRANSITIONS.PAUSE)
+    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.endpoint.close()
+  }
+
+  public resume (callback: ResumeCallback): void {
+    this.internalEmitter.once(EVENT.CONNECTION_REESTABLISHED, callback)
+    this.internalEmitter.once(EVENT.REAUTHENTICATION_FAILURE, callback)
+    this.stateMachine.transition(TRANSITIONS.RESUME)
+    this.tryReconnect()
+  }
+
   /**
    * Creates the endpoint to connect to using the url deepstream
    * was initialised with.
@@ -314,6 +334,11 @@ export class Connection {
 
     if (this.stateMachine.state === CONNECTION_STATE.CLOSING) {
       this.stateMachine.transition(TRANSITIONS.CLOSED)
+      return
+    }
+
+    if (this.stateMachine.state === CONNECTION_STATE.PAUSING) {
+      this.stateMachine.transition(TRANSITIONS.OFFLINE)
       return
     }
 
@@ -467,7 +492,10 @@ export class Connection {
   private handleConnectionResponse (message: Message): void {
     if (message.action === CONNECTION_ACTION.PING) {
       this.lastHeartBeat = Date.now()
-      if (this.getConnectionState() !== CONNECTION_STATE.CLOSING) {
+      if (
+        this.getConnectionState() !== CONNECTION_STATE.CLOSING &&
+        this.getConnectionState() !== CONNECTION_STATE.PAUSING
+      ) {
         this.sendMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PONG })
       }
       return
@@ -545,6 +573,7 @@ export class Connection {
     const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] }
     if (this.authCallback === null) {
       this.emitter.emit(EVENT.REAUTHENTICATION_FAILURE, reason)
+      this.internalEmitter.emit(EVENT.REAUTHENTICATION_FAILURE)
       return
     }
 

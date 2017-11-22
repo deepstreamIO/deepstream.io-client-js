@@ -110,6 +110,8 @@ export class RecordCore extends Emitter {
     } else {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
     }
+
+    this.services.connection.onReestablished(this.onConnReestablished.bind(this))
   }
 
   get recordState (): RECORD_STATE {
@@ -398,13 +400,14 @@ export class RecordCore extends Emitter {
 
   private onOfflineLoading (): void {
     this.services.storage.get(this.name, (recordName: string, version: number, data: any) => {
-      if (this.version === -1) {
+      if (version === -1) {
         this.data = {}
         this.version = 1
       } else {
         this.data = data
         this.version = version
       }
+      this.offlineDirty = true
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
     })
   }
@@ -511,15 +514,26 @@ export class RecordCore extends Emitter {
   }
 
   private handleHeadResponse (message: RecordMessage): void {
-    if (this.version === message.version as number) {
+    const remoteVersion = message.version as number
+    console.log('remoteVersion',remoteVersion, message.parsedData)
+    console.log('this.version',this.version, this.data)
+    if (remoteVersion === -1) {
+      // todo
+    } else if (this.version > remoteVersion) {
+      this.sendUpdate(null, this.data)
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-    } else if (this.version + 1 === message.version as number) {
-      this.version = message.version as number
-      this.applyChange(setPath(this.data, null, message.parsedData))
+    } else if (this.version === remoteVersion) {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+    } else if (this.version + 1 === remoteVersion) {
+      //this.version = remoteVersion
+      //this.applyChange(setPath(this.data, null, message.parsedData))
+      this.sendRead()
+      this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
     } else {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
       this.sendRead()
+      this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
     }
   }
 
@@ -539,8 +553,12 @@ export class RecordCore extends Emitter {
     this.services.storage.set(this.name, this.version, this.data, () => {})
   }
 
-  private sendUpdate (path: string | null = null, data: any, callback: WriteAckCallback | undefined) {
-    this.version++
+  private sendUpdate (path: string | null = null, data: any, callback?: WriteAckCallback) {
+    if (this.offlineDirty) {
+      this.offlineDirty = false
+    } else {
+      this.version++
+    }
 
     const message = {
       topic: TOPIC.RECORD,
@@ -743,5 +761,9 @@ export class RecordCore extends Emitter {
     this.emitter.off()
     this.isReady = false
     this.whenComplete(this.name)
+  }
+
+  private onConnReestablished (): void {
+    this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
   }
 }

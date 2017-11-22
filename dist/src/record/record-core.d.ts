@@ -138,7 +138,7 @@ export declare class RecordCore extends Emitter {
     private handleHeadResponse(message);
     private sendRead();
     private saveUpdate();
-    private sendUpdate(path, data, callback);
+    private sendUpdate(path, data, callback?);
     /**
      * Applies incoming updates and patches to the record's dataset
      */
@@ -183,4 +183,5 @@ export declare class RecordCore extends Emitter {
      * its dependencies
      */
     private destroy();
+    private onConnReestablished();
 }

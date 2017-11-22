@@ -28,6 +28,19 @@ class Client extends EventEmitter {
         services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
         services.connection = new connection_1.Connection(services, this.options, url, this);
         this.services = services;
+        const fake = {};
+        this.services.storage = {
+            get: (recordName, callback) => {
+                const data = fake[recordName];
+                if (!data)
+                    return callback(recordName, -1, {});
+                callback(recordName, data.version, data);
+            },
+            set: (recordName, version, data, callback) => {
+                fake[recordName] = { recordName, version, data };
+            },
+            delete: () => { },
+        };
         this.services.connection.onLost(services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry));
         this.event = new event_handler_1.EventHandler(this.services, this.options);
         this.rpc = new rpc_handler_1.RPCHandler(this.services, this.options);
@@ -65,6 +78,20 @@ class Client extends EventEmitter {
     }
     close() {
         this.services.connection.close();
+    }
+    pause() {
+        this.services.connection.pause();
+    }
+    resume(callback) {
+        if (callback) {
+            this.services.connection.resume(callback);
+            return;
+        }
+        return new Promise((resolve, reject) => {
+            this.services.connection.resume((error) => {
+                error ? reject(error) : resolve();
+            });
+        });
     }
     /**
     * Returns a random string. The first block of characters

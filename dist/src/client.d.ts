@@ -3,7 +3,7 @@ import * as C from '../binary-protocol/src/message-constants';
 import { Logger } from './util/logger';
 import { TimeoutRegistry } from './util/timeout-registry';
 import { TimerRegistry } from './util/timer-registry';
-import { Connection, AuthenticationCallback } from './connection/connection';
+import { Connection, AuthenticationCallback, ResumeCallback } from './connection/connection';
 import { SocketFactory } from './connection/socket-factory';
 import { EventHandler } from './event/event-handler';
 import { RPCHandler } from './rpc/rpc-handler';
@@ -37,6 +37,8 @@ export declare class Client extends EventEmitter {
     login(details: object, callback: AuthenticationCallback): void;
     getConnectionState(): CONNECTION_STATE;
     close(): void;
+    pause(): void;
+    resume(callback?: ResumeCallback): void | Promise<object>;
     /**
     * Returns a random string. The first block of characters
     * is a timestamp, in order to allow databases to optimize for semi-

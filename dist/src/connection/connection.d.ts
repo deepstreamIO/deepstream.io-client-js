@@ -3,6 +3,7 @@ import { TOPIC, Message } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 import { Options } from '../client-options';
 export declare type AuthenticationCallback = (success: boolean, clientData: object) => void;
+export declare type ResumeCallback = (error: object) => void;
 export declare class Connection {
     isConnected: boolean;
     emitter: Emitter;
@@ -44,6 +45,8 @@ export declare class Connection {
      * will prevent the client from reconnecting.
      */
     close(): void;
+    pause(): void;
+    resume(callback: ResumeCallback): void;
     /**
      * Creates the endpoint to connect to using the url deepstream
      * was initialised with.

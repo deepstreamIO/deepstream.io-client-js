@@ -6,7 +6,7 @@ import * as C from '../binary-protocol/src/message-constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
-import { Connection, AuthenticationCallback } from './connection/connection'
+import { Connection, AuthenticationCallback, ResumeCallback } from './connection/connection'
 import { socketFactory, SocketFactory } from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
@@ -50,6 +50,19 @@ export class Client extends EventEmitter {
     services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
     this.services = services as Services
+
+    const fake = {} as any
+    this.services.storage = {
+      get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => {
+        const data = fake[recordName]
+        if (!data) return callback(recordName, -1, {})
+        callback(recordName, data.version, data)
+      },
+      set: (recordName: string, version: number, data: Array<string> | object, callback: ((error: string) => void)) => {
+        fake[recordName] = {recordName, version, data }
+      },
+      delete: () => {},
+    }
 
     this.services.connection.onLost(
       services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
@@ -95,6 +108,22 @@ export class Client extends EventEmitter {
 
   public close (): void {
     this.services.connection.close()
+  }
+
+  public pause (): void {
+    this.services.connection.pause()
+  }
+
+  public resume (callback?: ResumeCallback): void | Promise<object> {
+    if (callback) {
+      this.services.connection.resume(callback)
+      return
+    }
+    return new Promise((resolve, reject) => {
+      this.services.connection.resume((error) => {
+        error ? reject(error) : resolve()
+      })
+    })
   }
 
   /**

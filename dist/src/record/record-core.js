@@ -50,6 +50,7 @@ class RecordCore extends Emitter {
         else {
             this.stateMachine.transition(0 /* LOAD */);
         }
+        this.services.connection.onReestablished(this.onConnReestablished.bind(this));
     }
     get recordState() {
         return this.stateMachine.state;
@@ -316,7 +317,7 @@ class RecordCore extends Emitter {
     }
     onOfflineLoading() {
         this.services.storage.get(this.name, (recordName, version, data) => {
-            if (this.version === -1) {
+            if (version === -1) {
                 this.data = {};
                 this.version = 1;
             }
@@ -324,6 +325,7 @@ class RecordCore extends Emitter {
                 this.data = data;
                 this.version = version;
             }
+            this.offlineDirty = true;
             this.stateMachine.transition(1 /* LOADED */);
         });
     }
@@ -415,17 +417,30 @@ class RecordCore extends Emitter {
         this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
     }
     handleHeadResponse(message) {
-        if (this.version === message.version) {
+        const remoteVersion = message.version;
+        console.log('remoteVersion', remoteVersion, message.parsedData);
+        console.log('this.version', this.version, this.data);
+        if (remoteVersion === -1) {
+            // todo
+        }
+        else if (this.version > remoteVersion) {
+            this.sendUpdate(null, this.data);
             this.stateMachine.transition(3 /* RESUBSCRIBED */);
         }
-        else if (this.version + 1 === message.version) {
-            this.version = message.version;
-            this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
+        else if (this.version === remoteVersion) {
+            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+        }
+        else if (this.version + 1 === remoteVersion) {
+            //this.version = remoteVersion
+            //this.applyChange(setPath(this.data, null, message.parsedData))
+            this.sendRead();
+            this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
             this.stateMachine.transition(3 /* RESUBSCRIBED */);
         }
         else {
             this.stateMachine.transition(4 /* INVALID_VERSION */);
             this.sendRead();
+            this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
         }
     }
     sendRead() {
@@ -443,7 +458,12 @@ class RecordCore extends Emitter {
         this.services.storage.set(this.name, this.version, this.data, () => { });
     }
     sendUpdate(path = null, data, callback) {
-        this.version++;
+        if (this.offlineDirty) {
+            this.offlineDirty = false;
+        }
+        else {
+            this.version++;
+        }
         const message = {
             topic: message_constants_1.TOPIC.RECORD,
             version: this.version,
@@ -619,6 +639,9 @@ class RecordCore extends Emitter {
         this.emitter.off();
         this.isReady = false;
         this.whenComplete(this.name);
+    }
+    onConnReestablished() {
+        this.stateMachine.transition(2 /* RESUBSCRIBE */);
     }
 }
 exports.RecordCore = RecordCore;

@@ -56,8 +56,11 @@ class Connection {
                 { name: "authentication-timeout" /* AUTHENTICATION_TIMEOUT */, from: constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION, to: constants_1.CONNECTION_STATE.AUTHENTICATION_TIMEOUT },
                 { name: "reconnect" /* RECONNECT */, from: constants_1.CONNECTION_STATE.RECONNECTING, to: constants_1.CONNECTION_STATE.RECONNECTING },
                 { name: "closed" /* CLOSED */, from: constants_1.CONNECTION_STATE.CLOSING, to: constants_1.CONNECTION_STATE.CLOSED },
+                { name: "offline" /* OFFLINE */, from: constants_1.CONNECTION_STATE.PAUSING, to: constants_1.CONNECTION_STATE.OFFLINE },
                 { name: "error" /* ERROR */, to: constants_1.CONNECTION_STATE.RECONNECTING },
                 { name: "connection-lost" /* LOST */, to: constants_1.CONNECTION_STATE.RECONNECTING },
+                { name: "resume" /* RESUME */, to: constants_1.CONNECTION_STATE.RECONNECTING },
+                { name: "pause" /* PAUSE */, to: constants_1.CONNECTION_STATE.PAUSING },
                 { name: "close" /* CLOSE */, to: constants_1.CONNECTION_STATE.CLOSING },
             ]
         });
@@ -149,6 +152,17 @@ class Connection {
         });
         this.stateMachine.transition("close" /* CLOSE */);
     }
+    pause() {
+        this.stateMachine.transition("pause" /* PAUSE */);
+        this.services.timerRegistry.remove(this.heartbeatInterval);
+        this.endpoint.close();
+    }
+    resume(callback) {
+        this.internalEmitter.once(constants_1.EVENT.CONNECTION_REESTABLISHED, callback);
+        this.internalEmitter.once(constants_1.EVENT.REAUTHENTICATION_FAILURE, callback);
+        this.stateMachine.transition("resume" /* RESUME */);
+        this.tryReconnect();
+    }
     /**
      * Creates the endpoint to connect to using the url deepstream
      * was initialised with.
@@ -233,6 +247,10 @@ class Connection {
         }
         if (this.stateMachine.state === constants_1.CONNECTION_STATE.CLOSING) {
             this.stateMachine.transition("closed" /* CLOSED */);
+            return;
+        }
+        if (this.stateMachine.state === constants_1.CONNECTION_STATE.PAUSING) {
+            this.stateMachine.transition("offline" /* OFFLINE */);
             return;
         }
         this.stateMachine.transition("connection-lost" /* LOST */);
@@ -365,7 +383,8 @@ class Connection {
     handleConnectionResponse(message) {
         if (message.action === message_constants_1.CONNECTION_ACTIONS.PING) {
             this.lastHeartBeat = Date.now();
-            if (this.getConnectionState() !== constants_1.CONNECTION_STATE.CLOSING) {
+            if (this.getConnectionState() !== constants_1.CONNECTION_STATE.CLOSING &&
+                this.getConnectionState() !== constants_1.CONNECTION_STATE.PAUSING) {
                 this.sendMessage({ topic: message_constants_1.TOPIC.CONNECTION, action: message_constants_1.CONNECTION_ACTIONS.PONG });
             }
             return;
@@ -432,6 +451,7 @@ class Connection {
         const reason = { reason: constants_1.EVENT[constants_1.EVENT.INVALID_AUTHENTICATION_DETAILS] };
         if (this.authCallback === null) {
             this.emitter.emit(constants_1.EVENT.REAUTHENTICATION_FAILURE, reason);
+            this.internalEmitter.emit(constants_1.EVENT.REAUTHENTICATION_FAILURE);
             return;
         }
         this.authCallback(false, reason);
