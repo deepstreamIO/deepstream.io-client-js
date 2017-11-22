@@ -14,13 +14,7 @@
                                     <td>
                                         <strong class="esm-text"> {{ rpc.name }} </strong>
                                     </td>
-                                    <td v-if="!rpc.provided" class="sm-text">
-                                        <b-button @click="provide(rpc)" size="sm" class="sm-text" variant="link">provide</b-button>
-                                    </td>
-                                    <td v-if="rpc.provided" class="sm-text">
-                                        <b-button @click="unprovide(rpc)" size="sm" class="sm-text" variant="link">unprovide</b-button>
-                                    </td>
-                                    <td v-if="rpc.provided" class="sm-text">
+                                    <td class="sm-text">
                                         <b-input-group>
                                             <b-form-input class="esm-text" :block="true" size="sm" v-model="rpc.model" type="text" placeholder="data"></b-form-input>
                                             <b-input-group-button slot="right">
@@ -101,10 +95,15 @@ const scenarioData = {
 export default {
   name: "rpcs",
   props: ["client"],
+  created () {
+    this.client.rpc.provide('echo', (data, response) => {
+        response.send(data)
+    })
+  },
   data() {
     return {
         rpcs: [
-            { id: 1, name: "echo()", data: [], model: null, provided: false }
+            { id: 1, name: "echo", data: [], model: null, provided: false }
         ],
         scenarioData
     };
@@ -115,17 +114,6 @@ export default {
     }
   },
   methods: {
-    provide: function(rpc) {
-        this.client.rpc.provide(rpc.name, (data, response) => {
-        response.send(data);
-        });
-        rpc.provided = true;
-    },
-    unprovide: function(rpc) {
-        this.client.rpc.unprovide(rpc.name);
-        rpc.provided = false;
-        rpc.data = [];
-    },
     make: function(rpc) {
         const comp = this;
         comp.client.rpc.make(rpc.name, rpc.model, (err, response) => {
