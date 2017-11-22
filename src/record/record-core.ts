@@ -2,7 +2,7 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
 import { MergeStrategy, REMOTE_WINS } from './merge-strategy'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RECORD_ACTIONS as RA, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
 import { get as getPath, setValue as setPath } from './json-path'
 import * as Emitter from 'component-emitter2'
@@ -87,26 +87,26 @@ export class RecordCore extends Emitter {
           this.emitter.emit(EVENT.RECORD_STATE_CHANGED, newState)
         },
         transitions: [
-          { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: this.onSubscribing.bind(this) },
+          { name: RA.SUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: this.onSubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: this.onOfflineLoading.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
-          { name: RECORD_ACTION.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
+          { name: RA.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
-          { name: RECORD_ACTION.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
-          { name: RECORD_ACTION.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this)  },
-          { name: RECORD_ACTION.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
-          { name: RECORD_ACTION.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
-          { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },
-          { name: RECORD_ACTION.UNSUBSCRIBE_ACK, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: this.onUnsubscribed.bind(this) },
+          { name: RA.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
+          { name: RA.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this)  },
+          { name: RA.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
+          { name: RA.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
+          { name: RA.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },
+          { name: RA.UNSUBSCRIBE_ACK, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: this.onUnsubscribed.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.READY, to: RECORD_STATE.MERGING },
         ]
       }
     )
 
     if (this.services.connection.isConnected) {
-      this.stateMachine.transition(RECORD_ACTION.SUBSCRIBE)
+      this.stateMachine.transition(RA.SUBSCRIBE)
     } else {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
     }
@@ -122,7 +122,7 @@ export class RecordCore extends Emitter {
     this.references = usages
     if (this.references === 1) {
       this.services.timerRegistry.remove(this.discardTimeout)
-      this.stateMachine.transition(RECORD_ACTION.SUBSCRIBE)
+      this.stateMachine.transition(RA.SUBSCRIBE)
     }
   }
 
@@ -305,11 +305,11 @@ export class RecordCore extends Emitter {
           duration: this.options.discardTimeout,
           callback: this.stateMachine.transition,
           context: this.stateMachine,
-          data: RECORD_ACTION.UNSUBSCRIBE_ACK
+          data: RA.UNSUBSCRIBE_ACK
         })
       }
     })
-    this.stateMachine.transition(RECORD_ACTION.UNSUBSCRIBE)
+    this.stateMachine.transition(RA.UNSUBSCRIBE)
   }
 
   /**
@@ -319,7 +319,7 @@ export class RecordCore extends Emitter {
     if (this.checkDestroyed('delete')) {
       return
     }
-    this.stateMachine.transition(RECORD_ACTION.DELETE)
+    this.stateMachine.transition(RA.DELETE)
 
     if (callback && typeof callback === 'function') {
       this.deleteResponse = { callback }
@@ -356,21 +356,21 @@ export class RecordCore extends Emitter {
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
-        action: RECORD_ACTION.SUBSCRIBE,
+        action: RA.SUBSCRIBE,
         name: this.name,
       }
     })
     this.responseTimeout = this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
-        action: RECORD_ACTION.READ_RESPONSE,
+        action: RA.READ_RESPONSE,
         name: this.name
       }
     })
 
     this.services.connection.sendMessage({
       topic: TOPIC.RECORD,
-      action: RECORD_ACTION.SUBSCRIBECREATEANDREAD,
+      action: RA.SUBSCRIBECREATEANDREAD,
       name: this.name
     })
   }
@@ -380,20 +380,20 @@ export class RecordCore extends Emitter {
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
-        action: RECORD_ACTION.SUBSCRIBE,
+        action: RA.SUBSCRIBE,
         name: this.name,
       }
     })
     this.responseTimeout = this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
-        action: RECORD_ACTION.HEAD_RESPONSE,
+        action: RA.HEAD_RESPONSE,
         name: this.name
       }
     })
     this.services.connection.sendMessage({
       topic: TOPIC.RECORD,
-      action: RECORD_ACTION.SUBSCRIBEANDHEAD,
+      action: RA.SUBSCRIBEANDHEAD,
       name: this.name
     })
   }
@@ -422,7 +422,7 @@ export class RecordCore extends Emitter {
     if (this.services.connection.isConnected) {
       const message = {
         topic: TOPIC.RECORD,
-        action: RECORD_ACTION.UNSUBSCRIBE,
+        action: RA.UNSUBSCRIBE,
         name: this.name
       }
       this.discardTimeout = this.services.timeoutRegistry.add({ message })
@@ -443,12 +443,13 @@ export class RecordCore extends Emitter {
       return
     }
 
-    if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
+    if (message.action === RA.PATCH || message.action === RA.UPDATE || message.action === RA.ERASE) {
       this.applyUpdate(message as RecordWriteMessage)
       return
     }
 
-    if (message.action === RECORD_ACTION.DELETE_SUCCESS) {
+    if (message.action === RA.DELETE_SUCCESS) {
+      this.services.timeoutRegistry.clear(this.deletedTimeout)
       this.stateMachine.transition(message.action)
       if (this.deleteResponse.callback) {
         this.deleteResponse.callback(null)
@@ -458,46 +459,53 @@ export class RecordCore extends Emitter {
       return
     }
 
-    if (message.action === RECORD_ACTION.DELETED) {
+    if (message.action === RA.DELETED) {
       this.stateMachine.transition(message.action)
       return
     }
 
-    if (message.action === RECORD_ACTION.VERSION_EXISTS) {
+    if (message.action === RA.VERSION_EXISTS) {
       // what kind of message is version exists?
       // this.recoverRecord(message)
       return
     }
 
-    if (message.action === RECORD_ACTION.MESSAGE_DENIED) {
+    if (
+      message.action === RA.MESSAGE_DENIED ||
+      message.action === RA.MESSAGE_PERMISSION_ERROR
+    ) {
       if (
-        message.originalAction === RECORD_ACTION.PATCH ||
-        message.originalAction === RECORD_ACTION.UPDATE ||
-        message.originalAction === RECORD_ACTION.ERASE ||
-        message.originalAction === RECORD_ACTION.DELETE ||
-        message.originalAction === RECORD_ACTION.CREATE ||
-        message.originalAction === RECORD_ACTION.READ ||
-        message.originalAction === RECORD_ACTION.SUBSCRIBECREATEANDREAD ||
-        message.originalAction === RECORD_ACTION.SUBSCRIBEANDHEAD
+        message.originalAction === RA.SUBSCRIBECREATEANDREAD ||
+        message.originalAction === RA.SUBSCRIBEANDHEAD ||
+        message.originalAction === RA.SUBSCRIBEANDREAD
       ) {
-        this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], RECORD_ACTION[message.originalAction])
+        const subscribeMsg = Object.assign({}, message, { originalAction: RA.SUBSCRIBE })
+        const actionMsg = Object.assign(
+          {},
+          message,
+          { originalAction: message.originalAction === RA.SUBSCRIBECREATEANDREAD ? RA.READ_RESPONSE : RA.HEAD_RESPONSE }
+      )
+        this.services.timeoutRegistry.remove(subscribeMsg)
+        this.services.timeoutRegistry.remove(actionMsg)
       }
 
-      if (message.originalAction === RECORD_ACTION.DELETE) {
+      this.emit(EVENT.RECORD_ERROR, RA[RA.MESSAGE_DENIED], RA[message.originalAction as number])
+
+      if (message.originalAction === RA.DELETE) {
         if (this.deleteResponse.callback) {
-          this.deleteResponse.callback(RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED])
+          this.deleteResponse.callback(RA[RA.MESSAGE_DENIED])
         } else if (this.deleteResponse.reject) {
-          this.deleteResponse.reject(RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED])
+          this.deleteResponse.reject(RA[RA.MESSAGE_DENIED])
         }
       }
       return
     }
 
     if (
-      message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER ||
-      message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
+      message.action === RA.SUBSCRIPTION_HAS_PROVIDER ||
+      message.action === RA.SUBSCRIPTION_HAS_NO_PROVIDER
     ) {
-      this.hasProvider = message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER
+      this.hasProvider = message.action === RA.SUBSCRIPTION_HAS_PROVIDER
       this.emit(EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider)
       return
     }
@@ -510,7 +518,7 @@ export class RecordCore extends Emitter {
     }
     this.version = message.version as number
     this.applyChange(setPath(this.data, null, message.parsedData))
-    this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
+    this.stateMachine.transition(RA.READ_RESPONSE)
   }
 
   private handleHeadResponse (message: RecordMessage): void {
@@ -540,7 +548,7 @@ export class RecordCore extends Emitter {
   private sendRead () {
     this.services.connection.sendMessage({
       topic: TOPIC.RECORD,
-      action: RECORD_ACTION.READ,
+      action: RA.READ,
       name: this.name
     })
   }
@@ -568,12 +576,12 @@ export class RecordCore extends Emitter {
 
     if (path) {
       if (data === undefined) {
-        Object.assign(message, { action: RECORD_ACTION.ERASE, path })
+        Object.assign(message, { action: RA.ERASE, path })
       } else {
-        Object.assign(message, { action: RECORD_ACTION.PATCH, path, parsedData: data })
+        Object.assign(message, { action: RA.PATCH, path, parsedData: data })
       }
     } else {
-      Object.assign(message, { action: RECORD_ACTION.UPDATE, parsedData: data })
+      Object.assign(message, { action: RA.UPDATE, parsedData: data })
     }
 
     if (callback) {
@@ -593,7 +601,7 @@ export class RecordCore extends Emitter {
     if (this.version === null) {
       this.version = version
     } else if (this.version + 1 !== version) {
-      if (message.action === RECORD_ACTION.PATCH) {
+      if (message.action === RA.PATCH) {
         /**
         * Request a snapshot so that a merge can be done with the read reply which contains
         * the full state of the record
@@ -607,9 +615,9 @@ export class RecordCore extends Emitter {
 
     this.version = version
     let newData
-    if (message.action === RECORD_ACTION.PATCH) {
+    if (message.action === RA.PATCH) {
       newData = setPath(this.data, message.path as string, data)
-    } else if (message.action === RECORD_ACTION.ERASE) {
+    } else if (message.action === RA.ERASE) {
       newData = setPath(this.data, message.path as string, undefined)
     } else {
       newData = setPath(this.data, null, data)
@@ -649,7 +657,7 @@ export class RecordCore extends Emitter {
       if (this.services.connection.isConnected) {
         const message = {
           topic: TOPIC.RECORD,
-          action: RECORD_ACTION.DELETE,
+          action: RA.DELETE,
           name: this.name
         }
         this.deletedTimeout = this.services.timeoutRegistry.add({
@@ -661,7 +669,7 @@ export class RecordCore extends Emitter {
       } else {
         this.services.storage.delete(this.name, () => {
           this.services.timerRegistry.requestIdleCallback(() => {
-            this.stateMachine.transition(RECORD_ACTION.DELETE_SUCCESS)
+            this.stateMachine.transition(RA.DELETE_SUCCESS)
           })
         })
       }
