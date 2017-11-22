@@ -13,7 +13,14 @@
                     </p>
                 </b-col>
                 <b-col lg="2" class="pull-right">
-                    <b-button :checked="isListening" size="sm" variant="outline-danger" v-on:click="toggleListening()">{{isListening ? 'Listening...' : 'Listen'}}</b-button>
+                    <p class="card-desc">
+                        <strong>
+                            {{ isListening ? listeningMessage : '' }}
+                        </strong>
+                    </p>
+                </b-col>
+                <b-col lg="2" class="pull-right">
+                    <b-button :checked="isListening" size="sm" variant="outline-danger" v-on:click="toggleListening()">{{isListening ? 'Stop' : 'Listen'}}</b-button>
                 </b-col>
             </b-row>
             <b-row>
@@ -82,12 +89,12 @@
                                             <tr v-for="e in subscribedEvents" :key="e.id">
                                                 <td>{{ e.name }}</td>
                                                 <td>
+                                                    <b-button @click="unsubscribe(e)" size="sm" variant="link"> unsubscribe </b-button>
+                                                </td>
+                                                <td>
                                                     <span class="light-font" v-for="d in e.data" :key="d.id">
                                                         {{d.content}},
                                                     </span>
-                                                </td>
-                                                <td>
-                                                    <b-button @click="unsubscribe(e)" size="sm" variant="link"> unsubscribe </b-button>
                                                 </td>
                                             </tr>
                                         </tbody>
@@ -130,8 +137,6 @@ const scenarioData = {
     ]
 }
 
-let intervals = []
-
 export default {
   name: "events",
   props: ["listener", "client"],
@@ -142,15 +147,26 @@ export default {
     
         subscribeEventName: "",
         subscribedEvents: [],
-    
-        isListening: false,
-    
+
+        listening: {
+            isActive: false,
+            members: [],
+            intervals: []
+        },
+
         scenarioData
     };
   },
   computed: {
       isPlaying: function () {
           return this.$data.scenarioData.isplaying
+      },
+      isListening: function () {
+          return this.$data.listening.isActive
+      },
+      listeningMessage: function () {
+          let membersCount = this.$data.listening.members.length
+          return membersCount === 0 ? 'No client is currently subscribed' : `${membersCount} client(s) is interested`
       }
   },
   methods: {
@@ -193,10 +209,14 @@ export default {
         })
 
         this.client.event.unsubscribe(event.name)
+        const index = this.$data.listening.members.indexOf(event.name)
+        if ( index > -1) {
+            this.$data.listening.members.splice(index, 1)
+        }
     },
 
     toggleListening () {
-        this.isListening = !this.isListening
+        this.listening.isActive = !this.listening.isActive
 
         if (this.isListening) {
             this.listen()
@@ -210,20 +230,24 @@ export default {
         comp.listener.event.listen('.*', (name, response) => {
             response.accept()
 
-            intervals.push(
-                setInterval(() => {
-                    console.log('listener emitting?')
-                    comp.listener.event.emit(name, 'from provider')
-                }, 40)
-            )
+            if (name) {
+                if (comp.$data.listening.members.indexOf(name) === -1) {
+                    comp.$data.listening.members.push(name)
+                    comp.$data.listening.intervals.push(
+                        setInterval(() => {
+                            comp.listener.event.emit(name, 'from provider')
+                        }, 1000)
+                    )
+                }
+            }
         })
     },
 
     unlisten () {
         this.listener.event.unlisten('.*')
-        if (intervals.length) {
-            intervals.forEach(i => clearInterval(i))
-            intervals = []
+        if (this.$data.listening.intervals.length) {
+            this.$data.listening.intervals.forEach(i => clearInterval(i))
+            this.$data.listening.intervals = []
         }
     },
 
