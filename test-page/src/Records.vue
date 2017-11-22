@@ -172,14 +172,7 @@
                 </b-col>
             </b-row>
             <b-row> <br> </b-row>
-            <b-row>
-                <b-col>
-                    <p class="card-desc">Press play and record memory for potential leaks</p>
-                </b-col>
-                <b-col lg="2" offset-lg="3">
-                    <b-button class="sm-text" :disabled="isPlaying" :checked="isPlaying" size="sm" variant="outline-primary" v-on:click="toggleScenario()">{{isPlaying ? 'Playing...' : 'Play'}}</b-button>
-                </b-col>
-            </b-row>
+            <MemoryTest :play="play" :stop="stop"/>
         </b-card>
     </div>
 </template>
@@ -189,350 +182,289 @@ import { Card } from "bootstrap-vue/es/components"
 import * as ds from '../../dist/deepstream.js'
 import Listening from './Listening.vue'
 import ComponentListens from './ComponentListens'
-
-const carRecordScheme = {
-    id: null,
-    brand: null,
-    model: null,
-    version: null
-}
-
-const recordSubscriptionHandler = function (path, update) {
-    console.log(path, ': value has been updated to:', update)
-}
-
-const Record = {
-    name: '',
-    scheme: carRecordScheme,
-    subscriptionHandler: recordSubscriptionHandler,
-    instance: null,
-    latestSnapshot: null
-}
-
-const scenarioData = {
-    isplaying: false,
-    records: [
-        Object.assign(Record, {
-            name: 'cars/123'
-        }),
-        Object.assign(Record, {
-            name: 'cars/456'
-        }),
-        Object.assign(Record, {
-            name: 'cars/789'
-        }),
-        Object.assign(Record, {
-            name: 'cars/741'
-        }),
-        Object.assign(Record, {
-            name: 'cars/852'
-        }),
-        Object.assign(Record, {
-            name: 'cars/852'
-        }),
-        Object.assign(Record, {
-            name: 'cars/963'
-        }),
-        Object.assign(Record, {
-            name: 'cars/537'
-        }),
-        Object.assign(Record, {
-            name: 'cars/159'
-        })
-    ]
-}
+import MemoryTest from './MemoryTest.vue'
 
 const isDuplicate = (arr, obj, key) => {
     return arr.reduce((acc, o) => {
-           if (obj[key] === o[key]) {
-               acc = true
-           }
-       
-           return acc
-       }, false)
+        if (obj[key] === o[key]) {
+            acc = true
+        }
+
+        return acc
+    }, false)
 }
 
 export default {
-  name: "presence",
-  props: ["listener", "client"],
-  components: {
-    Listening
-  },
-  created () {
-    const comp = this
-    comp.client.on('logged', logged => {
-        console.log('received loggin status:', logged)
-        comp.$data.isLogged = logged
-    })
-  },
-  data () {
-    return Object.assign(ComponentListens.data, {
-        isLogged: false,
-        snapshot: {
-            name: '',
-            value: ''
-        },
-        snapshotRecordName: '',
-        record: {
-            name: '',
-            ready: false,
-            created: false,
-            loading: false,
-            instance: null,
-            subscription: {
-                isSubscribed: false,
-                latestUpdate: ''
-            },
-            set: {
-                path: '',
-                data: '',
-                loading: false,
-                done: false
-            }
-        },
-        has: {
-            name: '',
-            exists: false,
-            loading: false,
-            done: true
-        },
-        records: [],
-        scenarioData
-    })
-  },
-  computed: {
-      isPlaying: function() {
-          return this.$data.scenarioData.isplaying
-      }
-  },
-  methods: Object.assign({
-      resetRecordVm: function () {
-        this.$data.record = {
-            name: '',
-            ready: false,
-            created: false,
-            loading: false,
-            instance: null,
-            subscription: {
-                isSubscribed: false,
-                latestUpdate: ''
-            },
-            set: {
-                path: '',
-                data: '',
-                loading: false,
-                done: false
-            }
-        }
+    name: "presence",
+    props: ["listener", "client"],
+    components: {
+        Listening, MemoryTest
     },
-    createRecord: function() {
+    created() {
         const comp = this
-
-        if (comp.$data.isLogged) {
-            if (comp.$data.record.name.length) {
-                comp.$data.record.loading = true
-                comp.$data.record.instance = comp.client.record.getRecord(comp.$data.record.name)
-        
-                let isdup = isDuplicate(comp.$data.records, comp.$data.record, 'name')
-                
-                comp.$data.record.instance.whenReady(() => {
-                    comp.$data.record.ready = true
-                    comp.$data.record.created = true
-                    if (!isdup) {
-                        comp.$data.records.push(Object.assign({
-                            id: comp.$data.record.length + 1
-                        }, comp.$data.record))
-                    }
-                    comp.resetRecordVm()
-                })
-            }
-        } else {
-            alert('You have to login first')
-        }
-    },
-    hasRecord: function() {
-        const comp = this
-        if (comp.$data.isLogged) {
-            if (comp.$data.has.name) {
-                comp.$data.has.loading = true
-                comp.$data.has.done = false
-                comp.client.record.has(comp.$data.has.name, (err, exists) => {
-                    comp.$data.has.exists = exists
-                    comp.$data.has.loading = false
-                    comp.$data.has.done = true
-                })
-            }
-        } else {
-            alert('You have to login first')
-        }
-    },
-    
-    subscribe: function (record) {
-        if (!record.subscription.isSubscribed) {
-            record.instance.subscribe(update => {
-                record.subscription.latestUpdate = JSON.stringify(update)
-            })
-            record.subscription.isSubscribed = true
-            this.saveListeningMember(record.name)
-        }
-    },
-    
-    unsubscribe: function (record) {
-        record.instance.unsubscribe()
-        record.subscription.latestUpdate = ''
-        record.subscription.isSubscribed = false
-        this.removeListeningMember(record.name)
-    },
-    
-    setRecord: function(record) {
-        if (record.set.path.length && record.set.data.length) {
-            record.set.loading = true
-            record.set.done = false
-
-            record.instance.set(record.set.path, record.set.data, () => {
-                record.set.loading = false
-                record.set.done = true
-                record.set.data = ''
-            })
-        }
-    },
-
-    snapshotRecord: function() {
-        const comp = this
-        comp.client.record.snapshot(comp.$data.snapshot.name, (err, data) => {
-            comp.$data.snapshot.value = JSON.stringify(data)
-            comp.$data.snapshotRecordName = comp.$data.snapshot.name
+        comp.client.on('logged', logged => {
+            console.log('received loggin status:', logged)
+            comp.$data.isLogged = logged
         })
     },
-
-    toggleScenario: function() {
-        this.$data.scenarioData.isplaying = !this.$data.scenarioData.isplaying
-
-        if (this.isPlaying) {
-            this.playScenario()
-        }
+    data() {
+        return Object.assign(ComponentListens.data, {
+            isLogged: false,
+            snapshot: { name: '', value: '' },
+            snapshotRecordName: '',
+            record: {
+                name: '',
+                ready: false,
+                created: false,
+                loading: false,
+                instance: null,
+                subscription: {
+                    isSubscribed: false,
+                    latestUpdate: ''
+                },
+                set: {
+                    path: '',
+                    data: '',
+                    loading: false,
+                    done: false
+                }
+            },
+            has: {
+                name: '',
+                exists: false,
+                loading: false,
+                done: true
+            },
+            records: [],
+            scenario: { records: [] }
+        })
     },
-
-    playScenario: function () {
-        this.$data.scenarioData.isplaying = true
-
-        console.log('Playing Events Scenario ...')
-    
-        const scenario = this.getScenario()
-
-        scenario.createRecords()
-        scenario.subscribeToRecords()
-        scenario.setDataForRecords()
-        scenario.snapshotRecords()
-        
-        setTimeout(() => {
-            scenario.discardRecords()
-
-            this.$data.scenarioData.isplaying = false
-            
-            console.log('<- done')
-
-        }, 2 * 1000)
-        
-    },
-
-    getScenario: function () {
-        let scenario = {}
-
-        scenario.intervalId = null
-
-        scenario.createRecords = this.__createRecords.bind(this)
-        scenario.subscribeToRecords = this.__subscribeToRecords.bind(this)
-        scenario.setDataForRecords = this.__setDataForRecords.bind(this, scenario)
-        scenario.snapshotRecords = this.__snapshotRecords.bind(this)
-        scenario.discardRecords = this.__discardRecords.bind(this, scenario)
-
-        return scenario
-    },
-    __createRecords: function () {
-        for (let record of this.$data.scenarioData.records) {
-            record.instance = this.client.record.getRecord(record.name)
-        }
-    },
-    __subscribeToRecords: function () {
-        for (let record of this.$data.scenarioData.records) {
-            for (let path in record.scheme) {
-                record.instance.whenReady(() => {
-                    record.instance.subscribe(path, record.subscriptionHandler.bind(null, path))
-                })
-            }
-        }
-    },
-    __setDataForRecords: function (scenario) {
-        const comp = this
-        scenario.intervalId = setInterval(() => {
-            let i = 0
-            for (let record of comp.$data.scenarioData.records) {
-                for (let path in record.scheme) {
-                    record.instance.whenReady(() => {
-                        record.instance.set(path, `${path} ${i}th value`, err => {
-                            if (err) {
-                                console.log('Error setting value for path', path, err)
-                            } else {
-                                console.log('Successfully sat value for', path)
-                            }
-                        })
-                    })
-                    i++
+    methods: Object.assign({
+        resetRecordVm: function () {
+            this.$data.record = {
+                name: '',
+                ready: false,
+                created: false,
+                loading: false,
+                instance: null,
+                subscription: {
+                    isSubscribed: false,
+                    latestUpdate: ''
+                },
+                set: {
+                    path: '',
+                    data: '',
+                    loading: false,
+                    done: false
                 }
             }
-        }, 50)
-    },
-    __snapshotRecords: function () {
-        for (let record of this.$data.scenarioData.records) {
-            this.client.record.snapshot(record.name, (err, data) => {
-                record.latestSnapshot = data
+        },
+        createRecord: function () {
+            const comp = this
+
+            if (comp.$data.isLogged) {
+                if (comp.$data.record.name.length) {
+                    comp.$data.record.loading = true
+                    comp.$data.record.instance = comp.client.record.getRecord(comp.$data.record.name)
+
+                    let isdup = isDuplicate(comp.$data.records, comp.$data.record, 'name')
+
+                    comp.$data.record.instance.whenReady(() => {
+                        comp.$data.record.ready = true
+                        comp.$data.record.created = true
+                        if (!isdup) {
+                            comp.$data.records.push(Object.assign({
+                                id: comp.$data.record.length + 1
+                            }, comp.$data.record))
+                        }
+                        comp.resetRecordVm()
+                    })
+                }
+            } else {
+                alert('You have to login first')
+            }
+        },
+        hasRecord: function () {
+            const comp = this
+            if (comp.$data.isLogged) {
+                if (comp.$data.has.name) {
+                    comp.$data.has.loading = true
+                    comp.$data.has.done = false
+                    comp.client.record.has(comp.$data.has.name, (err, exists) => {
+                        comp.$data.has.exists = exists
+                        comp.$data.has.loading = false
+                        comp.$data.has.done = true
+                    })
+                }
+            } else {
+                alert('You have to login first')
+            }
+        },
+
+        subscribe: function (record) {
+            if (!record.subscription.isSubscribed) {
+                record.instance.subscribe(update => {
+                    record.subscription.latestUpdate = JSON.stringify(update)
+                })
+                record.subscription.isSubscribed = true
+                this.saveListeningMember(record.name)
+            }
+        },
+
+        unsubscribe: function (record) {
+            record.instance.unsubscribe()
+            record.subscription.latestUpdate = ''
+            record.subscription.isSubscribed = false
+            this.removeListeningMember(record.name)
+        },
+
+        setRecord: function (record) {
+            if (record.set.path.length && record.set.data.length) {
+                record.set.loading = true
+                record.set.done = false
+
+                record.instance.set(record.set.path, record.set.data, () => {
+                    record.set.loading = false
+                    record.set.done = true
+                    record.set.data = ''
+                })
+            }
+        },
+
+        snapshotRecord: function () {
+            const comp = this
+            comp.client.record.snapshot(comp.$data.snapshot.name, (err, data) => {
+                comp.$data.snapshot.value = JSON.stringify(data)
+                comp.$data.snapshotRecordName = comp.$data.snapshot.name
             })
-        }
-    },
-    __discardRecords: function (scenario) {
-        for (let record of this.$data.scenarioData.records) {
-            record.instance.discard()
-        }
-        
-        clearInterval(scenario.intervalId)
-    },
-    
-    listen: function () {
-        const component = this
-        const listener = this.listener
-        const listening = this.$data.listening        
+        },
 
-        listener.record.listen('.*', (name, response) => {
-            response.accept()
-            console.log('Listening for redeepstream.js?b891:7775 Warning: RECORD (LISTEN): ACK_TIMEOUTcord', name)
-            if (name) {
-                const isNew = component.saveListeningMember(name)
+        play: function () {
+            const client = this.client
+            const scenario = this.$data.scenario
+            
+            const playNextRecord = function(records) {
+                if (records.length > 25000) {
+                    return
+                }
 
-                if (isNew) {
-                    let i = 0
-                    const intervalId = setInterval(() => {
-                        listener.record.setData(name, 'provider', `[${++i}]: data sat from provider`, err => {
+                const recordName = `record-${client.getUid()}`
+                
+                const record = client.record.getRecord(recordName, update => {
+                    console.log(recordName, 'update:', update)
+                })
+
+                record.whenReady(() => {
+                    const setDataIntervalId = setInterval(() => {
+                        client.record.setData(recordName, {
+                            name: 'awesome record',
+                            options: {
+                                new: false,
+                                old: true,
+                                date: Date.now()
+                            }
+                        }, err => {
                             if (err) {
-                                console.log('Caught error while settign data for record', name, 'error:', err)
+                                console.log('Error setting data for', recordName, 'error:', err)
                             } else {
-                                console.log('Successfully sat data for record', name)
+                                console.log('Successfully set data for record', recordName)
                             }
                         })
                     }, 1000)
-                    listening.intervalsIds.push(intervalId)
-                }
-            }
-        })
-    },
+    
+                    const setIntervalId = setInterval(() => {
+                        record.set('options.new', 'true', err => {
+                            if (err) {
+                                console.log('Error setting options.new for', recordName, 'error:', err)
+                            } else {
+                                console.log('Successfully set options.new for record', recordName)
+                            }
+                        })
+                    }, 1500)
+                    
+                    const snapshotIntervalId = setInterval(() => {
+                        client.record.snapshot(recordName, (err, data) => {
+                            if (err) {
+                                console.log('Error snapshotting', recordName, 'error:', err)
+                            } else {
+                                console.log('Successfully snapshotted  record', recordName, 'snapshot:', data)
+                            }
+                        })
+                    }, 2000)
 
-    unlisten: function() {
-        this.listener.record.unlisten('.*')
-        this.$data.listening.intervalsIds.forEach(timerId => clearInterval(timerId))
-        this.$data.listening.intervalsIds = []
-    }
-  }, ComponentListens.methods)
-};
+                    records.push({
+                        instance: record,
+                        recordName,
+                        intervalsIds:[ setDataIntervalId, setIntervalId, snapshotIntervalId ]
+                    })
+                })
+                
+
+                setTimeout(() => {
+                    playNextRecord(records)
+                }, 100)
+            }
+
+            playNextRecord(scenario.records)
+        },
+
+        stop: function () {
+            const client = this.client
+            const scenario = this.$data.scenario
+
+            const stopNextRecord = function (records, i) {
+                if (i >= records.length) {
+                    return
+                }
+
+                const record = records[i]
+
+                record.instance.discard()
+                record.intervalsIds.forEach(i => clearInterval(i))
+
+                setTimeout(() => {
+                    stopNextRecord(records, ++i)
+                })
+            }
+
+            stopNextRecord(scenario.records, 0)
+        },
+
+        listen: function () {
+            const component = this
+            const listener = this.listener
+            const listening = this.$data.listening
+
+            listener.record.listen('.*', (name, response) => {
+                response.accept()
+                console.log('Listening for redeepstream.js?b891:7775 Warning: RECORD (LISTEN): ACK_TIMEOUTcord', name)
+                if (name) {
+                    const isNew = component.saveListeningMember(name)
+
+                    if (isNew) {
+                        let i = 0
+                        const intervalId = setInterval(() => {
+                            listener.record.setData(name, 'provider', `[${++i}]: data sat from provider`, err => {
+                                if (err) {
+                                    console.log('Caught error while settign data for record', name, 'error:', err)
+                                } else {
+                                    console.log('Successfully sat data for record', name)
+                                }
+                            })
+                        }, 1000)
+                        listening.intervalsIds.push(intervalId)
+                    }
+                }
+            })
+        },
+
+        unlisten: function () {
+            this.listener.record.unlisten('.*')
+            this.$data.listening.intervalsIds.forEach(timerId => clearInterval(timerId))
+            this.$data.listening.intervalsIds = []
+        }
+    }, ComponentListens.methods)
+}
 </script>
 
 <style scoped>
