@@ -196,13 +196,13 @@ export class PresenceHandler {
 
     if (message.action === PRESENCE_ACTION.QUERY_ALL_RESPONSE) {
       this.queryAllEmitter.emit(ONLY_EVENT, null, message.names)
-      this.services.timeoutRegistry.remove(Object.assign({}, message, { action: PRESENCE_ACTION.QUERY_ALL }))
+      this.services.timeoutRegistry.remove(message)
       return
     }
 
     if (message.action === PRESENCE_ACTION.QUERY_RESPONSE) {
       this.queryEmitter.emit(message.correlationId as string, null, message.parsedData)
-      this.services.timeoutRegistry.remove(Object.assign({}, message, { action: PRESENCE_ACTION.QUERY }))
+      this.services.timeoutRegistry.remove(message)
       return
     }
 

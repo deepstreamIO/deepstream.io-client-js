@@ -359,6 +359,7 @@ class RecordCore extends Emitter {
             return;
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS) {
+            this.services.timeoutRegistry.clear(this.deletedTimeout);
             this.stateMachine.transition(message.action);
             if (this.deleteResponse.callback) {
                 this.deleteResponse.callback(null);
@@ -377,17 +378,17 @@ class RecordCore extends Emitter {
             // this.recoverRecord(message)
             return;
         }
-        if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED) {
-            if (message.originalAction === message_constants_1.RECORD_ACTIONS.PATCH ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.UPDATE ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.ERASE ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.CREATE ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.READ ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD ||
-                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDHEAD) {
-                this.emit(constants_1.EVENT.RECORD_ERROR, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], message_constants_1.RECORD_ACTIONS[message.originalAction]);
+        if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED ||
+            message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_PERMISSION_ERROR) {
+            if (message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDHEAD ||
+                message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDREAD) {
+                const subscribeMsg = Object.assign({}, message, { originalAction: message_constants_1.RECORD_ACTIONS.SUBSCRIBE });
+                const actionMsg = Object.assign({}, message, { originalAction: message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD ? message_constants_1.RECORD_ACTIONS.READ_RESPONSE : message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE });
+                this.services.timeoutRegistry.remove(subscribeMsg);
+                this.services.timeoutRegistry.remove(actionMsg);
             }
+            this.emit(constants_1.EVENT.RECORD_ERROR, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], message_constants_1.RECORD_ACTIONS[message.originalAction]);
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.DELETE) {
                 if (this.deleteResponse.callback) {
                     this.deleteResponse.callback(message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]);

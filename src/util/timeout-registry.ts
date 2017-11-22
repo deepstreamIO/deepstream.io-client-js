@@ -86,10 +86,17 @@ export class TimeoutRegistry extends EventEmitter {
    * Remove an entry
    */
   public remove (message: Message): void {
-    const uniqueName = this.getUniqueName(message)
+    let requestMsg
+    const action = RESPONSE_TO_REQUEST[message.topic][message.action]
+    if (!action) {
+      requestMsg = message
+    } else {
+      requestMsg = Object.assign({}, message, { action })
+    }
+    const uniqueName = this.getUniqueName(requestMsg)
     for (const [timerId, timeout] of this.register) {
       if (timeout.uniqueName === uniqueName) {
-        clearTimeout(timerId)
+        this.services.timerRegistry.remove(timerId)
         this.register.delete(timerId)
       }
     }

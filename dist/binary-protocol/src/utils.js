@@ -30,10 +30,19 @@ function reverseMapNumeric(map) {
 exports.reverseMapNumeric = reverseMapNumeric;
 exports.WRITE_ACK_TO_ACTION = reverseMapNumeric(exports.ACTION_TO_WRITE_ACK);
 exports.RESPONSE_TO_REQUEST = {
-    [message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE]: message_constants_1.RECORD_ACTIONS.HEAD,
-    [message_constants_1.RECORD_ACTIONS.READ_RESPONSE]: message_constants_1.RECORD_ACTIONS.READ,
-    [message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS]: message_constants_1.RECORD_ACTIONS.DELETE,
-    [message_constants_1.PRESENCE_ACTIONS.QUERY]: message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE,
-    [message_constants_1.PRESENCE_ACTIONS.QUERY_ALL]: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE
+    [message_constants_1.TOPIC.RECORD]: {
+        [message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE]: message_constants_1.RECORD_ACTIONS.HEAD,
+        [message_constants_1.RECORD_ACTIONS.READ_RESPONSE]: message_constants_1.RECORD_ACTIONS.READ,
+        [message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS]: message_constants_1.RECORD_ACTIONS.DELETE,
+    },
+    [message_constants_1.TOPIC.PRESENCE]: {
+        [message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE]: message_constants_1.PRESENCE_ACTIONS.QUERY,
+        [message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE]: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL
+    },
+    [message_constants_1.TOPIC.RPC]: {
+        [message_constants_1.RPC_ACTIONS.ACCEPT]: message_constants_1.RPC_ACTIONS.REQUEST,
+        [message_constants_1.RPC_ACTIONS.ERROR]: message_constants_1.RPC_ACTIONS.REQUEST
+    },
+    [message_constants_1.TOPIC.EVENT]: {}
 };
 //# sourceMappingURL=utils.js.map

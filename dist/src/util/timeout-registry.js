@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../constants");
+const utils_1 = require("../../binary-protocol/src/utils");
 const EventEmitter = require("component-emitter2");
 /**
  * Subscriptions to events are in a pending state until deepstream acknowledges
@@ -53,10 +54,18 @@ class TimeoutRegistry extends EventEmitter {
      * Remove an entry
      */
     remove(message) {
-        const uniqueName = this.getUniqueName(message);
+        let requestMsg;
+        const action = utils_1.RESPONSE_TO_REQUEST[message.topic][message.action];
+        if (!action) {
+            requestMsg = message;
+        }
+        else {
+            requestMsg = Object.assign({}, message, { action });
+        }
+        const uniqueName = this.getUniqueName(requestMsg);
         for (const [timerId, timeout] of this.register) {
             if (timeout.uniqueName === uniqueName) {
-                clearTimeout(timerId);
+                this.services.timerRegistry.remove(timerId);
                 this.register.delete(timerId);
             }
         }
