@@ -188,6 +188,7 @@
 import { Card } from "bootstrap-vue/es/components"
 import * as ds from '../../dist/deepstream.js'
 import Listening from './Listening.vue'
+import ComponentListens from './ComponentListens'
 
 const carRecordScheme = {
     id: null,
@@ -265,7 +266,7 @@ export default {
     })
   },
   data () {
-    return {
+    return Object.assign(ComponentListens.data, {
         isLogged: false,
         snapshot: {
             name: '',
@@ -296,20 +297,16 @@ export default {
             done: true
         },
         records: [],
-        scenarioData,
-        listening: {
-            members: [],
-            timerId: null
-        }
-    }
+        scenarioData
+    })
   },
   computed: {
       isPlaying: function() {
           return this.$data.scenarioData.isplaying
       }
   },
-  methods: {
-    resetRecordVm: function () {
+  methods: Object.assign({
+      resetRecordVm: function () {
         this.$data.record = {
             name: '',
             ready: false,
@@ -501,48 +498,29 @@ export default {
         clearInterval(scenario.intervalId)
     },
     
-    saveListeningMember: function (member) {
-        if (this.listening.members.indexOf(member) === -1) {
-            this.listening.members.push(member)
-            return true
-        }
-        return false
-    },
-
-    removeListeningMember: function (member) {
-        const index = this.listening.members.indexOf(member) 
-
-        if (index > -1) {
-            this.listening.members.splice(index, 1)
-            return true
-        }
-
-        return false
-    },
-
     listen: function () {
         const component = this
         const listener = this.listener
         const listening = this.$data.listening        
 
-        console.log(listening)
         listener.record.listen('.*', (name, response) => {
             response.accept()
-
+            console.log('Listening for redeepstream.js?b891:7775 Warning: RECORD (LISTEN): ACK_TIMEOUTcord', name)
             if (name) {
                 const isNew = component.saveListeningMember(name)
 
                 if (isNew) {
                     let i = 0
-                    listening.timerId = setInterval(() => {
-                        listener.record.setData('provider', `[${++i}]: data sat from provider`, err => {
+                    const intervalId = setInterval(() => {
+                        listener.record.setData(name, 'provider', `[${++i}]: data sat from provider`, err => {
                             if (err) {
                                 console.log('Caught error while settign data for record', name, 'error:', err)
                             } else {
                                 console.log('Successfully sat data for record', name)
                             }
                         })
-                    }, 50)
+                    }, 1000)
+                    listening.intervalsIds.push(intervalId)
                 }
             }
         })
@@ -550,9 +528,10 @@ export default {
 
     unlisten: function() {
         this.listener.record.unlisten('.*')
-        clearInterval(this.$data.listening.timerId)
+        this.$data.listening.intervalsIds.forEach(timerId => clearInterval(timerId))
+        this.$data.listening.intervalsIds = []
     }
-  }
+  }, ComponentListens.methods)
 };
 </script>
 

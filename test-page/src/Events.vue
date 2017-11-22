@@ -6,23 +6,8 @@
             </p>
             <br>
 
-            <b-row>
-                <b-col>
-                    <p class="card-desc">
-                        <strong>Enable event listening: </strong>
-                    </p>
-                </b-col>
-                <b-col lg="2" class="pull-right">
-                    <p class="card-desc">
-                        <strong>
-                            {{ isListening ? listeningMessage : '' }}
-                        </strong>
-                    </p>
-                </b-col>
-                <b-col lg="2" class="pull-right">
-                    <b-button :checked="isListening" size="sm" variant="outline-danger" v-on:click="toggleListening()">{{isListening ? 'Stop' : 'Listen'}}</b-button>
-                </b-col>
-            </b-row>
+            <Listening :members="listening.members" :listen="listen" :unlisten="unlisten" />
+
             <b-row>
                 <br>
             </b-row>
@@ -120,7 +105,9 @@
 </template>
 
 <script>
-import { Card } from "bootstrap-vue/es/components";
+import { Card } from "bootstrap-vue/es/components"
+import Listening from "./Listening.vue"
+import ComponentListens from "./ComponentListens"
 
 const handler = function (emitMessage) {
     console.log('received at', this.evt, ':', emitMessage)
@@ -128,195 +115,200 @@ const handler = function (emitMessage) {
 
 const scenarioData = {
     isplaying: false,
-    events: [
-        { name: 'a', handler },
-        { name: 'b', handler },
-        { name: 'c', handler },
-        { name: 'd', handler },
-        { name: 'e', handler }
-    ]
+    events: [{
+        name: 'a',
+        handler
+    },
+    {
+        name: 'b',
+        handler
+    },
+    {
+        name: 'c',
+        handler
+    },
+    {
+        name: 'd',
+        handler
+    },
+    {
+        name: 'e',
+        handler
+    }]
 }
 
 export default {
-  name: "events",
-  props: ["listener", "client"],
-  data() {
-    return {
-        emitEventName: "",
-        emitEventData: "",
-    
-        subscribeEventName: "",
-        subscribedEvents: [],
+    name: "events",
+    props: ["listener", "client"],
+    components: {
+        Listening,
+    },
+    data() {
+        return Object.assign({
+            emitEventName: "",
+            emitEventData: "",
 
-        listening: {
-            isActive: false,
-            members: [],
-            intervals: []
+            subscribeEventName: "",
+            subscribedEvents: [],
+            scenarioData
+        }, ComponentListens.data)
+    },
+    computed: {
+        isPlaying: function () {
+            return this.$data.scenarioData.isplaying
+        }
+    },
+    methods: Object.assign({
+        emit: function () {
+            this.client.event.emit(this.emitEventName, this.emitEventData)
         },
 
-        scenarioData
-    };
-  },
-  computed: {
-      isPlaying: function () {
-          return this.$data.scenarioData.isplaying
-      },
-      isListening: function () {
-          return this.$data.listening.isActive
-      },
-      listeningMessage: function () {
-          let membersCount = this.$data.listening.members.length
-          return membersCount === 0 ? 'No client is currently subscribed' : `${membersCount} client(s) is interested`
-      }
-  },
-  methods: {
-    emit: function () {
-        this.client.event.emit(this.emitEventName, this.emitEventData)
-    },
+        subscribe: function () {
+            const component = this
+            const data = this.$data
 
-    subscribe: function () {
-        const comp = this
-
-        const event = {
-            id: comp.subscribedEvents.length + 1,
-            name: comp.subscribeEventName,
-            data: []
-        }
-
-        const isDuplicate = comp.subscribedEvents.reduce((acc, ev) => {
-            if (ev.name === event.name) {
-                acc = true
+            const event = {
+                id: data.subscribedEvents.length + 1,
+                name: data.subscribeEventName,
+                data: []
             }
-            return acc
-        }, false)
 
-        if (!isDuplicate) {
-            comp.subscribedEvents.push(event)
-        }
-
-        comp.client.event.subscribe(comp.subscribeEventName, content => {
-            console.log(comp.subscribeEventName, content)
-            event.data.push({ id: event.data.length + 1, content })
-        })
-    },
-
-    unsubscribe: function (event) {
-        this.subscribedEvents = this.subscribedEvents.filter(e => {
-            if (e.name === event.name) {
-                return false
-            }
-            return true
-        })
-
-        this.client.event.unsubscribe(event.name)
-        const index = this.$data.listening.members.indexOf(event.name)
-        if ( index > -1) {
-            this.$data.listening.members.splice(index, 1)
-        }
-    },
-
-    toggleListening () {
-        this.listening.isActive = !this.listening.isActive
-
-        if (this.isListening) {
-            this.listen()
-        } else {
-            this.unlisten()
-        }
-    },
-
-    listen () {
-        let comp = this
-        comp.listener.event.listen('.*', (name, response) => {
-            response.accept()
-
-            if (name) {
-                if (comp.$data.listening.members.indexOf(name) === -1) {
-                    comp.$data.listening.members.push(name)
-                    comp.$data.listening.intervals.push(
-                        setInterval(() => {
-                            comp.listener.event.emit(name, 'from provider')
-                        }, 1000)
-                    )
+            const isDuplicate = data.subscribedEvents.reduce((acc, ev) => {
+                if (ev.name === event.name) {
+                    acc = true
                 }
+                return acc
+            }, false)
+
+            if (!isDuplicate) {
+                console.log('Event is not duplicate')
+                data.subscribedEvents.push(event)
+                console.log(data.subscribedEvents)
+            } else {
+                console.log('Event is duplicate')
             }
-        })
-    },
 
-    unlisten () {
-        this.listener.event.unlisten('.*')
-        if (this.$data.listening.intervals.length) {
-            this.$data.listening.intervals.forEach(i => clearInterval(i))
-            this.$data.listening.intervals = []
-        }
-    },
+            component.client.event.subscribe(event.name, content => {
+                console.log(event.name, 'event received emit:', content)
+                event.data.push({
+                    id: event.data.length + 1,
+                    content
+                })
+            })
 
-    toggleScenario: function() {
-        this.$data.scenarioData.isplaying = !this.$data.scenarioData.isplaying
+            console.log('Suscribed')
+        },
 
-        if (this.isPlaying) {
-            this.playScenario()
-        }
-    },
-
-    playScenario: function () {
-        this.$data.scenarioData.isplaying = true
-
-        console.log('Playing Events Scenario ...')
-    
-        const scenario = this.getScenario()
-
-        scenario.subscribeToEvents()
-        scenario.emitEvents()
-        
-        setTimeout(() => {
-            scenario.unsubFromEvents()
-
-            this.$data.scenarioData.isplaying = false
+        unsubscribe: function (event) {
+            const component = this
+            const data = this.$data
             
-            console.log('<- done')
+            data.subscribedEvents = data.subscribedEvents.filter(e => {
+                if (e.name === event.name) {
+                    return false
+                }
+                return true
+            })
 
-        }, 2 * 60 * 1000)
-        
-    },
+            this.client.event.unsubscribe(event.name)
 
-    getScenario: function () {
-        let scenario = {}
+            this.removeListeningMember(event.name)
+        },
 
-        scenario.intervalId = null
+        listen() {
+            const component = this
+            const listener = this.listener
+            const listening = this.$data.listening
 
-        scenario.subscribeToEvents = this.__subscribeToEvents.bind(this)
-        scenario.emitEvents = this.__emitEvents.bind(this, scenario)
-        scenario.unsubFromEvents = this.__unsubFromEvents.bind(this, scenario)
-            
-        return scenario
-    },
+            listener.event.listen('.*', (name, response) => {
+                response.accept()
 
-    __subscribeToEvents: function () {
-        for (let evt of this.$data.scenarioData.events) {
-            evt.handler = evt.handler.bind(evt)
-            this.client.event.subscribe(evt.name, evt.handler)
-        }
-    },
-    
-    __emitEvents: function (scenario) {
-        const comp = this
-        scenario.intervalId = setInterval(() => {
-            for (let evt of comp.$data.scenarioData.events) {
-                comp.client.event.emit(evt.name, 'message sent from', evt.name)
+                if (name) {
+                    const isNew = component.saveListeningMember(name)
+
+                    if (isNew) {
+                        const intervalId = setInterval(() => {
+                            component.listener.event.emit(name, 'from provider')
+                        }, 1000)
+
+                        listening.intervalsIds.push(intervalId)
+                    }
+                }
+            })
+        },
+
+        unlisten() {
+            this.listener.event.unlisten('.*')
+            this.$data.listening.intervalsIds.forEach(i => clearInterval(i))
+            this.$data.listening.intervalsIds = []
+        },
+
+        toggleScenario: function () {
+            this.$data.scenarioData.isplaying = !this.$data.scenarioData.isplaying
+
+            if (this.isPlaying) {
+                this.playScenario()
             }
-        }, 50)
-    },
+        },
 
-    __unsubFromEvents: function (scenario) {
-        for (let evt of this.$data.scenarioData.events) {
-            this.client.event.unsubscribe(evt.name, evt.handler)
+        playScenario: function () {
+            this.$data.scenarioData.isplaying = true
+
+            console.log('Playing Events Scenario ...')
+
+            const scenario = this.getScenario()
+
+            scenario.subscribeToEvents()
+            scenario.emitEvents()
+
+            setTimeout(() => {
+                scenario.unsubFromEvents()
+
+                this.$data.scenarioData.isplaying = false
+
+                console.log('<- done')
+
+            }, 2 * 60 * 1000)
+
+        },
+
+        getScenario: function () {
+            let scenario = {}
+
+            scenario.intervalId = null
+
+            scenario.subscribeToEvents = this.__subscribeToEvents.bind(this)
+            scenario.emitEvents = this.__emitEvents.bind(this, scenario)
+            scenario.unsubFromEvents = this.__unsubFromEvents.bind(this, scenario)
+
+            return scenario
+        },
+
+        __subscribeToEvents: function () {
+            for (let evt of this.$data.scenarioData.events) {
+                evt.handler = evt.handler.bind(evt)
+                this.client.event.subscribe(evt.name, evt.handler)
+            }
+        },
+
+        __emitEvents: function (scenario) {
+            const comp = this
+            scenario.intervalId = setInterval(() => {
+                for (let evt of comp.$data.scenarioData.events) {
+                    comp.client.event.emit(evt.name, 'message sent from', evt.name)
+                }
+            }, 50)
+        },
+
+        __unsubFromEvents: function (scenario) {
+            for (let evt of this.$data.scenarioData.events) {
+                this.client.event.unsubscribe(evt.name, evt.handler)
+            }
+
+            clearInterval(scenario.intervalId)
         }
-
-        clearInterval(scenario.intervalId)
-    }
-  }
-};
+    }, ComponentListens.methods)
+}
 </script>
 
 <style scoped>
