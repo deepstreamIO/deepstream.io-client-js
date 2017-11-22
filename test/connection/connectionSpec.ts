@@ -279,7 +279,7 @@ describe('connection', () => {
     await receiveConnectionError()
   })
 
-  it('emits reAuthenticationFailure if reauthentication is rejected', async () => {
+  it('emits reauthenticationFailure if reauthentication is rejected', async () => {
     const newClientData = { data: 'changed' }
     emitterMock
       .expects('emit')
