@@ -7,18 +7,14 @@
             <br>
 
             <b-row>
-                <b-col>
-                    <p class="card-desc">...</p>
+                <b-col lg="3">
+                    <p class="card-desc" v-if="snapshot.value.length" > snapshot of {{ snapshot.name }}: </p>
+                </b-col>
+                <b-col lg="5">
+                    <pre class="sm-text">{{snapshot.value}}</pre>
                 </b-col>
             </b-row>
             
-            <b-row>
-                <b-col>
-                    <pre>
-                        {{ snapshot }}
-                    </pre>
-                </b-col>
-            </b-row>
             <b-row>
                 <b-col lg="6">
                     <b-row>
@@ -40,6 +36,23 @@
                                         v-on:click="createRecord" :disabled="record.created">
                                         {{ record.loading ? 'Creating...' : 'Create'}}
                                     </b-button>
+                                </b-input-group-button>
+
+                            </b-input-group>
+                        </b-col>
+                    </b-row>
+                    <b-row> <br> </b-row>
+                    <b-row>
+                        <b-col>
+                            <b-input-group>
+                                <b-form-input class="sm-text" :block="true" size="sm" v-model="snapshot.name" type="text" placeholder="The name of the record"></b-form-input>
+
+                                <b-input-group-button slot="right">
+                                    <b-button
+                                        class="sm-text"
+                                        size="sm"
+                                        variant="outline-primary"
+                                        v-on:click="snapshotRecord"> snapshot </b-button>
                                 </b-input-group-button>
 
                             </b-input-group>
@@ -95,27 +108,22 @@
                                         </b-button>
                                     </td>
                                     </td>
-                                    <td>
-                                        <b-input-group>
-                                            <b-form-input
-                                                class="sm-text"
-                                                :block="true"
-                                                size="sm"
-                                                v-model="r.subscribePath"
-                                                type="text"
-                                                placeholder="path"></b-form-input>
-
-                                            <!-- Attach Right button Group via slot -->
-                                            <b-input-group-button slot="left">
-                                                <b-button
-                                                    class="sm-text"
-                                                    size="sm"
-                                                    variant="outline-primary"
-                                                    v-on:click="subscribe(r)"
-                                                    > subscribe </b-button>
-                                            </b-input-group-button>
-                                        </b-input-group>
+                                    <td v-if="!r.subscription.isSubscribed">
+                                        <b-button
+                                            class="sm-text"
+                                            size="sm"
+                                            variant="outline-primary"
+                                            v-on:click="subscribe(r)"> subscribe </b-button>
                                     </td>
+                                    
+                                    <td v-if="r.subscription.isSubscribed">
+                                        <b-button
+                                            class="sm-text"
+                                            size="sm"
+                                            variant="outline-primary"
+                                            v-on:click="unsubscribe(r)"> unsubscribe </b-button>
+                                    </td>
+                                    
                                     <td>
                                         <b-input-group>
                                             <b-input-group-button slot="left">
@@ -149,41 +157,13 @@
 
                                         </b-input-group>
                                     </td>
-                                    <td>
-                                        <b-button
-                                                    class="sm-text"
-                                                    size="sm"
-                                                    variant="outline-success"
-                                                    @click="snapshotRecord(r)"> snapshot </b-button>
-                                    </td>
                                 </tr>
-                                <tr v-for="s in r.subscriptions" :key="s.id">
-                                    <td>
-                                        <b-button disabled class="sm-text" size="sm" variant="success">
-                                            <strong>
-                                                {{ r.name }}:{{ s.path }}
-                                            </strong>
-                                        </b-button>
-                                    </td>
-                                    <td>
-                                        <b-form-input
-                                                class="sm-text"
-                                                :block="true"
-                                                size="sm"
-                                                :value="r.updates[s.path].map(x => x.update).join(',')"
-                                                type="text"
-                                                placeholder="path">
-                                        </b-form-input>
-                                    </td>
-                                    <td>
-                                        <b-button
-                                            class="sm-text"
-                                            size="sm"
-                                            variant="link"
-                                            v-on:click="unsubscribe(r)"
-                                            > unsubscribe </b-button>
-                                    </td>
-                                </tr>
+                                <tr><br></tr>
+                                <b-row>
+                                    <b-col lg="8">
+                                        <pre class="sm-text">{{r.subscription.latestUpdate}}</pre>
+                                    </b-col>
+                                </b-row>
                             </div>
                         </tbody>
                     </table>
@@ -271,24 +251,36 @@ const isDuplicate = (arr, obj, key) => {
 export default {
   name: "presence",
   props: ["listener", "client"],
-  created () {},
+  created () {
+    const comp = this
+    comp.client.on('logged', logged => {
+        console.log('received loggin status:', logged)
+        comp.$data.isLogged = logged
+    })
+  },
   data () {
     return {
+        isLogged: false,
+        snapshot: {
+            name: '',
+            value: ''
+        },
         record: {
             name: '',
             ready: false,
             created: false,
             loading: false,
             instance: null,
-            subscribePath: '',
-            updates: {},
-            subscriptions: [],
+            subscription: {
+                isSubscribed: false,
+                latestUpdate: ''
+            },
             set: {
                 path: '',
                 data: '',
                 loading: false,
                 done: false
-            },
+            }
         },
         has: {
             name: '',
@@ -297,7 +289,6 @@ export default {
             done: true
         },
         records: [],
-        snapshot: null,
         scenarioData
     }
   },
@@ -314,74 +305,74 @@ export default {
             created: false,
             loading: false,
             instance: null,
-            subscribePath: '',
-            updates: {},
-            subscriptions: [],
+            subscription: {
+                isSubscribed: false,
+                latestUpdate: ''
+            },
             set: {
                 path: '',
                 data: '',
                 loading: false,
                 done: false
-            },
+            }
         }
     },
     createRecord: function() {
         const comp = this
-        if (comp.$data.record.name.length) {
-            comp.$data.record.loading = true
-            comp.$data.record.instance = comp.client.record.getRecord(comp.$data.record.name)
-    
-            let isdup = isDuplicate(comp.$data.records, comp.$data.record, 'name')
-            
-            comp.$data.record.instance.whenReady(() => {
-                comp.$data.record.ready = true
-                comp.$data.record.created = true
-                if (!isdup) {
-                    comp.$data.records.push(Object.assign({
-                        id: comp.$data.record.length + 1
-                    }, comp.$data.record))
-                }
-                comp.resetRecordVm()
-            })
+
+        if (comp.$data.isLogged) {
+            if (comp.$data.record.name.length) {
+                comp.$data.record.loading = true
+                comp.$data.record.instance = comp.client.record.getRecord(comp.$data.record.name)
+        
+                let isdup = isDuplicate(comp.$data.records, comp.$data.record, 'name')
+                
+                comp.$data.record.instance.whenReady(() => {
+                    comp.$data.record.ready = true
+                    comp.$data.record.created = true
+                    if (!isdup) {
+                        comp.$data.records.push(Object.assign({
+                            id: comp.$data.record.length + 1
+                        }, comp.$data.record))
+                    }
+                    comp.resetRecordVm()
+                })
+            }
+        } else {
+            alert('You have to login first')
         }
     },
     hasRecord: function() {
         const comp = this
-        if (comp.$data.has.name) {
-            comp.$data.has.loading = true
-            comp.$data.has.done = false
-            comp.client.record.has(comp.$data.has.name, (err, exists) => {
-                comp.$data.has.exists = exists
-                comp.$data.has.loading = false
-                comp.$data.has.done = true
-            })
+        if (comp.$data.isLogged) {
+            if (comp.$data.has.name) {
+                comp.$data.has.loading = true
+                comp.$data.has.done = false
+                comp.client.record.has(comp.$data.has.name, (err, exists) => {
+                    comp.$data.has.exists = exists
+                    comp.$data.has.loading = false
+                    comp.$data.has.done = true
+                })
+            }
+        } else {
+            alert('You have to login first')
         }
     },
     
     subscribe: function (record) {
-        const path = record.subscribePath
-
-        if (path) {
-            if (!(path in record.updates)) {
-                record.updates[path] = []
-
-                record.instance.subscribe(path, update => {
-                    record.updates[path].push({id: record.updates[path].length + 1, update})
-                })
-    
-                let isdup = isDuplicate(record.subscriptions, { path }, 'path')
-    
-                if (!isdup) {
-                    record.subscriptions.push({ id: record.subscriptions.length + 1, path })
-                }
-            }
+        console.log('Subscribing to record', record)
+        if (!record.subscription.isSubscribed) {
+            record.instance.subscribe(update => {
+                record.subscription.latestUpdate = JSON.stringify(update)
+            })
+            record.subscription.isSubscribed = true
         }
     },
     
     unsubscribe: function (record) {
-        record.instance.unsubscribe(record.subscribePath)
-        record.subscribePath = '',
-        record.updates = {  }
+        record.instance.unsubscribe()
+        record.subscription.latestUpdate = ''
+        record.subscription.isSubscribed = false
     },
     
     setRecord: function(record) {
@@ -397,10 +388,10 @@ export default {
         }
     },
 
-    snapshotRecord: function(record) {
+    snapshotRecord: function() {
         const comp = this
-        comp.client.record.snapshot(record.name, (err, data) => {
-            comp.$data.snapshot = JSON.stringify(data)
+        comp.client.record.snapshot(comp.$data.snapshot.name, (err, data) => {
+            comp.$data.snapshot.value = JSON.stringify(data)
         })
     },
 

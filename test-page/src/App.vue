@@ -26,7 +26,7 @@
         <b-col lg="12">
             <b-row><br></b-row>
             <b-row>
-                <b-col lg="12">
+                <b-col :lg="clients.length < 2 ? '8' : '12'" :offset-lg="clients.length < 2 ? '2' : '0'">
                     <b-card-group v-if="clients.length > 0">
                         <b-card class="no-borders mb-0 mt-0" v-for="c in clients" :key="c.id" header-tag="header" footer-tag="footer">
                             <Client :listener="listener" :client="c.client" :server-address="c.serverAddress"/>

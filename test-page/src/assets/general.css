@@ -20,3 +20,7 @@ p.card-desc {
 .square-border {
     border-radius: 0px !important;
 }
+
+pre {
+    background-color: whitesmoke;
+}

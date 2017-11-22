@@ -63,7 +63,9 @@ export default {
             username: this.username
         }, this.password.length ? { password: this.password } : {})
 
-        this.client.login(credentials, (logged) => {})
+        this.client.login(credentials, (logged) => {
+            this.client.emit('logged', logged)
+        })
       },
       logout: function () {
          

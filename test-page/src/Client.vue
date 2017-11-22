@@ -33,7 +33,7 @@ export default {
   },
   data() {
     return {
-      title: "deepstream.io test dashboard",
+      title: "deepstream.io test dashboard"
     }
   },
   components: {
