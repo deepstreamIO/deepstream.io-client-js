@@ -43,9 +43,9 @@
                                         <b-button @click="queryAll()" size="sm" variant="primary"> all users </b-button>
                                     </b-col>
 
-                                    <b-col lg="6">
+                                    <b-col lg="8">
                                         <b-input-group>
-                                            <b-form-input :block="true" v-model="query.vm" size="sm" type="text"></b-form-input>
+                                            <b-form-input class="sm-text" :block="true" v-model="query.vm" size="sm" type="text" placeholder="comma-separated usernames"></b-form-input>
                                             <b-input-group-button slot="left">
                                                 <b-button :block="true" @click="querySpecific" size="sm" variant="primary"> specific users </b-button>
                                             </b-input-group-button>
