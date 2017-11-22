@@ -6,6 +6,8 @@
             </p>
             <br>
 
+            <Listening :members="listening.members" :listen="listen" :unlisten="unlisten" />
+
             <b-row>
                 <b-col lg="3">
                     <p class="card-desc" v-if="snapshot.value ? snapshot.value.length : false" > snapshot of {{ snapshotRecordName }}: </p>
@@ -185,6 +187,7 @@
 <script>
 import { Card } from "bootstrap-vue/es/components"
 import * as ds from '../../dist/deepstream.js'
+import Listening from './Listening.vue'
 
 const carRecordScheme = {
     id: null,
@@ -251,6 +254,9 @@ const isDuplicate = (arr, obj, key) => {
 export default {
   name: "presence",
   props: ["listener", "client"],
+  components: {
+    Listening
+  },
   created () {
     const comp = this
     comp.client.on('logged', logged => {
@@ -290,7 +296,11 @@ export default {
             done: true
         },
         records: [],
-        scenarioData
+        scenarioData,
+        listening: {
+            members: [],
+            timerId: null
+        }
     }
   },
   computed: {
@@ -361,12 +371,12 @@ export default {
     },
     
     subscribe: function (record) {
-        console.log('Subscribing to record', record)
         if (!record.subscription.isSubscribed) {
             record.instance.subscribe(update => {
                 record.subscription.latestUpdate = JSON.stringify(update)
             })
             record.subscription.isSubscribed = true
+            this.saveListeningMember(record.name)
         }
     },
     
@@ -374,6 +384,7 @@ export default {
         record.instance.unsubscribe()
         record.subscription.latestUpdate = ''
         record.subscription.isSubscribed = false
+        this.removeListeningMember(record.name)
     },
     
     setRecord: function(record) {
@@ -488,6 +499,58 @@ export default {
         }
         
         clearInterval(scenario.intervalId)
+    },
+    
+    saveListeningMember: function (member) {
+        if (this.listening.members.indexOf(member) === -1) {
+            this.listening.members.push(member)
+            return true
+        }
+        return false
+    },
+
+    removeListeningMember: function (member) {
+        const index = this.listening.members.indexOf(member) 
+
+        if (index > -1) {
+            this.listening.members.splice(index, 1)
+            return true
+        }
+
+        return false
+    },
+
+    listen: function () {
+        const component = this
+        const listener = this.listener
+        const listening = this.$data.listening        
+
+        console.log(listening)
+        listener.record.listen('.*', (name, response) => {
+            response.accept()
+
+            if (name) {
+                const isNew = component.saveListeningMember(name)
+
+                if (isNew) {
+                    let i = 0
+                    listening.timerId = setInterval(() => {
+                        listener.record.setData('provider', `[${++i}]: data sat from provider`, err => {
+                            if (err) {
+                                console.log('Caught error while settign data for record', name, 'error:', err)
+                            } else {
+                                console.log('Successfully sat data for record', name)
+                            }
+                        })
+                    }, 50)
+                }
+            }
+        })
+    },
+
+    unlisten: function() {
+        this.listener.record.unlisten('.*')
+        clearInterval(this.$data.listening.timerId)
     }
   }
 };
