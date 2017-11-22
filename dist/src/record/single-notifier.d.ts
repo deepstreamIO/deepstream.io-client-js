@@ -1,10 +1,5 @@
 import { TOPIC, Message, ALL_ACTIONS } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
-export interface SingleNotifierResponse {
-    callback?: (error?: any, result?: any) => void;
-    resolve?: (result: any) => void;
-    reject?: (error: any) => void;
-}
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
  * and HAS functionality. The SingleNotifier multiplexes all the client requests so
@@ -34,7 +29,7 @@ export declare class SingleNotifier {
    * @public
    * @returns {void}
    */
-    request(name: string, response: SingleNotifierResponse): void;
+    request(name: string, callback: (error?: any, result?: any) => void): void;
     /**
      * Adds a callback to a (possibly) inflight request that will be called
      * on the response.

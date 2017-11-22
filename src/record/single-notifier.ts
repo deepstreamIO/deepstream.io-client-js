@@ -4,12 +4,6 @@ import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 import { Services, Client, EVENT } from '../client'
 import { Options } from '../client-options'
 
-export interface SingleNotifierResponse {
-  callback?: (error?: any, result?: any) => void,
-  resolve?: (result: any) => void,
-  reject?: (error: any) => void,
-}
-
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
  * and HAS functionality. The SingleNotifier multiplexes all the client requests so
@@ -24,7 +18,7 @@ export interface SingleNotifierResponse {
 export class SingleNotifier {
 
   private services: Services
-  private requests: Map<string, Array<SingleNotifierResponse>>
+  private requests: Map<string, Array<(error?: any, result?: any) => void>>
   private action: ALL_ACTIONS
   private topic: TOPIC
   private timeoutDuration: number
@@ -51,28 +45,29 @@ export class SingleNotifier {
    * @public
    * @returns {void}
    */
-  public request (name: string, response: SingleNotifierResponse): void {
-    if (this.services.connection.isConnected === false) {
-      if (response.callback) {
-        this.services.timerRegistry.requestIdleCallback(response.callback.bind(this, EVENT.CLIENT_OFFLINE))
-      } else if (response.reject) {
-        response.reject(EVENT.CLIENT_OFFLINE)
-      }
-      return
-    }
+  public request (name: string, callback: (error?: any, result?: any) => void): void {
     const message = {
       topic: this.topic,
       action: this.action,
       name
     }
-    this.services.timeoutRegistry.add({ message })
+
     const req = this.requests.get(name)
     if (req === undefined) {
-      this.requests.set(name, [response])
-      this.services.connection.sendMessage(message)
-    } else {
-      req.push(response)
+      this.requests.set(name, [callback])
+
+      if (this.services.connection.isConnected === false) {
+        this.services.offlineQueue.submit(
+          message,
+          () => this.services.timeoutRegistry.add({ message }),
+          () => callback(EVENT.CLIENT_OFFLINE)
+        )
+      } else {
+        this.services.connection.sendMessage(message)
+      }
+      return
     }
+    req.push(callback)
   }
 
   /**
@@ -107,14 +102,7 @@ export class SingleNotifier {
 
     // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
     for (let i = 0; i < responses.length; i++) {
-      const response = responses[i]
-      if (response.callback) {
-        response.callback(error, data)
-      } else if (error && response.reject) {
-        response.reject(error)
-      } else if (response.resolve) {
-        response.resolve(data)
-      }
+      responses[i](error, data)
     }
     this.requests.delete(name)
     return
@@ -122,13 +110,7 @@ export class SingleNotifier {
 
   private onConnectionLost (): void {
     this.requests.forEach(responses => {
-      responses.forEach(response => {
-        if (response.callback) {
-          response.callback(EVENT.CLIENT_OFFLINE)
-        } else if (response.reject) {
-          response.reject(EVENT.CLIENT_OFFLINE)
-        }
-      })
+      responses.forEach(response => response(EVENT.CLIENT_OFFLINE))
     })
     this.requests.clear()
   }

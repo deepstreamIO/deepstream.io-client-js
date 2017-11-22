@@ -32,30 +32,24 @@ class SingleNotifier {
    * @public
    * @returns {void}
    */
-    request(name, response) {
-        if (this.services.connection.isConnected === false) {
-            if (response.callback) {
-                this.services.timerRegistry.requestIdleCallback(response.callback.bind(this, client_1.EVENT.CLIENT_OFFLINE));
-            }
-            else if (response.reject) {
-                response.reject(client_1.EVENT.CLIENT_OFFLINE);
-            }
-            return;
-        }
+    request(name, callback) {
         const message = {
             topic: this.topic,
             action: this.action,
             name
         };
-        this.services.timeoutRegistry.add({ message });
         const req = this.requests.get(name);
         if (req === undefined) {
-            this.requests.set(name, [response]);
-            this.services.connection.sendMessage(message);
+            this.requests.set(name, [callback]);
+            if (this.services.connection.isConnected === false) {
+                this.services.offlineQueue.submit(message, () => this.services.timeoutRegistry.add({ message }), () => callback(client_1.EVENT.CLIENT_OFFLINE));
+            }
+            else {
+                this.services.connection.sendMessage(message);
+            }
+            return;
         }
-        else {
-            req.push(response);
-        }
+        req.push(callback);
     }
     /**
      * Adds a callback to a (possibly) inflight request that will be called
@@ -87,30 +81,14 @@ class SingleNotifier {
         this.internalRequests.delete(name);
         // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
         for (let i = 0; i < responses.length; i++) {
-            const response = responses[i];
-            if (response.callback) {
-                response.callback(error, data);
-            }
-            else if (error && response.reject) {
-                response.reject(error);
-            }
-            else if (response.resolve) {
-                response.resolve(data);
-            }
+            responses[i](error, data);
         }
         this.requests.delete(name);
         return;
     }
     onConnectionLost() {
         this.requests.forEach(responses => {
-            responses.forEach(response => {
-                if (response.callback) {
-                    response.callback(client_1.EVENT.CLIENT_OFFLINE);
-                }
-                else if (response.reject) {
-                    response.reject(client_1.EVENT.CLIENT_OFFLINE);
-                }
-            });
+            responses.forEach(response => response(client_1.EVENT.CLIENT_OFFLINE));
         });
         this.requests.clear();
     }
