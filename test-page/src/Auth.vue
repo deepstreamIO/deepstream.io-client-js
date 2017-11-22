@@ -68,7 +68,7 @@ export default {
         })
       },
       logout: function () {
-         
+        this.client.close()
       }
   }
 }
