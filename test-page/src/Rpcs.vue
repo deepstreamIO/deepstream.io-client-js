@@ -67,7 +67,7 @@ export default {
         rpcs: [
             { id: 1, name: "echo", data: [], model: null, provided: false }
         ],
-        scenario: { rpcs: [] }
+        scenario: { rpcs: [], nexts: [] }
     }
   },
   methods: {
@@ -86,7 +86,7 @@ export default {
             return Math.floor(Math.random() * (max - min) + min)
         }
 
-        const playNextRpc = function (rpcs) {
+        const playNextRpc = function (nexts, rpcs) {
             if (rpcs.length > 25000) {
                 return
             }
@@ -121,34 +121,29 @@ export default {
                 intervalId
             })
 
-            setTimeout(() => {
-                playNextRpc(rpcs)
+            const nextTimerId = setTimeout(() => {
+                playNextRpc(nexts, rpcs)
             }, 100)
-        }
 
-        playNextRpc(scenario.rpcs)
+            nexts.push(nextTimerId)
+        }
+        playNextRpc(scenario.nexts, scenario.rpcs)
     },
 
     stop: function () {
         const client = this.client
         const scenario = this.$data.scenario
         
-        const stopNextRpc = function(rpcs, i) {
-            if (i >= rpcs.length) {
-                return
-            }
+        scenario.nexts.forEach(timeoutId => clearTimeout(timeoutId))
+        scenario.nexts = []
 
-            const rpc = rpcs[i]
-
-            client.rpc.unprovide(rpc.rpcName)
+        scenario.rpcs.forEach(rpc => {
             clearInterval(rpc.intervalId)
+            client.rpc.unprovide(rpc.rpcName)
+        })
+        scenario.rpcs = []
 
-            setTimeout(() => {
-                stopNextRpc(rpcs, ++i)
-            })
-        }
-
-        stopNextRpc(scenario.rpcs, 0) 
+        console.log('<- done')
     }
   }
 };

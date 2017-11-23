@@ -18,8 +18,7 @@ export default {
     components: {},
     data() {
         return {
-            isPlaying: false,
-            stopped: 0
+            isPlaying: false
         }
     },
     methods: {

@@ -236,7 +236,7 @@ export default {
                 done: true
             },
             records: [],
-            scenario: { records: [] }
+            scenario: { records: [], nexts: [] }
         })
     },
     methods: Object.assign({
@@ -343,7 +343,7 @@ export default {
             const client = this.client
             const scenario = this.$data.scenario
             
-            const playNextRecord = function(records) {
+            const playNextRecord = function(nexts, records) {
                 if (records.length > 25000) {
                     return
                 }
@@ -400,34 +400,33 @@ export default {
                 })
                 
 
-                setTimeout(() => {
-                    playNextRecord(records)
+                const nextTimerId = setTimeout(() => {
+                    playNextRecord(nexts, records)
                 }, 100)
+
+                nexts.push(nextTimerId)
             }
 
-            playNextRecord(scenario.records)
+            playNextRecord(scenario.nexts, scenario.records)
         },
 
         stop: function () {
             const client = this.client
             const scenario = this.$data.scenario
+            
+            scenario.nexts.forEach(i => {
+                clearTimeout(i)
+            })
+            scenario.nexts = []
 
-            const stopNextRecord = function (records, i) {
-                if (i >= records.length) {
-                    return
-                }
-
-                const record = records[i]
-
+            scenario.records.forEach(record => {
+                record.intervalsIds.forEach(intervalId => clearInterval(intervalId))
                 record.instance.discard()
-                record.intervalsIds.forEach(i => clearInterval(i))
+            })
 
-                setTimeout(() => {
-                    stopNextRecord(records, ++i)
-                })
-            }
+            scenario.records = []
 
-            stopNextRecord(scenario.records, 0)
+            console.log('<- done')
         },
 
         listen: function () {

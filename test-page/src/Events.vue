@@ -102,22 +102,24 @@ import { Card } from "bootstrap-vue/es/components"
 import Listening from "./Listening.vue"
 import ComponentListens from "./ComponentListens"
 import MemoryTest from "./MemoryTest.vue"
+
 export default {
     name: "events",
     props: ["listener", "client"],
     components: {
         Listening, MemoryTest
     },
+    created: function () {
+        console.log('Events scenario on created:', this.$data.scenario)
+    },
     data() {
-        const data = Object.assign({
+        return Object.assign(ComponentListens.data, {
             emitEventName: "",
             emitEventData: "",
             subscribeEventName: "",
             subscribedEvents: [],
-            scenario: { events: [] }
-        }, ComponentListens.data)
-
-        return data
+            scenario: { events: [], nexts: [] }
+        })
     },
     methods: Object.assign({
         emit: function () {
@@ -208,7 +210,7 @@ export default {
             const client = this.client
             const scenario = this.$data.scenario
             
-            const playNextEvent = function(events) {
+            const playNextEvent = function(nexts, events) {
                 if (events.length > 25000) {
                     return
                 }
@@ -225,34 +227,28 @@ export default {
                 
                 events.push({ eventName, intervalId })
 
-                setTimeout(() => {
-                    playNextEvent(events)
+                const nextTimerId = setTimeout(() => {
+                    playNextEvent(nexts, events)
                 }, 100)
+                
+                nexts.push(nextTimerId)
             }
 
-            playNextEvent(scenario.events)
+            playNextEvent(scenario.nexts, scenario.events)
         },
 
         stop: function () {
             const client = this.client
             const scenario = this.$data.scenario
 
-            const stopNextEvent = function (events, i) {
-                if (i >= events.length) {
-                    return
-                }
+            scenario.nexts.forEach(timeoutId => clearTimeout(timeoutId))
+            scenario.nexts = []
 
-                const event = events[i]
-
-                client.event.unsubscribe(event.eventName)
+            scenario.events.forEach(event => {
                 clearInterval(event.intervalId)
-
-                setTimeout(() => {
-                    stopNextEvent(events, ++i)
-                })
-            }
-
-            stopNextEvent(scenario.events, 0)
+                client.event.unsubscribe(event.eventName)
+            })
+            scenario.events = []
         }
     }, ComponentListens.methods)
 }
