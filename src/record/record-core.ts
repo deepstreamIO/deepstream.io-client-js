@@ -17,7 +17,6 @@ export type WriteAckCallback = (error: string | null) => void
 const enum RECORD_OFFLINE_ACTIONS {
   LOAD,
   LOADED,
-  SUBSCRIBE,
   SUBSCRIBED,
   RESUBSCRIBE,
   RESUBSCRIBED,
@@ -93,7 +92,6 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: this.onOfflineLoading.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RA.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
-          { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.SUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
@@ -535,24 +533,40 @@ export class RecordCore extends Emitter {
     console.log('-')
     console.log('remoteVersion', remoteVersion)
     console.log('this.version', this.version)
-    if (remoteVersion === -1 && this.version === 1) {
-      this.sendCreateUpdate(this.data)
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.SUBSCRIBED)
-    } else if (this.version > remoteVersion) {
-      this.sendUpdate(null, this.data)
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-    } else if (this.version === remoteVersion) {
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-    // } else if (this.version + 1 === remoteVersion) {
-    //   //this.version = remoteVersion
-    //   //this.applyChange(setPath(this.data, null, message.parsedData))
-    //   this.sendRead()
-    //   this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
-    //   this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+    if (this.offlineDirty) {
+      if (remoteVersion === -1 && this.version === 1) {
+        /**
+         * Record created while offline
+         */
+        this.sendCreateUpdate(this.data)
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+      } else if (this.references <= 0 && remoteVersion !== -1) {
+        /**
+         * record updated and discarded while offline
+        */
+      } else if (this.version > remoteVersion && remoteVersion !== -1) {
+        /**
+         * record updated while offline
+        */
+        this.sendUpdate(null, this.data)
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+      } else {
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
+        this.sendRead()
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+      }
     } else {
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
-      this.sendRead()
-      this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+      if (remoteVersion < this.version) {
+        /**
+         *  deleted and created again remotely
+        */
+      } else if (this.version === remoteVersion) {
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+      } else {
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
+        this.sendRead()
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+      }
     }
   }
 
@@ -607,7 +621,7 @@ export class RecordCore extends Emitter {
       name: this.name,
       topic: TOPIC.RECORD,
       action: RA.CREATEANDUPDATE,
-      version: -1,
+      version: 1,
       parsedData: data
     })
     this.offlineDirty = false
@@ -794,11 +808,7 @@ export class RecordCore extends Emitter {
   }
 
   private onConnReestablished (): void {
-    console.log('back online', this.version, this.offlineDirty )
-    if (this.version === 1 && this.offlineDirty) {
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.SUBSCRIBE)
-      return
-    }
+    console.log('back online, version:', this.version, 'offline dirty:', this.offlineDirty, 'referecnes:',this.references )
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
   }
 }
