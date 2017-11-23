@@ -320,9 +320,16 @@ export class RecordCore extends Emitter {
    */
   public delete (callback?: (error: string | null) => void): Promise<void> | void {
     if (!this.services.connection.isConnected) {
-      this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
-      return
+      //this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
+      if (callback) {
+        this.services.timerRegistry.requestIdleCallback(() => {
+          callback('Deleting while offline is not supported')
+        })
+        return
+      }
+      return Promise.reject('Deleting while offline is not supported')
     }
+
     if (this.checkDestroyed('delete')) {
       return
     }
@@ -352,6 +359,22 @@ export class RecordCore extends Emitter {
     } else {
       throw new Error('Invalid merge strategy: Must be a Function')
     }
+  }
+
+  public dump (callback?: (error: string | null) => void): Promise<void> | void  {
+    if (callback) {
+      this.services.storage.set(this.name, this.version, this.data, callback)
+      return
+    }
+    return new Promise((resolve, reject) => {
+      this.services.storage.set(this.name, this.version, this.data, (error: string) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve()
+        }
+      })
+    })
   }
 
   /**
@@ -530,20 +553,19 @@ export class RecordCore extends Emitter {
 
   private handleHeadResponse (message: RecordMessage): void {
     const remoteVersion = message.version as number
-    console.log('-')
-    console.log('remoteVersion', remoteVersion)
-    console.log('this.version', this.version)
     if (this.offlineDirty) {
       if (remoteVersion === -1 && this.version === 1) {
         /**
          * Record created while offline
          */
-        this.sendCreateUpdate(this.data)
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-      } else if (this.references <= 0 && remoteVersion !== -1) {
+        this.sendCreateUpdate(this.data)
+      } else if (this.references <= 0 && (remoteVersion !== -1 && remoteVersion < this.version)) {
         /**
          * record updated and discarded while offline
+         * send remaning changes
         */
+        this.sendUpdate(null, this.data)
       } else if (this.version > remoteVersion && remoteVersion !== -1) {
         /**
          * record updated while offline
@@ -568,6 +590,22 @@ export class RecordCore extends Emitter {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
       }
     }
+  }
+
+  private sendHead (): void {
+    this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this))
+    this.responseTimeout = this.services.timeoutRegistry.add({
+      message: {
+        topic: TOPIC.RECORD,
+        action: RA.HEAD_RESPONSE,
+        name: this.name
+      }
+    })
+    this.services.connection.sendMessage({
+      topic: TOPIC.RECORD,
+      action: RA.HEAD,
+      name: this.name
+    })
   }
 
   private sendRead () {
@@ -808,7 +846,11 @@ export class RecordCore extends Emitter {
   }
 
   private onConnReestablished (): void {
-    console.log('back online, version:', this.version, 'offline dirty:', this.offlineDirty, 'referecnes:',this.references )
+    console.log('back online, version:', this.version, 'offline dirty:', this.offlineDirty, 'referecnes:',this.references)
+    if (this.references <= 0 && this.offlineDirty === true) {
+      this.sendHead()
+      return
+    }
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
   }
 }

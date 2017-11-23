@@ -240,8 +240,14 @@ class RecordCore extends Emitter {
      */
     delete(callback) {
         if (!this.services.connection.isConnected) {
-            this.services.logger.warn({ topic: message_constants_1.TOPIC.RECORD }, message_constants_1.RECORD_ACTIONS.DELETE, 'Deleting while offline is not supported');
-            return;
+            //this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
+            if (callback) {
+                this.services.timerRegistry.requestIdleCallback(() => {
+                    callback('Deleting while offline is not supported');
+                });
+                return;
+            }
+            return Promise.reject('Deleting while offline is not supported');
         }
         if (this.checkDestroyed('delete')) {
             return;
@@ -272,6 +278,22 @@ class RecordCore extends Emitter {
         else {
             throw new Error('Invalid merge strategy: Must be a Function');
         }
+    }
+    dump(callback) {
+        if (callback) {
+            this.services.storage.set(this.name, this.version, this.data, callback);
+            return;
+        }
+        return new Promise((resolve, reject) => {
+            this.services.storage.set(this.name, this.version, this.data, (error) => {
+                if (error) {
+                    reject(error);
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
     }
     /**
      * Transition States
@@ -424,21 +446,20 @@ class RecordCore extends Emitter {
     }
     handleHeadResponse(message) {
         const remoteVersion = message.version;
-        console.log('-');
-        console.log('remoteVersion', remoteVersion);
-        console.log('this.version', this.version);
         if (this.offlineDirty) {
             if (remoteVersion === -1 && this.version === 1) {
                 /**
                  * Record created while offline
                  */
-                this.sendCreateUpdate(this.data);
                 this.stateMachine.transition(4 /* RESUBSCRIBED */);
+                this.sendCreateUpdate(this.data);
             }
-            else if (this.references <= 0 && remoteVersion !== -1) {
+            else if (this.references <= 0 && (remoteVersion !== -1 && remoteVersion < this.version)) {
                 /**
                  * record updated and discarded while offline
+                 * send remaning changes
                 */
+                this.sendUpdate(null, this.data);
             }
             else if (this.version > remoteVersion && remoteVersion !== -1) {
                 /**
@@ -468,6 +489,21 @@ class RecordCore extends Emitter {
                 this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
             }
         }
+    }
+    sendHead() {
+        this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this));
+        this.responseTimeout = this.services.timeoutRegistry.add({
+            message: {
+                topic: message_constants_1.TOPIC.RECORD,
+                action: message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE,
+                name: this.name
+            }
+        });
+        this.services.connection.sendMessage({
+            topic: message_constants_1.TOPIC.RECORD,
+            action: message_constants_1.RECORD_ACTIONS.HEAD,
+            name: this.name
+        });
     }
     sendRead() {
         this.services.connection.sendMessage({
@@ -678,6 +714,10 @@ class RecordCore extends Emitter {
     }
     onConnReestablished() {
         console.log('back online, version:', this.version, 'offline dirty:', this.offlineDirty, 'referecnes:', this.references);
+        if (this.references <= 0 && this.offlineDirty === true) {
+            this.sendHead();
+            return;
+        }
         this.stateMachine.transition(3 /* RESUBSCRIBE */);
     }
 }

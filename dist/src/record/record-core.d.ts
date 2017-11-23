@@ -124,6 +124,7 @@ export declare class RecordCore extends Emitter {
      * the next update merge attempt ).
      */
     setMergeStrategy(mergeStrategy: MergeStrategy): void;
+    dump(callback?: (error: string | null) => void): Promise<void> | void;
     /**
      * Transition States
      */
@@ -136,6 +137,7 @@ export declare class RecordCore extends Emitter {
     handle(message: RecordMessage): void;
     private handleReadResponse(message);
     private handleHeadResponse(message);
+    private sendHead();
     private sendRead();
     private saveUpdate();
     private sendUpdate(path, data, callback?);
