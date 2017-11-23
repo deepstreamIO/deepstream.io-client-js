@@ -42,59 +42,21 @@
                     </b-col>
                 </b-row>
                 <b-row> <br> </b-row>
-                <b-row>
-                    <b-col>
-                        <p class="card-desc">Press play and record memory for potential leaks</p>
-                    </b-col>
-                    <b-col lg="2" offset-lg="3">
-                        <b-button class="sm-text" :disabled="isPlaying" :checked="isPlaying" size="sm" variant="outline-primary" v-on:click="toggleScenario()">{{isPlaying ? 'Playing...' : 'Play'}}</b-button>
-                    </b-col>
-                </b-row>
-
+                <MemoryTest :play="play" :stop="stop"/>
             </b-container>
         </b-card>
     </div>
 </template>
 
 <script>
-
-const scenarioData = {
-    isplaying: false,
-    rpcs: [
-        {
-            name: 'double-up',
-            provideHandler: function() {
-                const result = 1 || data.a * 2 * 2 
-                
-                console.log({data, response})
-                console.log('rpc provider received', data.a)
-                console.log('sending result:', result)
-                
-                response.send(result)
-            },
-            makeHandler: function (err, result) {
-                console.log('received result:', err ? `error: ${err}` : result)
-            },
-            name: 'triple-up',
-            provideHandler: function (data, response) {
-                const result = 1 || data.a * 3 * 3 
-                
-                console.log({data, response})
-                console.log('rpc provider received', data.a)
-                console.log('sending result:', result)
-
-                response.send(result)
-            },
-            makeHandler: function (err, result) {
-                console.log('received result:', err ? `error: ${err}` : result)
-            }
-        }
-    ]
-}
+import MemoryTest from './MemoryTest.vue'
 
 export default {
   name: "rpcs",
   props: ["client"],
+  components: {
+      MemoryTest,
+  },
   created () {
     this.client.rpc.provide('echo', (data, response) => {
         response.send(data)
@@ -105,12 +67,7 @@ export default {
         rpcs: [
             { id: 1, name: "echo", data: [], model: null, provided: false }
         ],
-        scenarioData
-    };
-  },
-  computed: {
-    isPlaying: function() {
-        return this.$data.scenarioData.isplaying;
+        scenario: { rpcs: [] }
     }
   },
   methods: {
@@ -120,71 +77,78 @@ export default {
             rpc.data.push({ id: rpc.data.length, content: err || response });
         });
     },
+    
+    play: function () {
+        const client = this.client
+        const scenario = this.$data.scenario
 
-    toggleScenario: function() {
-        this.$data.scenarioData.isplaying = !this.$data.scenarioData.isplaying
-
-        if (this.isPlaying) {
-            this.playScenario()
+        const getRandomNumber = function(min, max) {
+            return Math.floor(Math.random() * (max - min) + min)
         }
-    },
 
-    getScenario: function () {
-        let scenario = {}
-        
-        scenario.intervalId = null
-
-        scenario.provideRpcs = this.__provideRpcs.bind(this)
-        scenario.makeRpcs = this.__makeRpcs.bind(this, scenario)
-        scenario.unprovideRpcs = this.__unprovideRpcs.bind(this, scenario)
-
-        return scenario
-    },
-
-    __provideRpcs: function () {
-        for (let rpc of this.$data.scenarioData.rpcs) {
-            this.client.rpc.provide(rpc.name, rpc.provideHandler)
-        }
-    },
-
-    __makeRpcs: function (scenario) {
-        const comp = this
-        scenario.intervalId = setInterval(function () {
-            for (let rpc of comp.$data.scenarioData.rpcs) {
-                for (let i = 0; i < 20; i++) {
-                    comp.client.rpc.make(rpc.name, { a: (i * 2) * 2 }, rpc.makeHandler)
-                }
+        const playNextRpc = function (rpcs) {
+            if (rpcs.length > 25000) {
+                return
             }
-        }, 50)
-    },
-    
-    __unprovideRpcs: function (scenario) {
-        for (let rpc of this.$data.scenarioData.rpcs) {
-            console.log('-> unproviding', rpc.name)
-            this.client.rpc.unprovide(rpc.name)
+
+            const rpcName = `rpc-${client.getUid()}`
+
+            client.rpc.provide(rpcName, (data, response) => {
+                if (rpcs.length % 2 === 0) {
+                    response.send(`${data.a * data.b}`)
+                } else if (rpcs.length % 3 === 0) {
+                    response.send(data.a * data.b)
+                } else {
+                    response.reject()
+                }
+            })
+
+            const intervalId = setInterval(() => {
+                const a = getRandomNumber(0, 10)
+                const b = getRandomNumber(10, 20)
+
+                client.rpc.make(rpcName, {a, b}, (err, result) => {
+                    if (err) {
+                        console.log(`Error making ${rpcName}(${a}, ${b}):`, err)
+                    } else {
+                        console.log(`${rpcName}(${a}, ${b}):`, result)
+                    }
+                })
+            }, 1500)
+
+            rpcs.push({
+                rpcName,
+                intervalId
+            })
+
+            setTimeout(() => {
+                playNextRpc(rpcs)
+            }, 100)
         }
 
-        clearInterval(scenario.intervalId)
+        playNextRpc(scenario.rpcs)
     },
-    
-    playScenario: function () {
-        this.$data.scenarioData.isplaying = true
 
-        console.log('Playing RPCs Scenario ...')
+    stop: function () {
+        const client = this.client
+        const scenario = this.$data.scenario
+        
+        const stopNextRpc = function(rpcs, i) {
+            if (i >= rpcs.length) {
+                return
+            }
 
-        const scenario = this.getScenario()
+            const rpc = rpcs[i]
 
-        scenario.provideRpcs()
+            client.rpc.unprovide(rpc.rpcName)
+            clearInterval(rpc.intervalId)
 
-        scenario.makeRpcs()
+            setTimeout(() => {
+                stopNextRpc(rpcs, ++i)
+            })
+        }
 
-        setTimeout(() => {
-            scenario.unprovideRpcs()
-            
-            this.$data.scenarioData.isplaying = false
-            
-            console.log('<- done')
-        }, 2 * 60 * 1000)
+        stopNextRpc(scenario.rpcs, 0) 
     }
   }
 };
