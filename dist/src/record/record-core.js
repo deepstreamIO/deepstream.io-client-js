@@ -240,6 +240,10 @@ class RecordCore extends Emitter {
      * Deletes the record on the server.
      */
     delete(callback) {
+        if (!this.services.connection.isConnected) {
+            this.services.logger.warn({ topic: message_constants_1.TOPIC.RECORD }, message_constants_1.RECORD_ACTIONS.DELETE, 'Deleting while offline is not supported');
+            return;
+        }
         if (this.checkDestroyed('delete')) {
             return;
         }
@@ -421,6 +425,9 @@ class RecordCore extends Emitter {
     }
     handleHeadResponse(message) {
         const remoteVersion = message.version;
+        console.log('-');
+        console.log('remoteVersion', remoteVersion);
+        console.log('this.version', this.version);
         if (remoteVersion === -1 && this.version === 1) {
             this.sendCreateUpdate(this.data);
             this.stateMachine.transition(3 /* SUBSCRIBED */);
@@ -431,13 +438,12 @@ class RecordCore extends Emitter {
         }
         else if (this.version === remoteVersion) {
             this.stateMachine.transition(5 /* RESUBSCRIBED */);
-        }
-        else if (this.version + 1 === remoteVersion) {
-            //this.version = remoteVersion
-            //this.applyChange(setPath(this.data, null, message.parsedData))
-            this.sendRead();
-            this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
-            this.stateMachine.transition(5 /* RESUBSCRIBED */);
+            // } else if (this.version + 1 === remoteVersion) {
+            //   //this.version = remoteVersion
+            //   //this.applyChange(setPath(this.data, null, message.parsedData))
+            //   this.sendRead()
+            //   this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+            //   this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
         }
         else {
             this.stateMachine.transition(6 /* INVALID_VERSION */);
@@ -497,6 +503,7 @@ class RecordCore extends Emitter {
             version: -1,
             parsedData: data
         });
+        this.offlineDirty = false;
     }
     /**
      * Applies incoming updates and patches to the record's dataset
@@ -652,6 +659,7 @@ class RecordCore extends Emitter {
         this.whenComplete(this.name);
     }
     onConnReestablished() {
+        console.log('back online', this.version, this.offlineDirty);
         if (this.version === 1 && this.offlineDirty) {
             this.stateMachine.transition(2 /* SUBSCRIBE */);
             return;

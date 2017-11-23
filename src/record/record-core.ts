@@ -311,6 +311,7 @@ export class RecordCore extends Emitter {
           context: this.stateMachine,
           data: RA.UNSUBSCRIBE_ACK
         })
+
       }
     })
     this.stateMachine.transition(RA.UNSUBSCRIBE)
@@ -320,6 +321,10 @@ export class RecordCore extends Emitter {
    * Deletes the record on the server.
    */
   public delete (callback?: (error: string | null) => void): Promise<void> | void {
+    if (!this.services.connection.isConnected) {
+      this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
+      return
+    }
     if (this.checkDestroyed('delete')) {
       return
     }
@@ -527,6 +532,9 @@ export class RecordCore extends Emitter {
 
   private handleHeadResponse (message: RecordMessage): void {
     const remoteVersion = message.version as number
+    console.log('-')
+    console.log('remoteVersion', remoteVersion)
+    console.log('this.version', this.version)
     if (remoteVersion === -1 && this.version === 1) {
       this.sendCreateUpdate(this.data)
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.SUBSCRIBED)
@@ -535,12 +543,12 @@ export class RecordCore extends Emitter {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
     } else if (this.version === remoteVersion) {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
-    } else if (this.version + 1 === remoteVersion) {
-      //this.version = remoteVersion
-      //this.applyChange(setPath(this.data, null, message.parsedData))
-      this.sendRead()
-      this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+    // } else if (this.version + 1 === remoteVersion) {
+    //   //this.version = remoteVersion
+    //   //this.applyChange(setPath(this.data, null, message.parsedData))
+    //   this.sendRead()
+    //   this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+    //   this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
     } else {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
       this.sendRead()
@@ -602,6 +610,7 @@ export class RecordCore extends Emitter {
       version: -1,
       parsedData: data
     })
+    this.offlineDirty = false
   }
 
   /**
@@ -785,6 +794,7 @@ export class RecordCore extends Emitter {
   }
 
   private onConnReestablished (): void {
+    console.log('back online', this.version, this.offlineDirty )
     if (this.version === 1 && this.offlineDirty) {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.SUBSCRIBE)
       return
