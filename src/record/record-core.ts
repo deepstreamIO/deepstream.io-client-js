@@ -320,7 +320,7 @@ export class RecordCore extends Emitter {
    */
   public delete (callback?: (error: string | null) => void): Promise<void> | void {
     if (!this.services.connection.isConnected) {
-      //this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
+      // this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
       if (callback) {
         this.services.timerRegistry.requestIdleCallback(() => {
           callback('Deleting while offline is not supported')

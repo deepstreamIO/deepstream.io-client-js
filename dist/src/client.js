@@ -32,8 +32,9 @@ class Client extends EventEmitter {
         this.services.storage = {
             get: (recordName, callback) => {
                 const data = fake[recordName];
-                if (!data)
+                if (!data) {
                     return callback(recordName, -1, {});
+                }
                 callback(recordName, data.version, data);
             },
             set: (recordName, version, data, callback) => {
@@ -88,7 +89,7 @@ class Client extends EventEmitter {
             return;
         }
         return new Promise((resolve, reject) => {
-            this.services.connection.resume((error) => {
+            this.services.connection.resume(error => {
                 error ? reject(error) : resolve();
             });
         });
