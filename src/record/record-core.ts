@@ -504,6 +504,7 @@ export class RecordCore extends Emitter {
       message.action === RA.MESSAGE_DENIED ||
       message.action === RA.MESSAGE_PERMISSION_ERROR
     ) {
+      console.log('errorr', message)
       if (
         message.originalAction === RA.SUBSCRIBECREATEANDREAD ||
         message.originalAction === RA.SUBSCRIBEANDHEAD ||
@@ -846,7 +847,6 @@ export class RecordCore extends Emitter {
   }
 
   private onConnReestablished (): void {
-    console.log('back online, version:', this.version, 'offline dirty:', this.offlineDirty, 'referecnes:',this.references)
     if (this.references <= 0 && this.offlineDirty === true) {
       this.sendHead()
       return
