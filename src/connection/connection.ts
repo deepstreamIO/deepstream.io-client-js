@@ -34,6 +34,7 @@ const enum TRANSITIONS {
   SUCCESFUL_LOGIN = 'succesful-login',
   ERROR = 'error',
   LOST = 'connection-lost',
+  EXIT_LIMBO = 'exit-limbo',
   AUTHENTICATION_TIMEOUT = 'authentication-timeout'
 }
 
@@ -95,12 +96,17 @@ export class Connection {
               this.limboTimeout = this.services.timerRegistry.add({
                 duration: this.options.offlineBufferTimeout,
                 context: this,
-                callback: () => this.internalEmitter.emit(EVENT.CONNECTION_LOST)
+                callback: () => {
+                  this.isInLimbo = false
+                  this.internalEmitter.emit(EVENT.EXIT_LIMBO)
+                }
               })
             }
           } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
             firstOpen = false
             this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
+            this.isInLimbo = false
+            this.services.timerRegistry.remove(this.limboTimeout)
           }
         },
         transitions: [

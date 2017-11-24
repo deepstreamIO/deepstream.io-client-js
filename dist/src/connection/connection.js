@@ -37,13 +37,18 @@ class Connection {
                         this.limboTimeout = this.services.timerRegistry.add({
                             duration: this.options.offlineBufferTimeout,
                             context: this,
-                            callback: () => this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST)
+                            callback: () => {
+                                this.isInLimbo = false;
+                                this.internalEmitter.emit(constants_1.EVENT.EXIT_LIMBO);
+                            }
                         });
                     }
                 }
                 else if (newState === constants_1.CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
                     firstOpen = false;
                     this.internalEmitter.emit(constants_1.EVENT.CONNECTION_REESTABLISHED);
+                    this.isInLimbo = false;
+                    this.services.timerRegistry.remove(this.limboTimeout);
                 }
             },
             transitions: [
