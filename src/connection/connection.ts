@@ -18,7 +18,7 @@ import { Socket } from './socket-factory'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
-export type ResumeCallback = (error: object) => void
+export type ResumeCallback = (error?: object) => void
 
 const enum TRANSITIONS {
   CONNECTED = 'connected',
@@ -52,6 +52,7 @@ export class Connection {
   private authParams: object | null
   private clientData: object
   private authCallback: AuthenticationCallback | null
+  private resumeCallback: ResumeCallback | null
   private originalUrl: string
   private url: string
   private heartbeatInterval: number
@@ -71,6 +72,7 @@ export class Connection {
     this.isConnected = false
     // tslint:disable-next-line:no-empty
     this.authCallback = null
+    this.resumeCallback = null
     this.emitter = emitter
     this.internalEmitter = new Emitter()
 
@@ -235,8 +237,7 @@ export class Connection {
   }
 
   public resume (callback: ResumeCallback): void {
-    this.internalEmitter.once(EVENT.CONNECTION_REESTABLISHED, callback)
-    this.internalEmitter.once(EVENT.REAUTHENTICATION_FAILURE, callback)
+    this.resumeCallback = callback
     this.stateMachine.transition(TRANSITIONS.RESUME)
     this.tryReconnect()
   }
@@ -561,6 +562,10 @@ export class Connection {
 
   private onAuthSuccessful (clientData: any): void {
     this.updateClientData(clientData)
+    if (this.resumeCallback) {
+      this.resumeCallback()
+      this.resumeCallback = null
+    }
     if (this.authCallback === null) {
       return
     }
@@ -571,9 +576,12 @@ export class Connection {
 
   private onAuthUnSuccessful (): void {
     const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] }
+    if (this.resumeCallback) {
+      this.resumeCallback(reason)
+      this.resumeCallback = null
+    }
     if (this.authCallback === null) {
       this.emitter.emit(EVENT.REAUTHENTICATION_FAILURE, reason)
-      this.internalEmitter.emit(EVENT.REAUTHENTICATION_FAILURE)
       return
     }
 

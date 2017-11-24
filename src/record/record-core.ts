@@ -504,7 +504,6 @@ export class RecordCore extends Emitter {
       message.action === RA.MESSAGE_DENIED ||
       message.action === RA.MESSAGE_PERMISSION_ERROR
     ) {
-      console.log('errorr', message)
       if (
         message.originalAction === RA.SUBSCRIBECREATEANDREAD ||
         message.originalAction === RA.SUBSCRIBEANDHEAD ||

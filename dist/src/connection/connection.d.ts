@@ -3,7 +3,7 @@ import { TOPIC, Message } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 import { Options } from '../client-options';
 export declare type AuthenticationCallback = (success: boolean, clientData: object) => void;
-export declare type ResumeCallback = (error: object) => void;
+export declare type ResumeCallback = (error?: object) => void;
 export declare class Connection {
     isConnected: boolean;
     emitter: Emitter;
@@ -14,6 +14,7 @@ export declare class Connection {
     private authParams;
     private clientData;
     private authCallback;
+    private resumeCallback;
     private originalUrl;
     private url;
     private heartbeatInterval;

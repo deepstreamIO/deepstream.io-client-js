@@ -409,7 +409,6 @@ class RecordCore extends Emitter {
         }
         if (message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED ||
             message.action === message_constants_1.RECORD_ACTIONS.MESSAGE_PERMISSION_ERROR) {
-            console.log('errorr', message);
             if (message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBECREATEANDREAD ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDHEAD ||
                 message.originalAction === message_constants_1.RECORD_ACTIONS.SUBSCRIBEANDREAD) {

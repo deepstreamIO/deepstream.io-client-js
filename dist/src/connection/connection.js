@@ -15,6 +15,7 @@ class Connection {
         this.isConnected = false;
         // tslint:disable-next-line:no-empty
         this.authCallback = null;
+        this.resumeCallback = null;
         this.emitter = emitter;
         this.internalEmitter = new Emitter();
         let isReconnecting = false;
@@ -158,8 +159,7 @@ class Connection {
         this.endpoint.close();
     }
     resume(callback) {
-        this.internalEmitter.once(constants_1.EVENT.CONNECTION_REESTABLISHED, callback);
-        this.internalEmitter.once(constants_1.EVENT.REAUTHENTICATION_FAILURE, callback);
+        this.resumeCallback = callback;
         this.stateMachine.transition("resume" /* RESUME */);
         this.tryReconnect();
     }
@@ -441,6 +441,10 @@ class Connection {
     }
     onAuthSuccessful(clientData) {
         this.updateClientData(clientData);
+        if (this.resumeCallback) {
+            this.resumeCallback();
+            this.resumeCallback = null;
+        }
         if (this.authCallback === null) {
             return;
         }
@@ -449,9 +453,12 @@ class Connection {
     }
     onAuthUnSuccessful() {
         const reason = { reason: constants_1.EVENT[constants_1.EVENT.INVALID_AUTHENTICATION_DETAILS] };
+        if (this.resumeCallback) {
+            this.resumeCallback(reason);
+            this.resumeCallback = null;
+        }
         if (this.authCallback === null) {
             this.emitter.emit(constants_1.EVENT.REAUTHENTICATION_FAILURE, reason);
-            this.internalEmitter.emit(constants_1.EVENT.REAUTHENTICATION_FAILURE);
             return;
         }
         this.authCallback(false, reason);
