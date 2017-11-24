@@ -17,7 +17,6 @@ class RecordCore extends Emitter {
         this.name = name;
         this.whenComplete = whenComplete;
         this.references = 1;
-        this.offlineDirty = false;
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }
@@ -51,7 +50,10 @@ class RecordCore extends Emitter {
         else {
             this.stateMachine.transition(0 /* LOAD */);
         }
-        this.services.connection.onReestablished(this.onConnReestablished.bind(this));
+        this.onConnReestablished = this.onConnReestablished.bind(this);
+        this.onConnLost = this.onConnLost.bind(this);
+        this.services.connection.onReestablished(this.onConnReestablished);
+        this.services.connection.onLost(this.onConnLost);
     }
     get recordState() {
         return this.stateMachine.state;
@@ -347,13 +349,17 @@ class RecordCore extends Emitter {
             if (version === -1) {
                 this.data = {};
                 this.version = 1;
+                this.services.storage.set(this.name, this.version, this.data, (error) => {
+                    this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
+                        this.stateMachine.transition(1 /* LOADED */);
+                    });
+                });
             }
             else {
                 this.data = data;
                 this.version = version;
+                this.stateMachine.transition(1 /* LOADED */);
             }
-            this.offlineDirty = true;
-            this.stateMachine.transition(1 /* LOADED */);
         });
     }
     onReady() {
@@ -446,7 +452,7 @@ class RecordCore extends Emitter {
     }
     handleHeadResponse(message) {
         const remoteVersion = message.version;
-        if (this.offlineDirty) {
+        if (this.recordServices.dirtyService.isDirty(this.name)) {
             if (remoteVersion === -1 && this.version === 1) {
                 /**
                  * Record created while offline
@@ -454,14 +460,7 @@ class RecordCore extends Emitter {
                 this.stateMachine.transition(4 /* RESUBSCRIBED */);
                 this.sendCreateUpdate(this.data);
             }
-            else if (this.references <= 0 && (remoteVersion !== -1 && remoteVersion < this.version)) {
-                /**
-                 * record updated and discarded while offline
-                 * send remaning changes
-                */
-                this.sendUpdate(null, this.data);
-            }
-            else if (this.version > remoteVersion && remoteVersion !== -1) {
+            else if (this.version === remoteVersion + 1) {
                 /**
                  * record updated while offline
                 */
@@ -513,15 +512,19 @@ class RecordCore extends Emitter {
         });
     }
     saveUpdate() {
-        if (!this.offlineDirty) {
+        if (!this.recordServices.dirtyService.isDirty(this.name)) {
             this.version++;
-            this.offlineDirty = true;
+            this.recordServices.dirtyService.setDirty(this.name, true, () => {
+                this.services.storage.set(this.name, this.version, this.data, () => { });
+            });
         }
-        this.services.storage.set(this.name, this.version, this.data, () => { });
+        else {
+            this.services.storage.set(this.name, this.version, this.data, () => { });
+        }
     }
     sendUpdate(path = null, data, callback) {
-        if (this.offlineDirty) {
-            this.offlineDirty = false;
+        if (this.recordServices.dirtyService.isDirty(this.name)) {
+            this.recordServices.dirtyService.setDirty(this.name, false, () => { });
         }
         else {
             this.version++;
@@ -557,7 +560,7 @@ class RecordCore extends Emitter {
             version: 1,
             parsedData: data
         });
-        this.offlineDirty = false;
+        this.recordServices.dirtyService.setDirty(this.name, false, () => { });
     }
     /**
      * Applies incoming updates and patches to the record's dataset
@@ -708,16 +711,17 @@ class RecordCore extends Emitter {
         this.services.timerRegistry.remove(this.deletedTimeout);
         this.services.timerRegistry.remove(this.discardTimeout);
         this.services.timerRegistry.remove(this.responseTimeout);
+        this.services.connection.removeOnReestablished(this.onConnReestablished);
+        this.services.connection.removeOnLost(this.onConnLost);
         this.emitter.off();
         this.isReady = false;
         this.whenComplete(this.name);
     }
     onConnReestablished() {
-        if (this.references <= 0 && this.offlineDirty === true) {
-            this.sendHead();
-            return;
-        }
         this.stateMachine.transition(3 /* RESUBSCRIBE */);
+    }
+    onConnLost() {
+        this.services.storage.set(this.name, this.version, this.data, (error) => { });
     }
 }
 exports.RecordCore = RecordCore;

@@ -72,8 +72,14 @@ class Connection {
     onLost(callback) {
         this.internalEmitter.on(constants_1.EVENT.CONNECTION_LOST, callback);
     }
+    removeOnLost(callback) {
+        this.internalEmitter.off(constants_1.EVENT.CONNECTION_LOST, callback);
+    }
     onReestablished(callback) {
         this.internalEmitter.on(constants_1.EVENT.CONNECTION_REESTABLISHED, callback);
+    }
+    removeOnReestablished(callback) {
+        this.internalEmitter.off(constants_1.EVENT.CONNECTION_REESTABLISHED, callback);
     }
     registerHandler(topic, callback) {
         this.handlers.set(topic, callback);
@@ -159,8 +165,8 @@ class Connection {
         this.endpoint.close();
     }
     resume(callback) {
-        this.resumeCallback = callback;
         this.stateMachine.transition("resume" /* RESUME */);
+        this.resumeCallback = callback;
         this.tryReconnect();
     }
     /**

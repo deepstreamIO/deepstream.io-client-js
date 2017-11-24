@@ -1,4 +1,4 @@
-import { Services } from '../client';
+import { Services, offlineStoreWriteResponse } from '../client';
 import { Options } from '../client-options';
 import { MergeStrategy } from './merge-strategy';
 import { RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants';
@@ -38,7 +38,6 @@ export declare class RecordCore extends Emitter {
     private responseTimeout;
     private discardTimeout;
     private deletedTimeout;
-    private offlineDirty;
     private deleteResponse;
     private whenComplete;
     constructor(name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void);
@@ -124,7 +123,7 @@ export declare class RecordCore extends Emitter {
      * the next update merge attempt ).
      */
     setMergeStrategy(mergeStrategy: MergeStrategy): void;
-    dump(callback?: (error: string | null) => void): Promise<void> | void;
+    dump(callback?: offlineStoreWriteResponse): Promise<void> | void;
     /**
      * Transition States
      */
@@ -187,4 +186,5 @@ export declare class RecordCore extends Emitter {
      */
     private destroy();
     private onConnReestablished();
+    private onConnLost();
 }

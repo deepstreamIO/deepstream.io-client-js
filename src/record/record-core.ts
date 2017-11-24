@@ -1,4 +1,4 @@
-import { Services } from '../client'
+import { Services, offlineStoreWriteResponse } from '../client'
 import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
 import { MergeStrategy, REMOTE_WINS } from './merge-strategy'
@@ -54,7 +54,6 @@ export class RecordCore extends Emitter {
   private responseTimeout: number
   private discardTimeout: number
   private deletedTimeout: number
-  private offlineDirty: boolean
   private deleteResponse: {
     callback?: (error: string | null) => void,
     reject?: (error: string) => void,
@@ -72,7 +71,6 @@ export class RecordCore extends Emitter {
     this.name = name
     this.whenComplete = whenComplete
     this.references = 1
-    this.offlineDirty = false
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
@@ -113,7 +111,11 @@ export class RecordCore extends Emitter {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
     }
 
-    this.services.connection.onReestablished(this.onConnReestablished.bind(this))
+    this.onConnReestablished = this.onConnReestablished.bind(this)
+    this.onConnLost = this.onConnLost.bind(this)
+
+    this.services.connection.onReestablished(this.onConnReestablished)
+    this.services.connection.onLost(this.onConnLost)
   }
 
   get recordState (): RECORD_STATE {
@@ -361,7 +363,7 @@ export class RecordCore extends Emitter {
     }
   }
 
-  public dump (callback?: (error: string | null) => void): Promise<void> | void  {
+  public dump (callback?: offlineStoreWriteResponse): Promise<void> | void  {
     if (callback) {
       this.services.storage.set(this.name, this.version, this.data, callback)
       return
@@ -433,12 +435,16 @@ export class RecordCore extends Emitter {
       if (version === -1) {
         this.data = {}
         this.version = 1
+        this.services.storage.set(this.name, this.version, this.data, (error) => {
+          this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
+            this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
+          })
+        })
       } else {
         this.data = data
         this.version = version
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
       }
-      this.offlineDirty = true
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
     })
   }
 
@@ -553,20 +559,14 @@ export class RecordCore extends Emitter {
 
   private handleHeadResponse (message: RecordMessage): void {
     const remoteVersion = message.version as number
-    if (this.offlineDirty) {
+    if (this.recordServices.dirtyService.isDirty(this.name)) {
       if (remoteVersion === -1 && this.version === 1) {
         /**
          * Record created while offline
          */
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
         this.sendCreateUpdate(this.data)
-      } else if (this.references <= 0 && (remoteVersion !== -1 && remoteVersion < this.version)) {
-        /**
-         * record updated and discarded while offline
-         * send remaning changes
-        */
-        this.sendUpdate(null, this.data)
-      } else if (this.version > remoteVersion && remoteVersion !== -1) {
+      } else if (this.version === remoteVersion + 1) {
         /**
          * record updated while offline
         */
@@ -617,16 +617,20 @@ export class RecordCore extends Emitter {
   }
 
   private saveUpdate (): void {
-    if (!this.offlineDirty) {
+
+    if (!this.recordServices.dirtyService.isDirty(this.name)) {
       this.version++
-      this.offlineDirty = true
+      this.recordServices.dirtyService.setDirty(this.name, true, () => {
+        this.services.storage.set(this.name, this.version, this.data, () => {})
+      })
+    } else {
+      this.services.storage.set(this.name, this.version, this.data, () => {})
     }
-    this.services.storage.set(this.name, this.version, this.data, () => {})
   }
 
   private sendUpdate (path: string | null = null, data: any, callback?: WriteAckCallback) {
-    if (this.offlineDirty) {
-      this.offlineDirty = false
+    if (this.recordServices.dirtyService.isDirty(this.name)) {
+      this.recordServices.dirtyService.setDirty(this.name, false, () => {})
     } else {
       this.version++
     }
@@ -662,7 +666,7 @@ export class RecordCore extends Emitter {
       version: 1,
       parsedData: data
     })
-    this.offlineDirty = false
+    this.recordServices.dirtyService.setDirty(this.name, false, () => {})
   }
 
   /**
@@ -840,16 +844,19 @@ export class RecordCore extends Emitter {
     this.services.timerRegistry.remove(this.deletedTimeout)
     this.services.timerRegistry.remove(this.discardTimeout)
     this.services.timerRegistry.remove(this.responseTimeout)
+    this.services.connection.removeOnReestablished(this.onConnReestablished)
+    this.services.connection.removeOnLost(this.onConnLost)
     this.emitter.off()
     this.isReady = false
     this.whenComplete(this.name)
   }
 
   private onConnReestablished (): void {
-    if (this.references <= 0 && this.offlineDirty === true) {
-      this.sendHead()
-      return
-    }
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
   }
+
+  private onConnLost (): void {
+    this.services.storage.set(this.name, this.version, this.data, (error) => {})
+  }
+
 }

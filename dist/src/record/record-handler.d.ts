@@ -7,10 +7,12 @@ import { List } from './list';
 import { Listener, ListenCallback } from '../util/listener';
 import { SingleNotifier } from './single-notifier';
 import { WriteAcknowledgementService } from './write-ack-service';
+import { DirtyService } from './dirty-service';
 export interface RecordServices {
     writeAckService: WriteAcknowledgementService;
     readRegistry: SingleNotifier;
     headRegistry: SingleNotifier;
+    dirtyService: DirtyService;
 }
 export declare class RecordHandler {
     private services;

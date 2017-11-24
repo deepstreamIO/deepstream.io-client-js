@@ -14,10 +14,12 @@ import { RecordHandler } from './record/record-handler'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 
+export type offlineStoreWriteResponse = ((error?: string) => void)
+
 export interface RecordOfflineStore {
   get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => void
-  set: (recordName: string, version: number, data: Array<string> | object, callback: ((error: string) => void)) => void
-  delete: (recordName: string, callback: ((error: string) => void)) => void
+  set: (recordName: string, version: number, data: Array<string> | object, callback: offlineStoreWriteResponse) => void
+  delete: (recordName: string, callback: offlineStoreWriteResponse) => void
 }
 
 export interface Services {
@@ -60,8 +62,9 @@ export class Client extends EventEmitter {
         }
         callback(recordName, data.version, data)
       },
-      set: (recordName: string, version: number, data: Array<string> | object, callback: ((error: string) => void)) => {
+      set: (recordName: string, version: number, data: Array<string> | object, callback: ((error?: string) => void)) => {
         fake[recordName] = {recordName, version, data }
+        callback()
       },
       delete: () => {},
     }

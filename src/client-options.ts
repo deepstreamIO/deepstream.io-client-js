@@ -67,7 +67,12 @@ Default: /deepstream */
     /**
      * Options for the provided socket factory
      */
-    socketOptions: any
+    socketOptions: any,
+    /**
+     * When the client is used offline with offline storage enabled
+     * dirtyStorageName is used as a key to save offline dirty records states
+     */
+    dirtyStorageName: string
 }
 
 export const DefaultOptions: Options = {
@@ -85,5 +90,6 @@ export const DefaultOptions: Options = {
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
-    socketOptions: null
+    socketOptions: null,
+    dirtyStorageName: '__ds__dirty_records'
 }

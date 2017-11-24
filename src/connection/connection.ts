@@ -135,8 +135,16 @@ export class Connection {
     this.internalEmitter.on(EVENT.CONNECTION_LOST, callback)
   }
 
+  public removeOnLost (callback: Function): void {
+    this.internalEmitter.off(EVENT.CONNECTION_LOST, callback)
+  }
+
   public onReestablished (callback: Function): void {
     this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
+  }
+
+  public removeOnReestablished (callback: Function): void {
+    this.internalEmitter.off(EVENT.CONNECTION_REESTABLISHED, callback)
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {
@@ -237,8 +245,8 @@ export class Connection {
   }
 
   public resume (callback: ResumeCallback): void {
-    this.resumeCallback = callback
     this.stateMachine.transition(TRANSITIONS.RESUME)
+    this.resumeCallback = callback
     this.tryReconnect()
   }
 

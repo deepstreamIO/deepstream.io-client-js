@@ -11,12 +11,14 @@ import { List } from './list'
 import { Listener, ListenCallback } from '../util/listener'
 import { SingleNotifier } from './single-notifier'
 import { WriteAcknowledgementService } from './write-ack-service'
+import { DirtyService } from './dirty-service'
 import * as Emitter from 'component-emitter2'
 
 export interface RecordServices {
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier,
-  headRegistry: SingleNotifier
+  headRegistry: SingleNotifier,
+  dirtyService: DirtyService
 }
 
 export class RecordHandler {
@@ -38,7 +40,8 @@ export class RecordHandler {
     this.recordServices = {
       writeAckService: new WriteAcknowledgementService(services),
       readRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout),
-      headRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout)
+      headRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout),
+      dirtyService: new DirtyService(services.storage, options.dirtyStorageName)
     } as RecordServices
 
     this.getRecordCore = this.getRecordCore.bind(this)

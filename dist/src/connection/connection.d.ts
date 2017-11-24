@@ -26,7 +26,9 @@ export declare class Connection {
     private reconnectionAttempt;
     constructor(services: Services, options: Options, url: string, emitter: Emitter);
     onLost(callback: Function): void;
+    removeOnLost(callback: Function): void;
     onReestablished(callback: Function): void;
+    removeOnReestablished(callback: Function): void;
     registerHandler(topic: TOPIC, callback: Function): void;
     sendMessage(message: Message): void;
     /**

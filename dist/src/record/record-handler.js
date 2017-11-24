@@ -11,6 +11,7 @@ const list_1 = require("./list");
 const listener_1 = require("../util/listener");
 const single_notifier_1 = require("./single-notifier");
 const write_ack_service_1 = require("./write-ack-service");
+const dirty_service_1 = require("./dirty-service");
 const Emitter = require("component-emitter2");
 class RecordHandler {
     constructor(services, options, listener) {
@@ -22,7 +23,8 @@ class RecordHandler {
         this.recordServices = {
             writeAckService: new write_ack_service_1.WriteAcknowledgementService(services),
             readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
-            headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout)
+            headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout),
+            dirtyService: new dirty_service_1.DirtyService(services.storage, options.dirtyStorageName)
         };
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.RECORD, this.handle.bind(this));

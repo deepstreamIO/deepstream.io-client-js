@@ -39,6 +39,7 @@ class Client extends EventEmitter {
             },
             set: (recordName, version, data, callback) => {
                 fake[recordName] = { recordName, version, data };
+                callback();
             },
             delete: () => { },
         };

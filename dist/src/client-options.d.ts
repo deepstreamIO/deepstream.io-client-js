@@ -65,5 +65,10 @@ Default: /deepstream */
      * Options for the provided socket factory
      */
     socketOptions: any;
+    /**
+     * When the client is used offline with offline storage enabled
+     * dirtyStorageName is used as a key to save offline dirty records states
+     */
+    dirtyStorageName: string;
 }
 export declare const DefaultOptions: Options;
