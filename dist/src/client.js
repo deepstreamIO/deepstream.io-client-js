@@ -31,7 +31,6 @@ class Client extends EventEmitter {
         services.offlineQueue = new offline_queue_1.default(this.options, services);
         this.services = services;
         this.services.connection.onLost(services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry));
-        this.services.connection.onReestablished(services.offlineQueue.flush.bind(services.offlineQueue));
         this.event = new event_handler_1.EventHandler(this.services, this.options);
         this.rpc = new rpc_handler_1.RPCHandler(this.services, this.options);
         this.record = new record_handler_1.RecordHandler(this.services, this.options);

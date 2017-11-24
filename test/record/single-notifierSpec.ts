@@ -65,6 +65,9 @@ describe('Single Notifier', () => {
 
   it('cant\'t query request when client is offline', async () => {
     services.connection.isConnected = false
+    services.offlineQueueMock
+      .expects('submit')
+      .once()
     services.connectionMock
       .expects('sendMessage')
       .never()
@@ -73,10 +76,6 @@ describe('Single Notifier', () => {
       .never()
 
     singleNotifier.request(name, callbackSpy)
-    await BBPromise.delay(1)
-
-    assert.calledOnce(callbackSpy)
-    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
   })
 
   describe('requesting', async () => {

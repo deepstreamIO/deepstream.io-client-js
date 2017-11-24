@@ -11,6 +11,7 @@ class OfflineQueue {
         this.services = services;
         this.messageQueue = [];
         this.onTimeout = this.onTimeout.bind(this);
+        this.services.connection.onReestablished(this.flush.bind(this));
     }
     submit(message, successCallback, failureCallback) {
         this.messageQueue.push({ message, success: successCallback, failure: failureCallback });

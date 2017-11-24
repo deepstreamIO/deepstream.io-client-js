@@ -120,15 +120,15 @@ describe('RPC handler', () => {
         services.connectionMock
             .expects('sendMessage')
             .never();
+        services.offlineQueueMock
+            .expects('submit')
+            .twice();
+        services.timeoutRegistryMock
+            .expects('add')
+            .never();
         rpcHandler.make(name, data, callback);
         const promise = rpcHandler.make(name, data);
         promise.then(promisseSuccess).catch(promisseError);
-        yield bluebird_1.Promise.delay(0);
-        sinon.assert.calledOnce(callback);
-        sinon.assert.calledWithExactly(callback, constants_1.EVENT.CLIENT_OFFLINE);
-        sinon.assert.notCalled(promisseSuccess);
-        sinon.assert.calledOnce(promisseError);
-        sinon.assert.calledWithExactly(promisseError, constants_1.EVENT.CLIENT_OFFLINE);
     }));
     it('doesn\'t reply rpc and sends rejection if no provider exists', () => {
         services.connectionMock

@@ -13,6 +13,6 @@ export default class OfflineQueue {
     private timeout;
     constructor(options: Options, services: Services);
     submit(message: Message, successCallback?: Function, failureCallback?: Function): void;
-    flush(message: Message): void;
+    private flush(message);
     private onTimeout();
 }

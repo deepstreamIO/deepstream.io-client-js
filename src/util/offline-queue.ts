@@ -28,6 +28,7 @@ export default class OfflineQueue {
     this.services = services
     this.messageQueue = []
     this.onTimeout = this.onTimeout.bind(this)
+    this.services.connection.onReestablished(this.flush.bind(this))
   }
 
   public submit (message: Message, successCallback?: Function, failureCallback?: Function): void {
@@ -41,7 +42,7 @@ export default class OfflineQueue {
     }
   }
 
-  public flush (message: Message): void {
+  private flush (message: Message): void {
     for (let i = 0; i < this.messageQueue.length; i++) {
       const item = this.messageQueue[i]
       this.services.connection.sendMessage(this.messageQueue[i].message)

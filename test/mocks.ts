@@ -3,9 +3,11 @@ import { EventEmitter } from 'events'
 import { mock, stub, SinonMock, SinonStub } from 'sinon'
 import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
+import { TimeoutRegistry } from '../src/util/timeout-registry'
 import { Message } from '../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../src/record/single-notifier'
 import { WriteAcknowledgementService } from '../src/record/write-ack-service'
+import OfflineQueue from '../src/util/offline-queue'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -45,6 +47,11 @@ export const getServicesMock = () => {
   const loggerMock = mock(logger)
   loggerMock.expects('warn').never()
   // loggerMock.expects('error').never()
+
+  const offlineQueue = {
+    submit () {}
+  }
+  const offlineQueueMock = mock(offlineQueue)
 
   const timerRegistry = new TimerRegistry()
 
@@ -94,6 +101,8 @@ export const getServicesMock = () => {
     getSocket: (): any => ({ socket, socketMock: mock(socket) }),
     connection,
     connectionMock,
+    offlineQueue,
+    offlineQueueMock,
     timeoutRegistry,
     timeoutRegistryMock,
     logger,

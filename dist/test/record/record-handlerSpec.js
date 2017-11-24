@@ -64,18 +64,14 @@ describe('Record handler', () => {
         chai_1.expect(recordHandler.snapshot.bind(recordHandler, name, [])).to.throw();
         chai_1.expect(recordHandler.snapshot.bind(recordHandler, name, {})).to.throw();
     });
-    it('snapshots record remotely using callback and promise style', () => {
+    it('snapshots record remotely using callback and promise style', () => __awaiter(this, void 0, void 0, function* () {
         singleNotifierMock
             .expects('request')
-            .once()
-            .withExactArgs(name, { callback: callbackSpy });
-        singleNotifierMock
-            .expects('request')
-            .once()
-            .withExactArgs(name, { resolve: sinon_1.match.func, reject: sinon_1.match.func });
+            .twice()
+            .withExactArgs(name, sinon_1.match.func);
         recordHandler.snapshot(name, callbackSpy);
         recordHandler.snapshot(name);
-    });
+    }));
     it('snapshots local records using callback and promise style', () => {
         /**
          * TODO
@@ -123,12 +119,8 @@ describe('Record handler', () => {
     it('queries for the record version remotely using callback and promise', () => {
         singleNotifierMock
             .expects('request')
-            .once()
-            .withExactArgs(name, { callback: callbackSpy });
-        singleNotifierMock
-            .expects('request')
-            .once()
-            .withExactArgs(name, { resolve: sinon_1.match.func, reject: sinon_1.match.func });
+            .twice()
+            .withExactArgs(name, sinon_1.match.func);
         recordHandler.head(name, callbackSpy);
         const promise = recordHandler.head(name);
         promise.then(resolveSpy).catch(rejectSpy);
@@ -181,7 +173,7 @@ describe('Record handler', () => {
         singleNotifierMock
             .expects('request')
             .twice()
-            .withExactArgs(name, { callback: sinon_1.match.func });
+            .withExactArgs(name, sinon_1.match.func);
         recordHandler.has(name, callbackSpy);
         const promise = recordHandler.has(name);
         promise.then(resolveSpy).catch(rejectSpy);

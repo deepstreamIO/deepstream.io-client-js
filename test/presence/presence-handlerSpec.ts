@@ -1,6 +1,6 @@
 import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
-import { assert, spy } from 'sinon'
+import { assert, spy, match } from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../mocks'
 import { EVENT, CONNECTION_STATE } from '../../src/constants'
 import { TOPIC, PRESENCE_ACTIONS, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
@@ -63,21 +63,20 @@ describe('Presence handler', () => {
 
   it('cant\'t query getAll when client is offline', async () => {
     services.connection.isConnected = false
-    services.connectionMock
-      .expects('sendMessage')
-      .never()
+
+    services.offlineQueueMock
+      .expects('submit')
+      .twice()
+      .withExactArgs(
+        { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.QUERY_ALL },
+        match.func,
+        match.func
+      )
 
     presenceHandler.getAll(callbackSpy)
     const promise = presenceHandler.getAll()
-    promise.then(promiseSuccess).catch(promiseError)
 
-    await BBPromise.delay(0)
-    assert.calledOnce(callbackSpy)
-    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
-
-    assert.notCalled(promiseSuccess)
-    assert.calledOnce(promiseError)
-    assert.calledWithExactly(promiseError, EVENT.CLIENT_OFFLINE)
+    await BBPromise.delay(1)
   })
 
   it('calls query for all users callback with error message when connection is lost', async () => {

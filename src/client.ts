@@ -58,10 +58,6 @@ export class Client extends EventEmitter {
       services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
     )
 
-    this.services.connection.onReestablished(
-      services.offlineQueue.flush.bind(services.offlineQueue)
-    )
-
     this.event = new EventHandler(this.services, this.options)
     this.rpc = new RPCHandler(this.services, this.options)
     this.record = new RecordHandler(this.services, this.options)

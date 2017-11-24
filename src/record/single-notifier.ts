@@ -62,12 +62,15 @@ export class SingleNotifier {
           () => this.services.timeoutRegistry.add({ message }),
           () => callback(EVENT.CLIENT_OFFLINE)
         )
+        return
       } else {
         this.services.connection.sendMessage(message)
+        this.services.timeoutRegistry.add({ message })
       }
       return
     }
     req.push(callback)
+    this.services.timeoutRegistry.add({ message })
   }
 
   /**

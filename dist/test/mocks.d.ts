@@ -17,6 +17,10 @@ export declare const getServicesMock: () => {
         onLost: (callback: Function) => void;
     };
     connectionMock: SinonMock;
+    offlineQueue: {
+        submit(): void;
+    };
+    offlineQueueMock: SinonMock;
     timeoutRegistry: {
         add: () => void;
         remove: () => void;

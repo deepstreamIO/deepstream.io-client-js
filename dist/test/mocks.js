@@ -39,6 +39,10 @@ exports.getServicesMock = () => {
     const loggerMock = sinon_1.mock(logger);
     loggerMock.expects('warn').never();
     // loggerMock.expects('error').never()
+    const offlineQueue = {
+        submit() { }
+    };
+    const offlineQueueMock = sinon_1.mock(offlineQueue);
     const timerRegistry = new timer_registry_1.TimerRegistry();
     // tslint:disable-next-line
     class Socket {
@@ -82,6 +86,8 @@ exports.getServicesMock = () => {
         getSocket: () => ({ socket, socketMock: sinon_1.mock(socket) }),
         connection,
         connectionMock,
+        offlineQueue,
+        offlineQueueMock,
         timeoutRegistry,
         timeoutRegistryMock,
         logger,

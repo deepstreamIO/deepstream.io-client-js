@@ -43,13 +43,16 @@ class SingleNotifier {
             this.requests.set(name, [callback]);
             if (this.services.connection.isConnected === false) {
                 this.services.offlineQueue.submit(message, () => this.services.timeoutRegistry.add({ message }), () => callback(client_1.EVENT.CLIENT_OFFLINE));
+                return;
             }
             else {
                 this.services.connection.sendMessage(message);
+                this.services.timeoutRegistry.add({ message });
             }
             return;
         }
         req.push(callback);
+        this.services.timeoutRegistry.add({ message });
     }
     /**
      * Adds a callback to a (possibly) inflight request that will be called
