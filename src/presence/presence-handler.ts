@@ -42,6 +42,7 @@ export class PresenceHandler {
   private counter: number
   private pendingSubscribes: Set<string>
   private pendingUnsubscribes: Set<string>
+  private limboQueue: Array<Message>
   private flushTimeout: number | null
 
   constructor (services: Services, options: Options) {
@@ -51,14 +52,16 @@ export class PresenceHandler {
     this.globalSubscriptionEmitter = new Emitter()
     this.queryEmitter = new Emitter()
     this.queryAllEmitter = new Emitter()
-    this.resubscribe = this.resubscribe.bind(this)
+
     this.services.connection.registerHandler(TOPIC.PRESENCE, this.handle.bind(this))
-    this.services.connection.onReestablished(this.resubscribe.bind(this))
-    this.services.connection.onLost(this.onConnectionLost.bind(this))
+    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
+    this.services.connection.onLost(this.onExitLimbo.bind(this))
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
 
     this.counter = 0
     this.pendingSubscribes = new Set()
     this.pendingUnsubscribes = new Set()
+    this.limboQueue = []
   }
 
   public subscribe (callback: SubscribeCallback): void
@@ -162,14 +165,13 @@ export class PresenceHandler {
     }
 
     if (this.services.connection.isConnected) {
-      this.services.connection.sendMessage(message)
-      this.services.timeoutRegistry.add({ message })
+      this.sendQuery(message)
+    } else if (this.services.connection.isInLimbo) {
+      this.limboQueue.push(message)
     } else {
-      this.services.offlineQueue.submit(
-        message,
-        () => this.services.timeoutRegistry.add({ message }),
-        () => emitter.emit(emitterAction, EVENT.CLIENT_OFFLINE)
-      )
+      this.services.timerRegistry.requestIdleCallback(() => {
+        emitter.emit(emitterAction, EVENT.CLIENT_OFFLINE)
+      })
     }
 
     if (callback) {
@@ -178,13 +180,10 @@ export class PresenceHandler {
     }
 
     return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
-      emitter.once(emitterAction, (error: { reason: string }, results: QueryResult | IndividualQueryResult) => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve(results)
-        }
-      })
+      emitter.once(
+        emitterAction,
+        (error: { reason: string }, results: QueryResult | IndividualQueryResult) => error ? reject(error) : resolve(results)
+      )
     })
   }
 
@@ -241,6 +240,11 @@ export class PresenceHandler {
     this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
   }
 
+  private sendQuery (message: Message) {
+    this.services.connection.sendMessage(message)
+    this.services.timeoutRegistry.add({ message })
+  }
+
   private flush () {
     if (!this.services.connection.isConnected) {
       // will be handled by resubscribe
@@ -259,18 +263,6 @@ export class PresenceHandler {
       this.pendingUnsubscribes.clear()
     }
     this.flushTimeout = null
-  }
-
-  private resubscribe () {
-    const keys = this.subscriptionEmitter.eventNames()
-    if (keys.length > 0) {
-      this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, keys)
-    }
-
-    const hasGlobalSubscription = this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)
-    if (hasGlobalSubscription) {
-      this.subscribeToAllChanges()
-    }
   }
 
   private bulkSubscription (action: PRESENCE_ACTION.SUBSCRIBE | PRESENCE_ACTION.UNSUBSCRIBE, names: Array<string>) {
@@ -313,10 +305,30 @@ export class PresenceHandler {
     }
   }
 
-  private onConnectionLost (): void {
+  private onConnectionReestablished () {
+    const keys = this.subscriptionEmitter.eventNames()
+    if (keys.length > 0) {
+      this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, keys)
+    }
+
+    const hasGlobalSubscription = this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)
+    if (hasGlobalSubscription) {
+      this.subscribeToAllChanges()
+    }
+
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      this.sendQuery(this.limboQueue[i])
+    }
+    this.limboQueue = []
+  }
+
+  private onExitLimbo () {
     this.queryEmitter.eventNames().forEach(correlationId => {
       this.queryEmitter.emit(correlationId, EVENT.CLIENT_OFFLINE)
     })
     this.queryAllEmitter.emit(ONLY_EVENT, EVENT.CLIENT_OFFLINE)
+    this.limboQueue = []
+    this.queryAllEmitter.off()
+    this.queryEmitter.off()
   }
 }

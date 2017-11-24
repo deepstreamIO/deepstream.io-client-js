@@ -15,14 +15,17 @@ export class RPCHandler {
   private options: Options
   private rpcs: Map<string, RPC>
   private providers: Map<string, RPCProvider>
+  private limboQueue: Array<{ name: string, data: any, correlationId: string, callback: RPCMakeCallback }>
 
   constructor (services: Services, options: Options) {
     this.services = services
     this.options = options
     this.rpcs = new Map<string, RPC>()
     this.providers = new Map<string, RPCProvider>()
+    this.limboQueue = []
     this.services.connection.registerHandler(TOPIC.RPC, this.handle.bind(this))
-    this.services.connection.onReestablished(this.reprovide.bind(this))
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
+    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
     this.services.connection.onLost(this.onConnectionLost.bind(this))
   }
 
@@ -105,20 +108,40 @@ export class RPCHandler {
 
     const correlationId = getUid()
 
-    if (callback) {
-      this.rpcs.set(correlationId, new RPC(name, correlationId, data, callback, this.options, this.services))
-      return
-    }
+    if (this.services.connection.isConnected) {
+      if (callback) {
+        this.rpcs.set(correlationId, new RPC(name, correlationId, data, callback, this.options, this.services))
+        return
+      }
 
-    return new Promise((resolve, reject) => {
-      this.rpcs.set(correlationId, new RPC(name, correlationId, data, (error: string, result: any) => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve(result)
-        }
-      }, this.options, this.services))
-    })
+      return new Promise((resolve, reject) => {
+        this.rpcs.set(
+          correlationId,
+          new RPC(
+            name,
+            correlationId,
+            data,
+            (error: string, result: any) => error ? reject(error) : resolve(result),
+            this.options,
+            this.services
+          )
+        )
+      })
+    } else if (this.services.connection.isInLimbo) {
+      if (callback) {
+        this.limboQueue.push({ correlationId, name, data, callback })
+      } else {
+        return new Promise((resolve, reject) => {
+          this.limboQueue.push({ correlationId, name, data, callback: (error: string, result: any) => error ? reject(error) : resolve(result) })
+        })
+      }
+    } else {
+      if (callback) {
+        callback(EVENT.CLIENT_OFFLINE)
+      } else {
+        return Promise.reject(EVENT.CLIENT_OFFLINE)
+      }
+    }
   }
 
   /**
@@ -206,12 +229,6 @@ export class RPCHandler {
     return rpc
   }
 
-  private reprovide (): void {
-    for (const [name, callback] of this.providers) {
-      this.sendProvide(name)
-    }
-  }
-
   private sendProvide (name: string) {
     const message = {
       topic: TOPIC.RPC,
@@ -220,6 +237,23 @@ export class RPCHandler {
     }
     this.services.timeoutRegistry.add({ message })
     this.services.connection.sendMessage(message)
+  }
+
+  private onConnectionReestablished (): void {
+    for (const [name, callback] of this.providers) {
+      this.sendProvide(name)
+    }
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      const { correlationId, name, data, callback } = this.limboQueue[i]
+      this.rpcs.set(correlationId, new RPC(name, correlationId, data, callback, this.options, this.services))
+    }
+  }
+
+  private onExitLimbo () {
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      this.limboQueue[i].callback(EVENT.CLIENT_OFFLINE)
+    }
+    this.limboQueue = []
   }
 
   private onConnectionLost (): void {

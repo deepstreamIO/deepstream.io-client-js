@@ -58,23 +58,17 @@ describe('Single Notifier', () => {
             .withExactArgs(message);
         services.timeoutRegistryMock
             .expects('add')
-            .twice()
+            .once()
             .withExactArgs({ message });
         singleNotifier.request(name, callbackSpy);
         singleNotifier.request(name, callbackSpy);
     });
     it('cant\'t query request when client is offline', () => __awaiter(this, void 0, void 0, function* () {
         services.connection.isConnected = false;
-        services.offlineQueueMock
-            .expects('submit')
-            .once();
-        services.connectionMock
-            .expects('sendMessage')
-            .never();
-        services.timeoutRegistryMock
-            .expects('add')
-            .never();
         singleNotifier.request(name, callbackSpy);
+        yield bluebird_1.Promise.delay(1);
+        sinon_1.assert.calledOnce(callbackSpy);
+        sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
     }));
     describe('requesting', () => __awaiter(this, void 0, void 0, function* () {
         beforeEach(() => {

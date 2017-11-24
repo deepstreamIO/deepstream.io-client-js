@@ -64,19 +64,17 @@ describe('Presence handler', () => {
   it('cant\'t query getAll when client is offline', async () => {
     services.connection.isConnected = false
 
-    services.offlineQueueMock
-      .expects('submit')
-      .twice()
-      .withExactArgs(
-        { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.QUERY_ALL },
-        match.func,
-        match.func
-      )
-
     presenceHandler.getAll(callbackSpy)
-    const promise = presenceHandler.getAll()
+    presenceHandler.getAll().then(promiseSuccess).catch(promiseError)
 
     await BBPromise.delay(1)
+
+    assert.calledOnce(callbackSpy)
+    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+
+    assert.notCalled(promiseSuccess)
+    assert.calledOnce(promiseError)
+    assert.calledWithExactly(promiseError, EVENT.CLIENT_OFFLINE)
   })
 
   it('calls query for all users callback with error message when connection is lost', async () => {

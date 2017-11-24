@@ -28,7 +28,6 @@ export declare class RPC {
      * Called once an error is received from the server.
      */
     error(data: any): void;
-    private addTimeouts();
     /**
      * Callback for error messages received from the server. Once
      * an error is received the request is considered completed. Even

@@ -64,13 +64,14 @@ describe('Presence handler', () => {
     });
     it('cant\'t query getAll when client is offline', () => __awaiter(this, void 0, void 0, function* () {
         services.connection.isConnected = false;
-        services.offlineQueueMock
-            .expects('submit')
-            .twice()
-            .withExactArgs({ topic: message_constants_1.TOPIC.PRESENCE, action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL }, sinon_1.match.func, sinon_1.match.func);
         presenceHandler.getAll(callbackSpy);
-        const promise = presenceHandler.getAll();
+        presenceHandler.getAll().then(promiseSuccess).catch(promiseError);
         yield bluebird_1.Promise.delay(1);
+        sinon_1.assert.calledOnce(callbackSpy);
+        sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
+        sinon_1.assert.notCalled(promiseSuccess);
+        sinon_1.assert.calledOnce(promiseError);
+        sinon_1.assert.calledWithExactly(promiseError, constants_1.EVENT.CLIENT_OFFLINE);
     }));
     it('calls query for all users callback with error message when connection is lost', () => __awaiter(this, void 0, void 0, function* () {
         presenceHandler.getAll(callbackSpy);

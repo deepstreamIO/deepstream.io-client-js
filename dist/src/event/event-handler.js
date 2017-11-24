@@ -10,8 +10,10 @@ class EventHandler {
         this.services = services;
         this.listeners = listeners || new listener_1.Listener(message_constants_1.TOPIC.EVENT, services);
         this.emitter = new Emitter();
+        this.limboQueue = [];
         this.services.connection.registerHandler(message_constants_1.TOPIC.EVENT, this.handle.bind(this));
-        this.services.connection.onReestablished(this.resubscribe.bind(this));
+        this.services.connection.onExitLimbo(this.onExitLimbo.bind(this));
+        this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
     }
     /**
     * Subscribe to an event. This will receive both locally emitted events
@@ -79,8 +81,8 @@ class EventHandler {
         if (this.services.connection.isConnected) {
             this.services.connection.sendMessage(message);
         }
-        else {
-            this.services.offlineQueue.submit(message);
+        else if (this.services.connection.isInLimbo) {
+            this.limboQueue.push(message);
         }
         this.emitter.emit(name, data);
     }
@@ -151,11 +153,18 @@ class EventHandler {
     /**
      * Resubscribes to events when connection is lost
      */
-    resubscribe() {
+    onConnectionReestablished() {
         const callbacks = this.emitter.eventNames();
         for (const name of callbacks) {
             this.sendSubscriptionMessage(name);
         }
+        for (let i = 0; i < this.limboQueue.length; i++) {
+            this.services.connection.sendMessage(this.limboQueue[i]);
+        }
+        this.limboQueue = [];
+    }
+    onExitLimbo() {
+        this.limboQueue = [];
     }
     sendSubscriptionMessage(name) {
         const message = {

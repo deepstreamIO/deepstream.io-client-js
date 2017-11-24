@@ -6,7 +6,6 @@ import * as C from '../binary-protocol/src/message-constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
-import OfflineQueue from './util/offline-queue'
 import { Connection, AuthenticationCallback } from './connection/connection'
 import { socketFactory, SocketFactory } from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
@@ -28,7 +27,6 @@ export interface Services {
   timerRegistry: TimerRegistry
   socketFactory: SocketFactory
   storage: RecordOfflineStore
-  offlineQueue: OfflineQueue
 }
 
 export class Client extends EventEmitter {
@@ -51,7 +49,6 @@ export class Client extends EventEmitter {
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
-    services.offlineQueue = new OfflineQueue(this.options, services)
     this.services = services as Services
 
     this.services.connection.onLost(

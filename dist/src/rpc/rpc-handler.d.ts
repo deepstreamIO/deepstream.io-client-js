@@ -8,6 +8,7 @@ export declare class RPCHandler {
     private options;
     private rpcs;
     private providers;
+    private limboQueue;
     constructor(services: Services, options: Options);
     /**
      * Registers a callback function as a RPC provider. If another connected client calls
@@ -53,7 +54,8 @@ export declare class RPCHandler {
      */
     private handle(message);
     private getRPC(message);
-    private reprovide();
     private sendProvide(name);
+    private onConnectionReestablished();
+    private onExitLimbo();
     private onConnectionLost();
 }

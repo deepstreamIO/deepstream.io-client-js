@@ -39,6 +39,7 @@ const enum TRANSITIONS {
 
 export class Connection {
   public isConnected: boolean
+  public isInLimbo: boolean
   public emitter: Emitter
 
   private internalEmitter: Emitter
@@ -58,6 +59,7 @@ export class Connection {
 
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
+  private limboTimeout: number
 
   constructor (services: Services, options: Options, url: string, emitter: Emitter) {
     this.options = options
@@ -65,6 +67,7 @@ export class Connection {
     this.authParams = null
     this.handlers = new Map()
     this.isConnected = false
+    this.isInLimbo = false
     // tslint:disable-next-line:no-empty
     this.authCallback = null
     this.emitter = emitter
@@ -87,6 +90,13 @@ export class Connection {
             isReconnecting = true
             if (oldState !== CONNECTION_STATE.RECONNECTING && oldState !== CONNECTION_STATE.CLOSED) {
               this.internalEmitter.emit(EVENT.CONNECTION_LOST)
+              this.isInLimbo = true
+              this.isConnected = false
+              this.limboTimeout = this.services.timerRegistry.add({
+                duration: this.options.offlineBufferTimeout,
+                context: this,
+                callback: () => this.internalEmitter.emit(EVENT.CONNECTION_LOST)
+              })
             }
           } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
             firstOpen = false
@@ -128,6 +138,10 @@ export class Connection {
 
   public onReestablished (callback: Function): void {
     this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
+  }
+
+  public onExitLimbo (callback: Function): void {
+    this.internalEmitter.on(EVENT.EXIT_LIMBO, callback)
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {

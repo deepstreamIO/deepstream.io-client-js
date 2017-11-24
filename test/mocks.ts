@@ -7,7 +7,6 @@ import { TimeoutRegistry } from '../src/util/timeout-registry'
 import { Message } from '../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../src/record/single-notifier'
 import { WriteAcknowledgementService } from '../src/record/write-ack-service'
-import OfflineQueue from '../src/util/offline-queue'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -16,11 +15,13 @@ export const getServicesMock = () => {
   let handle: Function | null = null
   let onReestablished: Function
   let onLost: Function
+  let onExitLimbo: Function
 
   const connection = {
       sendMessage: (message: Message) => { lastMessageSent = message },
       getConnectionState: stub().returns(CONNECTION_STATE.OPEN),
       isConnected: true,
+      isInLimbo: false,
       registerHandler: (topic: any, callback: Function): void => {
         handle = callback
       },
@@ -29,6 +30,9 @@ export const getServicesMock = () => {
       },
       onLost: (callback: Function): void => {
         onLost = callback
+      },
+      onExitLimbo: (callback: Function): void => {
+        onExitLimbo = callback
       }
   }
   const connectionMock = mock(connection)
@@ -47,11 +51,6 @@ export const getServicesMock = () => {
   const loggerMock = mock(logger)
   loggerMock.expects('warn').never()
   // loggerMock.expects('error').never()
-
-  const offlineQueue = {
-    submit () {}
-  }
-  const offlineQueueMock = mock(offlineQueue)
 
   const timerRegistry = new TimerRegistry()
 
@@ -101,8 +100,6 @@ export const getServicesMock = () => {
     getSocket: (): any => ({ socket, socketMock: mock(socket) }),
     connection,
     connectionMock,
-    offlineQueue,
-    offlineQueueMock,
     timeoutRegistry,
     timeoutRegistryMock,
     logger,

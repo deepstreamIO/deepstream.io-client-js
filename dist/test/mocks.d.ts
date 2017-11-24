@@ -12,15 +12,13 @@ export declare const getServicesMock: () => {
         sendMessage: (message: Message) => void;
         getConnectionState: SinonStub;
         isConnected: boolean;
+        isInLimbo: boolean;
         registerHandler: (topic: any, callback: Function) => void;
         onReestablished: (callback: Function) => void;
         onLost: (callback: Function) => void;
+        onExitLimbo: (callback: Function) => void;
     };
     connectionMock: SinonMock;
-    offlineQueue: {
-        submit(): void;
-    };
-    offlineQueueMock: SinonMock;
     timeoutRegistry: {
         add: () => void;
         remove: () => void;

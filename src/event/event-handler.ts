@@ -11,14 +11,17 @@ export class EventHandler {
   private emitter: Emitter
   private listeners: Listener
   private options: Options
+  private limboQueue: Array<EventMessage>
 
   constructor (services: Services, options: Options, listeners?: Listener) {
     this.options = options
     this.services = services
     this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()
+    this.limboQueue = []
     this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
-    this.services.connection.onReestablished(this.resubscribe.bind(this))
+    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
   }
 
   /**
@@ -94,8 +97,8 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
 
     if (this.services.connection.isConnected) {
       this.services.connection.sendMessage(message)
-    } else {
-      this.services.offlineQueue.submit(message)
+    } else if (this.services.connection.isInLimbo) {
+      this.limboQueue.push(message)
     }
 
     this.emitter.emit(name, data)
@@ -183,11 +186,19 @@ private handle (message: EventMessage): void {
   /**
    * Resubscribes to events when connection is lost
    */
-  private resubscribe () {
+  private onConnectionReestablished () {
     const callbacks = this.emitter.eventNames()
     for (const name of callbacks) {
       this.sendSubscriptionMessage(name)
     }
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      this.services.connection.sendMessage(this.limboQueue[i])
+    }
+    this.limboQueue = []
+  }
+
+  private onExitLimbo () {
+    this.limboQueue = []
   }
 
   private sendSubscriptionMessage (name: string) {

@@ -129,19 +129,19 @@ describe('RPC handler', () => {
     const promisseSuccess = sinon.spy()
 
     services.connection.isConnected = false
-    services.connectionMock
-      .expects('sendMessage')
-      .never()
-    services.offlineQueueMock
-      .expects('submit')
-      .twice()
-    services.timeoutRegistryMock
-      .expects('add')
-      .never()
 
     rpcHandler.make(name, data, callback)
     const promise = rpcHandler.make(name, data)
     promise.then(promisseSuccess).catch(promisseError)
+
+    await BBPromise.delay(1)
+
+    sinon.assert.calledOnce(callback)
+    sinon.assert.calledWithExactly(callback, EVENT.CLIENT_OFFLINE)
+
+    sinon.assert.notCalled(promisseSuccess)
+    sinon.assert.calledOnce(promisseError)
+    sinon.assert.calledWithExactly(promisseError, EVENT.CLIENT_OFFLINE)
   })
 
   it('doesn\'t reply rpc and sends rejection if no provider exists', () => {

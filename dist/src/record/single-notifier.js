@@ -20,7 +20,10 @@ class SingleNotifier {
         this.timeoutDuration = timeoutDuration;
         this.requests = new Map();
         this.internalRequests = new Map();
+        this.limboQueue = [];
         this.services.connection.onLost(this.onConnectionLost.bind(this));
+        this.services.connection.onExitLimbo(this.onExitLimbo.bind(this));
+        this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
     }
     /**
    * Add a request. If one has already been made it will skip the server request
@@ -39,20 +42,21 @@ class SingleNotifier {
             name
         };
         const req = this.requests.get(name);
-        if (req === undefined) {
-            this.requests.set(name, [callback]);
-            if (this.services.connection.isConnected === false) {
-                this.services.offlineQueue.submit(message, () => this.services.timeoutRegistry.add({ message }), () => callback(client_1.EVENT.CLIENT_OFFLINE));
-                return;
-            }
-            else {
-                this.services.connection.sendMessage(message);
-                this.services.timeoutRegistry.add({ message });
-            }
+        if (req) {
+            req.push(callback);
             return;
         }
-        req.push(callback);
-        this.services.timeoutRegistry.add({ message });
+        this.requests.set(name, [callback]);
+        if (this.services.connection.isConnected) {
+            this.services.connection.sendMessage(message);
+            this.services.timeoutRegistry.add({ message });
+        }
+        else if (this.services.connection.isInLimbo) {
+            this.limboQueue.push(message);
+        }
+        else {
+            callback(client_1.EVENT.CLIENT_OFFLINE);
+        }
     }
     /**
      * Adds a callback to a (possibly) inflight request that will be called
@@ -94,6 +98,23 @@ class SingleNotifier {
             responses.forEach(response => response(client_1.EVENT.CLIENT_OFFLINE));
         });
         this.requests.clear();
+    }
+    onExitLimbo() {
+        for (let i = 0; i < this.limboQueue.length; i++) {
+            const message = this.limboQueue[i];
+            const requests = this.requests.get(message.name);
+            if (requests) {
+                requests.forEach(cb => cb(client_1.EVENT.CLIENT_OFFLINE));
+            }
+            this.requests.delete(message.name);
+        }
+    }
+    onConnectionReestablished() {
+        for (let i = 0; i < this.limboQueue.length; i++) {
+            const message = this.limboQueue[i];
+            this.services.connection.sendMessage(message);
+            this.services.timeoutRegistry.add({ message });
+        }
     }
 }
 exports.SingleNotifier = SingleNotifier;

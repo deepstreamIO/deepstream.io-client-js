@@ -11,10 +11,12 @@ exports.getServicesMock = () => {
     let handle = null;
     let onReestablished;
     let onLost;
+    let onExitLimbo;
     const connection = {
         sendMessage: (message) => { lastMessageSent = message; },
         getConnectionState: sinon_1.stub().returns(constants_1.CONNECTION_STATE.OPEN),
         isConnected: true,
+        isInLimbo: false,
         registerHandler: (topic, callback) => {
             handle = callback;
         },
@@ -23,6 +25,9 @@ exports.getServicesMock = () => {
         },
         onLost: (callback) => {
             onLost = callback;
+        },
+        onExitLimbo: (callback) => {
+            onExitLimbo = callback;
         }
     };
     const connectionMock = sinon_1.mock(connection);
@@ -39,10 +44,6 @@ exports.getServicesMock = () => {
     const loggerMock = sinon_1.mock(logger);
     loggerMock.expects('warn').never();
     // loggerMock.expects('error').never()
-    const offlineQueue = {
-        submit() { }
-    };
-    const offlineQueueMock = sinon_1.mock(offlineQueue);
     const timerRegistry = new timer_registry_1.TimerRegistry();
     // tslint:disable-next-line
     class Socket {
@@ -86,8 +87,6 @@ exports.getServicesMock = () => {
         getSocket: () => ({ socket, socketMock: sinon_1.mock(socket) }),
         connection,
         connectionMock,
-        offlineQueue,
-        offlineQueueMock,
         timeoutRegistry,
         timeoutRegistryMock,
         logger,

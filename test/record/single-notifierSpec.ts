@@ -56,7 +56,7 @@ describe('Single Notifier', () => {
       .withExactArgs(message)
     services.timeoutRegistryMock
       .expects('add')
-      .twice()
+      .once()
       .withExactArgs({ message })
 
     singleNotifier.request(name, callbackSpy)
@@ -65,17 +65,13 @@ describe('Single Notifier', () => {
 
   it('cant\'t query request when client is offline', async () => {
     services.connection.isConnected = false
-    services.offlineQueueMock
-      .expects('submit')
-      .once()
-    services.connectionMock
-      .expects('sendMessage')
-      .never()
-    services.timeoutRegistryMock
-      .expects('add')
-      .never()
 
     singleNotifier.request(name, callbackSpy)
+
+    await BBPromise.delay(1)
+
+    assert.calledOnce(callbackSpy)
+    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
   })
 
   describe('requesting', async () => {

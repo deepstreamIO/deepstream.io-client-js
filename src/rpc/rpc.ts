@@ -35,42 +35,6 @@ export class RPC {
         parsedData: data
       }
 
-      if (this.services.connection.isConnected === false) {
-        this.services.offlineQueue.submit(
-          message,
-          () => this.addTimeouts(),
-          () => response(EVENT.CLIENT_OFFLINE)
-        )
-      } else {
-        this.addTimeouts()
-        this.services.connection.sendMessage(message)
-      }
-    }
-
-    /**
-     * Called once an ack message is received from the server
-     */
-    public accept (): void {
-      this.services.timeoutRegistry.clear(this.acceptTimeout)
-    }
-
-    /**
-     * Called once a response message is received from the server.
-     */
-    public respond (data: any) {
-      this.response(null, data)
-      this.complete()
-    }
-
-    /**
-     * Called once an error is received from the server.
-     */
-    public error (data: any) {
-      this.response(data)
-      this.complete()
-    }
-
-    private addTimeouts () {
       this.acceptTimeout = this.services.timeoutRegistry.add({
         message: {
           topic: TOPIC.RPC,
@@ -94,6 +58,30 @@ export class RPC {
         duration: this.options.rpcResponseTimeout,
         callback: this.onTimeout.bind(this)
       })
+      this.services.connection.sendMessage(message)
+    }
+
+    /**
+     * Called once an ack message is received from the server
+     */
+    public accept (): void {
+      this.services.timeoutRegistry.clear(this.acceptTimeout)
+    }
+
+    /**
+     * Called once a response message is received from the server.
+     */
+    public respond (data: any) {
+      this.response(null, data)
+      this.complete()
+    }
+
+    /**
+     * Called once an error is received from the server.
+     */
+    public error (data: any) {
+      this.response(data)
+      this.complete()
     }
 
     /**

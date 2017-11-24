@@ -16,6 +16,7 @@ export declare class PresenceHandler {
     private counter;
     private pendingSubscribes;
     private pendingUnsubscribes;
+    private limboQueue;
     private flushTimeout;
     constructor(services: Services, options: Options);
     subscribe(callback: SubscribeCallback): void;
@@ -30,11 +31,12 @@ export declare class PresenceHandler {
         reason: EVENT;
     }, result?: IndividualQueryResult) => void): void;
     handle(message: Message): void;
+    private sendQuery(message);
     private flush();
-    private resubscribe();
     private bulkSubscription(action, names);
     private subscribeToAllChanges();
     private unsubscribeToAllChanges();
     private registerFlushTimeout();
-    private onConnectionLost();
+    private onConnectionReestablished();
+    private onExitLimbo();
 }

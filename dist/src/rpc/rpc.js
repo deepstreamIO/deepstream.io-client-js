@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
-const constants_1 = require("../constants");
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -22,35 +21,6 @@ class RPC {
             name,
             parsedData: data
         };
-        if (this.services.connection.isConnected === false) {
-            this.services.offlineQueue.submit(message, () => this.addTimeouts(), () => response(constants_1.EVENT.CLIENT_OFFLINE));
-        }
-        else {
-            this.addTimeouts();
-            this.services.connection.sendMessage(message);
-        }
-    }
-    /**
-     * Called once an ack message is received from the server
-     */
-    accept() {
-        this.services.timeoutRegistry.clear(this.acceptTimeout);
-    }
-    /**
-     * Called once a response message is received from the server.
-     */
-    respond(data) {
-        this.response(null, data);
-        this.complete();
-    }
-    /**
-     * Called once an error is received from the server.
-     */
-    error(data) {
-        this.response(data);
-        this.complete();
-    }
-    addTimeouts() {
         this.acceptTimeout = this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RPC,
@@ -73,6 +43,27 @@ class RPC {
             duration: this.options.rpcResponseTimeout,
             callback: this.onTimeout.bind(this)
         });
+        this.services.connection.sendMessage(message);
+    }
+    /**
+     * Called once an ack message is received from the server
+     */
+    accept() {
+        this.services.timeoutRegistry.clear(this.acceptTimeout);
+    }
+    /**
+     * Called once a response message is received from the server.
+     */
+    respond(data) {
+        this.response(null, data);
+        this.complete();
+    }
+    /**
+     * Called once an error is received from the server.
+     */
+    error(data) {
+        this.response(data);
+        this.complete();
     }
     /**
      * Callback for error messages received from the server. Once

@@ -17,6 +17,7 @@ var EVENT;
     EVENT["INVALID_AUTHENTICATION_DETAILS"] = "INVALID_AUTHENTICATION_DETAILS";
     EVENT["CONNECTION_LOST"] = "connectionLost";
     EVENT["CONNECTION_REESTABLISHED"] = "connectionReestablished";
+    EVENT["EXIT_LIMBO"] = "exitLimbo";
     EVENT["CONNECTION_STATE_CHANGED"] = "connectionStateChanged";
     EVENT["CLIENT_DATA_CHANGED"] = "clientDataChanged";
     EVENT["REAUTHENTICATION_FAILURE"] = "reauthenticationFailure";

@@ -14,6 +14,7 @@ export declare enum EVENT {
     INVALID_AUTHENTICATION_DETAILS = "INVALID_AUTHENTICATION_DETAILS",
     CONNECTION_LOST = "connectionLost",
     CONNECTION_REESTABLISHED = "connectionReestablished",
+    EXIT_LIMBO = "exitLimbo",
     CONNECTION_STATE_CHANGED = "connectionStateChanged",
     CLIENT_DATA_CHANGED = "clientDataChanged",
     REAUTHENTICATION_FAILURE = "reauthenticationFailure",

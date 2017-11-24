@@ -13,6 +13,7 @@ class Connection {
         this.authParams = null;
         this.handlers = new Map();
         this.isConnected = false;
+        this.isInLimbo = false;
         // tslint:disable-next-line:no-empty
         this.authCallback = null;
         this.emitter = emitter;
@@ -31,6 +32,13 @@ class Connection {
                     isReconnecting = true;
                     if (oldState !== constants_1.CONNECTION_STATE.RECONNECTING && oldState !== constants_1.CONNECTION_STATE.CLOSED) {
                         this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST);
+                        this.isInLimbo = true;
+                        this.isConnected = false;
+                        this.limboTimeout = this.services.timerRegistry.add({
+                            duration: this.options.offlineBufferTimeout,
+                            context: this,
+                            callback: () => this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST)
+                        });
                     }
                 }
                 else if (newState === constants_1.CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
@@ -70,6 +78,9 @@ class Connection {
     }
     onReestablished(callback) {
         this.internalEmitter.on(constants_1.EVENT.CONNECTION_REESTABLISHED, callback);
+    }
+    onExitLimbo(callback) {
+        this.internalEmitter.on(constants_1.EVENT.EXIT_LIMBO, callback);
     }
     registerHandler(topic, callback) {
         this.handlers.set(topic, callback);
