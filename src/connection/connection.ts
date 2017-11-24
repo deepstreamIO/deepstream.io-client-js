@@ -20,6 +20,7 @@ import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
 
 const enum TRANSITIONS {
+  INITIALISED = 'initialised',
   CONNECTED = 'connected',
   CHALLENGE = 'challenge',
   AUTHENTICATE = 'authenticate',
@@ -40,7 +41,6 @@ const enum TRANSITIONS {
 
 export class Connection {
   public isConnected: boolean
-  public isInLimbo: boolean
   public emitter: Emitter
 
   private internalEmitter: Emitter
@@ -68,7 +68,6 @@ export class Connection {
     this.authParams = null
     this.handlers = new Map()
     this.isConnected = false
-    this.isInLimbo = false
     // tslint:disable-next-line:no-empty
     this.authCallback = null
     this.emitter = emitter
@@ -89,28 +88,24 @@ export class Connection {
 
           if (newState === CONNECTION_STATE.RECONNECTING) {
             isReconnecting = true
-            if (oldState !== CONNECTION_STATE.RECONNECTING && oldState !== CONNECTION_STATE.CLOSED) {
+            if (oldState !== CONNECTION_STATE.CLOSED) {
               this.internalEmitter.emit(EVENT.CONNECTION_LOST)
-              this.isInLimbo = true
               this.isConnected = false
               this.limboTimeout = this.services.timerRegistry.add({
                 duration: this.options.offlineBufferTimeout,
                 context: this,
-                callback: () => {
-                  this.isInLimbo = false
-                  this.internalEmitter.emit(EVENT.EXIT_LIMBO)
-                }
+                callback: () => this.internalEmitter.emit(EVENT.EXIT_LIMBO)
               })
             }
           } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
             firstOpen = false
             this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
-            this.isInLimbo = false
             this.services.timerRegistry.remove(this.limboTimeout)
           }
         },
         transitions: [
-          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.INITIALISED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.INITIALISING },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.INITIALISING, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.REDIRECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.CHALLENGING },
@@ -133,9 +128,20 @@ export class Connection {
         ]
       }
     )
+    this.stateMachine.transition(TRANSITIONS.INITIALISED)
     this.originalUrl = utils.parseUrl(url, this.options.path)
     this.url = this.originalUrl
     this.createEndpoint()
+  }
+
+  public get isInLimbo () {
+    return this.stateMachine.state === CONNECTION_STATE.RECONNECTING ||
+      this.stateMachine.state === CONNECTION_STATE.AWAITING_CONNECTION ||
+      this.stateMachine.state === CONNECTION_STATE.AWAITING_AUTHENTICATION ||
+      this.stateMachine.state === CONNECTION_STATE.CHALLENGING ||
+      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATING ||
+      this.stateMachine.state === CONNECTION_STATE.REDIRECTING ||
+      this.stateMachine.state === CONNECTION_STATE.INITIALISING
   }
 
   public onLost (callback: Function): void {

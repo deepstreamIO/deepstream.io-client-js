@@ -13,7 +13,6 @@ class Connection {
         this.authParams = null;
         this.handlers = new Map();
         this.isConnected = false;
-        this.isInLimbo = false;
         // tslint:disable-next-line:no-empty
         this.authCallback = null;
         this.emitter = emitter;
@@ -30,29 +29,25 @@ class Connection {
                 emitter.emit(constants_1.EVENT.CONNECTION_STATE_CHANGED, newState);
                 if (newState === constants_1.CONNECTION_STATE.RECONNECTING) {
                     isReconnecting = true;
-                    if (oldState !== constants_1.CONNECTION_STATE.RECONNECTING && oldState !== constants_1.CONNECTION_STATE.CLOSED) {
+                    if (oldState !== constants_1.CONNECTION_STATE.CLOSED) {
                         this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST);
-                        this.isInLimbo = true;
                         this.isConnected = false;
                         this.limboTimeout = this.services.timerRegistry.add({
                             duration: this.options.offlineBufferTimeout,
                             context: this,
-                            callback: () => {
-                                this.isInLimbo = false;
-                                this.internalEmitter.emit(constants_1.EVENT.EXIT_LIMBO);
-                            }
+                            callback: () => this.internalEmitter.emit(constants_1.EVENT.EXIT_LIMBO)
                         });
                     }
                 }
                 else if (newState === constants_1.CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
                     firstOpen = false;
                     this.internalEmitter.emit(constants_1.EVENT.CONNECTION_REESTABLISHED);
-                    this.isInLimbo = false;
                     this.services.timerRegistry.remove(this.limboTimeout);
                 }
             },
             transitions: [
-                { name: "connected" /* CONNECTED */, from: constants_1.CONNECTION_STATE.CLOSED, to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION },
+                { name: "initialised" /* INITIALISED */, from: constants_1.CONNECTION_STATE.CLOSED, to: constants_1.CONNECTION_STATE.INITIALISING },
+                { name: "connected" /* CONNECTED */, from: constants_1.CONNECTION_STATE.INITIALISING, to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION },
                 { name: "connected" /* CONNECTED */, from: constants_1.CONNECTION_STATE.REDIRECTING, to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION },
                 { name: "connected" /* CONNECTED */, from: constants_1.CONNECTION_STATE.RECONNECTING, to: constants_1.CONNECTION_STATE.AWAITING_CONNECTION },
                 { name: "challenge" /* CHALLENGE */, from: constants_1.CONNECTION_STATE.AWAITING_CONNECTION, to: constants_1.CONNECTION_STATE.CHALLENGING },
@@ -74,9 +69,19 @@ class Connection {
                 { name: "close" /* CLOSE */, to: constants_1.CONNECTION_STATE.CLOSING },
             ]
         });
+        this.stateMachine.transition("initialised" /* INITIALISED */);
         this.originalUrl = utils.parseUrl(url, this.options.path);
         this.url = this.originalUrl;
         this.createEndpoint();
+    }
+    get isInLimbo() {
+        return this.stateMachine.state === constants_1.CONNECTION_STATE.RECONNECTING ||
+            this.stateMachine.state === constants_1.CONNECTION_STATE.AWAITING_CONNECTION ||
+            this.stateMachine.state === constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION ||
+            this.stateMachine.state === constants_1.CONNECTION_STATE.CHALLENGING ||
+            this.stateMachine.state === constants_1.CONNECTION_STATE.AUTHENTICATING ||
+            this.stateMachine.state === constants_1.CONNECTION_STATE.REDIRECTING ||
+            this.stateMachine.state === constants_1.CONNECTION_STATE.INITIALISING;
     }
     onLost(callback) {
         this.internalEmitter.on(constants_1.EVENT.CONNECTION_LOST, callback);
