@@ -109,6 +109,7 @@ export const getServicesMock = () => {
     getHandle: (): Function | null => handle,
     simulateConnectionLost: (): void => onLost(),
     simulateConnectionReestablished: (): void => onReestablished(),
+    simulateExitLimbo: (): void => onExitLimbo(),
     storage,
     storageMock,
     verify: () => {

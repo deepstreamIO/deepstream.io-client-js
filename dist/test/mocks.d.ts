@@ -35,6 +35,7 @@ export declare const getServicesMock: () => {
     getHandle: () => Function | null;
     simulateConnectionLost: () => void;
     simulateConnectionReestablished: () => void;
+    simulateExitLimbo: () => void;
     storage: {
         get: () => void;
         set: () => void;

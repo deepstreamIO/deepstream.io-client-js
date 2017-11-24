@@ -39,6 +39,7 @@ describe('connection', () => {
   const reconnectIntervalIncrement = 10
   const maxReconnectAttempts = 3
   const maxReconnectInterval = 30
+  const offlineBufferTimeout = 10
 
   beforeEach(() => {
     services = getServicesMock()
@@ -46,7 +47,8 @@ describe('connection', () => {
       heartbeatInterval,
       reconnectIntervalIncrement,
       maxReconnectAttempts,
-      maxReconnectInterval
+      maxReconnectInterval,
+      offlineBufferTimeout
     })
     emitter = new Emitter()
     emitterMock = mock(emitter)
@@ -313,6 +315,20 @@ describe('connection', () => {
     assert.calledOnce(authCallback)
   })
 
+  it('goes into limbo on connection lost', async () => {
+    await openConnection()
+    const limboSpy = spy()
+
+    connection.onExitLimbo(limboSpy)
+
+    await loseConnection()
+    expect(connection.isInLimbo).to.equal(true)
+
+    await BBPromise.delay(1000)
+    assert.calledOnce(limboSpy)
+    expect(connection.isInLimbo).to.equal(false)
+  })
+
   async function openConnection () {
     socket.simulateOpen()
     await BBPromise.delay(0)
@@ -577,6 +593,7 @@ describe('connection', () => {
 
     socket.close()
     await BBPromise.delay(0)
+    expect(connection.isConnected).to.equal(false)
   }
 
   async function reconnectToInitialServer () {

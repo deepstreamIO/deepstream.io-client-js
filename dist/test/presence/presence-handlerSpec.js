@@ -452,6 +452,30 @@ describe('Presence handler', () => {
             sinon_1.assert.notCalled(allUsersCallback);
         }));
     });
+    describe('limbo', () => {
+        beforeEach(() => {
+            services.connection.isConnected = false;
+            services.connection.isInLimbo = true;
+        });
+        it('returns client offline error once limbo state over', () => __awaiter(this, void 0, void 0, function* () {
+            presenceHandler.getAll(callbackSpy);
+            services.simulateExitLimbo();
+            yield bluebird_1.Promise.delay(1);
+            sinon_1.assert.calledOnce(callbackSpy);
+            sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
+        }));
+        it('sends messages once re-established if in limbo', () => __awaiter(this, void 0, void 0, function* () {
+            presenceHandler.getAll(callbackSpy);
+            services.connectionMock
+                .expects('sendMessage')
+                .once();
+            services.timeoutRegistryMock
+                .expects('add')
+                .once();
+            services.simulateConnectionReestablished();
+            yield bluebird_1.Promise.delay(1);
+        }));
+    });
 });
 function message(action, user) {
     if (user) {

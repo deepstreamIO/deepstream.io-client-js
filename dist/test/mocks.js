@@ -96,6 +96,7 @@ exports.getServicesMock = () => {
         getHandle: () => handle,
         simulateConnectionLost: () => onLost(),
         simulateConnectionReestablished: () => onReestablished(),
+        simulateExitLimbo: () => onExitLimbo(),
         storage,
         storageMock,
         verify: () => {

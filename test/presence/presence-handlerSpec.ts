@@ -549,6 +549,38 @@ describe('Presence handler', () => {
     })
   })
 
+  describe('limbo', () => {
+
+    beforeEach(() => {
+      services.connection.isConnected = false
+      services.connection.isInLimbo = true
+    })
+
+    it('returns client offline error once limbo state over', async () => {
+      presenceHandler.getAll(callbackSpy)
+      services.simulateExitLimbo()
+
+      await BBPromise.delay(1)
+
+      assert.calledOnce(callbackSpy)
+      assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+    })
+
+    it('sends messages once re-established if in limbo', async () => {
+      presenceHandler.getAll(callbackSpy)
+
+      services.connectionMock
+        .expects('sendMessage')
+        .once()
+      services.timeoutRegistryMock
+        .expects('add')
+        .once()
+
+      services.simulateConnectionReestablished()
+      await BBPromise.delay(1)
+    })
+  })
+
 })
 
 function message (action: PRESENCE_ACTIONS, user?: string): Message {

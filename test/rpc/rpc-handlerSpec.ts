@@ -16,6 +16,7 @@ describe('RPC handler', () => {
   let rpcHandler: RPCHandler
   let handle: Function
   let rpcProviderSpy: sinon.SinonSpy
+  let rpcMakeSpy: sinon.SinonSpy
   let data: any
   const name = 'myRpc'
   const rpcAcceptTimeout = 3
@@ -27,6 +28,7 @@ describe('RPC handler', () => {
     rpcHandler = new RPCHandler(services, options)
     handle = services.getHandle()
     rpcProviderSpy = sinon.spy()
+    rpcMakeSpy = sinon.spy()
     data = { foo: 'bar' }
   })
 
@@ -550,6 +552,38 @@ describe('RPC handler', () => {
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
       sinon.assert.calledWithExactly(rpcPromiseResponseFail, EVENT.CLIENT_OFFLINE)
+    })
+  })
+
+  describe('limbo', () => {
+
+    beforeEach(() => {
+      services.connection.isConnected = false
+      services.connection.isInLimbo = true
+    })
+
+    it('returns client offline error once limbo state over', async () => {
+      rpcHandler.make(name, data, rpcMakeSpy)
+      services.simulateExitLimbo()
+
+      await BBPromise.delay(1)
+
+      sinon.assert.calledOnce(rpcMakeSpy)
+      sinon.assert.calledWithExactly(rpcMakeSpy, EVENT.CLIENT_OFFLINE)
+    })
+
+    it('sends messages once re-established if in limbo', async () => {
+      rpcHandler.make(name, data, rpcMakeSpy)
+
+      services.connectionMock
+        .expects('sendMessage')
+        .once()
+      services.timeoutRegistryMock
+        .expects('add')
+        .twice()
+
+      services.simulateConnectionReestablished()
+      await BBPromise.delay(1)
     })
 
   })
