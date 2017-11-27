@@ -1,7 +1,7 @@
 import { RecordOfflineStore, offlineStoreWriteResponse } from '../client';
-export declare type DirtyRecords = {
+export interface DirtyRecords {
     [recordName: string]: boolean;
-};
+}
 export declare class DirtyService {
     private name;
     private storage;

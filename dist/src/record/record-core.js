@@ -350,8 +350,8 @@ class RecordCore extends Emitter {
                 if (version === -1) {
                     this.data = {};
                     this.version = 1;
-                    this.services.storage.set(this.name, this.version, this.data, (error) => {
-                        this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
+                    this.services.storage.set(this.name, this.version, this.data, error => {
+                        this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
                             this.stateMachine.transition(1 /* LOADED */);
                         });
                     });
@@ -723,7 +723,7 @@ class RecordCore extends Emitter {
         this.stateMachine.transition(3 /* RESUBSCRIBE */);
     }
     onConnLost() {
-        this.services.storage.set(this.name, this.version, this.data, (error) => { });
+        this.services.storage.set(this.name, this.version, this.data, error => { });
     }
 }
 exports.RecordCore = RecordCore;

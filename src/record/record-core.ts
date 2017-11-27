@@ -436,8 +436,8 @@ export class RecordCore extends Emitter {
         if (version === -1) {
           this.data = {}
           this.version = 1
-          this.services.storage.set(this.name, this.version, this.data, (error) => {
-            this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
+          this.services.storage.set(this.name, this.version, this.data, error => {
+            this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
               this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
             })
           })
@@ -858,7 +858,7 @@ export class RecordCore extends Emitter {
   }
 
   private onConnLost (): void {
-    this.services.storage.set(this.name, this.version, this.data, (error) => {})
+    this.services.storage.set(this.name, this.version, this.data, error => {})
   }
 
 }

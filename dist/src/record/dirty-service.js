@@ -39,8 +39,8 @@ class DirtyService {
         if (this.loaded) {
             return;
         }
-        this.storage.get(this.name, (recordName, version, data) => {
-            this.dirtyRecords = version !== -1 ? data : {};
+        this.storage.get(this.name, (recordName, dbVersion, data) => {
+            this.dirtyRecords = dbVersion !== -1 ? data : {};
             this.loaded = true;
             this.emitter.emit(DIRTY_SERVICE_LOADED);
         });

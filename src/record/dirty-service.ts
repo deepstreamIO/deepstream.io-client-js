@@ -1,7 +1,8 @@
 import * as Emitter from 'component-emitter2'
 import { Options } from '../client-options'
 import { RecordOfflineStore, offlineStoreWriteResponse } from '../client'
-export type DirtyRecords = { [recordName: string]: boolean }
+
+export interface DirtyRecords { [recordName: string]: boolean }
 
 const version = 1
 const DIRTY_SERVICE_LOADED = 'dirty-service-loaded'
@@ -52,8 +53,8 @@ export class DirtyService {
     if (this.loaded) {
       return
     }
-    this.storage.get(this.name, (recordName, version, data) => {
-      this.dirtyRecords = version !== -1 ? data as DirtyRecords : {}
+    this.storage.get(this.name, (recordName, dbVersion, data) => {
+      this.dirtyRecords = dbVersion !== -1 ? data as DirtyRecords : {}
       this.loaded = true
       this.emitter.emit(DIRTY_SERVICE_LOADED)
     })
