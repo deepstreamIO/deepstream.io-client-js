@@ -90,7 +90,7 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: this.onOfflineLoading.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RA.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
-          { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY },
+          { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
@@ -566,7 +566,7 @@ export class RecordCore extends Emitter {
         /**
          * Record created while offline
          */
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.SUBSCRIBED)
         this.sendCreateUpdate(this.data)
       } else if (this.version === remoteVersion + 1) {
         /**

@@ -31,7 +31,7 @@ class RecordCore extends Emitter {
                 { name: 0 /* LOAD */, from: 0 /* INITIAL */, to: 3 /* LOADING_OFFLINE */, handler: this.onOfflineLoading.bind(this) },
                 { name: 1 /* LOADED */, from: 3 /* LOADING_OFFLINE */, to: 4 /* READY */, handler: this.onReady.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.READ_RESPONSE, from: 1 /* SUBSCRIBING */, to: 4 /* READY */, handler: this.onReady.bind(this) },
-                { name: 2 /* SUBSCRIBED */, from: 1 /* SUBSCRIBING */, to: 4 /* READY */ },
+                { name: 2 /* SUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
                 { name: 3 /* RESUBSCRIBE */, from: 4 /* READY */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
                 { name: 4 /* RESUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
                 { name: 5 /* INVALID_VERSION */, from: 2 /* RESUBSCRIBING */, to: 5 /* MERGING */ },
@@ -459,7 +459,7 @@ class RecordCore extends Emitter {
                 /**
                  * Record created while offline
                  */
-                this.stateMachine.transition(4 /* RESUBSCRIBED */);
+                this.stateMachine.transition(2 /* SUBSCRIBED */);
                 this.sendCreateUpdate(this.data);
             }
             else if (this.version === remoteVersion + 1) {
