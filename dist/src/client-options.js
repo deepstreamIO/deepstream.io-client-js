@@ -16,6 +16,7 @@ exports.DefaultOptions = {
     path: '/deepstream',
     mergeStrategy: merge_strategy_1.REMOTE_WINS,
     recordDeepCopy: true,
-    socketOptions: null
+    socketOptions: null,
+    lazyConnect: false
 };
 //# sourceMappingURL=client-options.js.map

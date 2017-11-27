@@ -119,7 +119,10 @@ export class Connection {
     )
     this.originalUrl = utils.parseUrl(url, this.options.path)
     this.url = this.originalUrl
-    this.createEndpoint()
+
+    if (!options.lazyConnect) {
+      this.createEndpoint()
+    }
   }
 
   public onLost (callback: Function): void {
@@ -191,6 +194,10 @@ export class Connection {
 
     if (this.stateMachine.state === CONNECTION_STATE.AWAITING_AUTHENTICATION && this.authParams) {
       this.sendAuthParams()
+    }
+
+    if (!this.endpoint) {
+      this.createEndpoint()
     }
   }
 
