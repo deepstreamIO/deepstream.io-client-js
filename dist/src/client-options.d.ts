@@ -76,5 +76,9 @@ export interface Options {
      * Options for the provided socket factory
      */
     socketOptions: any;
+    /**
+     * blbalbla
+     */
+    lazyConnect: boolean;
 }
 export declare const DefaultOptions: Options;
