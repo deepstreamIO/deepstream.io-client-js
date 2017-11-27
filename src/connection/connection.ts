@@ -40,8 +40,8 @@ const enum TRANSITIONS {
 }
 
 export class Connection {
-  public isConnected: boolean
   public emitter: Emitter
+  public isInLimbo: boolean
 
   private internalEmitter: Emitter
   private services: Services
@@ -67,11 +67,11 @@ export class Connection {
     this.services = services
     this.authParams = null
     this.handlers = new Map()
-    this.isConnected = false
     // tslint:disable-next-line:no-empty
     this.authCallback = null
     this.emitter = emitter
     this.internalEmitter = new Emitter()
+    this.isInLimbo = true
 
     let isReconnecting = false
     let firstOpen = true
@@ -83,22 +83,25 @@ export class Connection {
           if (newState === oldState) {
             return
           }
-          this.isConnected = newState === CONNECTION_STATE.OPEN
           emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
 
           if (newState === CONNECTION_STATE.RECONNECTING) {
+            this.isInLimbo = true
             isReconnecting = true
             if (oldState !== CONNECTION_STATE.CLOSED) {
               this.internalEmitter.emit(EVENT.CONNECTION_LOST)
-              this.isConnected = false
               this.limboTimeout = this.services.timerRegistry.add({
                 duration: this.options.offlineBufferTimeout,
                 context: this,
-                callback: () => this.internalEmitter.emit(EVENT.EXIT_LIMBO)
+                callback: () => {
+                  this.isInLimbo = false
+                  this.internalEmitter.emit(EVENT.EXIT_LIMBO)
+                }
               })
             }
           } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
             firstOpen = false
+            this.isInLimbo = false
             this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
             this.services.timerRegistry.remove(this.limboTimeout)
           }
@@ -134,14 +137,8 @@ export class Connection {
     this.createEndpoint()
   }
 
-  public get isInLimbo () {
-    return this.stateMachine.state === CONNECTION_STATE.RECONNECTING ||
-      this.stateMachine.state === CONNECTION_STATE.AWAITING_CONNECTION ||
-      this.stateMachine.state === CONNECTION_STATE.AWAITING_AUTHENTICATION ||
-      this.stateMachine.state === CONNECTION_STATE.CHALLENGING ||
-      this.stateMachine.state === CONNECTION_STATE.AUTHENTICATING ||
-      this.stateMachine.state === CONNECTION_STATE.REDIRECTING ||
-      this.stateMachine.state === CONNECTION_STATE.INITIALISING
+  public get isConnected (): boolean {
+    return this.stateMachine.state === CONNECTION_STATE.OPEN
   }
 
   public onLost (callback: Function): void {

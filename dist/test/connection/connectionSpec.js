@@ -252,7 +252,7 @@ describe('connection', () => {
         connection.onExitLimbo(limboSpy);
         yield loseConnection();
         chai_1.expect(connection.isInLimbo).to.equal(true);
-        yield bluebird_1.Promise.delay(1000);
+        yield bluebird_1.Promise.delay(20);
         sinon_1.assert.calledOnce(limboSpy);
         chai_1.expect(connection.isInLimbo).to.equal(false);
     }));

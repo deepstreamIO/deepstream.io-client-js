@@ -12,11 +12,11 @@ class Connection {
         this.services = services;
         this.authParams = null;
         this.handlers = new Map();
-        this.isConnected = false;
         // tslint:disable-next-line:no-empty
         this.authCallback = null;
         this.emitter = emitter;
         this.internalEmitter = new Emitter();
+        this.isInLimbo = true;
         let isReconnecting = false;
         let firstOpen = true;
         this.stateMachine = new state_machine_1.StateMachine(this.services.logger, {
@@ -25,22 +25,25 @@ class Connection {
                 if (newState === oldState) {
                     return;
                 }
-                this.isConnected = newState === constants_1.CONNECTION_STATE.OPEN;
                 emitter.emit(constants_1.EVENT.CONNECTION_STATE_CHANGED, newState);
                 if (newState === constants_1.CONNECTION_STATE.RECONNECTING) {
+                    this.isInLimbo = true;
                     isReconnecting = true;
                     if (oldState !== constants_1.CONNECTION_STATE.CLOSED) {
                         this.internalEmitter.emit(constants_1.EVENT.CONNECTION_LOST);
-                        this.isConnected = false;
                         this.limboTimeout = this.services.timerRegistry.add({
                             duration: this.options.offlineBufferTimeout,
                             context: this,
-                            callback: () => this.internalEmitter.emit(constants_1.EVENT.EXIT_LIMBO)
+                            callback: () => {
+                                this.isInLimbo = false;
+                                this.internalEmitter.emit(constants_1.EVENT.EXIT_LIMBO);
+                            }
                         });
                     }
                 }
                 else if (newState === constants_1.CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
                     firstOpen = false;
+                    this.isInLimbo = false;
                     this.internalEmitter.emit(constants_1.EVENT.CONNECTION_REESTABLISHED);
                     this.services.timerRegistry.remove(this.limboTimeout);
                 }
@@ -74,14 +77,8 @@ class Connection {
         this.url = this.originalUrl;
         this.createEndpoint();
     }
-    get isInLimbo() {
-        return this.stateMachine.state === constants_1.CONNECTION_STATE.RECONNECTING ||
-            this.stateMachine.state === constants_1.CONNECTION_STATE.AWAITING_CONNECTION ||
-            this.stateMachine.state === constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION ||
-            this.stateMachine.state === constants_1.CONNECTION_STATE.CHALLENGING ||
-            this.stateMachine.state === constants_1.CONNECTION_STATE.AUTHENTICATING ||
-            this.stateMachine.state === constants_1.CONNECTION_STATE.REDIRECTING ||
-            this.stateMachine.state === constants_1.CONNECTION_STATE.INITIALISING;
+    get isConnected() {
+        return this.stateMachine.state === constants_1.CONNECTION_STATE.OPEN;
     }
     onLost(callback) {
         this.internalEmitter.on(constants_1.EVENT.CONNECTION_LOST, callback);

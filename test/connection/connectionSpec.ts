@@ -324,7 +324,7 @@ describe('connection', () => {
     await loseConnection()
     expect(connection.isInLimbo).to.equal(true)
 
-    await BBPromise.delay(1000)
+    await BBPromise.delay(20)
     assert.calledOnce(limboSpy)
     expect(connection.isInLimbo).to.equal(false)
   })

@@ -4,8 +4,8 @@ import { Services } from '../client';
 import { Options } from '../client-options';
 export declare type AuthenticationCallback = (success: boolean, clientData: object) => void;
 export declare class Connection {
-    isConnected: boolean;
     emitter: Emitter;
+    isInLimbo: boolean;
     private internalEmitter;
     private services;
     private options;
@@ -24,7 +24,7 @@ export declare class Connection {
     private reconnectionAttempt;
     private limboTimeout;
     constructor(services: Services, options: Options, url: string, emitter: Emitter);
-    readonly isInLimbo: boolean;
+    readonly isConnected: boolean;
     onLost(callback: Function): void;
     onReestablished(callback: Function): void;
     onExitLimbo(callback: Function): void;
