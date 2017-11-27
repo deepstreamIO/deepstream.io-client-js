@@ -431,20 +431,22 @@ export class RecordCore extends Emitter {
   }
 
   private onOfflineLoading (): void {
-    this.services.storage.get(this.name, (recordName: string, version: number, data: any) => {
-      if (version === -1) {
-        this.data = {}
-        this.version = 1
-        this.services.storage.set(this.name, this.version, this.data, (error) => {
-          this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
-            this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
+    this.recordServices.dirtyService.whenLoaded(() => {
+      this.services.storage.get(this.name, (recordName: string, version: number, data: any) => {
+        if (version === -1) {
+          this.data = {}
+          this.version = 1
+          this.services.storage.set(this.name, this.version, this.data, (error) => {
+            this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
+              this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
+            })
           })
-        })
-      } else {
-        this.data = data
-        this.version = version
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-      }
+        } else {
+          this.data = data
+          this.version = version
+          this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
+        }
+      })
     })
   }
 

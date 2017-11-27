@@ -38,13 +38,13 @@ export class DirtyService {
     })
   }
 
-  public whenLoaded (callback: (data: DirtyRecords) => void): void {
+  public whenLoaded (callback: () => void): void {
     if (this.loaded) {
-      callback(this.dirtyRecords)
+      callback()
       return
     }
     this.emitter.once(DIRTY_SERVICE_LOADED, () => {
-      callback(this.dirtyRecords)
+      callback()
     })
   }
 

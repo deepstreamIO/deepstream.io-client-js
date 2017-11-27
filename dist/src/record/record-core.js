@@ -345,21 +345,23 @@ class RecordCore extends Emitter {
         });
     }
     onOfflineLoading() {
-        this.services.storage.get(this.name, (recordName, version, data) => {
-            if (version === -1) {
-                this.data = {};
-                this.version = 1;
-                this.services.storage.set(this.name, this.version, this.data, (error) => {
-                    this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
-                        this.stateMachine.transition(1 /* LOADED */);
+        this.recordServices.dirtyService.whenLoaded(() => {
+            this.services.storage.get(this.name, (recordName, version, data) => {
+                if (version === -1) {
+                    this.data = {};
+                    this.version = 1;
+                    this.services.storage.set(this.name, this.version, this.data, (error) => {
+                        this.recordServices.dirtyService.setDirty(this.name, true, (error) => {
+                            this.stateMachine.transition(1 /* LOADED */);
+                        });
                     });
-                });
-            }
-            else {
-                this.data = data;
-                this.version = version;
-                this.stateMachine.transition(1 /* LOADED */);
-            }
+                }
+                else {
+                    this.data = data;
+                    this.version = version;
+                    this.stateMachine.transition(1 /* LOADED */);
+                }
+            });
         });
     }
     onReady() {

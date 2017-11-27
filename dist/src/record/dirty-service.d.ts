@@ -11,7 +11,7 @@ export declare class DirtyService {
     constructor(storage: RecordOfflineStore, dirtyStorageName: string);
     isDirty(recordName: string): boolean;
     setDirty(recordName: string, isDirty: boolean, callback: offlineStoreWriteResponse): void;
-    whenLoaded(callback: (data: DirtyRecords) => void): void;
+    whenLoaded(callback: () => void): void;
     private load();
     private updateDirtyRecords(recordName, isDirty, callback);
 }

@@ -28,11 +28,11 @@ class DirtyService {
     }
     whenLoaded(callback) {
         if (this.loaded) {
-            callback(this.dirtyRecords);
+            callback();
             return;
         }
         this.emitter.once(DIRTY_SERVICE_LOADED, () => {
-            callback(this.dirtyRecords);
+            callback();
         });
     }
     load() {
