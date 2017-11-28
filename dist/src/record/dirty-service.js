@@ -11,6 +11,7 @@ class DirtyService {
         this.load();
     }
     isDirty(recordName) {
+        console.log(this.dirtyRecords);
         return !!this.dirtyRecords[recordName];
     }
     setDirty(recordName, isDirty, callback) {

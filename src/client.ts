@@ -11,13 +11,14 @@ import { socketFactory, SocketFactory } from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler } from './record/record-handler'
+import { Storage } from './record/storage-service'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 
 export type offlineStoreWriteResponse = ((error?: string) => void)
 
 export interface RecordOfflineStore {
-  get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => void
+  get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object | null) => void)) => void
   set: (recordName: string, version: number, data: Array<string> | object, callback: offlineStoreWriteResponse) => void
   delete: (recordName: string, callback: offlineStoreWriteResponse) => void
 }
@@ -42,26 +43,9 @@ export class Client extends EventEmitter {
 
   constructor (url: string, options: any = {}) {
     super()
-
-    const fake = {} as any
-    const fakeStorage = {
-      get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => {
-        const data = fake[recordName]
-        if (!data) {
-          return callback(recordName, -1, {})
-        }
-        callback(recordName, data.version, data.data)
-      },
-      set: (recordName: string, version: number, data: Array<string> | object, callback: ((error?: string) => void)) => {
-        fake[recordName] = { recordName, version, data }
-        callback()
-      },
-      delete: () => {},
-    }
-
     this.options = Object.assign({}, DefaultOptions, options)
     const services: any = {}
-    services.storage = options.storage || fakeStorage
+    services.storage = options.storage || new Storage(this.options)
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)

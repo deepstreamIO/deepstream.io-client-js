@@ -112,7 +112,7 @@ export class RecordCore extends Emitter {
       } else {
         this.services.storage.get(this.name, (recordName, version, data) => {
           this.version = version
-          this.data = data
+          this.data = data as object
           this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
         })
       }

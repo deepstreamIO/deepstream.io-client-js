@@ -69,10 +69,20 @@ Default: /deepstream */
      */
     socketOptions: any,
     /**
-     * When the client is used offline with offline storage enabled
      * dirtyStorageName is used as a key to save offline dirty records states
+     * Default: __ds__dirty_records
      */
     dirtyStorageName: string,
+    /**
+     * nodeStoragePath specifies the disk location to save records
+     * Default: ./records
+     */
+    nodeStoragePath: string,
+    /**
+     * nodeStorageSize specifies maximum database size in megabytes
+     * Default: 5
+     */
+    nodeStorageSize: number
 }
 
 export const DefaultOptions: Options = {
@@ -91,5 +101,7 @@ export const DefaultOptions: Options = {
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
     socketOptions: null,
-    dirtyStorageName: '__ds__dirty_records'
+    dirtyStorageName: '__ds__dirty_records',
+    nodeStoragePath: './records',
+    nodeStorageSize: 5
 }
