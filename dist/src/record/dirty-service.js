@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Emitter = require("component-emitter2");
-const version = 1;
 const DIRTY_SERVICE_LOADED = 'dirty-service-loaded';
 class DirtyService {
     constructor(storage, dirtyStorageName) {
@@ -12,10 +11,7 @@ class DirtyService {
         this.load();
     }
     isDirty(recordName) {
-        if (this.dirtyRecords[recordName] !== undefined) {
-            return this.dirtyRecords[recordName];
-        }
-        return false;
+        return !!this.dirtyRecords[recordName];
     }
     setDirty(recordName, isDirty, callback) {
         if (this.loaded) {
@@ -35,19 +31,29 @@ class DirtyService {
             callback();
         });
     }
+    getAll(callback) {
+        this.storage.get(this.name, (recordName, version, data) => {
+            callback(version !== -1 ? data : {});
+        });
+    }
     load() {
         if (this.loaded) {
             return;
         }
-        this.storage.get(this.name, (recordName, dbVersion, data) => {
-            this.dirtyRecords = dbVersion !== -1 ? data : {};
+        this.storage.get(this.name, (recordName, version, data) => {
+            this.dirtyRecords = version !== -1 ? data : {};
             this.loaded = true;
             this.emitter.emit(DIRTY_SERVICE_LOADED);
         });
     }
     updateDirtyRecords(recordName, isDirty, callback) {
-        this.dirtyRecords[recordName] = isDirty;
-        this.storage.set(this.name, version, this.dirtyRecords, callback);
+        if (isDirty) {
+            this.dirtyRecords[recordName] = true;
+        }
+        else {
+            delete this.dirtyRecords[recordName];
+        }
+        this.storage.set(this.name, 1, this.dirtyRecords, callback);
     }
 }
 exports.DirtyService = DirtyService;

@@ -12,6 +12,7 @@ const listener_1 = require("../util/listener");
 const single_notifier_1 = require("./single-notifier");
 const write_ack_service_1 = require("./write-ack-service");
 const dirty_service_1 = require("./dirty-service");
+const merge_strategy_service_1 = require("./merge-strategy-service");
 const Emitter = require("component-emitter2");
 class RecordHandler {
     constructor(services, options, listener) {
@@ -20,14 +21,22 @@ class RecordHandler {
         this.emitter = new Emitter();
         this.listener = listener || new listener_1.Listener(message_constants_1.TOPIC.RECORD, this.services);
         this.recordCores = new Map();
-        this.recordServices = {
-            writeAckService: new write_ack_service_1.WriteAcknowledgementService(services),
-            readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
-            headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout),
-            dirtyService: new dirty_service_1.DirtyService(services.storage, options.dirtyStorageName)
-        };
+        this.dirtyService = new dirty_service_1.DirtyService(services.storage, options.dirtyStorageName);
+        this.dirtyService.whenLoaded(() => {
+            this.recordServices = {
+                writeAckService: new write_ack_service_1.WriteAcknowledgementService(services),
+                readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
+                headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout),
+                dirtyService: this.dirtyService,
+                mergeStrategy: new merge_strategy_service_1.MergeStrategyService(options.mergeStrategy)
+            };
+        });
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.RECORD, this.handle.bind(this));
+        this.services.connection.onReestablished(this.onConnReestablished.bind(this));
+        if (this.services.connection.isConnected) {
+            this.syncDirtyRecords();
+        }
     }
     /**
    * Returns an existing record or creates a new one.
@@ -164,16 +173,16 @@ class RecordHandler {
         if (!args.callback) {
             return new Promise((resolve, reject) => {
                 args.callback = error => error === null ? resolve() : reject(error);
-                this.sendSetData(recordName, args);
+                this.sendSetData(recordName, -1, args);
             });
         }
-        this.sendSetData(recordName, args);
+        this.sendSetData(recordName, -1, args);
     }
     setData(recordName) {
         const args = utils.normalizeSetArguments(arguments, 1);
-        this.sendSetData(recordName, args);
+        this.sendSetData(recordName, -1, args);
     }
-    sendSetData(recordName, args) {
+    sendSetData(recordName, version, args) {
         const { path, data, callback } = args;
         if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
             throw new Error('invalid argument: recordName must be an non empty string');
@@ -203,7 +212,7 @@ class RecordHandler {
             action,
             name: recordName,
             path,
-            version: -1,
+            version,
             parsedData: data
         };
         if (callback) {
@@ -279,6 +288,23 @@ class RecordHandler {
             recordCore.usages++;
         }
         return recordCore;
+    }
+    onConnReestablished() {
+        this.syncDirtyRecords();
+    }
+    syncDirtyRecords() {
+        this.dirtyService.getAll((dirtyRecords) => {
+            for (var recordName in dirtyRecords) {
+                const recordCore = this.recordCores.get(recordName);
+                if (recordCore && recordCore.usages > 0) {
+                    continue;
+                }
+                this.services.storage.get(recordName, (dbRecordName, version, data) => {
+                    this.sendSetData(recordName, version, { data });
+                    this.dirtyService.setDirty(recordName, false, () => { });
+                });
+            }
+        });
     }
 }
 exports.RecordHandler = RecordHandler;

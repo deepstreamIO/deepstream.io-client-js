@@ -20,22 +20,14 @@ const EventEmitter = require("component-emitter2");
 class Client extends EventEmitter {
     constructor(url, options = {}) {
         super();
-        this.options = Object.assign({}, client_options_1.DefaultOptions, options);
-        const services = {};
-        services.logger = new logger_1.Logger(this);
-        services.timerRegistry = new timer_registry_1.TimerRegistry();
-        services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);
-        services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
-        services.connection = new connection_1.Connection(services, this.options, url, this);
-        this.services = services;
         const fake = {};
-        this.services.storage = {
+        const fakeStorage = {
             get: (recordName, callback) => {
                 const data = fake[recordName];
                 if (!data) {
                     return callback(recordName, -1, {});
                 }
-                callback(recordName, data.version, data);
+                callback(recordName, data.version, data.data);
             },
             set: (recordName, version, data, callback) => {
                 fake[recordName] = { recordName, version, data };
@@ -43,6 +35,15 @@ class Client extends EventEmitter {
             },
             delete: () => { },
         };
+        this.options = Object.assign({}, client_options_1.DefaultOptions, options);
+        const services = {};
+        services.storage = options.storage || fakeStorage;
+        services.logger = new logger_1.Logger(this);
+        services.timerRegistry = new timer_registry_1.TimerRegistry();
+        services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);
+        services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
+        services.connection = new connection_1.Connection(services, this.options, url, this);
+        this.services = services;
         this.services.connection.onLost(services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry));
         this.event = new event_handler_1.EventHandler(this.services, this.options);
         this.rpc = new rpc_handler_1.RPCHandler(this.services, this.options);

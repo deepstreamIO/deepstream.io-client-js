@@ -1,7 +1,4 @@
 import { RecordOfflineStore, offlineStoreWriteResponse } from '../client';
-export interface DirtyRecords {
-    [recordName: string]: boolean;
-}
 export declare class DirtyService {
     private name;
     private storage;
@@ -12,6 +9,7 @@ export declare class DirtyService {
     isDirty(recordName: string): boolean;
     setDirty(recordName: string, isDirty: boolean, callback: offlineStoreWriteResponse): void;
     whenLoaded(callback: () => void): void;
+    getAll(callback: (dirtyRecords: any) => void): void;
     private load();
     private updateDirtyRecords(recordName, isDirty, callback);
 }

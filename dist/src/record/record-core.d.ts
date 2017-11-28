@@ -33,7 +33,6 @@ export declare class RecordCore extends Emitter {
     private recordServices;
     private emitter;
     private data;
-    private mergeStrategy;
     private stateMachine;
     private responseTimeout;
     private discardTimeout;

@@ -8,11 +8,13 @@ import { Listener, ListenCallback } from '../util/listener';
 import { SingleNotifier } from './single-notifier';
 import { WriteAcknowledgementService } from './write-ack-service';
 import { DirtyService } from './dirty-service';
+import { MergeStrategyService } from './merge-strategy-service';
 export interface RecordServices {
     writeAckService: WriteAcknowledgementService;
     readRegistry: SingleNotifier;
     headRegistry: SingleNotifier;
     dirtyService: DirtyService;
+    mergeStrategy: MergeStrategyService;
 }
 export declare class RecordHandler {
     private services;
@@ -21,6 +23,7 @@ export declare class RecordHandler {
     private listener;
     private recordCores;
     private recordServices;
+    private dirtyService;
     constructor(services: Services, options: Options, listener?: Listener);
     /**
    * Returns an existing record or creates a new one.
@@ -119,7 +122,7 @@ export declare class RecordHandler {
     setData(recordName: string, data: any): void;
     setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void;
     setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
-    private sendSetData(recordName, args);
+    private sendSetData(recordName, version, args);
     /**
      * Will be called by the client for incoming messages on the RECORD topic
      *
@@ -132,4 +135,6 @@ export declare class RecordHandler {
      */
     private removeRecord(recordName);
     private getRecordCore(recordName);
+    private onConnReestablished();
+    private syncDirtyRecords();
 }

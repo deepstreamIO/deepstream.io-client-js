@@ -20,7 +20,7 @@ class RecordCore extends Emitter {
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }
-        this.setMergeStrategy(options.mergeStrategy);
+        //   this.setMergeStrategy(options.mergeStrategy)
         this.stateMachine = new state_machine_1.StateMachine(this.services.logger, {
             init: 0 /* INITIAL */,
             onStateChanged: (newState, oldState) => {
@@ -32,6 +32,7 @@ class RecordCore extends Emitter {
                 { name: 1 /* LOADED */, from: 3 /* LOADING_OFFLINE */, to: 4 /* READY */, handler: this.onReady.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.READ_RESPONSE, from: 1 /* SUBSCRIBING */, to: 4 /* READY */, handler: this.onReady.bind(this) },
                 { name: 2 /* SUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
+                { name: 3 /* RESUBSCRIBE */, from: 0 /* INITIAL */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
                 { name: 3 /* RESUBSCRIBE */, from: 4 /* READY */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
                 { name: 4 /* RESUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
                 { name: 5 /* INVALID_VERSION */, from: 2 /* RESUBSCRIBING */, to: 5 /* MERGING */ },
@@ -45,7 +46,16 @@ class RecordCore extends Emitter {
             ]
         });
         if (this.services.connection.isConnected) {
-            this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.SUBSCRIBE);
+            if (!this.recordServices.dirtyService.isDirty(this.name)) {
+                this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.SUBSCRIBE);
+            }
+            else {
+                this.services.storage.get(this.name, (recordName, version, data) => {
+                    this.version = version;
+                    this.data = data;
+                    this.stateMachine.transition(3 /* RESUBSCRIBE */);
+                });
+            }
         }
         else {
             this.stateMachine.transition(0 /* LOAD */);
@@ -275,7 +285,7 @@ class RecordCore extends Emitter {
      */
     setMergeStrategy(mergeStrategy) {
         if (typeof mergeStrategy === 'function') {
-            this.mergeStrategy = mergeStrategy;
+            this.recordServices.mergeStrategy.setMergeStrategyByRecord(this.name, mergeStrategy);
         }
         else {
             throw new Error('Invalid merge strategy: Must be a Function');
@@ -345,23 +355,21 @@ class RecordCore extends Emitter {
         });
     }
     onOfflineLoading() {
-        this.recordServices.dirtyService.whenLoaded(() => {
-            this.services.storage.get(this.name, (recordName, version, data) => {
-                if (version === -1) {
-                    this.data = {};
-                    this.version = 1;
-                    this.services.storage.set(this.name, this.version, this.data, error => {
-                        this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
-                            this.stateMachine.transition(1 /* LOADED */);
-                        });
+        this.services.storage.get(this.name, (recordName, version, data) => {
+            if (version === -1) {
+                this.data = {};
+                this.version = 1;
+                this.services.storage.set(this.name, this.version, this.data, error => {
+                    this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
+                        this.stateMachine.transition(1 /* LOADED */);
                     });
-                }
-                else {
-                    this.data = data;
-                    this.version = version;
-                    this.stateMachine.transition(1 /* LOADED */);
-                }
-            });
+                });
+            }
+            else {
+                this.data = data;
+                this.version = version;
+                this.stateMachine.transition(1 /* LOADED */);
+            }
         });
     }
     onReady() {
@@ -446,6 +454,9 @@ class RecordCore extends Emitter {
     handleReadResponse(message) {
         if (this.stateMachine.state === 5 /* MERGING */) {
             this.recoverRecord(message.version, message.parsedData, message);
+            if (this.recordServices.dirtyService.isDirty(this.name)) {
+                this.recordServices.dirtyService.setDirty(this.name, false, () => { });
+            }
             return;
         }
         this.version = message.version;
@@ -656,11 +667,18 @@ class RecordCore extends Emitter {
      * @param   {Object} message parsed and validated deepstream message
      */
     recoverRecord(remoteVersion, remoteData, message) {
-        if (this.mergeStrategy) {
-            this.mergeStrategy(this, remoteData, remoteVersion, this.onRecordRecovered.bind(this, remoteVersion, remoteData, message));
-            return;
-        }
-        this.services.logger.error(message, constants_1.EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this });
+        //  wip
+        this.recordServices.mergeStrategy.merge(this.name, this.version, this.get(), remoteVersion, remoteData, this.onRecordRecovered.bind(this, remoteVersion, remoteData, message));
+        // if (this.mergeStrategy) {
+        //   this.mergeStrategy(
+        //     this,
+        //     remoteData,
+        //     remoteVersion,
+        //     this.onRecordRecovered.bind(this, remoteVersion, remoteData, message)
+        //   )
+        //   return
+        // }
+        // this.services.logger.error(message, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this })
     }
     /**
    * Callback once the record merge has completed. If successful it will set the

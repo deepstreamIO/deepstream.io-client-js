@@ -4,17 +4,14 @@ const chai_1 = require("chai");
 const sinon_1 = require("sinon");
 const MERGE_STRATEGIES = require("../../src/record/merge-strategy");
 describe('merge strategies @unit', () => {
+    let localData;
+    let localVersion;
     describe('remote wins', () => {
         beforeEach(function () {
             this.mergeCallback = sinon_1.spy();
-            this.record = {
-                get() {
-                    return {
-                        type: 'remote'
-                    };
-                }
-            };
-            MERGE_STRATEGIES.REMOTE_WINS(this.record, {
+            localVersion = 1;
+            localData = { type: 'local' };
+            MERGE_STRATEGIES.REMOTE_WINS(localData, localVersion, {
                 type: 'remote'
             }, 5, this.mergeCallback);
         });
@@ -35,7 +32,7 @@ describe('merge strategies @unit', () => {
                     };
                 }
             };
-            MERGE_STRATEGIES.LOCAL_WINS(this.record, {
+            MERGE_STRATEGIES.LOCAL_WINS(localData, localVersion, {
                 type: 'remote'
             }, 5, this.mergeCallback);
         });
