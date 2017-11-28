@@ -49,7 +49,7 @@ export class RecordCore extends Emitter {
   private recordServices: RecordServices
   private emitter: Emitter
   private data: object
-  private mergeStrategy: MergeStrategy
+  // private mergeStrategy: MergeStrategy
   private stateMachine: StateMachine
   private responseTimeout: number
   private discardTimeout: number
@@ -76,7 +76,7 @@ export class RecordCore extends Emitter {
       throw new Error('invalid argument name')
     }
 
-    this.setMergeStrategy(options.mergeStrategy)
+ //   this.setMergeStrategy(options.mergeStrategy)
 
     this.stateMachine = new StateMachine(
       this.services.logger,
@@ -91,6 +91,7 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RA.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
+          { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
@@ -106,7 +107,15 @@ export class RecordCore extends Emitter {
     )
 
     if (this.services.connection.isConnected) {
-      this.stateMachine.transition(RA.SUBSCRIBE)
+      if (!this.recordServices.dirtyService.isDirty(this.name)) {
+        this.stateMachine.transition(RA.SUBSCRIBE)
+      } else {
+        this.services.storage.get(this.name, (recordName, version, data) => {
+          this.version = version
+          this.data = data
+          this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
+        })
+      }
     } else {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
     }
@@ -357,7 +366,7 @@ export class RecordCore extends Emitter {
    */
   public setMergeStrategy (mergeStrategy: MergeStrategy): void {
     if (typeof mergeStrategy === 'function') {
-      this.mergeStrategy = mergeStrategy
+      this.recordServices.mergeStrategy.setMergeStrategyByRecord(this.name, mergeStrategy)
     } else {
       throw new Error('Invalid merge strategy: Must be a Function')
     }
@@ -431,22 +440,20 @@ export class RecordCore extends Emitter {
   }
 
   private onOfflineLoading (): void {
-    this.recordServices.dirtyService.whenLoaded(() => {
-      this.services.storage.get(this.name, (recordName: string, version: number, data: any) => {
-        if (version === -1) {
-          this.data = {}
-          this.version = 1
-          this.services.storage.set(this.name, this.version, this.data, error => {
-            this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
-              this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-            })
+    this.services.storage.get(this.name, (recordName: string, version: number, data: any) => {
+      if (version === -1) {
+        this.data = {}
+        this.version = 1
+        this.services.storage.set(this.name, this.version, this.data, error => {
+          this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
+            this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
           })
-        } else {
-          this.data = data
-          this.version = version
-          this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-        }
-      })
+        })
+      } else {
+        this.data = data
+        this.version = version
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
+      }
     })
   }
 
@@ -552,6 +559,9 @@ export class RecordCore extends Emitter {
   private handleReadResponse (message: RecordMessage): void {
     if (this.stateMachine.state === RECORD_STATE.MERGING) {
       this.recoverRecord(message.version as number, message.parsedData, message)
+      if (this.recordServices.dirtyService.isDirty(this.name)) {
+        this.recordServices.dirtyService.setDirty(this.name, false, () => {})
+      }
       return
     }
     this.version = message.version as number
@@ -619,7 +629,6 @@ export class RecordCore extends Emitter {
   }
 
   private saveUpdate (): void {
-
     if (!this.recordServices.dirtyService.isDirty(this.name)) {
       this.version++
       this.recordServices.dirtyService.setDirty(this.name, true, () => {
@@ -652,7 +661,6 @@ export class RecordCore extends Emitter {
     } else {
       Object.assign(message, { action: RA.UPDATE, parsedData: data })
     }
-
     if (callback) {
       this.recordServices.writeAckService.send(message as RecordWriteMessage, callback)
     } else {
@@ -766,17 +774,27 @@ export class RecordCore extends Emitter {
    * @param   {Object} message parsed and validated deepstream message
    */
   private recoverRecord (remoteVersion: number, remoteData: any, message: RecordMessage) {
-    if (this.mergeStrategy) {
-      this.mergeStrategy(
-        this,
-        remoteData,
-        remoteVersion,
-        this.onRecordRecovered.bind(this, remoteVersion, remoteData, message)
-      )
-      return
-    }
+    //  wip
+    this.recordServices.mergeStrategy.merge(
+      this.name,
+      this.version,
+      this.get(),
+      remoteVersion,
+      remoteData,
+      this.onRecordRecovered.bind(this, remoteVersion, remoteData, message)
+    )
 
-    this.services.logger.error(message, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this })
+    // if (this.mergeStrategy) {
+    //   this.mergeStrategy(
+    //     this,
+    //     remoteData,
+    //     remoteVersion,
+    //     this.onRecordRecovered.bind(this, remoteVersion, remoteData, message)
+    //   )
+    //   return
+    // }
+
+    // this.services.logger.error(message, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this })
   }
 
   /**

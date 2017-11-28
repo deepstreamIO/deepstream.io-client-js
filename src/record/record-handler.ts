@@ -12,13 +12,15 @@ import { Listener, ListenCallback } from '../util/listener'
 import { SingleNotifier } from './single-notifier'
 import { WriteAcknowledgementService } from './write-ack-service'
 import { DirtyService } from './dirty-service'
+import { MergeStrategyService } from './merge-strategy-service'
 import * as Emitter from 'component-emitter2'
 
 export interface RecordServices {
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier,
   headRegistry: SingleNotifier,
-  dirtyService: DirtyService
+  dirtyService: DirtyService,
+  mergeStrategy: MergeStrategyService
 }
 
 export class RecordHandler {
@@ -28,6 +30,7 @@ export class RecordHandler {
   private listener: Listener
   private recordCores: Map<string, RecordCore>
   private recordServices: RecordServices
+  private dirtyService: DirtyService
 
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
@@ -37,15 +40,24 @@ export class RecordHandler {
 
     this.recordCores = new Map()
 
-    this.recordServices = {
-      writeAckService: new WriteAcknowledgementService(services),
-      readRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout),
-      headRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout),
-      dirtyService: new DirtyService(services.storage, options.dirtyStorageName)
-    } as RecordServices
+    this.dirtyService = new DirtyService(services.storage, options.dirtyStorageName)
+    this.dirtyService.whenLoaded(() => {
+      this.recordServices = {
+        writeAckService: new WriteAcknowledgementService(services),
+        readRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout),
+        headRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout),
+        dirtyService: this.dirtyService,
+        mergeStrategy: new MergeStrategyService(options.mergeStrategy)
+      } as RecordServices
+    })
 
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
+    this.services.connection.onReestablished(this.onConnReestablished.bind(this))
+
+    if (this.services.connection.isConnected) {
+      this.syncDirtyRecords()
+    }
   }
 
   /**
@@ -231,10 +243,10 @@ export class RecordHandler {
     if (!args.callback) {
       return new Promise((resolve, reject) => {
         args.callback = error => error === null ? resolve() : reject(error)
-        this.sendSetData(recordName, args)
+        this.sendSetData(recordName, -1, args)
       })
     }
-    this.sendSetData(recordName, args)
+    this.sendSetData(recordName, -1, args)
   }
 
   /**
@@ -257,10 +269,10 @@ export class RecordHandler {
   public setData (recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
   public setData (recordName: string): void {
     const args = utils.normalizeSetArguments(arguments, 1)
-    this.sendSetData(recordName, args)
+    this.sendSetData(recordName, -1, args)
   }
 
-  private sendSetData (recordName: string, args: utils.RecordSetArguments): void {
+  private sendSetData (recordName: string, version: number, args: utils.RecordSetArguments): void {
     const { path, data, callback } = args
     if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
       throw new Error('invalid argument: recordName must be an non empty string')
@@ -291,7 +303,7 @@ export class RecordHandler {
       action,
       name: recordName,
       path,
-      version: -1,
+      version,
       parsedData: data
     }
 
@@ -380,5 +392,24 @@ export class RecordHandler {
       recordCore.usages++
     }
     return recordCore
+  }
+
+  private onConnReestablished () {
+    this.syncDirtyRecords()
+  }
+
+  private syncDirtyRecords () {
+    this.dirtyService.getAll((dirtyRecords) => {
+      for (var recordName in dirtyRecords) {
+        const recordCore = this.recordCores.get(recordName)
+        if (recordCore && recordCore.usages > 0) {
+          continue
+        }
+        this.services.storage.get(recordName, (dbRecordName, version, data) => {
+          this.sendSetData(recordName, version, { data })
+          this.dirtyService.setDirty(recordName, false, () => {})
+        })
+      }
+    })
   }
 }

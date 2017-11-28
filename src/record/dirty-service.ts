@@ -2,15 +2,12 @@ import * as Emitter from 'component-emitter2'
 import { Options } from '../client-options'
 import { RecordOfflineStore, offlineStoreWriteResponse } from '../client'
 
-export interface DirtyRecords { [recordName: string]: boolean }
-
-const version = 1
 const DIRTY_SERVICE_LOADED = 'dirty-service-loaded'
 
 export class DirtyService {
   private name: string
   private storage: RecordOfflineStore
-  private dirtyRecords: DirtyRecords
+  private dirtyRecords: any
   private loaded: boolean
   private emitter: Emitter
 
@@ -23,10 +20,7 @@ export class DirtyService {
   }
 
   public isDirty (recordName: string): boolean {
-    if (this.dirtyRecords[recordName] !== undefined) {
-      return this.dirtyRecords[recordName]
-    }
-    return false
+    return !!this.dirtyRecords[recordName]
   }
 
   public setDirty (recordName: string, isDirty: boolean, callback: offlineStoreWriteResponse): void {
@@ -49,20 +43,30 @@ export class DirtyService {
     })
   }
 
+  public getAll (callback: (dirtyRecords: any) => void) {
+    this.storage.get(this.name, (recordName, version, data: object) => {
+      callback(version !== -1 ? data : {})
+    })
+  }
+
   private load (): void {
     if (this.loaded) {
       return
     }
-    this.storage.get(this.name, (recordName, dbVersion, data) => {
-      this.dirtyRecords = dbVersion !== -1 ? data as DirtyRecords : {}
+    this.storage.get(this.name, (recordName, version, data: object) => {
+      this.dirtyRecords = version !== -1 ? data : {}
       this.loaded = true
       this.emitter.emit(DIRTY_SERVICE_LOADED)
     })
   }
 
   private updateDirtyRecords (recordName: string, isDirty: boolean, callback: offlineStoreWriteResponse): void {
-    this.dirtyRecords[recordName] = isDirty
-    this.storage.set(this.name, version, this.dirtyRecords, callback)
+    if (isDirty) {
+      this.dirtyRecords[recordName] = true
+    } else {
+      delete this.dirtyRecords[recordName]
+    }
+    this.storage.set(this.name, 1, this.dirtyRecords, callback)
   }
 
 }

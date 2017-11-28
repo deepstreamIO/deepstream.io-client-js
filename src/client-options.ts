@@ -72,7 +72,7 @@ Default: /deepstream */
      * When the client is used offline with offline storage enabled
      * dirtyStorageName is used as a key to save offline dirty records states
      */
-    dirtyStorageName: string
+    dirtyStorageName: string,
 }
 
 export const DefaultOptions: Options = {

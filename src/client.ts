@@ -43,31 +43,31 @@ export class Client extends EventEmitter {
   constructor (url: string, options: any = {}) {
     super()
 
-    this.options = Object.assign({}, DefaultOptions, options)
+    const fake = {} as any
+    const fakeStorage = {
+      get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => {
+        const data = fake[recordName]
+        if (!data) {
+          return callback(recordName, -1, {})
+        }
+        callback(recordName, data.version, data.data)
+      },
+      set: (recordName: string, version: number, data: Array<string> | object, callback: ((error?: string) => void)) => {
+        fake[recordName] = { recordName, version, data }
+        callback()
+      },
+      delete: () => {},
+    }
 
+    this.options = Object.assign({}, DefaultOptions, options)
     const services: any = {}
+    services.storage = options.storage || fakeStorage
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
     this.services = services as Services
-
-    const fake = {} as any
-    this.services.storage = {
-      get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => {
-        const data = fake[recordName]
-        if (!data) {
-          return callback(recordName, -1, {})
-        }
-        callback(recordName, data.version, data)
-      },
-      set: (recordName: string, version: number, data: Array<string> | object, callback: ((error?: string) => void)) => {
-        fake[recordName] = {recordName, version, data }
-        callback()
-      },
-      delete: () => {},
-    }
 
     this.services.connection.onLost(
       services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
