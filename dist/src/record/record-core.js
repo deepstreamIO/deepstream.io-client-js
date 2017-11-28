@@ -18,6 +18,7 @@ class RecordCore extends Emitter {
         this.whenComplete = whenComplete;
         this.references = 1;
         this.offlineDirty = false;
+        this.hasProvider = false;
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }

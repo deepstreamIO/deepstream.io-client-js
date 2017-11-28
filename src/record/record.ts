@@ -31,6 +31,10 @@ export class Record extends Emitter  {
         return this.record.version
     }
 
+    get hasProvider (): boolean {
+        return this.record.hasProvider
+    }
+
     public whenReady (callback?: ((record: Record) => void)): void | Promise<Record> {
         return this.record.whenReady(this, callback)
     }
