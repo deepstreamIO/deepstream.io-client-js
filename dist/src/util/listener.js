@@ -83,6 +83,10 @@ class Listener {
         this.stopCallbacks.set(subscription, callback);
     }
     handle(message) {
+        if (message.isAck) {
+            this.services.timeoutRegistry.remove(message);
+            return;
+        }
         if (message.action === this.actions.SUBSCRIPTION_FOR_PATTERN_FOUND) {
             const listener = this.listeners.get(message.name);
             if (listener) {
