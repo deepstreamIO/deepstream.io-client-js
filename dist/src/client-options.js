@@ -18,7 +18,7 @@ exports.DefaultOptions = {
     recordDeepCopy: true,
     socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
-    nodeStoragePath: './records',
+    nodeStoragePath: './local-storage',
     nodeStorageSize: 5,
     lazyConnect: false
 };

@@ -75,7 +75,7 @@ Default: /deepstream */
     dirtyStorageName: string,
     /**
      * nodeStoragePath specifies the disk location to save records
-     * Default: ./records
+     * Default: ./local-storage
      */
     nodeStoragePath: string,
     /**
@@ -107,7 +107,7 @@ export const DefaultOptions: Options = {
     recordDeepCopy: true,
     socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
-    nodeStoragePath: './records',
+    nodeStoragePath: './local-storage',
     nodeStorageSize: 5,
     lazyConnect: false
 }

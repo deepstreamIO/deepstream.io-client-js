@@ -17,19 +17,19 @@ export class Storage implements RecordOfflineStore {
     const item = this.storage.getItem(recordName)
     if (item) {
       const doc = JSON.parse(item)
-      callback(recordName, doc.version, doc.data)
+      setTimeout(callback.bind(this, recordName, doc.version, doc.data), 0)
       return
     }
-    callback(recordName, -1, null)
+    setTimeout(callback.bind(this, recordName, -1, null), 0)
   }
 
   public set (recordName: string, version: number, data: Array<string> | object, callback: offlineStoreWriteResponse) {
     this.storage.setItem(recordName, JSON.stringify({ recordName, version, data }))
-    callback()
+    setTimeout(callback, 0)
   }
 
   public delete (recordName: string, callback: offlineStoreWriteResponse) {
     this.storage.removeItem(recordName)
-    callback()
+    setTimeout(callback, 0)
   }
 }

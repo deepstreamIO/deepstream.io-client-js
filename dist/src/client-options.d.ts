@@ -72,7 +72,7 @@ Default: /deepstream */
     dirtyStorageName: string;
     /**
      * nodeStoragePath specifies the disk location to save records
-     * Default: ./records
+     * Default: ./local-storage
      */
     nodeStoragePath: string;
     /**

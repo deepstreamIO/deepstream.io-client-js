@@ -14,18 +14,18 @@ class Storage {
         const item = this.storage.getItem(recordName);
         if (item) {
             const doc = JSON.parse(item);
-            callback(recordName, doc.version, doc.data);
+            setTimeout(callback.bind(this, recordName, doc.version, doc.data), 0);
             return;
         }
-        callback(recordName, -1, null);
+        setTimeout(callback.bind(this, recordName, -1, null), 0);
     }
     set(recordName, version, data, callback) {
         this.storage.setItem(recordName, JSON.stringify({ recordName, version, data }));
-        callback();
+        setTimeout(callback, 0);
     }
     delete(recordName, callback) {
         this.storage.removeItem(recordName);
-        callback();
+        setTimeout(callback, 0);
     }
 }
 exports.Storage = Storage;

@@ -22,4 +22,7 @@ module.exports = {
     new webpack.IgnorePlugin(/ws/),
     new UglifyJSPlugin()
   ],
+  node: {
+    fs: 'empty'
+  }
 };

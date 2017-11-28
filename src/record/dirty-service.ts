@@ -20,7 +20,6 @@ export class DirtyService {
   }
 
   public isDirty (recordName: string): boolean {
-    console.log(this.dirtyRecords)
     return !!this.dirtyRecords[recordName]
   }
 
