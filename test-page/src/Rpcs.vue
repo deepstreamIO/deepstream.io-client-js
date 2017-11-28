@@ -1,5 +1,5 @@
 <template>
-    <div class="rpcs">
+    <div class="rpcs-component">
         <b-card class="square-border" header-tag="header" footer-tag="footer">
             <p class="mb-0 mt-0"> <strong>RPCs</strong> </p>
             <br>

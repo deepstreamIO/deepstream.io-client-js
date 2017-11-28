@@ -1,5 +1,5 @@
 <template>
-    <div class="connection">
+    <div class="connection-component">
         <div class="wrapper">
             <b-card class="square-border text-center" header-tag="header" footer-tag="footer">
                 <p class="mb-0 mt-0">
@@ -13,11 +13,11 @@
                             <b-col lg="8" offset-lg="2">
                                 <b-form-group description="Deepstream server address">
                                     <b-input-group>
-                                        <b-form-input :block="true" disabled size="sm" v-model="serverAddress" type="text" placeholder="hostname"></b-form-input>
+                                        <b-form-input :block="true" class="connection-server-address" disabled size="sm" v-model="serverAddress" type="text" placeholder="hostname"></b-form-input>
 
                                         <!-- Attach Right button Group via slot -->
                                         <b-input-group-button slot="right">
-                                            <b-button :block="true" href="#" disabled size="sm" :variant="btnVariants[connectionState] || 'outline-success'" :state="connectionState">{{connectionState}}</b-button>
+                                            <b-button class="connection-state-btn" :block="true" href="#" disabled size="sm" :variant="btnVariants[connectionState] || 'outline-success'" :state="connectionState">{{connectionState}}</b-button>
                                         </b-input-group-button>
 
                                     </b-input-group>

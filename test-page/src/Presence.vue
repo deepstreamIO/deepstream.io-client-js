@@ -1,5 +1,5 @@
 <template>
-    <div class="presence">
+    <div class="presence-component">
         <b-card class="square-border" header-tag="header" footer-tag="footer">
             <p class="mb-0 mt-0">
                 <strong>Presence</strong>

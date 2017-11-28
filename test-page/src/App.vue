@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div class="super-class" id="app">
     <div>
       <b-navbar toggleable="md" type="dark" variant="info">
         <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
@@ -13,8 +13,9 @@
           <b-navbar-nav class="ml-auto">
 
             <b-nav-form>
-              <b-form-input size="sm" v-on:input="vServerAddress" :state="server.isAddressValid" v-model="server.address" type="text" placeholder="Enter server address"></b-form-input>&nbsp;
-               <b-button size="sm" class="my-2 my-sm-0" variant="*" style="background: white; color: #17a2b8;" :disabled="!server.isAddressValid" v-on:click="addClient">Add client</b-button>
+              <b-form-input id="input-add-client" size="sm" v-on:input="vServerAddress" :state="server.isAddressValid" v-model="server.address" type="text" placeholder="Enter server address"></b-form-input>&nbsp;
+               <!-- :disabled="!server.isAddressValid" -->
+               <b-button id="btn-add-client" size="sm" class="my-2 my-sm-0" variant="*" style="background: white; color: #17a2b8;"  v-on:click="addClient">Add client</b-button>
             </b-nav-form>
           </b-navbar-nav>
 
@@ -30,7 +31,7 @@
                     <b-card-group v-if="clients.length > 0">
                         <b-card class="no-borders mb-0 mt-0" v-for="c in clients" :key="c.id" header-tag="header" footer-tag="footer">
                             <b-button variant="link" @click="removeClient(c.id)">Remove client</b-button>
-                            <Client :listener="listener" :client="c.client" :server-address="c.serverAddress"/>
+                            <Client :client-id="c.id" :listener="getListener()" :client="c.client" :server-address="c.serverAddress"/>
                         </b-card>
                     </b-card-group>
                     <b-card-group v-if="clients.length === 0">
@@ -74,7 +75,8 @@ export default {
       server: {
         address: null,
         isAddressValid: false
-      }
+      },
+      listenerServerAddress: ''
     }
   },
   watch: {
@@ -82,21 +84,21 @@ export default {
       this.clientsCount = this.clients.length
     }
   },
-  computed: {
-    listener: function () {
+  components: { Client },
+  methods: {
+    getListener: function () {
       if (!listener) {
-        listener = ds.deepstream('localhost:6020')
+        listener = ds.deepstream(this.$data.listenerServerAddress)
         listener.login({username: 'listener'})
       }
 
       return listener
-    }
-  },
-  components: { Client },
-  methods: {
+    },
     createClient: function (address) {
       const serverAddress = address || this.server.address
       const client = ds.deepstream(serverAddress, { lazyConnect: true })
+
+      this.$data.listenerServerAddress = serverAddress
 
       return { client, serverAddress }  
     },
