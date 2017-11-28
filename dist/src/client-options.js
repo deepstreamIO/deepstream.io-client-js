@@ -19,6 +19,7 @@ exports.DefaultOptions = {
     socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './records',
-    nodeStorageSize: 5
+    nodeStorageSize: 5,
+    lazyConnect: false
 };
 //# sourceMappingURL=client-options.js.map

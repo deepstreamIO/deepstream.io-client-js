@@ -71,6 +71,7 @@ export class RecordCore extends Emitter {
     this.name = name
     this.whenComplete = whenComplete
     this.references = 1
+    this.hasProvider = false
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')

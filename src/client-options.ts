@@ -83,6 +83,11 @@ Default: /deepstream */
      * Default: 5
      */
     nodeStorageSize: number
+
+    /**
+     * blbalbla
+     */
+    lazyConnect: boolean
 }
 
 export const DefaultOptions: Options = {
@@ -103,5 +108,6 @@ export const DefaultOptions: Options = {
     socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './records',
-    nodeStorageSize: 5
+    nodeStorageSize: 5,
+    lazyConnect: false
 }

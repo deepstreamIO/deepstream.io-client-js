@@ -22,6 +22,9 @@ class Record extends Emitter {
     get version() {
         return this.record.version;
     }
+    get hasProvider() {
+        return this.record.hasProvider;
+    }
     whenReady(callback) {
         return this.record.whenReady(this, callback);
     }

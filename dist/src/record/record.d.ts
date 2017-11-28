@@ -8,6 +8,7 @@ export declare class Record extends Emitter {
     readonly name: string;
     readonly isReady: boolean;
     readonly version: number;
+    readonly hasProvider: boolean;
     whenReady(callback?: ((record: Record) => void)): void | Promise<Record>;
     get(path?: string): any;
     set(data: any, callback?: WriteAckCallback): void;

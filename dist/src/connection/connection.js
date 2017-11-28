@@ -67,7 +67,9 @@ class Connection {
         });
         this.originalUrl = utils.parseUrl(url, this.options.path);
         this.url = this.originalUrl;
-        this.createEndpoint();
+        if (!options.lazyConnect) {
+            this.createEndpoint();
+        }
     }
     onLost(callback) {
         this.internalEmitter.on(constants_1.EVENT.CONNECTION_LOST, callback);
@@ -133,6 +135,9 @@ class Connection {
         // }
         if (this.stateMachine.state === constants_1.CONNECTION_STATE.AWAITING_AUTHENTICATION && this.authParams) {
             this.sendAuthParams();
+        }
+        if (!this.endpoint) {
+            this.createEndpoint();
         }
     }
     /*

@@ -80,5 +80,9 @@ Default: /deepstream */
      * Default: 5
      */
     nodeStorageSize: number;
+    /**
+     * blbalbla
+     */
+    lazyConnect: boolean;
 }
 export declare const DefaultOptions: Options;
