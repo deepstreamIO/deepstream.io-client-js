@@ -218,7 +218,9 @@ class RecordHandler {
      */
     handle(message) {
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_FOR_PATTERN_FOUND ||
-            message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED) {
+            message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_FOR_PATTERN_REMOVED ||
+            message.action === message_constants_1.RECORD_ACTIONS.LISTEN ||
+            message.action === message_constants_1.RECORD_ACTIONS.UNLISTEN) {
             this.listener.handle(message);
             return;
         }
