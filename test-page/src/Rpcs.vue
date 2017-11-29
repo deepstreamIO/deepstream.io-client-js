@@ -16,9 +16,9 @@
                                     </td>
                                     <td class="sm-text">
                                         <b-input-group>
-                                            <b-form-input class="esm-text" :block="true" size="sm" v-model="rpc.model" type="text" placeholder="data"></b-form-input>
+                                            <b-form-input class="rpc-data-field esm-text" :id="'data-field-rpc-' + rpc.name" :block="true" size="sm" v-model="rpc.model" type="text" placeholder="data"></b-form-input>
                                             <b-input-group-button slot="right">
-                                                <b-button @click="make(rpc)" size="sm" class="sm-text" variant="link">make</b-button>
+                                                <b-button @click="make(rpc)" size="sm" class="rpc-make-btn sm-text" :id="'make-btn-rpc-' + rpc.name" variant="link">make</b-button>
                                             </b-input-group-button>
                                         </b-input-group>
                                     </td>
@@ -26,15 +26,15 @@
                                         <b-button @click="rpc.data = []" size="sm" class="sm-text" variant="link">clear</b-button>
                                     </td>
                                     <td v-if="rpc.data.length" class="sm-text">
-                                        <span class="light-font" v-for="d in rpc.data" :key="d.id">
-                                            <pre> {{d.content}} </pre>
+                                        <span :data-rpc-name="rpc.name" class="rpc-response light-font" v-for="d in rpc.data" :key="d.id">
+                                            {{d.content}} 
                                         </span>
                                     </td>
                                     <td>
                                         <br>
                                     </td>
                                     <td v-if="!rpc.data.length" class="sm-text">
-                                        <span class="light-font"> <em>provide & make to see result</em> </span>
+                                        <span class="light-font"> <em>make to see result</em> </span>
                                     </td>
                                 </tr>
                             </tbody>

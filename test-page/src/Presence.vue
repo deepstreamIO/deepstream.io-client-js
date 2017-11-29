@@ -20,9 +20,9 @@
                                 <label class="esm-text"> Users </label>
                             </b-col>
                             <b-col>
-                                <b-row>
+                                <b-row class="presence-users-list" :data-users-list="usersStringifiedList">
                                     <b-col v-for="u in users.list" :key="u.id">
-                                        <b-button :block="true" @click="toggleUserStatus(u)" size="sm" :variant="u.status ? 'outline-success' : 'outline-primary'">
+                                        <b-button class="presence-users-member" :block="true" @click="toggleUserStatus(u)" size="sm" :variant="u.status ? 'outline-success' : 'outline-primary'">
                                             {{ u.name }}
                                         </b-button>
                                     </b-col>
@@ -40,7 +40,7 @@
                                     </b-col>
 
                                     <b-col lg="2">
-                                        <b-button @click="queryAll()" size="sm" variant="primary"> all users </b-button>
+                                        <b-button class="presence-query-all" @click="queryAll()" size="sm" variant="primary"> all users </b-button>
                                     </b-col>
 
                                     <b-col lg="8">
@@ -60,8 +60,10 @@
                                         <pre>
                                             <table width="100%">
                                                 <tbody>
-                                                    <tr v-for="r in query.result" :key="r.id">
-                                                        <td> {{ r.content }} </td>
+                                                    <tr v-for="r in query.result" :key="r.id" >
+                                                        <td :class="'query-result-' + r.type " :id="'query-id-' + r.id">
+                                                            {{ r.content }}
+                                                        </td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -180,6 +182,11 @@ export default {
         }
     }
   },
+  computed: {
+    usersStringifiedList: function () {
+        return JSON.stringify(this.$data.users.list.map(uobj => uobj.name))
+    }
+  },
   methods: {
         toggleUserStatus: function(u) {
             u.status = !u.status
@@ -198,7 +205,11 @@ export default {
             const comp = this
             comp.client.presence.getAll((err, usernames) => {
                 console.log(err, usernames)
-                comp.$data.query.result.push({ id: comp.$data.query.result.length + 1, content: JSON.stringify(usernames) })
+                comp.$data.query.result.push({
+                    id: comp.$data.query.result.length + 1,
+                    content: JSON.stringify(usernames),
+                    type: 'all'
+                })
             })
         },
 
@@ -206,7 +217,11 @@ export default {
             const comp = this
             const users = comp.$data.query.vm.split(',').map(x => x.trim())
             comp.client.presence.getAll(users, (err, usernames) => {
-                comp.$data.query.result.push({ id: comp.$data.query.result.length + 1, content: JSON.stringify(usernames) })
+                comp.$data.query.result.push({
+                    id: comp.$data.query.result.length + 1,
+                    content: JSON.stringify(usernames),
+                    type: 'specific'
+                })
             })
         },
 

@@ -21,17 +21,17 @@
                                 </b-col>
                                 <b-col lg="4">
                                     <b-form-group>
-                                        <b-form-input size="sm" v-model="emitEventName" type="text" placeholder="event name"></b-form-input>
+                                        <b-form-input class="emit-event-name-field" size="sm" v-model="emitEventName" type="text" placeholder="event name"></b-form-input>
                                     </b-form-group>
                                 </b-col>
                                 <b-col lg="4">
                                     <b-form-group>
-                                        <b-form-input size="sm" v-model="emitEventData" type="text" placeholder="event data"></b-form-input>
+                                        <b-form-input class="emit-event-data-field" size="sm" v-model="emitEventData" type="text" placeholder="event data"></b-form-input>
                                     </b-form-group>
                                 </b-col>
                                 <b-col lg="2">
                                     <b-form-group>
-                                        <b-button size="sm" variant="outline-primary" @click="emit()"> emit </b-button>
+                                        <b-button class="emit-event-submit-btn" size="sm" variant="outline-primary" @click="emit()"> emit </b-button>
                                     </b-form-group>
                                 </b-col>
                             </b-row>
@@ -46,11 +46,11 @@
                                 </b-col>
                                 <b-col lg="8">
                                     <b-form-group>
-                                        <b-form-input size="sm" v-model="subscribeEventName" type="text" placeholder="Event name"></b-form-input>
+                                        <b-form-input class="subscribe-event-name-input" size="sm" v-model="subscribeEventName" type="text" placeholder="Event name"></b-form-input>
                                     </b-form-group>
                                 </b-col>
                                 <b-col lg="2">
-                                    <b-button size="sm" variant="outline-primary" @click="subscribe()"> subscribe </b-button>
+                                    <b-button class="subscribe-event-submit-btn" size="sm" variant="outline-primary" @click="subscribe()"> subscribe </b-button>
                                 </b-col>
                             </b-row>
                         </b-container>
@@ -64,20 +64,27 @@
                                         <em> Subscribed events </em>
                                     </label>
                                 </b-col>
-                                    
+
                                 <b-col lg="9">
+                                    <label class="esm-text">
+                                        <em> updates </em>
+                                    </label>
+                                </b-col>
+                            </b-row>
+                            <b-row>
+                                <b-col lg="12">
                                     <p class="esm-text" v-if="subscribedEvents.length === 0">
                                         <em>No events</em>
                                     </p>
-                                    <table v-if="subscribedEvents.length" class="events-table">
+                                    <table v-if="subscribedEvents.length > 0" class="events-table">
                                         <tbody>
                                             <tr v-for="e in subscribedEvents" :key="e.id">
-                                                <td>{{ e.name }}</td>
+                                                <td :data-event-name="e.name" class="subscribe-event-label">{{ e.name }}</td>
                                                 <td>
-                                                    <b-button @click="unsubscribe(e)" size="sm" variant="link"> unsubscribe </b-button>
+                                                    <b-button class="unsubscribe-event-submit-btn" @click="unsubscribe(e)" size="sm" variant="link"> unsubscribe </b-button>
                                                 </td>
                                                 <td>
-                                                    <span class="light-font" v-for="d in e.data" :key="d.id">
+                                                    <span :data-event-name="e.name" class="subscribe-event-updates-field light-font" v-for="d in e.data" :key="d.id">
                                                         {{d.content}},
                                                     </span>
                                                 </td>
@@ -103,6 +110,8 @@ import Listening from "./Listening.vue"
 import ComponentListens from "./ComponentListens"
 import MemoryTest from "./MemoryTest.vue"
 
+let secondTime = false
+
 export default {
     name: "events",
     props: ["listener", "client"],
@@ -113,13 +122,13 @@ export default {
         console.log('Events scenario on created:', this.$data.scenario)
     },
     data() {
-        return Object.assign(ComponentListens.data, {
+        return Object.assign({
             emitEventName: "",
             emitEventData: "",
             subscribeEventName: "",
             subscribedEvents: [],
             scenario: { events: [], nexts: [] }
-        })
+        }, ComponentListens.data)
     },
     methods: Object.assign({
         emit: function () {
@@ -144,22 +153,16 @@ export default {
             }, false)
 
             if (!isDuplicate) {
-                console.log('Event is not duplicate')
                 data.subscribedEvents.push(event)
-                console.log(data.subscribedEvents)
-            } else {
-                console.log('Event is duplicate')
+                component.client.event.subscribe(event.name, content => {
+                    event.data.push({
+                        id: event.data.length + 1,
+                        content
+                    })
+                })
             }
 
-            component.client.event.subscribe(event.name, content => {
-                console.log(event.name, 'event received emit:', content)
-                event.data.push({
-                    id: event.data.length + 1,
-                    content
-                })
-            })
-
-            console.log('Suscribed')
+            data.subscribeEventName = ''
         },
 
         unsubscribe: function (event) {
