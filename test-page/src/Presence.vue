@@ -22,7 +22,7 @@
                             <b-col>
                                 <b-row class="presence-users-list" :data-users-list="usersStringifiedList">
                                     <b-col v-for="u in users.list" :key="u.id">
-                                        <b-button class="presence-users-member" :block="true" @click="toggleUserStatus(u)" size="sm" :variant="u.status ? 'outline-success' : 'outline-primary'">
+                                        <b-button :id="'presence-member-' + u.name" class="presence-users-member" :block="true" @click="toggleUserStatus(u)" size="sm" :variant="u.status ? 'outline-success' : 'outline-primary'">
                                             {{ u.name }}
                                         </b-button>
                                     </b-col>
@@ -45,9 +45,9 @@
 
                                     <b-col lg="8">
                                         <b-input-group>
-                                            <b-form-input class="sm-text" :block="true" v-model="query.vm" size="sm" type="text" placeholder="comma-separated usernames"></b-form-input>
+                                            <b-form-input class="presence-query-specific-input sm-text" :block="true" v-model="query.vm" size="sm" type="text" placeholder="comma-separated usernames"></b-form-input>
                                             <b-input-group-button slot="left">
-                                                <b-button :block="true" @click="querySpecific" size="sm" variant="primary"> specific users </b-button>
+                                                <b-button :block="true" class="presence-query-specific" @click="querySpecific" size="sm" variant="primary"> specific users </b-button>
                                             </b-input-group-button>
                                         </b-input-group>
                                     </b-col>
@@ -87,11 +87,11 @@
                             </b-col>
                             <b-col lg="7">
                                 <b-form-group>
-                                    <b-form-input size="sm" v-model="subscribe.vm" type="text" placeholder="Username"></b-form-input>
+                                    <b-form-input class="presence-subscribe-input" size="sm" v-model="subscribe.vm" type="text" placeholder="Username"></b-form-input>
                                 </b-form-group>
                             </b-col>
                             <b-col lg="2">
-                                <b-button size="sm" variant="outline-primary" @click="subscribeToUser"> subscribe </b-button>
+                                <b-button size="sm" class="presence-subscribe-button" variant="outline-primary" @click="subscribeToUser"> subscribe </b-button>
                             </b-col>
                         </b-row>
                         <!-- <b-row>
@@ -116,8 +116,8 @@
                                 <table class="events-table">
                                     <tbody>
                                         <tr v-for="u in subscribe.users" :key="u.id">
-                                            <td>{{ u.name }}</td>
-                                            <td>{{ u.status ? 'on' : 'off'}}</td>
+                                            <td :id="'subscribe-label-username-' + u.name" >{{ u.name }}</td>
+                                            <td :id="'subscribe-status-username-' + u.name" >{{ u.status ? 'on' : 'off'}}</td>
                                             <td>
                                                 <b-button @click="unsubscribeFromUser(u)" size="sm" variant="link"> unsubscribe </b-button>
                                             </td>
@@ -172,7 +172,7 @@ export default {
         query: {
             vm: null,
             result: [{
-                id: 1,
+                id: 0,
                 content: '--'
             }]
         },
