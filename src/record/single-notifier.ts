@@ -126,8 +126,9 @@ export class SingleNotifier {
       if (requests) {
         requests.forEach(cb => cb(EVENT.CLIENT_OFFLINE))
       }
-      this.requests.delete(message.name as string)
     }
+    this.requests.clear()
+    this.limboQueue = []
   }
 
   private onConnectionReestablished (): void {

@@ -106,8 +106,9 @@ class SingleNotifier {
             if (requests) {
                 requests.forEach(cb => cb(client_1.EVENT.CLIENT_OFFLINE));
             }
-            this.requests.delete(message.name);
         }
+        this.requests.clear();
+        this.limboQueue = [];
     }
     onConnectionReestablished() {
         for (let i = 0; i < this.limboQueue.length; i++) {

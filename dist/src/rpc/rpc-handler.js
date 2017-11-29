@@ -203,6 +203,7 @@ class RPCHandler {
             const { correlationId, name, data, callback } = this.limboQueue[i];
             this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, data, callback, this.options, this.services));
         }
+        this.limboQueue = [];
     }
     onExitLimbo() {
         for (let i = 0; i < this.limboQueue.length; i++) {
