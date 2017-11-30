@@ -64,13 +64,9 @@ describe('Presence handler', () => {
     });
     it('cant\'t query getAll when client is offline', () => __awaiter(this, void 0, void 0, function* () {
         services.connection.isConnected = false;
-        services.connectionMock
-            .expects('sendMessage')
-            .never();
         presenceHandler.getAll(callbackSpy);
-        const promise = presenceHandler.getAll();
-        promise.then(promiseSuccess).catch(promiseError);
-        yield bluebird_1.Promise.delay(0);
+        presenceHandler.getAll().then(promiseSuccess).catch(promiseError);
+        yield bluebird_1.Promise.delay(1);
         sinon_1.assert.calledOnce(callbackSpy);
         sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
         sinon_1.assert.notCalled(promiseSuccess);
@@ -454,6 +450,30 @@ describe('Presence handler', () => {
             sinon_1.assert.notCalled(userACallback);
             sinon_1.assert.notCalled(userBCallback);
             sinon_1.assert.notCalled(allUsersCallback);
+        }));
+    });
+    describe('limbo', () => {
+        beforeEach(() => {
+            services.connection.isConnected = false;
+            services.connection.isInLimbo = true;
+        });
+        it('returns client offline error once limbo state over', () => __awaiter(this, void 0, void 0, function* () {
+            presenceHandler.getAll(callbackSpy);
+            services.simulateExitLimbo();
+            yield bluebird_1.Promise.delay(1);
+            sinon_1.assert.calledOnce(callbackSpy);
+            sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
+        }));
+        it('sends messages once re-established if in limbo', () => __awaiter(this, void 0, void 0, function* () {
+            presenceHandler.getAll(callbackSpy);
+            services.connectionMock
+                .expects('sendMessage')
+                .once();
+            services.timeoutRegistryMock
+                .expects('add')
+                .once();
+            services.simulateConnectionReestablished();
+            yield bluebird_1.Promise.delay(1);
         }));
     });
 });

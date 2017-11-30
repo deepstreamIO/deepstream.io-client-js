@@ -11,10 +11,12 @@ exports.getServicesMock = () => {
     let handle = null;
     let onReestablished;
     let onLost;
+    let onExitLimbo;
     const connection = {
         sendMessage: (message) => { lastMessageSent = message; },
         getConnectionState: sinon_1.stub().returns(constants_1.CONNECTION_STATE.OPEN),
         isConnected: true,
+        isInLimbo: false,
         registerHandler: (topic, callback) => {
             handle = callback;
         },
@@ -23,6 +25,9 @@ exports.getServicesMock = () => {
         },
         onLost: (callback) => {
             onLost = callback;
+        },
+        onExitLimbo: (callback) => {
+            onExitLimbo = callback;
         }
     };
     const connectionMock = sinon_1.mock(connection);
@@ -91,6 +96,7 @@ exports.getServicesMock = () => {
         getHandle: () => handle,
         simulateConnectionLost: () => onLost(),
         simulateConnectionReestablished: () => onReestablished(),
+        simulateExitLimbo: () => onExitLimbo(),
         storage,
         storageMock,
         verify: () => {

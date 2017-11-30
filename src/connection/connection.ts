@@ -20,6 +20,7 @@ import * as Emitter from 'component-emitter2'
 export type AuthenticationCallback = (success: boolean, clientData: object) => void
 
 const enum TRANSITIONS {
+  INITIALISED = 'initialised',
   CONNECTED = 'connected',
   CHALLENGE = 'challenge',
   AUTHENTICATE = 'authenticate',
@@ -34,12 +35,13 @@ const enum TRANSITIONS {
   SUCCESFUL_LOGIN = 'succesful-login',
   ERROR = 'error',
   LOST = 'connection-lost',
+  EXIT_LIMBO = 'exit-limbo',
   AUTHENTICATION_TIMEOUT = 'authentication-timeout'
 }
 
 export class Connection {
-  public isConnected: boolean
   public emitter: Emitter
+  public isInLimbo: boolean
 
   private internalEmitter: Emitter
   private services: Services
@@ -58,17 +60,18 @@ export class Connection {
 
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
+  private limboTimeout: number
 
   constructor (services: Services, options: Options, url: string, emitter: Emitter) {
     this.options = options
     this.services = services
     this.authParams = null
     this.handlers = new Map()
-    this.isConnected = false
     // tslint:disable-next-line:no-empty
     this.authCallback = null
     this.emitter = emitter
     this.internalEmitter = new Emitter()
+    this.isInLimbo = true
 
     let isReconnecting = false
     let firstOpen = true
@@ -80,21 +83,32 @@ export class Connection {
           if (newState === oldState) {
             return
           }
-          this.isConnected = newState === CONNECTION_STATE.OPEN
           emitter.emit(EVENT.CONNECTION_STATE_CHANGED, newState)
 
           if (newState === CONNECTION_STATE.RECONNECTING) {
+            this.isInLimbo = true
             isReconnecting = true
-            if (oldState !== CONNECTION_STATE.RECONNECTING) {
+            if (oldState !== CONNECTION_STATE.CLOSED) {
               this.internalEmitter.emit(EVENT.CONNECTION_LOST)
+              this.limboTimeout = this.services.timerRegistry.add({
+                duration: this.options.offlineBufferTimeout,
+                context: this,
+                callback: () => {
+                  this.isInLimbo = false
+                  this.internalEmitter.emit(EVENT.EXIT_LIMBO)
+                }
+              })
             }
           } else if (newState === CONNECTION_STATE.OPEN && (isReconnecting || firstOpen)) {
             firstOpen = false
+            this.isInLimbo = false
             this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
+            this.services.timerRegistry.remove(this.limboTimeout)
           }
         },
         transitions: [
-          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.AWAITING_CONNECTION },
+          { name: TRANSITIONS.INITIALISED, from: CONNECTION_STATE.CLOSED, to: CONNECTION_STATE.INITIALISING },
+          { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.INITIALISING, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.REDIRECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CONNECTED, from: CONNECTION_STATE.RECONNECTING, to: CONNECTION_STATE.AWAITING_CONNECTION },
           { name: TRANSITIONS.CHALLENGE, from: CONNECTION_STATE.AWAITING_CONNECTION, to: CONNECTION_STATE.CHALLENGING },
@@ -117,6 +131,7 @@ export class Connection {
         ]
       }
     )
+    this.stateMachine.transition(TRANSITIONS.INITIALISED)
     this.originalUrl = utils.parseUrl(url, this.options.path)
     this.url = this.originalUrl
 
@@ -125,12 +140,20 @@ export class Connection {
     }
   }
 
+  public get isConnected (): boolean {
+    return this.stateMachine.state === CONNECTION_STATE.OPEN
+  }
+
   public onLost (callback: Function): void {
     this.internalEmitter.on(EVENT.CONNECTION_LOST, callback)
   }
 
   public onReestablished (callback: Function): void {
     this.internalEmitter.on(EVENT.CONNECTION_REESTABLISHED, callback)
+  }
+
+  public onExitLimbo (callback: Function): void {
+    this.internalEmitter.on(EVENT.EXIT_LIMBO, callback)
   }
 
   public registerHandler (topic: TOPIC, callback: Function): void {

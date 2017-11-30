@@ -8,17 +8,25 @@ const message_constants_1 = require("../../binary-protocol/src/message-constants
  * incoming response data
  */
 class RPC {
-    constructor(name, correlationId, response, options, services) {
+    constructor(name, correlationId, data, response, options, services) {
         this.options = options;
         this.services = services;
         this.name = name;
+        this.correlationId = correlationId;
         this.response = response;
+        const message = {
+            topic: message_constants_1.TOPIC.RPC,
+            action: message_constants_1.RPC_ACTIONS.REQUEST,
+            correlationId,
+            name,
+            parsedData: data
+        };
         this.acceptTimeout = this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RPC,
                 action: message_constants_1.RPC_ACTIONS.ACCEPT,
-                name,
-                correlationId
+                name: this.name,
+                correlationId: this.correlationId
             },
             event: message_constants_1.RPC_ACTIONS.ACCEPT_TIMEOUT,
             duration: this.options.rpcAcceptTimeout,
@@ -28,13 +36,14 @@ class RPC {
             message: {
                 topic: message_constants_1.TOPIC.RPC,
                 action: message_constants_1.RPC_ACTIONS.REQUEST,
-                name,
-                correlationId
+                name: this.name,
+                correlationId: this.correlationId
             },
             event: message_constants_1.RPC_ACTIONS.RESPONSE_TIMEOUT,
             duration: this.options.rpcResponseTimeout,
             callback: this.onTimeout.bind(this)
         });
+        this.services.connection.sendMessage(message);
     }
     /**
      * Called once an ack message is received from the server

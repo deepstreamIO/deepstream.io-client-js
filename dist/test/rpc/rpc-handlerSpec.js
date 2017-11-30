@@ -23,6 +23,7 @@ describe('RPC handler', () => {
     let rpcHandler;
     let handle;
     let rpcProviderSpy;
+    let rpcMakeSpy;
     let data;
     const name = 'myRpc';
     const rpcAcceptTimeout = 3;
@@ -33,6 +34,7 @@ describe('RPC handler', () => {
         rpcHandler = new rpc_handler_1.RPCHandler(services, options);
         handle = services.getHandle();
         rpcProviderSpy = sinon.spy();
+        rpcMakeSpy = sinon.spy();
         data = { foo: 'bar' };
     });
     afterEach(() => {
@@ -117,13 +119,10 @@ describe('RPC handler', () => {
         const promisseError = sinon.spy();
         const promisseSuccess = sinon.spy();
         services.connection.isConnected = false;
-        services.connectionMock
-            .expects('sendMessage')
-            .never();
         rpcHandler.make(name, data, callback);
         const promise = rpcHandler.make(name, data);
         promise.then(promisseSuccess).catch(promisseError);
-        yield bluebird_1.Promise.delay(0);
+        yield bluebird_1.Promise.delay(1);
         sinon.assert.calledOnce(callback);
         sinon.assert.calledWithExactly(callback, constants_1.EVENT.CLIENT_OFFLINE);
         sinon.assert.notCalled(promisseSuccess);
@@ -478,6 +477,30 @@ describe('RPC handler', () => {
             sinon.assert.notCalled(rpcPromiseResponseSuccess);
             sinon.assert.calledOnce(rpcPromiseResponseFail);
             sinon.assert.calledWithExactly(rpcPromiseResponseFail, constants_1.EVENT.CLIENT_OFFLINE);
+        }));
+    });
+    describe('limbo', () => {
+        beforeEach(() => {
+            services.connection.isConnected = false;
+            services.connection.isInLimbo = true;
+        });
+        it('returns client offline error once limbo state over', () => __awaiter(this, void 0, void 0, function* () {
+            rpcHandler.make(name, data, rpcMakeSpy);
+            services.simulateExitLimbo();
+            yield bluebird_1.Promise.delay(1);
+            sinon.assert.calledOnce(rpcMakeSpy);
+            sinon.assert.calledWithExactly(rpcMakeSpy, constants_1.EVENT.CLIENT_OFFLINE);
+        }));
+        it('sends messages once re-established if in limbo', () => __awaiter(this, void 0, void 0, function* () {
+            rpcHandler.make(name, data, rpcMakeSpy);
+            services.connectionMock
+                .expects('sendMessage')
+                .once();
+            services.timeoutRegistryMock
+                .expects('add')
+                .twice();
+            services.simulateConnectionReestablished();
+            yield bluebird_1.Promise.delay(1);
         }));
     });
 });

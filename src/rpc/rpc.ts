@@ -1,6 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+import { EVENT } from '../constants'
 
 export type RPCMakeCallback = (error: string | null, result?: any) => void
 
@@ -14,39 +15,50 @@ export class RPC {
     private services: Services
     private options: Options
     private name: string
+    private correlationId: string
     private response: RPCMakeCallback
     private acceptTimeout: number
     private responseTimeout: number
 
-    constructor (name: string, correlationId: string, response: RPCMakeCallback, options: Options, services: Services) {
-        this.options = options
-        this.services = services
-        this.name = name
-        this.response = response
+    constructor (name: string, correlationId: string, data: any, response: RPCMakeCallback, options: Options, services: Services) {
+      this.options = options
+      this.services = services
+      this.name = name
+      this.correlationId = correlationId
+      this.response = response
 
-        this.acceptTimeout = this.services.timeoutRegistry.add({
-            message: {
-              topic: TOPIC.RPC,
-              action: RPC_ACTION.ACCEPT,
-              name,
-              correlationId
-            },
-            event: RPC_ACTION.ACCEPT_TIMEOUT,
-            duration: this.options.rpcAcceptTimeout,
-            callback: this.onTimeout.bind(this)
-        })
+      const message = {
+        topic: TOPIC.RPC,
+        action: RPC_ACTION.REQUEST,
+        correlationId,
+        name,
+        parsedData: data
+      }
 
-        this.responseTimeout = this.services.timeoutRegistry.add({
-            message: {
-              topic: TOPIC.RPC,
-              action: RPC_ACTION.REQUEST,
-              name,
-              correlationId
-            },
-            event: RPC_ACTION.RESPONSE_TIMEOUT,
-            duration: this.options.rpcResponseTimeout,
-            callback: this.onTimeout.bind(this)
-          })
+      this.acceptTimeout = this.services.timeoutRegistry.add({
+        message: {
+          topic: TOPIC.RPC,
+          action: RPC_ACTION.ACCEPT,
+          name: this.name,
+          correlationId: this.correlationId
+        },
+        event: RPC_ACTION.ACCEPT_TIMEOUT,
+        duration: this.options.rpcAcceptTimeout,
+        callback: this.onTimeout.bind(this)
+      })
+
+      this.responseTimeout = this.services.timeoutRegistry.add({
+        message: {
+          topic: TOPIC.RPC,
+          action: RPC_ACTION.REQUEST,
+          name: this.name,
+          correlationId: this.correlationId
+        },
+        event: RPC_ACTION.RESPONSE_TIMEOUT,
+        duration: this.options.rpcResponseTimeout,
+        callback: this.onTimeout.bind(this)
+      })
+      this.services.connection.sendMessage(message)
     }
 
     /**

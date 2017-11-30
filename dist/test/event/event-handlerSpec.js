@@ -1,10 +1,19 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const chai_1 = require("chai");
 const sinon = require("sinon");
 const mocks_1 = require("../mocks");
 const constants_1 = require("../../src/constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
+const bluebird_1 = require("bluebird");
 const client_options_1 = require("../../src/client-options");
 const event_handler_1 = require("../../src/event/event-handler");
 describe('event handler', () => {
@@ -313,6 +322,21 @@ describe('event handler', () => {
             topic: message_constants_1.TOPIC.EVENT,
             action: -1
         });
+    });
+    describe('limbo', () => {
+        beforeEach(() => {
+            services.connection.isConnected = false;
+            services.connection.isInLimbo = true;
+        });
+        it('sends messages once re-established if in limbo', () => __awaiter(this, void 0, void 0, function* () {
+            eventHandler.emit(name, 6);
+            services.connectionMock
+                .expects('sendMessage')
+                .once()
+                .withExactArgs({ topic: message_constants_1.TOPIC.EVENT, action: message_constants_1.EVENT_ACTIONS.EMIT, parsedData: 6, name });
+            services.simulateConnectionReestablished();
+            yield bluebird_1.Promise.delay(1);
+        }));
     });
 });
 //# sourceMappingURL=event-handlerSpec.js.map

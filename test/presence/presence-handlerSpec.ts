@@ -1,6 +1,6 @@
 import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
-import { assert, spy } from 'sinon'
+import { assert, spy, match } from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../mocks'
 import { EVENT, CONNECTION_STATE } from '../../src/constants'
 import { TOPIC, PRESENCE_ACTIONS, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
@@ -63,15 +63,12 @@ describe('Presence handler', () => {
 
   it('cant\'t query getAll when client is offline', async () => {
     services.connection.isConnected = false
-    services.connectionMock
-      .expects('sendMessage')
-      .never()
 
     presenceHandler.getAll(callbackSpy)
-    const promise = presenceHandler.getAll()
-    promise.then(promiseSuccess).catch(promiseError)
+    presenceHandler.getAll().then(promiseSuccess).catch(promiseError)
 
-    await BBPromise.delay(0)
+    await BBPromise.delay(1)
+
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
 
@@ -549,6 +546,38 @@ describe('Presence handler', () => {
       assert.notCalled(userACallback)
       assert.notCalled(userBCallback)
       assert.notCalled(allUsersCallback)
+    })
+  })
+
+  describe('limbo', () => {
+
+    beforeEach(() => {
+      services.connection.isConnected = false
+      services.connection.isInLimbo = true
+    })
+
+    it('returns client offline error once limbo state over', async () => {
+      presenceHandler.getAll(callbackSpy)
+      services.simulateExitLimbo()
+
+      await BBPromise.delay(1)
+
+      assert.calledOnce(callbackSpy)
+      assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+    })
+
+    it('sends messages once re-established if in limbo', async () => {
+      presenceHandler.getAll(callbackSpy)
+
+      services.connectionMock
+        .expects('sendMessage')
+        .once()
+      services.timeoutRegistryMock
+        .expects('add')
+        .once()
+
+      services.simulateConnectionReestablished()
+      await BBPromise.delay(1)
     })
   })
 

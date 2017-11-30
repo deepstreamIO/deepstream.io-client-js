@@ -131,10 +131,10 @@ export class RecordHandler {
       return
     }
     if (callback) {
-      this.recordServices.readRegistry.request(name, { callback })
+      this.recordServices.readRegistry.request(name, callback)
     } else {
       return new Promise((resolve, reject) => {
-        this.recordServices.readRegistry.request(name, { resolve, reject })
+        this.recordServices.readRegistry.request(name, (error, data) => error ? reject(error) : resolve(data))
       })
     }
   }
@@ -199,10 +199,10 @@ export class RecordHandler {
     }
 
     if (callback) {
-      this.recordServices.headRegistry.request(name, { callback })
+      this.recordServices.headRegistry.request(name, callback)
     } else {
       return new Promise((resolve, reject) => {
-        this.recordServices.headRegistry.request(name, { resolve, reject })
+        this.recordServices.headRegistry.request(name, (error, data) => error ? reject(error) : resolve(data))
       })
     }
   }

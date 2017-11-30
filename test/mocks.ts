@@ -3,6 +3,7 @@ import { EventEmitter } from 'events'
 import { mock, stub, SinonMock, SinonStub } from 'sinon'
 import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
+import { TimeoutRegistry } from '../src/util/timeout-registry'
 import { Message } from '../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../src/record/single-notifier'
 import { WriteAcknowledgementService } from '../src/record/write-ack-service'
@@ -14,11 +15,13 @@ export const getServicesMock = () => {
   let handle: Function | null = null
   let onReestablished: Function
   let onLost: Function
+  let onExitLimbo: Function
 
   const connection = {
       sendMessage: (message: Message) => { lastMessageSent = message },
       getConnectionState: stub().returns(CONNECTION_STATE.OPEN),
       isConnected: true,
+      isInLimbo: false,
       registerHandler: (topic: any, callback: Function): void => {
         handle = callback
       },
@@ -27,6 +30,9 @@ export const getServicesMock = () => {
       },
       onLost: (callback: Function): void => {
         onLost = callback
+      },
+      onExitLimbo: (callback: Function): void => {
+        onExitLimbo = callback
       }
   }
   const connectionMock = mock(connection)
@@ -103,6 +109,7 @@ export const getServicesMock = () => {
     getHandle: (): Function | null => handle,
     simulateConnectionLost: (): void => onLost(),
     simulateConnectionReestablished: (): void => onReestablished(),
+    simulateExitLimbo: (): void => onExitLimbo(),
     storage,
     storageMock,
     verify: () => {

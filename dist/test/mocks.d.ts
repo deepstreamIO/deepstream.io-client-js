@@ -12,9 +12,11 @@ export declare const getServicesMock: () => {
         sendMessage: (message: Message) => void;
         getConnectionState: SinonStub;
         isConnected: boolean;
+        isInLimbo: boolean;
         registerHandler: (topic: any, callback: Function) => void;
         onReestablished: (callback: Function) => void;
         onLost: (callback: Function) => void;
+        onExitLimbo: (callback: Function) => void;
     };
     connectionMock: SinonMock;
     timeoutRegistry: {
@@ -33,6 +35,7 @@ export declare const getServicesMock: () => {
     getHandle: () => Function | null;
     simulateConnectionLost: () => void;
     simulateConnectionReestablished: () => void;
+    simulateExitLimbo: () => void;
     storage: {
         get: () => void;
         set: () => void;
