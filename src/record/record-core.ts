@@ -70,6 +70,7 @@ export class RecordCore extends Emitter {
     this.name = name
     this.whenComplete = whenComplete
     this.references = 1
+    this.hasProvider = false
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
@@ -109,7 +110,7 @@ export class RecordCore extends Emitter {
       } else {
         this.services.storage.get(this.name, (recordName, version, data) => {
           this.version = version
-          this.data = data
+          this.data = data as object
           this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
         })
       }

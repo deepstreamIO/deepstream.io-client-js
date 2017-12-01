@@ -12,7 +12,7 @@ import { PresenceHandler } from './presence/presence-handler';
 import * as EventEmitter from 'component-emitter2';
 export declare type offlineStoreWriteResponse = ((error?: string) => void);
 export interface RecordOfflineStore {
-    get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => void;
+    get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object | null) => void)) => void;
     set: (recordName: string, version: number, data: Array<string> | object, callback: offlineStoreWriteResponse) => void;
     delete: (recordName: string, callback: offlineStoreWriteResponse) => void;
 }

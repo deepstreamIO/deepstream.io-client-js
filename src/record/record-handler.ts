@@ -338,7 +338,9 @@ export class RecordHandler {
   private handle (message: RecordMessage) {
     if (
       message.action === RECORD_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
-      message.action === RECORD_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
+      message.action === RECORD_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED ||
+      message.action === RECORD_ACTION.LISTEN ||
+      message.action === RECORD_ACTION.UNLISTEN
     ) {
       this.listener.handle(message)
       return
