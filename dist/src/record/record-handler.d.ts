@@ -9,6 +9,7 @@ import { SingleNotifier } from './single-notifier';
 import { WriteAcknowledgementService } from './write-ack-service';
 import { DirtyService } from './dirty-service';
 import { MergeStrategyService } from './merge-strategy-service';
+import { MergeStrategy } from './merge-strategy';
 export interface RecordServices {
     writeAckService: WriteAcknowledgementService;
     readRegistry: SingleNotifier;
@@ -25,6 +26,8 @@ export declare class RecordHandler {
     private recordServices;
     private dirtyService;
     constructor(services: Services, options: Options, listener?: Listener);
+    setMergeStrategy(recordName: string, mergeStrategy: MergeStrategy): void;
+    setMergeStrategyRegExp(regexp: RegExp, mergeStrategy: MergeStrategy): void;
     /**
    * Returns an existing record or creates a new one.
    *
@@ -135,6 +138,14 @@ export declare class RecordHandler {
      */
     private removeRecord(recordName);
     private getRecordCore(recordName);
-    private onConnReestablished();
     private syncDirtyRecords();
+    private sendUpdatedData(recordName, version, data);
+    private onRecordUpdated(error, recordName);
+    /**
+    * Callback once the record merge has completed. If successful it will set the
+    * record state, else emit and error and the record will remain in an
+    * inconsistent state until the next update.
+    */
+    private onMergeConflict(message);
+    private onMergeCompleted(error, recordName, mergeData, remoteVersion, remoteData);
 }

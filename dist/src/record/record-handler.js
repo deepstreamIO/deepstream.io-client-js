@@ -22,20 +22,35 @@ class RecordHandler {
         this.listener = listener || new listener_1.Listener(message_constants_1.TOPIC.RECORD, this.services);
         this.recordCores = new Map();
         this.dirtyService = new dirty_service_1.DirtyService(services.storage, options.dirtyStorageName);
-        this.dirtyService.whenLoaded(() => {
-            this.recordServices = {
-                writeAckService: new write_ack_service_1.WriteAcknowledgementService(services),
-                readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
-                headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout),
-                dirtyService: this.dirtyService,
-                mergeStrategy: new merge_strategy_service_1.MergeStrategyService(options.mergeStrategy)
-            };
-        });
+        this.recordServices = {
+            writeAckService: new write_ack_service_1.WriteAcknowledgementService(services),
+            readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
+            headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout),
+            dirtyService: this.dirtyService,
+            mergeStrategy: new merge_strategy_service_1.MergeStrategyService(services, options.mergeStrategy)
+        };
+        this.onMergeCompleted = this.onMergeCompleted.bind(this);
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.RECORD, this.handle.bind(this));
-        this.services.connection.onReestablished(this.onConnReestablished.bind(this));
+        this.services.connection.onReestablished(this.syncDirtyRecords.bind(this));
         if (this.services.connection.isConnected) {
             this.syncDirtyRecords();
+        }
+    }
+    setMergeStrategy(recordName, mergeStrategy) {
+        if (typeof mergeStrategy === 'function') {
+            this.recordServices.mergeStrategy.setMergeStrategyByName(recordName, mergeStrategy);
+        }
+        else {
+            throw new Error('Invalid merge strategy: Must be a Function');
+        }
+    }
+    setMergeStrategyRegExp(regexp, mergeStrategy) {
+        if (typeof mergeStrategy === 'function') {
+            this.recordServices.mergeStrategy.setMergeStrategyByPattern(regexp, mergeStrategy);
+        }
+        else {
+            throw new Error('Invalid merge strategy: Must be a Function');
         }
     }
     /**
@@ -262,6 +277,9 @@ class RecordHandler {
             recordCore.handle(message);
             return;
         }
+        if (message.action === message_constants_1.RECORD_ACTIONS.VERSION_EXISTS) {
+            return;
+        }
         if (message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER ||
             message.action === message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER) {
             // record can receive a HAS_PROVIDER after discarding the record
@@ -291,22 +309,39 @@ class RecordHandler {
         }
         return recordCore;
     }
-    onConnReestablished() {
-        this.syncDirtyRecords();
-    }
     syncDirtyRecords() {
-        this.dirtyService.getAll((dirtyRecords) => {
-            for (var recordName in dirtyRecords) {
+        this.dirtyService.whenLoaded(() => {
+            const dirtyRecords = this.dirtyService.getAll();
+            for (const recordName in dirtyRecords) {
                 const recordCore = this.recordCores.get(recordName);
                 if (recordCore && recordCore.usages > 0) {
+                    // if it isn't zero.. problem.
                     continue;
                 }
-                this.services.storage.get(recordName, (dbRecordName, version, data) => {
-                    this.sendSetData(recordName, version, { data });
-                    this.dirtyService.setDirty(recordName, false, () => { });
-                });
+                this.services.storage.get(recordName, this.sendUpdatedData);
             }
         });
+    }
+    sendUpdatedData(recordName, version, data) {
+        this.sendSetData(recordName, version, { data, callback: this.onRecordUpdated });
+    }
+    onRecordUpdated(error, recordName) {
+        if (!error) {
+            this.dirtyService.setDirty(recordName, false);
+        }
+    }
+    /**
+    * Callback once the record merge has completed. If successful it will set the
+    * record state, else emit and error and the record will remain in an
+    * inconsistent state until the next update.
+    */
+    onMergeConflict(message) {
+        this.services.storage.get(message.name, (recordName, version, data) => {
+            this.recordServices.mergeStrategy.merge(message.name, version, data, message.version, message.parsedData, this.onMergeCompleted);
+        });
+    }
+    onMergeCompleted(error, recordName, mergeData, remoteVersion, remoteData) {
+        this.sendSetData(recordName, remoteVersion + 1, { data: mergeData });
     }
 }
 exports.RecordHandler = RecordHandler;

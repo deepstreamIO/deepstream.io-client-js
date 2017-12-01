@@ -168,12 +168,8 @@ export declare class RecordCore extends Emitter {
    * Callback once the record merge has completed. If successful it will set the
    * record state, else emit and error and the record will remain in an
    * inconsistent state until the next update.
-   *
-   * @param   {Number} remoteVersion The remote version number
-   * @param   {Object} remoteData The remote object data
-   * @param   {Object} message parsed and validated deepstream message
    */
-    private onRecordRecovered(remoteVersion, remoteData, message, error, data);
+    private onRecordRecovered(error, mergedData, remoteVersion, remoteData);
     /**
    * A quick check that's carried out by most methods that interact with the record
    * to make sure it hasn't been destroyed yet - and to handle it gracefully if it has.
@@ -184,6 +180,6 @@ export declare class RecordCore extends Emitter {
      * its dependencies
      */
     private destroy();
-    private onConnReestablished();
-    private onConnLost();
+    private onConnectionReestablished();
+    private onConnectionLost();
 }

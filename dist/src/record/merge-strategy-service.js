@@ -1,23 +1,37 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const constants_1 = require("../constants");
+const message_constants_1 = require("../../binary-protocol/src/message-constants");
 class MergeStrategyService {
-    constructor(defaultStrategy) {
+    constructor(services, defaultStrategy) {
+        this.services = services;
         this.defaultStrategy = defaultStrategy;
         this.strategiesByRecord = new Map();
         this.strategiesByPattern = new Map();
     }
-    setMergeStrategyByRecord(recordName, strategy) {
+    setMergeStrategyByName(recordName, strategy) {
         this.strategiesByRecord.set(recordName, strategy);
     }
-    setMergeStrategyByPattern(recordName, strategy) {
-        this.strategiesByPattern.set(recordName, strategy);
+    setMergeStrategyByPattern(pattern, strategy) {
+        this.strategiesByPattern.set(pattern, strategy);
     }
-    merge(recordNameOrPattern, localVersion, localData, remoteVersion, remoteData, callback) {
-        let strategy = this.strategiesByRecord.get(recordNameOrPattern);
-        if (strategy) {
+    merge(recordName, localVersion, localData, remoteVersion, remoteData, callback) {
+        const exactMergeStrategy = this.strategiesByRecord.get(recordName);
+        if (exactMergeStrategy) {
+            exactMergeStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
+                callback(error, recordName, data, remoteVersion, remoteData, localVersion, localData);
+            });
             return;
         }
-        //  this.services.logger.error(message, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this })
+        for (const [pattern, patternMergeStrategy] of this.strategiesByPattern) {
+            if (pattern.test(recordName)) {
+                patternMergeStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
+                    callback(error, recordName, data, remoteVersion, remoteData, localVersion, localData);
+                });
+                return;
+            }
+        }
+        this.services.logger.error({ topic: message_constants_1.TOPIC.RECORD }, constants_1.EVENT.RECORD_VERSION_EXISTS, { remoteVersion, recordName });
     }
 }
 exports.MergeStrategyService = MergeStrategyService;

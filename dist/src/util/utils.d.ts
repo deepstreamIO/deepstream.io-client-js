@@ -52,7 +52,7 @@ export declare const parseUrl: (initialURl: string, defaultPath: string) => stri
 */
 export declare const getUid: () => string;
 export interface RecordSetArguments {
-    callback?: (error: string | null) => void;
+    callback?: (error: string | null, recordName?: string) => void;
     path?: string;
     data?: any;
 }

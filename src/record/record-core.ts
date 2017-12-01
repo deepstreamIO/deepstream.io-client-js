@@ -195,7 +195,7 @@ export class RecordCore extends Emitter {
 
     if (oldValue === newValue) {
       if (callback) {
-        this.services.timerRegistry.requestIdleCallback(() => callback(null))
+        this.services.timerRegistry.requestIdleCallback(() => callback(null, this.name))
       }
       return
     }

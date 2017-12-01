@@ -436,7 +436,7 @@ export class RecordHandler {
     this.sendSetData(recordName, version, { data, callback: this.onRecordUpdated })
   }
 
-  private onRecordUpdated (error: string) {
+  private onRecordUpdated (error: string, recordName: string) {
     if (!error) {
       this.dirtyService.setDirty(recordName, false)
     }

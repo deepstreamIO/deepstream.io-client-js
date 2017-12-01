@@ -62,10 +62,7 @@ export class WriteAcknowledgementService {
   }
 
   private onConnectionLost (): void {
-    this.responses.forEach(response => {
-      response(EVENT.CLIENT_OFFLINE)
-    })
+    this.responses.forEach(response => response(EVENT.CLIENT_OFFLINE))
     this.responses.clear()
   }
-
 }

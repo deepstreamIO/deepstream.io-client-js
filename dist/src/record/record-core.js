@@ -21,7 +21,6 @@ class RecordCore extends Emitter {
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }
-        //   this.setMergeStrategy(options.mergeStrategy)
         this.stateMachine = new state_machine_1.StateMachine(this.services.logger, {
             init: 0 /* INITIAL */,
             onStateChanged: (newState, oldState) => {
@@ -61,10 +60,11 @@ class RecordCore extends Emitter {
         else {
             this.stateMachine.transition(0 /* LOAD */);
         }
-        this.onConnReestablished = this.onConnReestablished.bind(this);
-        this.onConnLost = this.onConnLost.bind(this);
-        this.services.connection.onReestablished(this.onConnReestablished);
-        this.services.connection.onLost(this.onConnLost);
+        this.onRecordRecovered = this.onRecordRecovered.bind(this);
+        this.onConnectionReestablished = this.onConnectionReestablished.bind(this);
+        this.onConnectionLost = this.onConnectionLost.bind(this);
+        this.services.connection.onReestablished(this.onConnectionReestablished);
+        this.services.connection.onLost(this.onConnectionLost);
     }
     get recordState() {
         return this.stateMachine.state;
@@ -128,7 +128,7 @@ class RecordCore extends Emitter {
         const newValue = json_path_1.setValue(oldValue, path || null, data);
         if (oldValue === newValue) {
             if (callback) {
-                this.services.timerRegistry.requestIdleCallback(() => callback(null));
+                this.services.timerRegistry.requestIdleCallback(() => callback(null, this.name));
             }
             return;
         }
@@ -286,7 +286,7 @@ class RecordCore extends Emitter {
      */
     setMergeStrategy(mergeStrategy) {
         if (typeof mergeStrategy === 'function') {
-            this.recordServices.mergeStrategy.setMergeStrategyByRecord(this.name, mergeStrategy);
+            this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy);
         }
         else {
             throw new Error('Invalid merge strategy: Must be a Function');
@@ -360,10 +360,9 @@ class RecordCore extends Emitter {
             if (version === -1) {
                 this.data = {};
                 this.version = 1;
+                this.recordServices.dirtyService.setDirty(this.name, true);
                 this.services.storage.set(this.name, this.version, this.data, error => {
-                    this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
-                        this.stateMachine.transition(1 /* LOADED */);
-                    });
+                    this.stateMachine.transition(1 /* LOADED */);
                 });
             }
             else {
@@ -455,9 +454,7 @@ class RecordCore extends Emitter {
     handleReadResponse(message) {
         if (this.stateMachine.state === 5 /* MERGING */) {
             this.recoverRecord(message.version, message.parsedData, message);
-            if (this.recordServices.dirtyService.isDirty(this.name)) {
-                this.recordServices.dirtyService.setDirty(this.name, false, () => { });
-            }
+            this.recordServices.dirtyService.setDirty(this.name, false);
             return;
         }
         this.version = message.version;
@@ -528,17 +525,13 @@ class RecordCore extends Emitter {
     saveUpdate() {
         if (!this.recordServices.dirtyService.isDirty(this.name)) {
             this.version++;
-            this.recordServices.dirtyService.setDirty(this.name, true, () => {
-                this.services.storage.set(this.name, this.version, this.data, () => { });
-            });
+            this.recordServices.dirtyService.setDirty(this.name, true);
         }
-        else {
-            this.services.storage.set(this.name, this.version, this.data, () => { });
-        }
+        this.services.storage.set(this.name, this.version, this.data, () => { });
     }
     sendUpdate(path = null, data, callback) {
         if (this.recordServices.dirtyService.isDirty(this.name)) {
-            this.recordServices.dirtyService.setDirty(this.name, false, () => { });
+            this.recordServices.dirtyService.setDirty(this.name, false);
         }
         else {
             this.version++;
@@ -574,7 +567,7 @@ class RecordCore extends Emitter {
             version: 1,
             parsedData: data
         });
-        this.recordServices.dirtyService.setDirty(this.name, false, () => { });
+        this.recordServices.dirtyService.setDirty(this.name, false);
     }
     /**
      * Applies incoming updates and patches to the record's dataset
@@ -586,6 +579,7 @@ class RecordCore extends Emitter {
             this.version = version;
         }
         else if (this.version + 1 !== version) {
+            this.stateMachine.transition(5 /* INVALID_VERSION */);
             if (message.action === message_constants_1.RECORD_ACTIONS.PATCH) {
                 /**
                 * Request a snapshot so that a merge can be done with the read reply which contains
@@ -668,31 +662,16 @@ class RecordCore extends Emitter {
      * @param   {Object} message parsed and validated deepstream message
      */
     recoverRecord(remoteVersion, remoteData, message) {
-        //  wip
-        this.recordServices.mergeStrategy.merge(this.name, this.version, this.get(), remoteVersion, remoteData, this.onRecordRecovered.bind(this, remoteVersion, remoteData, message));
-        // if (this.mergeStrategy) {
-        //   this.mergeStrategy(
-        //     this,
-        //     remoteData,
-        //     remoteVersion,
-        //     this.onRecordRecovered.bind(this, remoteVersion, remoteData, message)
-        //   )
-        //   return
-        // }
-        // this.services.logger.error(message, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this })
+        this.recordServices.mergeStrategy.merge(this.name, this.version, this.get(), remoteVersion, remoteData, this.onRecordRecovered);
     }
     /**
    * Callback once the record merge has completed. If successful it will set the
    * record state, else emit and error and the record will remain in an
    * inconsistent state until the next update.
-   *
-   * @param   {Number} remoteVersion The remote version number
-   * @param   {Object} remoteData The remote object data
-   * @param   {Object} message parsed and validated deepstream message
    */
-    onRecordRecovered(remoteVersion, remoteData, message, error, data) {
+    onRecordRecovered(error, mergedData, remoteVersion, remoteData) {
         if (error) {
-            this.services.logger.error(message, constants_1.EVENT.RECORD_VERSION_EXISTS);
+            this.services.logger.error({ topic: message_constants_1.TOPIC.RECORD }, constants_1.EVENT.RECORD_VERSION_EXISTS);
         }
         const oldVersion = this.version;
         this.version = remoteVersion;
@@ -700,9 +679,9 @@ class RecordCore extends Emitter {
         if (utils.deepEquals(oldValue, remoteData)) {
             return;
         }
-        const newValue = json_path_1.setValue(oldValue, null, data);
-        if (utils.deepEquals(data, remoteData)) {
-            this.applyChange(data);
+        const newValue = json_path_1.setValue(oldValue, null, mergedData);
+        if (utils.deepEquals(mergedData, remoteData)) {
+            this.applyChange(mergedData);
             // const callback = this.writeCallbacks.get(remoteVersion)
             // if (callback !== undefined) {
             //   callback(null)
@@ -732,16 +711,16 @@ class RecordCore extends Emitter {
         this.services.timerRegistry.remove(this.deletedTimeout);
         this.services.timerRegistry.remove(this.discardTimeout);
         this.services.timerRegistry.remove(this.responseTimeout);
-        this.services.connection.removeOnReestablished(this.onConnReestablished);
-        this.services.connection.removeOnLost(this.onConnLost);
+        this.services.connection.removeOnReestablished(this.onConnectionReestablished);
+        this.services.connection.removeOnLost(this.onConnectionLost);
         this.emitter.off();
         this.isReady = false;
         this.whenComplete(this.name);
     }
-    onConnReestablished() {
+    onConnectionReestablished() {
         this.stateMachine.transition(3 /* RESUBSCRIBE */);
     }
-    onConnLost() {
+    onConnectionLost() {
         this.services.storage.set(this.name, this.version, this.data, error => { });
     }
 }

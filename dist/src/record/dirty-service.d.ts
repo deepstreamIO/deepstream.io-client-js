@@ -1,4 +1,4 @@
-import { RecordOfflineStore, offlineStoreWriteResponse } from '../client';
+import { RecordOfflineStore } from '../client';
 export declare class DirtyService {
     private name;
     private storage;
@@ -7,9 +7,9 @@ export declare class DirtyService {
     private emitter;
     constructor(storage: RecordOfflineStore, dirtyStorageName: string);
     isDirty(recordName: string): boolean;
-    setDirty(recordName: string, isDirty: boolean, callback: offlineStoreWriteResponse): void;
+    setDirty(recordName: string, isDirty: boolean): void;
     whenLoaded(callback: () => void): void;
-    getAll(callback: (dirtyRecords: any) => void): void;
+    getAll(): Map<string, boolean>;
     private load();
-    private updateDirtyRecords(recordName, isDirty, callback);
+    private updateDirtyRecords(recordName, isDirty);
 }

@@ -11,7 +11,7 @@ describe('merge strategies @unit', () => {
       localVersion = 1
       localData = { type: 'local' }
 
-    MERGE_STRATEGIES.REMOTE_WINS(localData, localVersion, {
+      MERGE_STRATEGIES.REMOTE_WINS(localData, localVersion, {
         type: 'remote'
       }, 5, this.mergeCallback)
 

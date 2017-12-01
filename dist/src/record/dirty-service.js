@@ -13,14 +13,8 @@ class DirtyService {
     isDirty(recordName) {
         return !!this.dirtyRecords[recordName];
     }
-    setDirty(recordName, isDirty, callback) {
-        if (this.loaded) {
-            this.updateDirtyRecords(recordName, isDirty, callback);
-            return;
-        }
-        this.emitter.once(DIRTY_SERVICE_LOADED, () => {
-            this.updateDirtyRecords(recordName, isDirty, callback);
-        });
+    setDirty(recordName, isDirty) {
+        this.updateDirtyRecords(recordName, isDirty);
     }
     whenLoaded(callback) {
         if (this.loaded) {
@@ -31,10 +25,8 @@ class DirtyService {
             callback();
         });
     }
-    getAll(callback) {
-        this.storage.get(this.name, (recordName, version, data) => {
-            callback(version !== -1 ? data : {});
-        });
+    getAll() {
+        return this.dirtyRecords;
     }
     load() {
         if (this.loaded) {
@@ -46,14 +38,14 @@ class DirtyService {
             this.emitter.emit(DIRTY_SERVICE_LOADED);
         });
     }
-    updateDirtyRecords(recordName, isDirty, callback) {
+    updateDirtyRecords(recordName, isDirty) {
         if (isDirty) {
             this.dirtyRecords[recordName] = true;
         }
         else {
             delete this.dirtyRecords[recordName];
         }
-        this.storage.set(this.name, 1, this.dirtyRecords, callback);
+        this.storage.set(this.name, 1, this.dirtyRecords, () => { });
     }
 }
 exports.DirtyService = DirtyService;
