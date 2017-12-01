@@ -1,4 +1,4 @@
-import { Services, Client } from '../client'
+import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
@@ -10,11 +10,9 @@ export class EventHandler {
   private services: Services
   private emitter: Emitter
   private listeners: Listener
-  private options: Options
   private limboQueue: Array<EventMessage>
 
   constructor (services: Services, options: Options, listeners?: Listener) {
-    this.options = options
     this.services = services
     this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()

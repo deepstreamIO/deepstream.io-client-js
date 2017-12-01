@@ -6,18 +6,21 @@ import * as C from '../binary-protocol/src/message-constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
-import { Connection, AuthenticationCallback } from './connection/connection'
+import { Connection, AuthenticationCallback, ResumeCallback } from './connection/connection'
 import { socketFactory, SocketFactory } from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler } from './record/record-handler'
+import { Storage } from './record/storage-service'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 
+export type offlineStoreWriteResponse = ((error: string | null) => void)
+
 export interface RecordOfflineStore {
-  get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object) => void)) => void
-  set: (recordName: string, version: number, data: Array<string> | object, callback: ((error: string) => void)) => void
-  delete: (recordName: string, callback: ((error: string) => void)) => void
+  get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object | null) => void)) => void
+  set: (recordName: string, version: number, data: Array<string> | object, callback: offlineStoreWriteResponse) => void
+  delete: (recordName: string, callback: offlineStoreWriteResponse) => void
 }
 
 export interface Services {
@@ -40,10 +43,9 @@ export class Client extends EventEmitter {
 
   constructor (url: string, options: any = {}) {
     super()
-
     this.options = Object.assign({}, DefaultOptions, options)
-
     const services: any = {}
+    services.storage = options.storage || new Storage(this.options)
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
@@ -95,6 +97,22 @@ export class Client extends EventEmitter {
 
   public close (): void {
     this.services.connection.close()
+  }
+
+  public pause (): void {
+    this.services.connection.pause()
+  }
+
+  public resume (callback?: ResumeCallback): void | Promise<object> {
+    if (callback) {
+      this.services.connection.resume(callback)
+      return
+    }
+    return new Promise((resolve, reject) => {
+      this.services.connection.resume(error => {
+        error ? reject(error) : resolve()
+      })
+    })
   }
 
   /**

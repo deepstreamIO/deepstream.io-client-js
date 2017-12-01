@@ -1,7 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
-import { EVENT } from '../constants'
 
 export type RPCMakeCallback = (error: string | null, result?: any) => void
 

@@ -2,11 +2,6 @@ import { EVENT } from '../constants'
 import {
   TOPIC,
   ALL_ACTIONS,
-  AUTH_ACTIONS as AUTH_ACTION,
-  RECORD_ACTIONS as RECORD_ACTION,
-  EVENT_ACTIONS as EVENT_ACTION,
-  RPC_ACTIONS as RPC_ACTION,
-  CONNECTION_ACTIONS as CONNECTION_ACTION,
   ACTIONS,
   Message
 } from '../../binary-protocol/src/message-constants'

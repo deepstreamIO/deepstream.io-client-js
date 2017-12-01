@@ -219,7 +219,6 @@ describe('connection', () => {
         yield receiveConnectionError();
     }));
     it('emits reauthenticationFailure if reauthentication is rejected', () => __awaiter(this, void 0, void 0, function* () {
-        const newClientData = { data: 'changed' };
         emitterMock
             .expects('emit')
             .once()
@@ -360,23 +359,21 @@ describe('connection', () => {
             yield bluebird_1.Promise.delay(0);
         });
     }
-    function sendInvalidAuth() {
-        return __awaiter(this, void 0, void 0, function* () {
-            emitterMock.expects('emit')
-                .once()
-                .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.AUTHENTICATING);
-            socketMock
-                .expects('sendParsedMessage')
-                .once()
-                .withExactArgs({
-                topic: message_constants_1.TOPIC.AUTH,
-                action: message_constants_1.AUTH_ACTIONS.REQUEST,
-                parsedData: { _username: 'invalid' } // assume this is invalid
-            });
-            connection.authenticate({ _username: 'invalid' }, authCallback);
-            yield bluebird_1.Promise.delay(0);
-        });
-    }
+    // async function sendInvalidAuth () {
+    //   emitterMock.expects('emit')
+    //     .once()
+    //     .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AUTHENTICATING)
+    //   socketMock
+    //     .expects('sendParsedMessage')
+    //     .once()
+    //     .withExactArgs({
+    //       topic: TOPIC.AUTH,
+    //       action: AUTH_ACTION.REQUEST,
+    //       parsedData: { _username: 'invalid' } // assume this is invalid
+    //     })
+    //   connection.authenticate({ _username: 'invalid' }, authCallback)
+    //   await BBPromise.delay(0)
+    // }
     function receiveAuthResponse(data) {
         return __awaiter(this, void 0, void 0, function* () {
             const receivedClientData = data || clientData;
@@ -526,28 +523,24 @@ describe('connection', () => {
             yield bluebird_1.Promise.delay(0);
         });
     }
-    function connectionClosedError() {
-        return __awaiter(this, void 0, void 0, function* () {
-            loggerMock
-                .expects('error')
-                .once()
-                .withExactArgs({ topic: message_constants_1.TOPIC.CONNECTION }, constants_1.EVENT.IS_CLOSED);
-            yield bluebird_1.Promise.delay(0);
-        });
-    }
-    function receiveInvalidParseError() {
-        return __awaiter(this, void 0, void 0, function* () {
-            socket.simulateMessages([{
-                    topic: message_constants_1.TOPIC.AUTH,
-                    action: message_constants_1.AUTH_ACTIONS.INVALID_MESSAGE_DATA,
-                    data: 'invalid authentication message'
-                }]);
-            yield bluebird_1.Promise.delay(0);
-            sinon_1.assert.calledOnce(authCallback);
-            sinon_1.assert.calledWithExactly(authCallback, false, { reason: constants_1.EVENT.INVALID_AUTHENTICATION_DETAILS });
-            yield bluebird_1.Promise.delay(0);
-        });
-    }
+    // async function connectionClosedError () {
+    //   loggerMock
+    //     .expects('error')
+    //     .once()
+    //     .withExactArgs({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
+    //   await BBPromise.delay(0)
+    // }
+    // async function receiveInvalidParseError () {
+    //   socket.simulateMessages([{
+    //     topic: TOPIC.AUTH,
+    //     action: AUTH_ACTION.INVALID_MESSAGE_DATA,
+    //     data: 'invalid authentication message'
+    //   }])
+    //   await BBPromise.delay(0)
+    //   assert.calledOnce(authCallback)
+    //   assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
+    //   await BBPromise.delay(0)
+    // }
     function receiveTooManyAuthAttempts() {
         return __awaiter(this, void 0, void 0, function* () {
             socket.simulateMessages([{
@@ -566,13 +559,13 @@ describe('connection', () => {
             yield bluebird_1.Promise.delay(0);
         });
     }
-    function losesConnection() {
-        emitterMock
-            .expects('emit')
-            .once()
-            .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.RECONNECTING);
-        socket.simulateRemoteClose();
-    }
+    // function losesConnection () {
+    //   emitterMock
+    //     .expects('emit')
+    //     .once()
+    //     .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+    //   socket.simulateRemoteClose()
+    // }
     function getSocketMock() {
         const socketService = services.getSocket();
         socket = socketService.socket;

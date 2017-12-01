@@ -1,8 +1,7 @@
 import { RECORD_ACTIONS, Message } from '../../binary-protocol/src/message-constants'
 import { ACTION_TO_WRITE_ACK } from '../../binary-protocol/src/utils'
 
-import { Services, Client, EVENT } from '../client'
-import { Options } from '../client-options'
+import { Services, EVENT } from '../client'
 import { WriteAckCallback } from './record-core'
 
 /**
@@ -62,10 +61,7 @@ export class WriteAcknowledgementService {
   }
 
   private onConnectionLost (): void {
-    this.responses.forEach(response => {
-      response(EVENT.CLIENT_OFFLINE)
-    })
+    this.responses.forEach(response => response(EVENT.CLIENT_OFFLINE))
     this.responses.clear()
   }
-
 }

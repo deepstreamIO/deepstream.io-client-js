@@ -79,6 +79,21 @@ export interface Options {
      * Options for the provided socket factory
      */
     socketOptions: any,
+    /**
+     * dirtyStorageName is used as a key to save offline dirty records states
+     * Default: __ds__dirty_records
+     */
+    dirtyStorageName: string,
+    /**
+     * nodeStoragePath specifies the disk location to save records
+     * Default: ./local-storage
+     */
+    nodeStoragePath: string,
+    /**
+     * nodeStorageSize specifies maximum database size in megabytes
+     * Default: 5
+     */
+    nodeStorageSize: number
 
     /**
      * blbalbla
@@ -103,5 +118,8 @@ export const DefaultOptions: Options = {
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
     socketOptions: null,
+    dirtyStorageName: '__ds__dirty_records',
+    nodeStoragePath: './local-storage',
+    nodeStorageSize: 5,
     lazyConnect: false
 }

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+// tslint:disable:no-empty
 const sinon_1 = require("sinon");
 const constants_1 = require("../src/constants");
 const timer_registry_1 = require("../src/util/timer-registry");

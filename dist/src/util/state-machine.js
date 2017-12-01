@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 class StateMachine {
     constructor(logger, stateMachine) {
         this.inEndState = false;
-        this.logger = logger;
         this.transitions = stateMachine.transitions;
         this.state = stateMachine.init;
         this.stateMachine = stateMachine;

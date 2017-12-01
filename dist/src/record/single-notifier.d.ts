@@ -16,7 +16,6 @@ export declare class SingleNotifier {
     private requests;
     private action;
     private topic;
-    private timeoutDuration;
     private internalRequests;
     private limboQueue;
     constructor(services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number);

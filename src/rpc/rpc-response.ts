@@ -10,7 +10,6 @@ import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-proto
  */
 export class RPCResponse {
     private services: Services
-    private options: Options
     private name: string
     private correlationId: string
     private isAccepted: boolean
@@ -21,7 +20,6 @@ export class RPCResponse {
     constructor (message: RPCMessage, options: Options, services: Services) {
         this.name = message.name as string
         this.correlationId = message.correlationId as string
-        this.options = options
         this.services = services
         this.isAccepted = false
         this.isComplete = false

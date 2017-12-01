@@ -1,4 +1,4 @@
-import { Services } from '../client';
+import { Services, offlineStoreWriteResponse } from '../client';
 import { Options } from '../client-options';
 import { MergeStrategy } from './merge-strategy';
 import { RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants';
@@ -8,7 +8,7 @@ import * as utils from '../util/utils';
 import { Record } from './record';
 import { AnonymousRecord } from './anonymous-record';
 import { List } from './list';
-export declare type WriteAckCallback = (error: string | null) => void;
+export declare type WriteAckCallback = (error: string | null, recordName: string) => void;
 export declare const enum RECORD_STATE {
     INITIAL = 0,
     SUBSCRIBING = 1,
@@ -33,12 +33,10 @@ export declare class RecordCore extends Emitter {
     private recordServices;
     private emitter;
     private data;
-    private mergeStrategy;
     private stateMachine;
     private responseTimeout;
     private discardTimeout;
     private deletedTimeout;
-    private offlineDirty;
     private deleteResponse;
     private whenComplete;
     constructor(name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void);
@@ -124,6 +122,7 @@ export declare class RecordCore extends Emitter {
      * the next update merge attempt ).
      */
     setMergeStrategy(mergeStrategy: MergeStrategy): void;
+    dump(callback?: offlineStoreWriteResponse): Promise<void> | void;
     /**
      * Transition States
      */
@@ -138,7 +137,8 @@ export declare class RecordCore extends Emitter {
     private handleHeadResponse(message);
     private sendRead();
     private saveUpdate();
-    private sendUpdate(path, data, callback);
+    private sendUpdate(path, data, callback?);
+    private sendCreateUpdate(data);
     /**
      * Applies incoming updates and patches to the record's dataset
      */
@@ -167,12 +167,8 @@ export declare class RecordCore extends Emitter {
    * Callback once the record merge has completed. If successful it will set the
    * record state, else emit and error and the record will remain in an
    * inconsistent state until the next update.
-   *
-   * @param   {Number} remoteVersion The remote version number
-   * @param   {Object} remoteData The remote object data
-   * @param   {Object} message parsed and validated deepstream message
    */
-    private onRecordRecovered(remoteVersion, remoteData, message, error, data);
+    private onRecordRecovered(error, mergedData, remoteVersion, remoteData);
     /**
    * A quick check that's carried out by most methods that interact with the record
    * to make sure it hasn't been destroyed yet - and to handle it gracefully if it has.
@@ -183,4 +179,6 @@ export declare class RecordCore extends Emitter {
      * its dependencies
      */
     private destroy();
+    private onConnectionReestablished();
+    private onConnectionLost();
 }

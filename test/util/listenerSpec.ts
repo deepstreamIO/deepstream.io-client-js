@@ -3,8 +3,7 @@ import * as sinon from 'sinon'
 import { getServicesMock } from '../mocks'
 import { TOPIC, EVENT_ACTIONS, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../../src/constants'
-import { DefaultOptions } from '../../src/client-options'
-import { Listener, ListenCallback, ListenResponse } from '../../src/util/listener'
+import { Listener, ListenResponse } from '../../src/util/listener'
 
 describe('listener', () => {
   let services: any

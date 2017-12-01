@@ -9,7 +9,6 @@ import { RPCMessage } from '../../binary-protocol/src/message-constants';
  */
 export declare class RPCResponse {
     private services;
-    private options;
     private name;
     private correlationId;
     private isAccepted;

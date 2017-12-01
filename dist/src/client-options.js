@@ -18,6 +18,9 @@ exports.DefaultOptions = {
     mergeStrategy: merge_strategy_1.REMOTE_WINS,
     recordDeepCopy: true,
     socketOptions: null,
+    dirtyStorageName: '__ds__dirty_records',
+    nodeStoragePath: './local-storage',
+    nodeStorageSize: 5,
     lazyConnect: false
 };
 //# sourceMappingURL=client-options.js.map

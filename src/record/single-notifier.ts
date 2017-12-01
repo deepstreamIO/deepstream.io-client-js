@@ -1,8 +1,6 @@
-import { TOPIC, Message, EVENT_ACTIONS, ALL_ACTIONS } from '../../binary-protocol/src/message-constants'
-import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
+import { TOPIC, Message, ALL_ACTIONS } from '../../binary-protocol/src/message-constants'
 
-import { Services, Client, EVENT } from '../client'
-import { Options } from '../client-options'
+import { Services, EVENT } from '../client'
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
@@ -21,7 +19,6 @@ export class SingleNotifier {
   private requests: Map<string, Array<(error?: any, result?: any) => void>>
   private action: ALL_ACTIONS
   private topic: TOPIC
-  private timeoutDuration: number
   private internalRequests: Map<string, Array<(message: Message) => void>>
   private limboQueue: Array<Message>
 
@@ -29,7 +26,6 @@ export class SingleNotifier {
     this.services = services
     this.topic = topic
     this.action = action
-    this.timeoutDuration = timeoutDuration
     this.requests = new Map()
     this.internalRequests = new Map()
     this.limboQueue = []

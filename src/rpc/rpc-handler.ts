@@ -6,8 +6,6 @@ import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
 import { getUid } from '../util/utils'
 
-import * as Emitter from 'component-emitter2'
-
 export type RPCProvider = (rpcData: any, response: RPCResponse) => void
 
 export class RPCHandler {
@@ -121,7 +119,7 @@ export class RPCHandler {
             name,
             correlationId,
             data,
-            (error: string, result: any) => error ? reject(error) : resolve(result),
+            (error: string | null, result: any) => error ? reject(error) : resolve(result),
             this.options,
             this.services
           )
@@ -132,7 +130,7 @@ export class RPCHandler {
         this.limboQueue.push({ correlationId, name, data, callback })
       } else {
         return new Promise((resolve, reject) => {
-          this.limboQueue.push({ correlationId, name, data, callback: (error: string, result: any) => error ? reject(error) : resolve(result) })
+          this.limboQueue.push({ correlationId, name, data, callback: (error: string | null, result: any) => error ? reject(error) : resolve(result) })
         })
       }
     } else {
@@ -240,7 +238,7 @@ export class RPCHandler {
   }
 
   private onConnectionReestablished (): void {
-    for (const [name, callback] of this.providers) {
+    for (const [name] of this.providers) {
       this.sendProvide(name)
     }
     for (let i = 0; i < this.limboQueue.length; i++) {

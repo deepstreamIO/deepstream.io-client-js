@@ -196,7 +196,7 @@ class RPCHandler {
         this.services.connection.sendMessage(message);
     }
     onConnectionReestablished() {
-        for (const [name, callback] of this.providers) {
+        for (const [name] of this.providers) {
             this.sendProvide(name);
         }
         for (let i = 0; i < this.limboQueue.length; i++) {

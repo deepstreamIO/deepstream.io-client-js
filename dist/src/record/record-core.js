@@ -17,12 +17,10 @@ class RecordCore extends Emitter {
         this.name = name;
         this.whenComplete = whenComplete;
         this.references = 1;
-        this.offlineDirty = false;
         this.hasProvider = false;
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }
-        this.setMergeStrategy(options.mergeStrategy);
         this.stateMachine = new state_machine_1.StateMachine(this.services.logger, {
             init: 0 /* INITIAL */,
             onStateChanged: (newState, oldState) => {
@@ -33,24 +31,40 @@ class RecordCore extends Emitter {
                 { name: 0 /* LOAD */, from: 0 /* INITIAL */, to: 3 /* LOADING_OFFLINE */, handler: this.onOfflineLoading.bind(this) },
                 { name: 1 /* LOADED */, from: 3 /* LOADING_OFFLINE */, to: 4 /* READY */, handler: this.onReady.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.READ_RESPONSE, from: 1 /* SUBSCRIBING */, to: 4 /* READY */, handler: this.onReady.bind(this) },
-                { name: 2 /* RESUBSCRIBE */, from: 4 /* READY */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
-                { name: 3 /* RESUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
-                { name: 4 /* INVALID_VERSION */, from: 2 /* RESUBSCRIBING */, to: 5 /* MERGING */ },
+                { name: 2 /* SUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
+                { name: 3 /* RESUBSCRIBE */, from: 0 /* INITIAL */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
+                { name: 3 /* RESUBSCRIBE */, from: 4 /* READY */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
+                { name: 4 /* RESUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
+                { name: 5 /* INVALID_VERSION */, from: 2 /* RESUBSCRIBING */, to: 5 /* MERGING */ },
                 { name: message_constants_1.RECORD_ACTIONS.DELETE, from: 4 /* READY */, to: 8 /* DELETING */ },
                 { name: message_constants_1.RECORD_ACTIONS.DELETED, from: 4 /* READY */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.DELETE_SUCCESS, from: 8 /* DELETING */, to: 9 /* DELETED */, handler: this.onDeleted.bind(this) },
                 { name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE, from: 4 /* READY */, to: 6 /* UNSUBSCRIBING */ },
                 { name: message_constants_1.RECORD_ACTIONS.SUBSCRIBE, from: 6 /* UNSUBSCRIBING */, to: 4 /* READY */ },
                 { name: message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE_ACK, from: 6 /* UNSUBSCRIBING */, to: 7 /* UNSUBSCRIBED */, handler: this.onUnsubscribed.bind(this) },
-                { name: 4 /* INVALID_VERSION */, from: 4 /* READY */, to: 5 /* MERGING */ },
+                { name: 5 /* INVALID_VERSION */, from: 4 /* READY */, to: 5 /* MERGING */ },
             ]
         });
         if (this.services.connection.isConnected) {
-            this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.SUBSCRIBE);
+            if (!this.recordServices.dirtyService.isDirty(this.name)) {
+                this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.SUBSCRIBE);
+            }
+            else {
+                this.services.storage.get(this.name, (recordName, version, data) => {
+                    this.version = version;
+                    this.data = data;
+                    this.stateMachine.transition(3 /* RESUBSCRIBE */);
+                });
+            }
         }
         else {
             this.stateMachine.transition(0 /* LOAD */);
         }
+        this.onRecordRecovered = this.onRecordRecovered.bind(this);
+        this.onConnectionReestablished = this.onConnectionReestablished.bind(this);
+        this.onConnectionLost = this.onConnectionLost.bind(this);
+        this.services.connection.onReestablished(this.onConnectionReestablished);
+        this.services.connection.onLost(this.onConnectionLost);
     }
     get recordState() {
         return this.stateMachine.state;
@@ -114,7 +128,7 @@ class RecordCore extends Emitter {
         const newValue = json_path_1.setValue(oldValue, path || null, data);
         if (oldValue === newValue) {
             if (callback) {
-                this.services.timerRegistry.requestIdleCallback(() => callback(null));
+                this.services.timerRegistry.requestIdleCallback(() => callback(null, this.name));
             }
             return;
         }
@@ -238,6 +252,16 @@ class RecordCore extends Emitter {
      * Deletes the record on the server.
      */
     delete(callback) {
+        if (!this.services.connection.isConnected) {
+            // this.services.logger.warn({ topic: TOPIC.RECORD }, RA.DELETE, 'Deleting while offline is not supported')
+            if (callback) {
+                this.services.timerRegistry.requestIdleCallback(() => {
+                    callback('Deleting while offline is not supported');
+                });
+                return;
+            }
+            return Promise.reject('Deleting while offline is not supported');
+        }
         if (this.checkDestroyed('delete')) {
             return;
         }
@@ -262,11 +286,27 @@ class RecordCore extends Emitter {
      */
     setMergeStrategy(mergeStrategy) {
         if (typeof mergeStrategy === 'function') {
-            this.mergeStrategy = mergeStrategy;
+            this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy);
         }
         else {
             throw new Error('Invalid merge strategy: Must be a Function');
         }
+    }
+    dump(callback) {
+        if (callback) {
+            this.services.storage.set(this.name, this.version, this.data, callback);
+            return;
+        }
+        return new Promise((resolve, reject) => {
+            this.services.storage.set(this.name, this.version, this.data, (error) => {
+                if (error) {
+                    reject(error);
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
     }
     /**
      * Transition States
@@ -317,15 +357,19 @@ class RecordCore extends Emitter {
     }
     onOfflineLoading() {
         this.services.storage.get(this.name, (recordName, version, data) => {
-            if (this.version === -1) {
+            if (version === -1) {
                 this.data = {};
                 this.version = 1;
+                this.recordServices.dirtyService.setDirty(this.name, true);
+                this.services.storage.set(this.name, this.version, this.data, error => {
+                    this.stateMachine.transition(1 /* LOADED */);
+                });
             }
             else {
                 this.data = data;
                 this.version = version;
+                this.stateMachine.transition(1 /* LOADED */);
             }
-            this.stateMachine.transition(1 /* LOADED */);
         });
     }
     onReady() {
@@ -410,6 +454,7 @@ class RecordCore extends Emitter {
     handleReadResponse(message) {
         if (this.stateMachine.state === 5 /* MERGING */) {
             this.recoverRecord(message.version, message.parsedData, message);
+            this.recordServices.dirtyService.setDirty(this.name, false);
             return;
         }
         this.version = message.version;
@@ -417,17 +462,42 @@ class RecordCore extends Emitter {
         this.stateMachine.transition(message_constants_1.RECORD_ACTIONS.READ_RESPONSE);
     }
     handleHeadResponse(message) {
-        if (this.version === message.version) {
-            this.stateMachine.transition(3 /* RESUBSCRIBED */);
-        }
-        else if (this.version + 1 === message.version) {
-            this.version = message.version;
-            this.applyChange(json_path_1.setValue(this.data, null, message.parsedData));
-            this.stateMachine.transition(3 /* RESUBSCRIBED */);
+        const remoteVersion = message.version;
+        if (this.recordServices.dirtyService.isDirty(this.name)) {
+            if (remoteVersion === -1 && this.version === 1) {
+                /**
+                 * Record created while offline
+                 */
+                this.stateMachine.transition(2 /* SUBSCRIBED */);
+                this.sendCreateUpdate(this.data);
+            }
+            else if (this.version === remoteVersion + 1) {
+                /**
+                 * record updated while offline
+                */
+                this.sendUpdate(null, this.data);
+                this.stateMachine.transition(4 /* RESUBSCRIBED */);
+            }
+            else {
+                this.stateMachine.transition(5 /* INVALID_VERSION */);
+                this.sendRead();
+                this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+            }
         }
         else {
-            this.stateMachine.transition(4 /* INVALID_VERSION */);
-            this.sendRead();
+            if (remoteVersion < this.version) {
+                /**
+                 *  deleted and created again remotely
+                */
+            }
+            else if (this.version === remoteVersion) {
+                this.stateMachine.transition(4 /* RESUBSCRIBED */);
+            }
+            else {
+                this.stateMachine.transition(5 /* INVALID_VERSION */);
+                this.sendRead();
+                this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+            }
         }
     }
     sendRead() {
@@ -438,14 +508,19 @@ class RecordCore extends Emitter {
         });
     }
     saveUpdate() {
-        if (!this.offlineDirty) {
+        if (!this.recordServices.dirtyService.isDirty(this.name)) {
             this.version++;
-            this.offlineDirty = true;
+            this.recordServices.dirtyService.setDirty(this.name, true);
         }
         this.services.storage.set(this.name, this.version, this.data, () => { });
     }
     sendUpdate(path = null, data, callback) {
-        this.version++;
+        if (this.recordServices.dirtyService.isDirty(this.name)) {
+            this.recordServices.dirtyService.setDirty(this.name, false);
+        }
+        else {
+            this.version++;
+        }
         const message = {
             topic: message_constants_1.TOPIC.RECORD,
             version: this.version,
@@ -469,6 +544,16 @@ class RecordCore extends Emitter {
             this.services.connection.sendMessage(message);
         }
     }
+    sendCreateUpdate(data) {
+        this.services.connection.sendMessage({
+            name: this.name,
+            topic: message_constants_1.TOPIC.RECORD,
+            action: message_constants_1.RECORD_ACTIONS.CREATEANDUPDATE,
+            version: 1,
+            parsedData: data
+        });
+        this.recordServices.dirtyService.setDirty(this.name, false);
+    }
     /**
      * Applies incoming updates and patches to the record's dataset
      */
@@ -479,6 +564,7 @@ class RecordCore extends Emitter {
             this.version = version;
         }
         else if (this.version + 1 !== version) {
+            this.stateMachine.transition(5 /* INVALID_VERSION */);
             if (message.action === message_constants_1.RECORD_ACTIONS.PATCH) {
                 /**
                 * Request a snapshot so that a merge can be done with the read reply which contains
@@ -561,34 +647,25 @@ class RecordCore extends Emitter {
      * @param   {Object} message parsed and validated deepstream message
      */
     recoverRecord(remoteVersion, remoteData, message) {
-        if (this.mergeStrategy) {
-            this.mergeStrategy(this, remoteData, remoteVersion, this.onRecordRecovered.bind(this, remoteVersion, remoteData, message));
-            return;
-        }
-        this.services.logger.error(message, constants_1.EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this });
+        this.recordServices.mergeStrategy.merge(this.name, this.version, this.get(), remoteVersion, remoteData, this.onRecordRecovered);
     }
     /**
    * Callback once the record merge has completed. If successful it will set the
    * record state, else emit and error and the record will remain in an
    * inconsistent state until the next update.
-   *
-   * @param   {Number} remoteVersion The remote version number
-   * @param   {Object} remoteData The remote object data
-   * @param   {Object} message parsed and validated deepstream message
    */
-    onRecordRecovered(remoteVersion, remoteData, message, error, data) {
+    onRecordRecovered(error, mergedData, remoteVersion, remoteData) {
         if (error) {
-            this.services.logger.error(message, constants_1.EVENT.RECORD_VERSION_EXISTS);
+            this.services.logger.error({ topic: message_constants_1.TOPIC.RECORD }, constants_1.EVENT.RECORD_VERSION_EXISTS);
         }
-        const oldVersion = this.version;
         this.version = remoteVersion;
         const oldValue = this.data;
         if (utils.deepEquals(oldValue, remoteData)) {
             return;
         }
-        const newValue = json_path_1.setValue(oldValue, null, data);
-        if (utils.deepEquals(data, remoteData)) {
-            this.applyChange(data);
+        const newValue = json_path_1.setValue(oldValue, null, mergedData);
+        if (utils.deepEquals(mergedData, remoteData)) {
+            this.applyChange(mergedData);
             // const callback = this.writeCallbacks.get(remoteVersion)
             // if (callback !== undefined) {
             //   callback(null)
@@ -618,9 +695,17 @@ class RecordCore extends Emitter {
         this.services.timerRegistry.remove(this.deletedTimeout);
         this.services.timerRegistry.remove(this.discardTimeout);
         this.services.timerRegistry.remove(this.responseTimeout);
+        this.services.connection.removeOnReestablished(this.onConnectionReestablished);
+        this.services.connection.removeOnLost(this.onConnectionLost);
         this.emitter.off();
         this.isReady = false;
         this.whenComplete(this.name);
+    }
+    onConnectionReestablished() {
+        this.stateMachine.transition(3 /* RESUBSCRIBE */);
+    }
+    onConnectionLost() {
+        this.services.storage.set(this.name, this.version, this.data, error => { });
     }
 }
 exports.RecordCore = RecordCore;

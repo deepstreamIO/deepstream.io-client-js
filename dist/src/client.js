@@ -15,6 +15,7 @@ const socket_factory_1 = require("./connection/socket-factory");
 const event_handler_1 = require("./event/event-handler");
 const rpc_handler_1 = require("./rpc/rpc-handler");
 const record_handler_1 = require("./record/record-handler");
+const storage_service_1 = require("./record/storage-service");
 const presence_handler_1 = require("./presence/presence-handler");
 const EventEmitter = require("component-emitter2");
 class Client extends EventEmitter {
@@ -22,6 +23,7 @@ class Client extends EventEmitter {
         super();
         this.options = Object.assign({}, client_options_1.DefaultOptions, options);
         const services = {};
+        services.storage = options.storage || new storage_service_1.Storage(this.options);
         services.logger = new logger_1.Logger(this);
         services.timerRegistry = new timer_registry_1.TimerRegistry();
         services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);
@@ -65,6 +67,20 @@ class Client extends EventEmitter {
     }
     close() {
         this.services.connection.close();
+    }
+    pause() {
+        this.services.connection.pause();
+    }
+    resume(callback) {
+        if (callback) {
+            this.services.connection.resume(callback);
+            return;
+        }
+        return new Promise((resolve, reject) => {
+            this.services.connection.resume(error => {
+                error ? reject(error) : resolve();
+            });
+        });
     }
     /**
     * Returns a random string. The first block of characters
