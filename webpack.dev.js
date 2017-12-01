@@ -2,7 +2,7 @@ var webpack = require('webpack');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
-  entry: ['./src/client.ts'],
+  entry: ['./src/deepstream.ts'],
   output: {
     path: __dirname,
     filename: './dist/deepstream.js',

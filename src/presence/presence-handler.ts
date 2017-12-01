@@ -1,4 +1,5 @@
-import { Services, EVENT } from '../client'
+import { EVENT } from '../constants'
+import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, PRESENCE_ACTIONS as PRESENCE_ACTION, Message } from '../../binary-protocol/src/message-constants'
 import * as Emitter from 'component-emitter2'

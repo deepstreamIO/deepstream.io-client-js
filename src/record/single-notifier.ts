@@ -1,6 +1,7 @@
 import { TOPIC, Message, ALL_ACTIONS } from '../../binary-protocol/src/message-constants'
 
-import { Services, EVENT } from '../client'
+import { EVENT } from '../constants'
+import { Services } from '../client'
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT

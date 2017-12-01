@@ -1,8 +1,5 @@
-require('source-map-support').install()
-
 import { DefaultOptions, Options } from './client-options'
-import { EVENT, CONNECTION_STATE } from './constants'
-import * as C from '../binary-protocol/src/message-constants'
+import { CONNECTION_STATE } from './constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
@@ -128,8 +125,3 @@ export class Client extends EventEmitter {
   }
 }
 
-export function deepstream (url: string, options?: any): Client {
-  return new Client(url, options)
-}
-
-export { CONNECTION_STATE, C, EVENT }

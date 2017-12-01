@@ -53,6 +53,8 @@ import { Nav } from "bootstrap-vue/es/components"
 import Client from "./Client.vue"
 import { deepstream } from "../../dist/deepstream.js"
 
+window.deepstream = deepstream
+
 const URL_REGEX = /[-a-zA-Z0-9@:%._\+~#=]{2,256}[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g
 
 let timerId = null

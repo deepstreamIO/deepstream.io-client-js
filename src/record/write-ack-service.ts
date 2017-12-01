@@ -1,7 +1,8 @@
 import { RECORD_ACTIONS, Message } from '../../binary-protocol/src/message-constants'
 import { ACTION_TO_WRITE_ACK } from '../../binary-protocol/src/utils'
 
-import { Services, EVENT } from '../client'
+import { EVENT } from '../constants'
+import { Services } from '../client'
 import { WriteAckCallback } from './record-core'
 
 /**
