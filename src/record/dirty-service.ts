@@ -23,14 +23,8 @@ export class DirtyService {
     return !!this.dirtyRecords[recordName]
   }
 
-  public setDirty (recordName: string, isDirty: boolean, callback: offlineStoreWriteResponse): void {
-    if (this.loaded) {
-      this.updateDirtyRecords(recordName, isDirty, callback)
-      return
-    }
-    this.emitter.once(DIRTY_SERVICE_LOADED, () => {
-      this.updateDirtyRecords(recordName, isDirty, callback)
-    })
+  public setDirty (recordName: string, isDirty: boolean): void {
+    this.updateDirtyRecords(recordName, isDirty)
   }
 
   public whenLoaded (callback: () => void): void {
@@ -43,10 +37,8 @@ export class DirtyService {
     })
   }
 
-  public getAll (callback: (dirtyRecords: any) => void) {
-    this.storage.get(this.name, (recordName, version, data: object) => {
-      callback(version !== -1 ? data : {})
-    })
+  public getAll (): Map<string, boolean> {
+    return this.dirtyRecords
   }
 
   private load (): void {
@@ -60,13 +52,12 @@ export class DirtyService {
     })
   }
 
-  private updateDirtyRecords (recordName: string, isDirty: boolean, callback: offlineStoreWriteResponse): void {
+  private updateDirtyRecords (recordName: string, isDirty: boolean): void {
     if (isDirty) {
       this.dirtyRecords[recordName] = true
     } else {
       delete this.dirtyRecords[recordName]
     }
-    this.storage.set(this.name, 1, this.dirtyRecords, callback)
+    this.storage.set(this.name, 1, this.dirtyRecords, () => {})
   }
-
 }

@@ -1,7 +1,7 @@
 import { Services, offlineStoreWriteResponse } from '../client'
 import { Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
-import { MergeStrategy, REMOTE_WINS } from './merge-strategy'
+import { MergeStrategy } from './merge-strategy'
 import { TOPIC, RECORD_ACTIONS as RA, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
 import { get as getPath, setValue as setPath } from './json-path'
@@ -49,7 +49,6 @@ export class RecordCore extends Emitter {
   private recordServices: RecordServices
   private emitter: Emitter
   private data: object
-  // private mergeStrategy: MergeStrategy
   private stateMachine: StateMachine
   private responseTimeout: number
   private discardTimeout: number
@@ -75,8 +74,6 @@ export class RecordCore extends Emitter {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
-
- //   this.setMergeStrategy(options.mergeStrategy)
 
     this.stateMachine = new StateMachine(
       this.services.logger,
@@ -120,11 +117,12 @@ export class RecordCore extends Emitter {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
     }
 
-    this.onConnReestablished = this.onConnReestablished.bind(this)
-    this.onConnLost = this.onConnLost.bind(this)
+    this.onRecordRecovered = this.onRecordRecovered.bind(this)
+    this.onConnectionReestablished = this.onConnectionReestablished.bind(this)
+    this.onConnectionLost = this.onConnectionLost.bind(this)
 
-    this.services.connection.onReestablished(this.onConnReestablished)
-    this.services.connection.onLost(this.onConnLost)
+    this.services.connection.onReestablished(this.onConnectionReestablished)
+    this.services.connection.onLost(this.onConnectionLost)
   }
 
   get recordState (): RECORD_STATE {
@@ -366,7 +364,7 @@ export class RecordCore extends Emitter {
    */
   public setMergeStrategy (mergeStrategy: MergeStrategy): void {
     if (typeof mergeStrategy === 'function') {
-      this.recordServices.mergeStrategy.setMergeStrategyByRecord(this.name, mergeStrategy)
+      this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy)
     } else {
       throw new Error('Invalid merge strategy: Must be a Function')
     }
@@ -444,10 +442,9 @@ export class RecordCore extends Emitter {
       if (version === -1) {
         this.data = {}
         this.version = 1
+        this.recordServices.dirtyService.setDirty(this.name, true)
         this.services.storage.set(this.name, this.version, this.data, error => {
-          this.recordServices.dirtyService.setDirty(this.name, true, error2 => {
-            this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-          })
+          this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
         })
       } else {
         this.data = data
@@ -559,9 +556,7 @@ export class RecordCore extends Emitter {
   private handleReadResponse (message: RecordMessage): void {
     if (this.stateMachine.state === RECORD_STATE.MERGING) {
       this.recoverRecord(message.version as number, message.parsedData, message)
-      if (this.recordServices.dirtyService.isDirty(this.name)) {
-        this.recordServices.dirtyService.setDirty(this.name, false, () => {})
-      }
+      this.recordServices.dirtyService.setDirty(this.name, false)
       return
     }
     this.version = message.version as number
@@ -631,17 +626,14 @@ export class RecordCore extends Emitter {
   private saveUpdate (): void {
     if (!this.recordServices.dirtyService.isDirty(this.name)) {
       this.version++
-      this.recordServices.dirtyService.setDirty(this.name, true, () => {
-        this.services.storage.set(this.name, this.version, this.data, () => {})
-      })
-    } else {
-      this.services.storage.set(this.name, this.version, this.data, () => {})
+      this.recordServices.dirtyService.setDirty(this.name, true)
     }
+    this.services.storage.set(this.name, this.version, this.data, () => {})
   }
 
   private sendUpdate (path: string | null = null, data: any, callback?: WriteAckCallback) {
     if (this.recordServices.dirtyService.isDirty(this.name)) {
-      this.recordServices.dirtyService.setDirty(this.name, false, () => {})
+      this.recordServices.dirtyService.setDirty(this.name, false)
     } else {
       this.version++
     }
@@ -676,7 +668,7 @@ export class RecordCore extends Emitter {
       version: 1,
       parsedData: data
     })
-    this.recordServices.dirtyService.setDirty(this.name, false, () => {})
+    this.recordServices.dirtyService.setDirty(this.name, false)
   }
 
   /**
@@ -689,6 +681,7 @@ export class RecordCore extends Emitter {
     if (this.version === null) {
       this.version = version
     } else if (this.version + 1 !== version) {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
       if (message.action === RA.PATCH) {
         /**
         * Request a snapshot so that a merge can be done with the read reply which contains
@@ -774,43 +767,24 @@ export class RecordCore extends Emitter {
    * @param   {Object} message parsed and validated deepstream message
    */
   private recoverRecord (remoteVersion: number, remoteData: any, message: RecordMessage) {
-    //  wip
     this.recordServices.mergeStrategy.merge(
       this.name,
       this.version,
       this.get(),
       remoteVersion,
       remoteData,
-      this.onRecordRecovered.bind(this, remoteVersion, remoteData, message)
+      this.onRecordRecovered
     )
-
-    // if (this.mergeStrategy) {
-    //   this.mergeStrategy(
-    //     this,
-    //     remoteData,
-    //     remoteVersion,
-    //     this.onRecordRecovered.bind(this, remoteVersion, remoteData, message)
-    //   )
-    //   return
-    // }
-
-    // this.services.logger.error(message, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, record: this })
   }
 
   /**
  * Callback once the record merge has completed. If successful it will set the
  * record state, else emit and error and the record will remain in an
  * inconsistent state until the next update.
- *
- * @param   {Number} remoteVersion The remote version number
- * @param   {Object} remoteData The remote object data
- * @param   {Object} message parsed and validated deepstream message
  */
-  private onRecordRecovered (
-    remoteVersion: number, remoteData: any, message: RecordWriteMessage, error: string | null, data: any
-  ): void {
+  private onRecordRecovered (error: string | null, mergedData: any, remoteVersion: number, remoteData: any): void {
     if (error) {
-      this.services.logger.error(message, EVENT.RECORD_VERSION_EXISTS)
+      this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS)
     }
 
     const oldVersion = this.version
@@ -822,10 +796,10 @@ export class RecordCore extends Emitter {
       return
     }
 
-    const newValue = setPath(oldValue, null, data)
+    const newValue = setPath(oldValue, null, mergedData)
 
-    if (utils.deepEquals(data, remoteData)) {
-      this.applyChange(data)
+    if (utils.deepEquals(mergedData, remoteData)) {
+      this.applyChange(mergedData)
 
       // const callback = this.writeCallbacks.get(remoteVersion)
       // if (callback !== undefined) {
@@ -864,18 +838,18 @@ export class RecordCore extends Emitter {
     this.services.timerRegistry.remove(this.deletedTimeout)
     this.services.timerRegistry.remove(this.discardTimeout)
     this.services.timerRegistry.remove(this.responseTimeout)
-    this.services.connection.removeOnReestablished(this.onConnReestablished)
-    this.services.connection.removeOnLost(this.onConnLost)
+    this.services.connection.removeOnReestablished(this.onConnectionReestablished)
+    this.services.connection.removeOnLost(this.onConnectionLost)
     this.emitter.off()
     this.isReady = false
     this.whenComplete(this.name)
   }
 
-  private onConnReestablished (): void {
+  private onConnectionReestablished (): void {
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
   }
 
-  private onConnLost (): void {
+  private onConnectionLost (): void {
     this.services.storage.set(this.name, this.version, this.data, error => {})
   }
 
