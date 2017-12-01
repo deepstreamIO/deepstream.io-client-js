@@ -2,11 +2,11 @@ import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { assert, spy } from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../mocks'
-import { EVENT, CONNECTION_STATE } from '../../src/constants'
+import { EVENT } from '../../src/constants'
 import { TOPIC, PRESENCE_ACTIONS, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
 
-import { DefaultOptions, Options } from '../../src/client-options'
-import { PresenceHandler, QueryResult, IndividualQueryResult } from '../../src/presence/presence-handler'
+import { DefaultOptions } from '../../src/client-options'
+import { PresenceHandler, IndividualQueryResult } from '../../src/presence/presence-handler'
 
 describe('Presence handler', () => {
   const flushTimeout = 10
@@ -63,15 +63,12 @@ describe('Presence handler', () => {
 
   it('cant\'t query getAll when client is offline', async () => {
     services.connection.isConnected = false
-    services.connectionMock
-      .expects('sendMessage')
-      .never()
 
     presenceHandler.getAll(callbackSpy)
-    const promise = presenceHandler.getAll()
-    promise.then(promiseSuccess).catch(promiseError)
+    presenceHandler.getAll().then(promiseSuccess).catch(promiseError)
 
-    await BBPromise.delay(0)
+    await BBPromise.delay(1)
+
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
 
@@ -259,7 +256,7 @@ describe('Presence handler', () => {
       .once()
       .withExactArgs(messageAck)
 
-    presenceHandler.handle(messageAck)
+    handle(messageAck)
   })
 
   it('resubscribes subscriptions when client reconnects', async () => {
@@ -325,8 +322,8 @@ describe('Presence handler', () => {
         .once()
         .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE }))
 
-      presenceHandler.handle(messageForCallback)
-      presenceHandler.handle(messageForPromise)
+      handle(messageForCallback)
+      handle(messageForPromise)
 
       await BBPromise.delay(1)
       assert.calledOnce(callback)
@@ -350,8 +347,8 @@ describe('Presence handler', () => {
         .once()
         .withExactArgs(messageForPromise)
 
-      presenceHandler.handle(messageForCallback)
-      presenceHandler.handle(messageForPromise)
+      handle(messageForCallback)
+      handle(messageForPromise)
 
       await BBPromise.delay(1)
       assert.calledOnce(callback)
@@ -390,8 +387,8 @@ describe('Presence handler', () => {
         .once()
         .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_RESPONSE }))
 
-      presenceHandler.handle(messageForCallback)
-      presenceHandler.handle(messageForPromise)
+      handle(messageForCallback)
+      handle(messageForPromise)
 
       await BBPromise.delay(1)
       assert.calledOnce(callback)
@@ -415,8 +412,8 @@ describe('Presence handler', () => {
         .once()
         .withExactArgs(messageForPromise)
 
-      presenceHandler.handle(messageForCallback)
-      presenceHandler.handle(messageForPromise)
+      handle(messageForCallback)
+      handle(messageForPromise)
 
       await BBPromise.delay(1)
       assert.calledOnce(callback)
@@ -446,8 +443,8 @@ describe('Presence handler', () => {
     })
 
     it('notifies when userA logs in', () => {
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
 
       assert.calledOnce(userACallback)
       assert.calledWithExactly(userACallback, userA, true)
@@ -459,8 +456,8 @@ describe('Presence handler', () => {
     })
 
     it('notifies when userB logs out', () => {
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE, userB))
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userB))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE, userB))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userB))
 
       assert.notCalled(userACallback)
 
@@ -472,7 +469,7 @@ describe('Presence handler', () => {
     })
 
     it('notifies only the all users callback when userC logs in', () => {
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userC))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userC))
 
       assert.notCalled(userACallback)
 
@@ -483,7 +480,7 @@ describe('Presence handler', () => {
     })
 
     it('notifies only the all users callback when userC logs out', () => {
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userC))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userC))
 
       assert.notCalled(userACallback)
 
@@ -497,7 +494,7 @@ describe('Presence handler', () => {
       presenceHandler.unsubscribe(userA)
       await BBPromise.delay(flushTimeout)
 
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
 
       assert.notCalled(userACallback)
 
@@ -510,8 +507,8 @@ describe('Presence handler', () => {
       presenceHandler.unsubscribe(userA, userACallback)
       await BBPromise.delay(flushTimeout)
 
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
 
       assert.notCalled(userACallback)
 
@@ -525,8 +522,8 @@ describe('Presence handler', () => {
       presenceHandler.unsubscribe(allUsersCallback)
       await BBPromise.delay(flushTimeout)
 
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
-      presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
 
       assert.calledOnce(userACallback)
       assert.calledWithExactly(userACallback, userA, true)
@@ -542,13 +539,45 @@ describe('Presence handler', () => {
       const users = [userA, userB]
 
       users.forEach( user => {
-        presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, user))
-        presenceHandler.handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, user))
+        handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, user))
+        handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, user))
       })
 
       assert.notCalled(userACallback)
       assert.notCalled(userBCallback)
       assert.notCalled(allUsersCallback)
+    })
+  })
+
+  describe('limbo', () => {
+
+    beforeEach(() => {
+      services.connection.isConnected = false
+      services.connection.isInLimbo = true
+    })
+
+    it('returns client offline error once limbo state over', async () => {
+      presenceHandler.getAll(callbackSpy)
+      services.simulateExitLimbo()
+
+      await BBPromise.delay(1)
+
+      assert.calledOnce(callbackSpy)
+      assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+    })
+
+    it('sends messages once re-established if in limbo', async () => {
+      presenceHandler.getAll(callbackSpy)
+
+      services.connectionMock
+        .expects('sendMessage')
+        .once()
+      services.timeoutRegistryMock
+        .expects('add')
+        .once()
+
+      services.simulateConnectionReestablished()
+      await BBPromise.delay(1)
     })
   })
 

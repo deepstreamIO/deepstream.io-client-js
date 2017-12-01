@@ -1,6 +1,5 @@
 import { Services, EVENT } from '../client';
 import { Options } from '../client-options';
-import { Message } from '../../binary-protocol/src/message-constants';
 export declare type QueryResult = Array<string>;
 export interface IndividualQueryResult {
     [key: string]: boolean;
@@ -12,10 +11,10 @@ export declare class PresenceHandler {
     private subscriptionEmitter;
     private queryEmitter;
     private queryAllEmitter;
-    private options;
     private counter;
     private pendingSubscribes;
     private pendingUnsubscribes;
+    private limboQueue;
     private flushTimeout;
     constructor(services: Services, options: Options);
     subscribe(callback: SubscribeCallback): void;
@@ -29,12 +28,13 @@ export declare class PresenceHandler {
     getAll(users: Array<string>, callback: (error: {
         reason: EVENT;
     }, result?: IndividualQueryResult) => void): void;
-    handle(message: Message): void;
+    private handle(message);
+    private sendQuery(message);
     private flush();
-    private resubscribe();
     private bulkSubscription(action, names);
     private subscribeToAllChanges();
     private unsubscribeToAllChanges();
     private registerFlushTimeout();
-    private onConnectionLost();
+    private onConnectionReestablished();
+    private onExitLimbo();
 }

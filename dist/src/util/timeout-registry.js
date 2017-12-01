@@ -108,9 +108,9 @@ class TimeoutRegistry extends EventEmitter {
      * Remote all timeouts when connection disconnects
      */
     onConnectionLost() {
-        for (const [timerId, timer] of this.register) {
-            clearTimeout(timer.timerId);
-            this.register.delete(timer.timerId);
+        for (const [timerId] of this.register) {
+            clearTimeout(timerId);
+            this.register.delete(timerId);
         }
     }
 }

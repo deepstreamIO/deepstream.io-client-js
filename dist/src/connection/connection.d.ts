@@ -3,9 +3,10 @@ import { TOPIC, Message } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 import { Options } from '../client-options';
 export declare type AuthenticationCallback = (success: boolean, clientData: object) => void;
+export declare type ResumeCallback = (error?: object) => void;
 export declare class Connection {
-    isConnected: boolean;
     emitter: Emitter;
+    isInLimbo: boolean;
     private internalEmitter;
     private services;
     private options;
@@ -13,18 +14,23 @@ export declare class Connection {
     private authParams;
     private clientData;
     private authCallback;
+    private resumeCallback;
     private originalUrl;
     private url;
     private heartbeatInterval;
     private lastHeartBeat;
     private endpoint;
     private handlers;
-    private deliberateClose;
     private reconnectTimeout;
     private reconnectionAttempt;
+    private limboTimeout;
     constructor(services: Services, options: Options, url: string, emitter: Emitter);
+    readonly isConnected: boolean;
     onLost(callback: Function): void;
+    removeOnLost(callback: Function): void;
     onReestablished(callback: Function): void;
+    removeOnReestablished(callback: Function): void;
+    onExitLimbo(callback: Function): void;
     registerHandler(topic: TOPIC, callback: Function): void;
     sendMessage(message: Message): void;
     /**
@@ -44,6 +50,8 @@ export declare class Connection {
      * will prevent the client from reconnecting.
      */
     close(): void;
+    pause(): void;
+    resume(callback: ResumeCallback): void;
     /**
      * Creates the endpoint to connect to using the url deepstream
      * was initialised with.

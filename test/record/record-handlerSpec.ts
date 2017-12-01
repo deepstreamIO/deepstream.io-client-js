@@ -2,11 +2,10 @@ import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { assert, spy, match } from 'sinon'
 import { getServicesMock, getSingleNotifierMock } from '../mocks'
-import { EVENT, CONNECTION_STATE } from '../../src/constants'
 import { TOPIC, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
 import { RecordHandler } from '../../src/record/record-handler'
 
-import { DefaultOptions, Options } from '../../src/client-options'
+import { DefaultOptions } from '../../src/client-options'
 
 describe('Record handler', () => {
   const name = 'recordA'
@@ -68,15 +67,11 @@ describe('Record handler', () => {
     expect(recordHandler.snapshot.bind(recordHandler, name, {})).to.throw()
   })
 
-  it('snapshots record remotely using callback and promise style', () => {
+  it('snapshots record remotely using callback and promise style', async () => {
     singleNotifierMock
       .expects('request')
-      .once()
-      .withExactArgs(name, { callback: callbackSpy })
-    singleNotifierMock
-      .expects('request')
-      .once()
-      .withExactArgs(name, { resolve: match.func, reject: match.func })
+      .twice()
+      .withExactArgs(name, match.func)
 
     recordHandler.snapshot(name, callbackSpy)
     recordHandler.snapshot(name)
@@ -142,12 +137,8 @@ describe('Record handler', () => {
   it('queries for the record version remotely using callback and promise', () => {
     singleNotifierMock
       .expects('request')
-      .once()
-      .withExactArgs(name, { callback: callbackSpy })
-    singleNotifierMock
-      .expects('request')
-      .once()
-      .withExactArgs(name, { resolve: match.func, reject: match.func })
+      .twice()
+      .withExactArgs(name, match.func)
 
     recordHandler.head(name, callbackSpy)
 
@@ -216,7 +207,7 @@ describe('Record handler', () => {
     singleNotifierMock
       .expects('request')
       .twice()
-      .withExactArgs(name, { callback: match.func })
+      .withExactArgs(name, match.func)
 
     recordHandler.has(name, callbackSpy)
     const promise = recordHandler.has(name)

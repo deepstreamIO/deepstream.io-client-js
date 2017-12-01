@@ -338,7 +338,7 @@ describe('normalizeSetArguments', () => {
     });
     it('normalizes argument list contaning a path, a data and a callback argument with a start index', () => {
         const argumentsSet = utils.normalizeSetArguments([
-            this,
+            {},
             'post',
             { title: 'awesome post' },
             () => { }

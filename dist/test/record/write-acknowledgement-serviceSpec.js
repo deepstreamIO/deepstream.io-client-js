@@ -92,12 +92,12 @@ describe('Write Ack Notifier', () => {
                 name,
                 correlationId: '123'
             };
-            const processed = writeAckService.recieve(msg);
+            writeAckService.recieve(msg);
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.notCalled(callbackSpy);
         }));
         it('calls ack callback when server sends ack message', () => __awaiter(this, void 0, void 0, function* () {
-            const processed = writeAckService.recieve({
+            writeAckService.recieve({
                 topic,
                 action: message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT,
                 correlationId,

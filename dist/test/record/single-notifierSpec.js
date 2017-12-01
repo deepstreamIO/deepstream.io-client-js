@@ -22,14 +22,10 @@ describe('Single Notifier', () => {
     let services;
     let singleNotifier;
     let callbackSpy;
-    let resolveSpy;
-    let rejectSpy;
     beforeEach(() => {
         services = mocks_1.getServicesMock();
         singleNotifier = new single_notifier_1.SingleNotifier(services, topic, action, timeout);
         callbackSpy = sinon_1.spy();
-        resolveSpy = sinon_1.spy();
-        rejectSpy = sinon_1.spy();
     });
     afterEach(() => {
         services.verify();
@@ -48,7 +44,7 @@ describe('Single Notifier', () => {
             .expects('add')
             .once()
             .withExactArgs({ message });
-        singleNotifier.request(name, { callback: callbackSpy });
+        singleNotifier.request(name, callbackSpy);
     });
     it('doesn\'t send message twice and updates the timeout when requesting twice', () => {
         const message = {
@@ -62,32 +58,21 @@ describe('Single Notifier', () => {
             .withExactArgs(message);
         services.timeoutRegistryMock
             .expects('add')
-            .twice()
+            .once()
             .withExactArgs({ message });
-        singleNotifier.request(name, { callback: callbackSpy });
-        singleNotifier.request(name, { callback: callbackSpy });
+        singleNotifier.request(name, callbackSpy);
+        singleNotifier.request(name, callbackSpy);
     });
     it('cant\'t query request when client is offline', () => __awaiter(this, void 0, void 0, function* () {
         services.connection.isConnected = false;
-        services.connectionMock
-            .expects('sendMessage')
-            .never();
-        services.timeoutRegistryMock
-            .expects('add')
-            .never();
-        singleNotifier.request(name, { callback: callbackSpy });
-        singleNotifier.request(name, { resolve: resolveSpy, reject: rejectSpy });
+        singleNotifier.request(name, callbackSpy);
         yield bluebird_1.Promise.delay(1);
         sinon_1.assert.calledOnce(callbackSpy);
         sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
-        sinon_1.assert.notCalled(resolveSpy);
-        sinon_1.assert.calledOnce(rejectSpy);
-        sinon_1.assert.calledWithExactly(rejectSpy, constants_1.EVENT.CLIENT_OFFLINE);
     }));
     describe('requesting', () => __awaiter(this, void 0, void 0, function* () {
         beforeEach(() => {
-            singleNotifier.request(name, { callback: callbackSpy });
-            singleNotifier.request(name, { resolve: resolveSpy, reject: rejectSpy });
+            singleNotifier.request(name, callbackSpy);
         });
         it('doesn\'t respond unknown requests', () => __awaiter(this, void 0, void 0, function* () {
             const message = {
@@ -98,8 +83,6 @@ describe('Single Notifier', () => {
             };
             singleNotifier.recieve(message, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], undefined);
             sinon_1.assert.notCalled(callbackSpy);
-            sinon_1.assert.notCalled(resolveSpy);
-            sinon_1.assert.notCalled(rejectSpy);
             yield bluebird_1.Promise.delay(1);
         }));
         it('responds callback and promise requests with success response', () => __awaiter(this, void 0, void 0, function* () {
@@ -113,9 +96,6 @@ describe('Single Notifier', () => {
             }, undefined, parsedData);
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWithExactly(callbackSpy, undefined, parsedData);
-            sinon_1.assert.calledOnce(resolveSpy);
-            sinon_1.assert.calledWithExactly(resolveSpy, parsedData);
-            sinon_1.assert.notCalled(rejectSpy);
             yield bluebird_1.Promise.delay(1);
         }));
         it('responds callback and promise requests with error response', () => __awaiter(this, void 0, void 0, function* () {
@@ -127,9 +107,6 @@ describe('Single Notifier', () => {
             }, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], undefined);
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWithExactly(callbackSpy, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED], undefined);
-            sinon_1.assert.notCalled(resolveSpy);
-            sinon_1.assert.calledOnce(rejectSpy);
-            sinon_1.assert.calledWithExactly(rejectSpy, message_constants_1.RECORD_ACTIONS[message_constants_1.RECORD_ACTIONS.MESSAGE_DENIED]);
             yield bluebird_1.Promise.delay(1);
         }));
         it('responds with error on connection lost', () => __awaiter(this, void 0, void 0, function* () {
@@ -137,9 +114,6 @@ describe('Single Notifier', () => {
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.calledOnce(callbackSpy);
             sinon_1.assert.calledWithExactly(callbackSpy, constants_1.EVENT.CLIENT_OFFLINE);
-            sinon_1.assert.notCalled(resolveSpy);
-            sinon_1.assert.calledOnce(rejectSpy);
-            sinon_1.assert.calledWithExactly(rejectSpy, constants_1.EVENT.CLIENT_OFFLINE);
         }));
     }));
 });

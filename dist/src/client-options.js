@@ -12,11 +12,15 @@ exports.DefaultOptions = {
     recordReadAckTimeout: 15000,
     recordReadTimeout: 15000,
     recordDeleteTimeout: 15000,
+    offlineBufferTimeout: 2000,
     discardTimeout: 5000,
     path: '/deepstream',
     mergeStrategy: merge_strategy_1.REMOTE_WINS,
     recordDeepCopy: true,
     socketOptions: null,
+    dirtyStorageName: '__ds__dirty_records',
+    nodeStoragePath: './local-storage',
+    nodeStorageSize: 5,
     lazyConnect: false
 };
 //# sourceMappingURL=client-options.js.map

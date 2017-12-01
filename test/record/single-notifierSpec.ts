@@ -1,8 +1,7 @@
 import { Promise as BBPromise } from 'bluebird'
-import { expect } from 'chai'
 import { assert, spy } from 'sinon'
-import { getServicesMock, getLastMessageSent } from '../mocks'
-import { EVENT, CONNECTION_STATE } from '../../src/constants'
+import { getServicesMock } from '../mocks'
+import { EVENT } from '../../src/constants'
 import { TOPIC, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
 
 import { SingleNotifier } from '../../src/record/single-notifier'
@@ -15,15 +14,11 @@ describe('Single Notifier', () => {
   let services: any
   let singleNotifier: SingleNotifier
   let callbackSpy: sinon.SinonSpy
-  let resolveSpy: sinon.SinonSpy
-  let rejectSpy: sinon.SinonSpy
 
   beforeEach(() => {
     services = getServicesMock()
     singleNotifier = new SingleNotifier(services, topic, action, timeout)
     callbackSpy = spy()
-    resolveSpy = spy()
-    rejectSpy = spy()
   })
 
   afterEach(() => {
@@ -45,7 +40,7 @@ describe('Single Notifier', () => {
       .once()
       .withExactArgs({ message })
 
-    singleNotifier.request(name, { callback: callbackSpy })
+    singleNotifier.request(name, callbackSpy)
   })
 
   it('doesn\'t send message twice and updates the timeout when requesting twice', () => {
@@ -60,39 +55,27 @@ describe('Single Notifier', () => {
       .withExactArgs(message)
     services.timeoutRegistryMock
       .expects('add')
-      .twice()
+      .once()
       .withExactArgs({ message })
 
-    singleNotifier.request(name, { callback: callbackSpy })
-    singleNotifier.request(name, { callback: callbackSpy })
+    singleNotifier.request(name, callbackSpy)
+    singleNotifier.request(name, callbackSpy)
   })
 
   it('cant\'t query request when client is offline', async () => {
     services.connection.isConnected = false
-    services.connectionMock
-      .expects('sendMessage')
-      .never()
-    services.timeoutRegistryMock
-      .expects('add')
-      .never()
 
-    singleNotifier.request(name, { callback: callbackSpy })
-    singleNotifier.request(name, { resolve: resolveSpy, reject: rejectSpy })
+    singleNotifier.request(name, callbackSpy)
+
     await BBPromise.delay(1)
 
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
-
-    assert.notCalled(resolveSpy)
-
-    assert.calledOnce(rejectSpy)
-    assert.calledWithExactly(rejectSpy, EVENT.CLIENT_OFFLINE)
   })
 
   describe('requesting', async () => {
     beforeEach(() => {
-      singleNotifier.request(name, { callback: callbackSpy })
-      singleNotifier.request(name, { resolve: resolveSpy, reject: rejectSpy })
+      singleNotifier.request(name, callbackSpy)
     })
 
     it('doesn\'t respond unknown requests', async () => {
@@ -105,8 +88,6 @@ describe('Single Notifier', () => {
       singleNotifier.recieve(message, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
 
       assert.notCalled(callbackSpy)
-      assert.notCalled(resolveSpy)
-      assert.notCalled(rejectSpy)
 
       await BBPromise.delay(1)
     })
@@ -124,10 +105,6 @@ describe('Single Notifier', () => {
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, undefined, parsedData)
 
-      assert.calledOnce(resolveSpy)
-      assert.calledWithExactly(resolveSpy, parsedData)
-
-      assert.notCalled(rejectSpy)
       await BBPromise.delay(1)
     })
 
@@ -142,10 +119,6 @@ describe('Single Notifier', () => {
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
 
-      assert.notCalled(resolveSpy)
-
-      assert.calledOnce(rejectSpy)
-      assert.calledWithExactly(rejectSpy, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED])
       await BBPromise.delay(1)
     })
 
@@ -155,11 +128,6 @@ describe('Single Notifier', () => {
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
-
-      assert.notCalled(resolveSpy)
-
-      assert.calledOnce(rejectSpy)
-      assert.calledWithExactly(rejectSpy, EVENT.CLIENT_OFFLINE)
     })
   })
 

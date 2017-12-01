@@ -1,13 +1,11 @@
 import * as utils from '../util/utils'
 import { EVENT } from '../constants'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
+import { RecordMessage } from '../../binary-protocol/src/message-constants'
 import { RecordCore, WriteAckCallback } from './record-core'
-import { MergeStrategy } from './merge-strategy'
 import * as Emitter from 'component-emitter2'
 
 export class List extends Emitter {
     private record: RecordCore
-    private subscriptions: Array<{ callback: Function, path: string, data: any }>
     private wrappedFunctions: Map<Function, Function>
     private originalApplyUpdate: Function
     private beforeStructure: any
@@ -171,9 +169,9 @@ export class List extends Emitter {
         }
 
         // Make sure the callback is invoked with an empty array for new records
-        const listCallback = function (cb: Function) {
-            cb(this.getEntries())
-        }.bind(this, parameters.callback)
+        const listCallback = function (scope: any, cb: Function) {
+            cb(scope.getEntries())
+        }.bind(this, this, parameters.callback)
 
         /**
         * Adding a property onto a function directly is terrible practice,

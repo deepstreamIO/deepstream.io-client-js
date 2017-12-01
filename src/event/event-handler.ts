@@ -1,4 +1,4 @@
-import { Services, Client } from '../client'
+import { Services } from '../client'
 import { Options } from '../client-options'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
@@ -10,15 +10,16 @@ export class EventHandler {
   private services: Services
   private emitter: Emitter
   private listeners: Listener
-  private options: Options
+  private limboQueue: Array<EventMessage>
 
   constructor (services: Services, options: Options, listeners?: Listener) {
-    this.options = options
     this.services = services
     this.listeners = listeners || new Listener(TOPIC.EVENT, services)
     this.emitter = new Emitter()
+    this.limboQueue = []
     this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
-    this.services.connection.onReestablished(this.resubscribe.bind(this))
+    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
   }
 
   /**
@@ -34,7 +35,9 @@ export class EventHandler {
     }
 
     if (!this.emitter.hasListeners(name)) {
-      this.sendSubscriptionMessage(name)
+      if (this.services.connection.isConnected) {
+        this.sendSubscriptionMessage(name)
+      }
     }
     this.emitter.on(name, callback)
   }
@@ -83,14 +86,19 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
       throw new Error('invalid argument name')
     }
 
-    if (this.services.connection.isConnected) {
-      this.services.connection.sendMessage({
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.EMIT,
-        name,
-        parsedData: data
-      })
+    const message = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.EMIT,
+      name,
+      parsedData: data
     }
+
+    if (this.services.connection.isConnected) {
+      this.services.connection.sendMessage(message)
+    } else if (this.services.connection.isInLimbo) {
+      this.limboQueue.push(message)
+    }
+
     this.emitter.emit(name, data)
   }
 
@@ -176,11 +184,19 @@ private handle (message: EventMessage): void {
   /**
    * Resubscribes to events when connection is lost
    */
-  private resubscribe () {
+  private onConnectionReestablished () {
     const callbacks = this.emitter.eventNames()
     for (const name of callbacks) {
       this.sendSubscriptionMessage(name)
     }
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      this.services.connection.sendMessage(this.limboQueue[i])
+    }
+    this.limboQueue = []
+  }
+
+  private onExitLimbo () {
+    this.limboQueue = []
   }
 
   private sendSubscriptionMessage (name: string) {
@@ -189,6 +205,7 @@ private handle (message: EventMessage): void {
       action: EVENT_ACTION.SUBSCRIBE,
       name
     }
+
     this.services.timeoutRegistry.add({ message })
     this.services.connection.sendMessage(message)
   }

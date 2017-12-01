@@ -68,7 +68,7 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_PROVIDER]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.SUBSCRIPTION_HAS_NO_PROVIDER]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], []],
-        [message_constants_1.RECORD_ACTIONS.VERSION_EXISTS]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], []],
+        [message_constants_1.RECORD_ACTIONS.VERSION_EXISTS]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.version], [message_constants_1.META_KEYS.originalAction]],
         [message_constants_1.RECORD_ACTIONS.CACHE_RETRIEVAL_TIMEOUT]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.STORAGE_RETRIEVAL_TIMEOUT]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.RECORD_LOAD_ERROR]: [[message_constants_1.META_KEYS.name], []],
@@ -185,6 +185,7 @@ const payloadMap = {
     [message_constants_1.TOPIC.RPC]: [
         message_constants_1.RPC_ACTIONS.REQUEST,
         message_constants_1.RPC_ACTIONS.RESPONSE,
+        message_constants_1.RPC_ACTIONS.REQUEST_ERROR
     ],
     [message_constants_1.TOPIC.EVENT]: [
         message_constants_1.EVENT_ACTIONS.EMIT,
@@ -192,30 +193,6 @@ const payloadMap = {
     [message_constants_1.TOPIC.PRESENCE]: [
         message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE,
     ]
-};
-const ackMap = {
-    [message_constants_1.TOPIC.EVENT]: [
-        message_constants_1.EVENT_ACTIONS.SUBSCRIBE,
-        message_constants_1.EVENT_ACTIONS.UNSUBSCRIBE,
-        message_constants_1.EVENT_ACTIONS.LISTEN,
-        message_constants_1.EVENT_ACTIONS.UNLISTEN,
-    ],
-    [message_constants_1.TOPIC.RECORD]: [
-        message_constants_1.RECORD_ACTIONS.SUBSCRIBE,
-        message_constants_1.RECORD_ACTIONS.UNSUBSCRIBE,
-        message_constants_1.RECORD_ACTIONS.LISTEN,
-        message_constants_1.RECORD_ACTIONS.UNLISTEN,
-    ],
-    [message_constants_1.TOPIC.PRESENCE]: [
-        message_constants_1.PRESENCE_ACTIONS.SUBSCRIBE,
-        message_constants_1.PRESENCE_ACTIONS.UNSUBSCRIBE,
-        message_constants_1.PRESENCE_ACTIONS.SUBSCRIBE_ALL,
-        message_constants_1.PRESENCE_ACTIONS.UNSUBSCRIBE_ALL,
-    ],
-    [message_constants_1.TOPIC.RPC]: [
-        message_constants_1.RPC_ACTIONS.PROVIDE,
-        message_constants_1.RPC_ACTIONS.UNPROVIDE,
-    ],
 };
 function mapOfArraysHas(map, topic, action) {
     const actions = map[topic];

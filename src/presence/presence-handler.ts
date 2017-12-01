@@ -1,6 +1,6 @@
-import { Services, EVENT, Client } from '../client'
+import { Services, EVENT } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, PRESENCE_ACTIONS as PRESENCE_ACTION, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
+import { TOPIC, PRESENCE_ACTIONS as PRESENCE_ACTION, Message } from '../../binary-protocol/src/message-constants'
 import * as Emitter from 'component-emitter2'
 
 export type QueryResult = Array<string>
@@ -8,10 +8,11 @@ export interface IndividualQueryResult { [key: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
 
 const ONLY_EVENT = 'OE'
+type QueryCallback = (error: EVENT, data?: QueryResult | IndividualQueryResult) => void
 
-function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | ((error: EVENT, data?: QueryResult | IndividualQueryResult) => void) } {
+function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | QueryCallback } {
   let users: Array<string> | null = null
-  let cb: ((error: EVENT, data: QueryResult | IndividualQueryResult) => void) | null = null
+  let callback: QueryCallback | null = null
 
   if (rest.length === 1) {
     if (Array.isArray(rest[0])) {
@@ -20,16 +21,16 @@ function validateQueryArguments (rest: Array<any>): { users: Array<string> | nul
       if (typeof rest[0] !== 'function') {
         throw new Error('invalid argument: "callback"')
       }
-      cb = rest[0]
+      callback = rest[0]
     }
   } else if (rest.length === 2) {
     users = rest[0]
-    cb = rest[1]
-    if (!Array.isArray(users) || typeof cb !== 'function') {
+    callback = rest[1]
+    if (!Array.isArray(users) || typeof callback !== 'function') {
       throw new Error('invalid argument: "users" or "callback"')
     }
   }
-  return { users, callback: cb }
+  return { users, callback }
 }
 
 export class PresenceHandler {
@@ -38,27 +39,28 @@ export class PresenceHandler {
   private subscriptionEmitter: Emitter
   private queryEmitter: Emitter
   private queryAllEmitter: Emitter
-  private options: Options
   private counter: number
   private pendingSubscribes: Set<string>
   private pendingUnsubscribes: Set<string>
+  private limboQueue: Array<Message>
   private flushTimeout: number | null
 
   constructor (services: Services, options: Options) {
     this.services = services
-    this.options = options
     this.subscriptionEmitter = new Emitter()
     this.globalSubscriptionEmitter = new Emitter()
     this.queryEmitter = new Emitter()
     this.queryAllEmitter = new Emitter()
-    this.resubscribe = this.resubscribe.bind(this)
+
     this.services.connection.registerHandler(TOPIC.PRESENCE, this.handle.bind(this))
-    this.services.connection.onReestablished(this.resubscribe.bind(this))
-    this.services.connection.onLost(this.onConnectionLost.bind(this))
+    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
+    this.services.connection.onLost(this.onExitLimbo.bind(this))
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
 
     this.counter = 0
     this.pendingSubscribes = new Set()
     this.pendingUnsubscribes = new Set()
+    this.limboQueue = []
   }
 
   public subscribe (callback: SubscribeCallback): void
@@ -138,14 +140,6 @@ export class PresenceHandler {
   public getAll (...rest: Array<any>): Promise<QueryResult | IndividualQueryResult> | void {
     const { callback, users } = validateQueryArguments(rest)
 
-    if (!this.services.connection.isConnected) {
-      if (callback) {
-        this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
-        return
-      }
-      return Promise.reject(EVENT.CLIENT_OFFLINE)
-    }
-
     let message: Message
     let emitter: Emitter
     let emitterAction: string
@@ -169,8 +163,15 @@ export class PresenceHandler {
       emitterAction = ONLY_EVENT
     }
 
-    this.services.connection.sendMessage(message)
-    this.services.timeoutRegistry.add({ message })
+    if (this.services.connection.isConnected) {
+      this.sendQuery(message)
+    } else if (this.services.connection.isInLimbo) {
+      this.limboQueue.push(message)
+    } else {
+      this.services.timerRegistry.requestIdleCallback(() => {
+        emitter.emit(emitterAction, EVENT.CLIENT_OFFLINE)
+      })
+    }
 
     if (callback) {
       emitter.once(emitterAction, callback)
@@ -178,17 +179,14 @@ export class PresenceHandler {
     }
 
     return new Promise<QueryResult | IndividualQueryResult>((resolve, reject) => {
-      emitter.once(emitterAction, (error: { reason: string }, results: QueryResult | IndividualQueryResult) => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve(results)
-        }
-      })
+      emitter.once(
+        emitterAction,
+        (error: { reason: string }, results: QueryResult | IndividualQueryResult) => error ? reject(error) : resolve(results)
+      )
     })
   }
 
-  public handle (message: Message): void {
+  private handle (message: Message): void {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
       return
@@ -241,6 +239,11 @@ export class PresenceHandler {
     this.services.logger.error(message, EVENT.UNSOLICITED_MESSAGE)
   }
 
+  private sendQuery (message: Message) {
+    this.services.connection.sendMessage(message)
+    this.services.timeoutRegistry.add({ message })
+  }
+
   private flush () {
     if (!this.services.connection.isConnected) {
       // will be handled by resubscribe
@@ -259,18 +262,6 @@ export class PresenceHandler {
       this.pendingUnsubscribes.clear()
     }
     this.flushTimeout = null
-  }
-
-  private resubscribe () {
-    const keys = this.subscriptionEmitter.eventNames()
-    if (keys.length > 0) {
-      this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, keys)
-    }
-
-    const hasGlobalSubscription = this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)
-    if (hasGlobalSubscription) {
-      this.subscribeToAllChanges()
-    }
   }
 
   private bulkSubscription (action: PRESENCE_ACTION.SUBSCRIBE | PRESENCE_ACTION.UNSUBSCRIBE, names: Array<string>) {
@@ -313,10 +304,30 @@ export class PresenceHandler {
     }
   }
 
-  private onConnectionLost (): void {
+  private onConnectionReestablished () {
+    const keys = this.subscriptionEmitter.eventNames()
+    if (keys.length > 0) {
+      this.bulkSubscription(PRESENCE_ACTION.SUBSCRIBE, keys)
+    }
+
+    const hasGlobalSubscription = this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)
+    if (hasGlobalSubscription) {
+      this.subscribeToAllChanges()
+    }
+
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      this.sendQuery(this.limboQueue[i])
+    }
+    this.limboQueue = []
+  }
+
+  private onExitLimbo () {
     this.queryEmitter.eventNames().forEach(correlationId => {
       this.queryEmitter.emit(correlationId, EVENT.CLIENT_OFFLINE)
     })
     this.queryAllEmitter.emit(ONLY_EVENT, EVENT.CLIENT_OFFLINE)
+    this.limboQueue = []
+    this.queryAllEmitter.off()
+    this.queryEmitter.off()
   }
 }

@@ -1,4 +1,3 @@
-import { EVENT } from '../constants'
 
 export class StateMachine {
   public state: any
@@ -6,11 +5,9 @@ export class StateMachine {
 
   private transitions: any
   private stateMachine: any
-  private logger: any
 
   constructor (logger: any, stateMachine: any) {
     this.inEndState = false
-    this.logger = logger
     this.transitions = stateMachine.transitions
     this.state = stateMachine.init
     this.stateMachine = stateMachine

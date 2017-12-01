@@ -11,8 +11,10 @@ class RPCHandler {
         this.options = options;
         this.rpcs = new Map();
         this.providers = new Map();
+        this.limboQueue = [];
         this.services.connection.registerHandler(message_constants_1.TOPIC.RPC, this.handle.bind(this));
-        this.services.connection.onReestablished(this.reprovide.bind(this));
+        this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
+        this.services.connection.onExitLimbo(this.onExitLimbo.bind(this));
         this.services.connection.onLost(this.onConnectionLost.bind(this));
     }
     /**
@@ -76,35 +78,34 @@ class RPCHandler {
         if (callback && typeof callback !== 'function') {
             throw new Error('invalid argument callback');
         }
-        if (this.services.connection.isConnected === false) {
+        const correlationId = utils_1.getUid();
+        if (this.services.connection.isConnected) {
             if (callback) {
-                this.services.timerRegistry.requestIdleCallback(callback.bind(this, constants_1.EVENT.CLIENT_OFFLINE));
+                this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, data, callback, this.options, this.services));
                 return;
             }
-            return Promise.reject(constants_1.EVENT.CLIENT_OFFLINE);
+            return new Promise((resolve, reject) => {
+                this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, data, (error, result) => error ? reject(error) : resolve(result), this.options, this.services));
+            });
         }
-        const correlationId = utils_1.getUid();
-        this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RPC,
-            action: message_constants_1.RPC_ACTIONS.REQUEST,
-            correlationId,
-            name,
-            parsedData: data
-        });
-        if (callback) {
-            this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, callback, this.options, this.services));
-            return;
+        else if (this.services.connection.isInLimbo) {
+            if (callback) {
+                this.limboQueue.push({ correlationId, name, data, callback });
+            }
+            else {
+                return new Promise((resolve, reject) => {
+                    this.limboQueue.push({ correlationId, name, data, callback: (error, result) => error ? reject(error) : resolve(result) });
+                });
+            }
         }
-        return new Promise((resolve, reject) => {
-            this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, (error, result) => {
-                if (error) {
-                    reject(error);
-                }
-                else {
-                    resolve(result);
-                }
-            }, this.options, this.services));
-        });
+        else {
+            if (callback) {
+                callback(constants_1.EVENT.CLIENT_OFFLINE);
+            }
+            else {
+                return Promise.reject(constants_1.EVENT.CLIENT_OFFLINE);
+            }
+        }
     }
     /**
      * Handles incoming rpc REQUEST messages. Instantiates a new response object
@@ -185,11 +186,6 @@ class RPCHandler {
         }
         return rpc;
     }
-    reprovide() {
-        for (const [name, callback] of this.providers) {
-            this.sendProvide(name);
-        }
-    }
     sendProvide(name) {
         const message = {
             topic: message_constants_1.TOPIC.RPC,
@@ -198,6 +194,22 @@ class RPCHandler {
         };
         this.services.timeoutRegistry.add({ message });
         this.services.connection.sendMessage(message);
+    }
+    onConnectionReestablished() {
+        for (const [name] of this.providers) {
+            this.sendProvide(name);
+        }
+        for (let i = 0; i < this.limboQueue.length; i++) {
+            const { correlationId, name, data, callback } = this.limboQueue[i];
+            this.rpcs.set(correlationId, new rpc_1.RPC(name, correlationId, data, callback, this.options, this.services));
+        }
+        this.limboQueue = [];
+    }
+    onExitLimbo() {
+        for (let i = 0; i < this.limboQueue.length; i++) {
+            this.limboQueue[i].callback(constants_1.EVENT.CLIENT_OFFLINE);
+        }
+        this.limboQueue = [];
     }
     onConnectionLost() {
         this.rpcs.forEach(rpc => {

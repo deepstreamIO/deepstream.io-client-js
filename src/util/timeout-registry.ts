@@ -1,8 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { EVENT, CONNECTION_STATE } from '../constants'
+import { EVENT } from '../constants'
 import {
-  TOPIC,
   RECORD_ACTIONS as RECORD_ACTION,
   RPC_ACTIONS as RPC_ACTION,
   Message
@@ -141,9 +140,9 @@ export class TimeoutRegistry extends EventEmitter {
    * Remote all timeouts when connection disconnects
    */
   public onConnectionLost (): void {
-    for (const [ timerId, timer ] of this.register) {
-      clearTimeout(timer.timerId)
-      this.register.delete(timer.timerId)
+    for (const [ timerId ] of this.register) {
+      clearTimeout(timerId)
+      this.register.delete(timerId)
     }
   }
 }

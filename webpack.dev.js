@@ -18,4 +18,10 @@ module.exports = {
       test: /\.ts$/, loaders: ['babel-loader', 'ts-loader'], exclude: /node_modules/
     }],
   },
+  plugins: [
+    // new webpack.IgnorePlugin(/ws/),
+  ],
+  node: {
+    fs: 'empty'
+  }
 };

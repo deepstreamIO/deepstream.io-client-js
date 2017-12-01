@@ -2,13 +2,11 @@ import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { spy, assert, match } from 'sinon'
 import { getServicesMock, getWriteAckNotifierMock } from '../mocks'
-import { EVENT } from '../../src/constants'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
 
 import { DefaultOptions, Options } from '../../src/client-options'
 import { RecordHandler } from '../../src/record/record-handler'
 import { WriteAckCallback } from '../../src/record/record-core'
-import { RecordSetArguments } from '../../src/util/utils'
 
 describe('record setData online', () => {
   const topic = TOPIC.RECORD

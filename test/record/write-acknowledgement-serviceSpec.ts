@@ -1,8 +1,7 @@
 import { Promise as BBPromise } from 'bluebird'
-import { expect } from 'chai'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../mocks'
-import { EVENT, CONNECTION_STATE } from '../../src/constants'
+import { EVENT } from '../../src/constants'
 import { TOPIC, RECORD_ACTIONS as RA, RecordMessage } from '../../binary-protocol/src/message-constants'
 
 import { WriteAcknowledgementService } from '../../src/record/write-ack-service'
@@ -101,14 +100,14 @@ describe('Write Ack Notifier', () => {
         correlationId: '123'
       }
 
-      const processed = writeAckService.recieve(msg)
+      writeAckService.recieve(msg)
       await BBPromise.delay(1)
 
       assert.notCalled(callbackSpy)
     })
 
     it('calls ack callback when server sends ack message', async () => {
-      const processed = writeAckService.recieve({
+      writeAckService.recieve({
         topic,
         action: RA.WRITE_ACKNOWLEDGEMENT,
         correlationId,

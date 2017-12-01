@@ -1,3 +1,4 @@
+"use strict";
 // // tslint:disabke:no-unused-expression
 // import * as BBPromise from 'bluebird'
 // import { expect } from 'chai'

@@ -1,11 +1,10 @@
 import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
-import { mock, spy, stub, assert } from 'sinon'
+import { mock, spy, assert } from 'sinon'
 
-import { Services } from '../../src/client'
 import { Connection } from '../../src/connection/connection'
 import { getServicesMock } from '../mocks'
-import { Options, DefaultOptions } from '../../src/client-options'
+import { DefaultOptions } from '../../src/client-options'
 import { EVENT, CONNECTION_STATE } from '../../src/constants'
 import {
   TOPIC,
@@ -39,6 +38,7 @@ describe('connection', () => {
   const reconnectIntervalIncrement = 10
   const maxReconnectAttempts = 3
   const maxReconnectInterval = 30
+  const offlineBufferTimeout = 10
 
   beforeEach(() => {
     services = getServicesMock()
@@ -46,7 +46,8 @@ describe('connection', () => {
       heartbeatInterval,
       reconnectIntervalIncrement,
       maxReconnectAttempts,
-      maxReconnectInterval
+      maxReconnectInterval,
+      offlineBufferTimeout
     })
     emitter = new Emitter()
     emitterMock = mock(emitter)
@@ -280,7 +281,6 @@ describe('connection', () => {
   })
 
   it('emits reauthenticationFailure if reauthentication is rejected', async () => {
-    const newClientData = { data: 'changed' }
     emitterMock
       .expects('emit')
       .once()
@@ -311,6 +311,20 @@ describe('connection', () => {
 
     await BBPromise.delay(0)
     assert.calledOnce(authCallback)
+  })
+
+  it('goes into limbo on connection lost', async () => {
+    await openConnection()
+    const limboSpy = spy()
+
+    connection.onExitLimbo(limboSpy)
+
+    await loseConnection()
+    expect(connection.isInLimbo).to.equal(true)
+
+    await BBPromise.delay(20)
+    assert.calledOnce(limboSpy)
+    expect(connection.isInLimbo).to.equal(false)
   })
 
   async function openConnection () {
@@ -419,24 +433,24 @@ describe('connection', () => {
     await BBPromise.delay(0)
   }
 
-  async function sendInvalidAuth () {
-    emitterMock.expects('emit')
-      .once()
-      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AUTHENTICATING)
+  // async function sendInvalidAuth () {
+  //   emitterMock.expects('emit')
+  //     .once()
+  //     .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.AUTHENTICATING)
 
-    socketMock
-      .expects('sendParsedMessage')
-      .once()
-      .withExactArgs({
-        topic: TOPIC.AUTH,
-        action: AUTH_ACTION.REQUEST,
-        parsedData: { _username: 'invalid' } // assume this is invalid
-      })
+  //   socketMock
+  //     .expects('sendParsedMessage')
+  //     .once()
+  //     .withExactArgs({
+  //       topic: TOPIC.AUTH,
+  //       action: AUTH_ACTION.REQUEST,
+  //       parsedData: { _username: 'invalid' } // assume this is invalid
+  //     })
 
-    connection.authenticate({ _username: 'invalid' }, authCallback)
+  //   connection.authenticate({ _username: 'invalid' }, authCallback)
 
-    await BBPromise.delay(0)
-  }
+  //   await BBPromise.delay(0)
+  // }
 
   async function receiveAuthResponse (data?: object) {
     const receivedClientData = data || clientData
@@ -577,6 +591,7 @@ describe('connection', () => {
 
     socket.close()
     await BBPromise.delay(0)
+    expect(connection.isConnected).to.equal(false)
   }
 
   async function reconnectToInitialServer () {
@@ -597,30 +612,30 @@ describe('connection', () => {
     await BBPromise.delay(0)
   }
 
-  async function connectionClosedError () {
-    loggerMock
-      .expects('error')
-      .once()
-      .withExactArgs({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
+  // async function connectionClosedError () {
+  //   loggerMock
+  //     .expects('error')
+  //     .once()
+  //     .withExactArgs({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
 
-    await BBPromise.delay(0)
-  }
+  //   await BBPromise.delay(0)
+  // }
 
-  async function receiveInvalidParseError () {
+  // async function receiveInvalidParseError () {
 
-    socket.simulateMessages([{
-      topic: TOPIC.AUTH,
-      action: AUTH_ACTION.INVALID_MESSAGE_DATA,
-      data: 'invalid authentication message'
-    }])
+  //   socket.simulateMessages([{
+  //     topic: TOPIC.AUTH,
+  //     action: AUTH_ACTION.INVALID_MESSAGE_DATA,
+  //     data: 'invalid authentication message'
+  //   }])
 
-    await BBPromise.delay(0)
+  //   await BBPromise.delay(0)
 
-    assert.calledOnce(authCallback)
-    assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
+  //   assert.calledOnce(authCallback)
+  //   assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
 
-    await BBPromise.delay(0)
-  }
+  //   await BBPromise.delay(0)
+  // }
 
   async function receiveTooManyAuthAttempts () {
     socket.simulateMessages([{
@@ -640,14 +655,14 @@ describe('connection', () => {
     await BBPromise.delay(0)
   }
 
-  function losesConnection () {
-    emitterMock
-      .expects('emit')
-      .once()
-      .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
+  // function losesConnection () {
+  //   emitterMock
+  //     .expects('emit')
+  //     .once()
+  //     .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
 
-    socket.simulateRemoteClose()
-  }
+  //   socket.simulateRemoteClose()
+  // }
 
   function getSocketMock () {
     const socketService = services.getSocket()

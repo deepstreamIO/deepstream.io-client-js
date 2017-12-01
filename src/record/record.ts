@@ -1,6 +1,5 @@
 import * as utils from '../util/utils'
 import { EVENT } from '../constants'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { MergeStrategy } from './merge-strategy'
 import * as Emitter from 'component-emitter2'
