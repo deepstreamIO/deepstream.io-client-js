@@ -1,5 +1,4 @@
-import { EVENT, CONNECTION_STATE } from './constants';
-import * as C from '../binary-protocol/src/message-constants';
+import { CONNECTION_STATE } from './constants';
 import { Logger } from './util/logger';
 import { TimeoutRegistry } from './util/timeout-registry';
 import { TimerRegistry } from './util/timer-registry';
@@ -47,5 +46,3 @@ export declare class Client extends EventEmitter {
     */
     getUid(): string;
 }
-export declare function deepstream(url: string, options?: any): Client;
-export { CONNECTION_STATE, C, EVENT };

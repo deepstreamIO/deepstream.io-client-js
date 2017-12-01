@@ -1,12 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-require('source-map-support').install();
 const client_options_1 = require("./client-options");
-const constants_1 = require("./constants");
-exports.EVENT = constants_1.EVENT;
-exports.CONNECTION_STATE = constants_1.CONNECTION_STATE;
-const C = require("../binary-protocol/src/message-constants");
-exports.C = C;
 const logger_1 = require("./util/logger");
 const timeout_registry_1 = require("./util/timeout-registry");
 const timer_registry_1 = require("./util/timer-registry");
@@ -94,8 +88,4 @@ class Client extends EventEmitter {
     }
 }
 exports.Client = Client;
-function deepstream(url, options) {
-    return new Client(url, options);
-}
-exports.deepstream = deepstream;
 //# sourceMappingURL=client.js.map

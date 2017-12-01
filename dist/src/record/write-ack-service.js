@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const utils_1 = require("../../binary-protocol/src/utils");
-const client_1 = require("../client");
+const constants_1 = require("../constants");
 /**
  * @param {Services} services
  *
@@ -26,7 +26,7 @@ class WriteAcknowledgementService {
    */
     send(message, callback) {
         if (this.services.connection.isConnected === false) {
-            this.services.timerRegistry.requestIdleCallback(callback.bind(this, client_1.EVENT.CLIENT_OFFLINE));
+            this.services.timerRegistry.requestIdleCallback(callback.bind(this, constants_1.EVENT.CLIENT_OFFLINE));
             return;
         }
         const correlationId = this.count.toString();
@@ -47,7 +47,7 @@ class WriteAcknowledgementService {
         this.responses.delete(id);
     }
     onConnectionLost() {
-        this.responses.forEach(response => response(client_1.EVENT.CLIENT_OFFLINE));
+        this.responses.forEach(response => response(constants_1.EVENT.CLIENT_OFFLINE));
         this.responses.clear();
     }
 }

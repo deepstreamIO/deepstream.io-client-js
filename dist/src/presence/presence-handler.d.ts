@@ -1,4 +1,5 @@
-import { Services, EVENT } from '../client';
+import { EVENT } from '../constants';
+import { Services } from '../client';
 import { Options } from '../client-options';
 export declare type QueryResult = Array<string>;
 export interface IndividualQueryResult {

@@ -144,9 +144,9 @@
 
 <script>
 import { Card } from "bootstrap-vue/es/components"
-import * as ds from '../../dist/deepstream.js'
+import { deepstream } from '../../dist/deepstream.js'
 
-const getDsClient = address => ds.deepstream(address, { lazyConnect: true })
+const getDsClient = address => deepstream(address, { lazyConnect: true })
 
 const createUser = function (address, id, name) {
     return {
@@ -167,7 +167,7 @@ export default {
   data () {
     return {
         users: {
-            list: ['user-1', 'user-2', 'user-3', 'user-4', 'user-5', 'user-6']
+            list: ['user-1', 'user-2', 'user-3']
         },
         query: {
             vm: null,

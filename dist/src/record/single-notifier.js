@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("../client");
+const constants_1 = require("../constants");
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
  * and HAS functionality. The SingleNotifier multiplexes all the client requests so
@@ -54,7 +54,7 @@ class SingleNotifier {
             this.limboQueue.push(message);
         }
         else {
-            callback(client_1.EVENT.CLIENT_OFFLINE);
+            callback(constants_1.EVENT.CLIENT_OFFLINE);
         }
     }
     /**
@@ -94,7 +94,7 @@ class SingleNotifier {
     }
     onConnectionLost() {
         this.requests.forEach(responses => {
-            responses.forEach(response => response(client_1.EVENT.CLIENT_OFFLINE));
+            responses.forEach(response => response(constants_1.EVENT.CLIENT_OFFLINE));
         });
         this.requests.clear();
     }
@@ -103,7 +103,7 @@ class SingleNotifier {
             const message = this.limboQueue[i];
             const requests = this.requests.get(message.name);
             if (requests) {
-                requests.forEach(cb => cb(client_1.EVENT.CLIENT_OFFLINE));
+                requests.forEach(cb => cb(constants_1.EVENT.CLIENT_OFFLINE));
             }
         }
         this.requests.clear();

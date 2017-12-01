@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("../client");
+const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const Emitter = require("component-emitter2");
 const ONLY_EVENT = 'OE';
@@ -136,7 +136,7 @@ class PresenceHandler {
         }
         else {
             this.services.timerRegistry.requestIdleCallback(() => {
-                emitter.emit(emitterAction, client_1.EVENT.CLIENT_OFFLINE);
+                emitter.emit(emitterAction, constants_1.EVENT.CLIENT_OFFLINE);
             });
         }
         if (callback) {
@@ -191,7 +191,7 @@ class PresenceHandler {
             }
             return;
         }
-        this.services.logger.error(message, client_1.EVENT.UNSOLICITED_MESSAGE);
+        this.services.logger.error(message, constants_1.EVENT.UNSOLICITED_MESSAGE);
     }
     sendQuery(message) {
         this.services.connection.sendMessage(message);
@@ -266,9 +266,9 @@ class PresenceHandler {
     }
     onExitLimbo() {
         this.queryEmitter.eventNames().forEach(correlationId => {
-            this.queryEmitter.emit(correlationId, client_1.EVENT.CLIENT_OFFLINE);
+            this.queryEmitter.emit(correlationId, constants_1.EVENT.CLIENT_OFFLINE);
         });
-        this.queryAllEmitter.emit(ONLY_EVENT, client_1.EVENT.CLIENT_OFFLINE);
+        this.queryAllEmitter.emit(ONLY_EVENT, constants_1.EVENT.CLIENT_OFFLINE);
         this.limboQueue = [];
         this.queryAllEmitter.off();
         this.queryEmitter.off();
