@@ -35,13 +35,14 @@ class PresenceHandler {
         this.globalSubscriptionEmitter = new Emitter();
         this.queryEmitter = new Emitter();
         this.queryAllEmitter = new Emitter();
-        this.resubscribe = this.resubscribe.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.PRESENCE, this.handle.bind(this));
-        this.services.connection.onReestablished(this.resubscribe.bind(this));
-        this.services.connection.onLost(this.onConnectionLost.bind(this));
+        this.services.connection.onExitLimbo(this.onExitLimbo.bind(this));
+        this.services.connection.onLost(this.onExitLimbo.bind(this));
+        this.services.connection.onReestablished(this.onConnectionReestablished.bind(this));
         this.counter = 0;
         this.pendingSubscribes = new Set();
         this.pendingUnsubscribes = new Set();
+        this.limboQueue = [];
     }
     subscribe(userOrCallback, callback) {
         if (typeof userOrCallback === 'string' && userOrCallback.length > 0 && typeof callback === 'function') {
@@ -106,13 +107,6 @@ class PresenceHandler {
     }
     getAll(...rest) {
         const { callback, users } = validateQueryArguments(rest);
-        if (!this.services.connection.isConnected) {
-            if (callback) {
-                this.services.timerRegistry.requestIdleCallback(callback.bind(this, client_1.EVENT.CLIENT_OFFLINE));
-                return;
-            }
-            return Promise.reject(client_1.EVENT.CLIENT_OFFLINE);
-        }
         let message;
         let emitter;
         let emitterAction;
@@ -135,21 +129,23 @@ class PresenceHandler {
             emitter = this.queryAllEmitter;
             emitterAction = ONLY_EVENT;
         }
-        this.services.connection.sendMessage(message);
-        this.services.timeoutRegistry.add({ message });
+        if (this.services.connection.isConnected) {
+            this.sendQuery(message);
+        }
+        else if (this.services.connection.isInLimbo) {
+            this.limboQueue.push(message);
+        }
+        else {
+            this.services.timerRegistry.requestIdleCallback(() => {
+                emitter.emit(emitterAction, client_1.EVENT.CLIENT_OFFLINE);
+            });
+        }
         if (callback) {
             emitter.once(emitterAction, callback);
             return;
         }
         return new Promise((resolve, reject) => {
-            emitter.once(emitterAction, (error, results) => {
-                if (error) {
-                    reject(error);
-                }
-                else {
-                    resolve(results);
-                }
-            });
+            emitter.once(emitterAction, (error, results) => error ? reject(error) : resolve(results));
         });
     }
     handle(message) {
@@ -198,6 +194,10 @@ class PresenceHandler {
         }
         this.services.logger.error(message, client_1.EVENT.UNSOLICITED_MESSAGE);
     }
+    sendQuery(message) {
+        this.services.connection.sendMessage(message);
+        this.services.timeoutRegistry.add({ message });
+    }
     flush() {
         if (!this.services.connection.isConnected) {
             // will be handled by resubscribe
@@ -214,16 +214,6 @@ class PresenceHandler {
             this.pendingUnsubscribes.clear();
         }
         this.flushTimeout = null;
-    }
-    resubscribe() {
-        const keys = this.subscriptionEmitter.eventNames();
-        if (keys.length > 0) {
-            this.bulkSubscription(message_constants_1.PRESENCE_ACTIONS.SUBSCRIBE, keys);
-        }
-        const hasGlobalSubscription = this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT);
-        if (hasGlobalSubscription) {
-            this.subscribeToAllChanges();
-        }
     }
     bulkSubscription(action, names) {
         const correlationId = this.counter++;
@@ -261,11 +251,28 @@ class PresenceHandler {
             });
         }
     }
-    onConnectionLost() {
+    onConnectionReestablished() {
+        const keys = this.subscriptionEmitter.eventNames();
+        if (keys.length > 0) {
+            this.bulkSubscription(message_constants_1.PRESENCE_ACTIONS.SUBSCRIBE, keys);
+        }
+        const hasGlobalSubscription = this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT);
+        if (hasGlobalSubscription) {
+            this.subscribeToAllChanges();
+        }
+        for (let i = 0; i < this.limboQueue.length; i++) {
+            this.sendQuery(this.limboQueue[i]);
+        }
+        this.limboQueue = [];
+    }
+    onExitLimbo() {
         this.queryEmitter.eventNames().forEach(correlationId => {
             this.queryEmitter.emit(correlationId, client_1.EVENT.CLIENT_OFFLINE);
         });
         this.queryAllEmitter.emit(ONLY_EVENT, client_1.EVENT.CLIENT_OFFLINE);
+        this.limboQueue = [];
+        this.queryAllEmitter.off();
+        this.queryEmitter.off();
     }
 }
 exports.PresenceHandler = PresenceHandler;

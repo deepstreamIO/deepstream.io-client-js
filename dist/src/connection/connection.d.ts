@@ -5,8 +5,8 @@ import { Options } from '../client-options';
 export declare type AuthenticationCallback = (success: boolean, clientData: object) => void;
 export declare type ResumeCallback = (error?: object) => void;
 export declare class Connection {
-    isConnected: boolean;
     emitter: Emitter;
+    isInLimbo: boolean;
     private internalEmitter;
     private services;
     private options;
@@ -24,11 +24,14 @@ export declare class Connection {
     private deliberateClose;
     private reconnectTimeout;
     private reconnectionAttempt;
+    private limboTimeout;
     constructor(services: Services, options: Options, url: string, emitter: Emitter);
+    readonly isConnected: boolean;
     onLost(callback: Function): void;
     removeOnLost(callback: Function): void;
     onReestablished(callback: Function): void;
     removeOnReestablished(callback: Function): void;
+    onExitLimbo(callback: Function): void;
     registerHandler(topic: TOPIC, callback: Function): void;
     sendMessage(message: Message): void;
     /**

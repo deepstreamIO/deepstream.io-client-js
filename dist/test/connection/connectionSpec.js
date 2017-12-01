@@ -37,13 +37,15 @@ describe('connection', () => {
     const reconnectIntervalIncrement = 10;
     const maxReconnectAttempts = 3;
     const maxReconnectInterval = 30;
+    const offlineBufferTimeout = 10;
     beforeEach(() => {
         services = mocks_1.getServicesMock();
         options = Object.assign(client_options_1.DefaultOptions, {
             heartbeatInterval,
             reconnectIntervalIncrement,
             maxReconnectAttempts,
-            maxReconnectInterval
+            maxReconnectInterval,
+            offlineBufferTimeout
         });
         emitter = new Emitter();
         emitterMock = sinon_1.mock(emitter);
@@ -243,6 +245,16 @@ describe('connection', () => {
         yield receiveAuthRejectResponse();
         yield bluebird_1.Promise.delay(0);
         sinon_1.assert.calledOnce(authCallback);
+    }));
+    it('goes into limbo on connection lost', () => __awaiter(this, void 0, void 0, function* () {
+        yield openConnection();
+        const limboSpy = sinon_1.spy();
+        connection.onExitLimbo(limboSpy);
+        yield loseConnection();
+        chai_1.expect(connection.isInLimbo).to.equal(true);
+        yield bluebird_1.Promise.delay(20);
+        sinon_1.assert.calledOnce(limboSpy);
+        chai_1.expect(connection.isInLimbo).to.equal(false);
     }));
     function openConnection() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -494,6 +506,7 @@ describe('connection', () => {
                 .withExactArgs(constants_1.EVENT.CONNECTION_STATE_CHANGED, constants_1.CONNECTION_STATE.RECONNECTING);
             socket.close();
             yield bluebird_1.Promise.delay(0);
+            chai_1.expect(connection.isConnected).to.equal(false);
         });
     }
     function reconnectToInitialServer() {

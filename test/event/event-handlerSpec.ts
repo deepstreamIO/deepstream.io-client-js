@@ -4,7 +4,7 @@ import { getServicesMock, getListenerMock } from '../mocks'
 import { EVENT } from '../../src/constants'
 import { TOPIC, EVENT_ACTIONS as EVENT_ACTION } from '../../binary-protocol/src/message-constants'
 import * as Emitter from 'component-emitter2'
-
+import { Promise as BBPromise } from 'bluebird'
 import { DefaultOptions } from '../../src/client-options'
 import { EventHandler } from '../../src/event/event-handler'
 
@@ -362,6 +362,27 @@ describe('event handler', () => {
       topic: TOPIC.EVENT,
       action: -1
     })
+  })
+
+  describe('limbo', () => {
+
+    beforeEach(() => {
+      services.connection.isConnected = false
+      services.connection.isInLimbo = true
+    })
+
+    it('sends messages once re-established if in limbo', async () => {
+      eventHandler.emit(name, 6)
+
+      services.connectionMock
+        .expects('sendMessage')
+        .once()
+        .withExactArgs({ topic: TOPIC.EVENT, action: EVENT_ACTION.EMIT, parsedData: 6, name })
+
+      services.simulateConnectionReestablished()
+      await BBPromise.delay(1)
+    })
+
   })
 
 })

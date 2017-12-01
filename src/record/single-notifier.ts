@@ -4,12 +4,6 @@ import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 import { Services, Client, EVENT } from '../client'
 import { Options } from '../client-options'
 
-export interface SingleNotifierResponse {
-  callback?: (error?: any, result?: any) => void,
-  resolve?: (result: any) => void,
-  reject?: (error: any) => void,
-}
-
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
  * and HAS functionality. The SingleNotifier multiplexes all the client requests so
@@ -24,11 +18,12 @@ export interface SingleNotifierResponse {
 export class SingleNotifier {
 
   private services: Services
-  private requests: Map<string, Array<SingleNotifierResponse>>
+  private requests: Map<string, Array<(error?: any, result?: any) => void>>
   private action: ALL_ACTIONS
   private topic: TOPIC
   private timeoutDuration: number
   private internalRequests: Map<string, Array<(message: Message) => void>>
+  private limboQueue: Array<Message>
 
   constructor (services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number) {
     this.services = services
@@ -37,8 +32,11 @@ export class SingleNotifier {
     this.timeoutDuration = timeoutDuration
     this.requests = new Map()
     this.internalRequests = new Map()
+    this.limboQueue = []
 
     this.services.connection.onLost(this.onConnectionLost.bind(this))
+    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
+    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
   }
 
     /**
@@ -51,27 +49,28 @@ export class SingleNotifier {
    * @public
    * @returns {void}
    */
-  public request (name: string, response: SingleNotifierResponse): void {
-    if (this.services.connection.isConnected === false) {
-      if (response.callback) {
-        this.services.timerRegistry.requestIdleCallback(response.callback.bind(this, EVENT.CLIENT_OFFLINE))
-      } else if (response.reject) {
-        response.reject(EVENT.CLIENT_OFFLINE)
-      }
-      return
-    }
+  public request (name: string, callback: (error?: any, result?: any) => void): void {
     const message = {
       topic: this.topic,
       action: this.action,
       name
     }
-    this.services.timeoutRegistry.add({ message })
+
     const req = this.requests.get(name)
-    if (req === undefined) {
-      this.requests.set(name, [response])
+    if (req) {
+      req.push(callback)
+      return
+    }
+
+    this.requests.set(name, [callback])
+
+    if (this.services.connection.isConnected) {
       this.services.connection.sendMessage(message)
+      this.services.timeoutRegistry.add({ message })
+    } else if (this.services.connection.isInLimbo) {
+      this.limboQueue.push(message)
     } else {
-      req.push(response)
+      callback(EVENT.CLIENT_OFFLINE)
     }
   }
 
@@ -107,14 +106,7 @@ export class SingleNotifier {
 
     // todo we can clean this up and do cb = (error, data) => error ? reject(error) : resolve()
     for (let i = 0; i < responses.length; i++) {
-      const response = responses[i]
-      if (response.callback) {
-        response.callback(error, data)
-      } else if (error && response.reject) {
-        response.reject(error)
-      } else if (response.resolve) {
-        response.resolve(data)
-      }
+      responses[i](error, data)
     }
     this.requests.delete(name)
     return
@@ -122,14 +114,28 @@ export class SingleNotifier {
 
   private onConnectionLost (): void {
     this.requests.forEach(responses => {
-      responses.forEach(response => {
-        if (response.callback) {
-          response.callback(EVENT.CLIENT_OFFLINE)
-        } else if (response.reject) {
-          response.reject(EVENT.CLIENT_OFFLINE)
-        }
-      })
+      responses.forEach(response => response(EVENT.CLIENT_OFFLINE))
     })
     this.requests.clear()
+  }
+
+  private onExitLimbo (): void {
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      const message = this.limboQueue[i]
+      const requests = this.requests.get(message.name as string)
+      if (requests) {
+        requests.forEach(cb => cb(EVENT.CLIENT_OFFLINE))
+      }
+    }
+    this.requests.clear()
+    this.limboQueue = []
+  }
+
+  private onConnectionReestablished (): void {
+    for (let i = 0; i < this.limboQueue.length; i++) {
+      const message = this.limboQueue[i]
+      this.services.connection.sendMessage(message)
+      this.services.timeoutRegistry.add({ message })
+    }
   }
 }
