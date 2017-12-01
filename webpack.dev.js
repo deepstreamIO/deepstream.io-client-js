@@ -10,9 +10,6 @@ module.exports = {
     libraryTarget: 'umd',
     umdNamedDefine: true
   },
-  externals: {
-    // "ws": "WebSocket"
-  },
   resolve: {
     extensions: ['.js', '.ts'],
   },

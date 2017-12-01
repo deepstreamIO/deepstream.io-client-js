@@ -12,7 +12,7 @@
                 </p>
             </b-col>
             <b-col lg="2" class="pull-right">
-                <b-button :checked="isListening" size="sm" variant="outline-danger" v-on:click="toggleListening()">{{isListening ? 'Stop' : 'Listen'}}</b-button>
+                <b-button :checked="isListening" class="toggle-listening" size="sm" variant="outline-danger" v-on:click="toggleListening()">{{isListening ? 'Stop' : 'Listen'}}</b-button>
             </b-col>
         </b-row>
     </div>

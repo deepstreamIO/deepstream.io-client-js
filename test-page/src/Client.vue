@@ -1,5 +1,5 @@
 <template>
-    <div class="client">
+    <div class="client-component" :id="'client-' + clientId">
       <b-row>
         <div class="col-lg-12">
             <Connection :client="client" :server-address="serverAddress"/>
@@ -25,7 +25,7 @@ import ErrorLogger from "./ErrorLogger.vue"
 
 export default {
   name: "client",
-  props: ["listener", "client", "serverAddress"],
+  props: ["clientId", "listener", "client", "serverAddress"],
   created: function () {
     this.listener.login({}, () => {
       console.log('listener logged in')

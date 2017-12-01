@@ -1,5 +1,5 @@
 <template>
-    <div class="presence">
+    <div class="records-component">
         <b-card class="square-border" header-tag="header" footer-tag="footer">
             <p class="mb-0 mt-0">
                 <strong>Records</strong>
@@ -13,7 +13,7 @@
                     <p class="card-desc" v-if="snapshot.value ? snapshot.value.length : false" > snapshot of {{ snapshotRecordName }}: </p>
                 </b-col>
                 <b-col lg="5">
-                    <pre class="sm-text">{{snapshot.value}}</pre>
+                    <pre class="record-snapshot-preview sm-text">{{snapshot.value}}</pre>
                 </b-col>
             </b-row>
             
@@ -27,12 +27,12 @@
                     <b-row>
                         <b-col>
                             <b-input-group>
-                                <b-form-input class="sm-text" :block="true" size="sm" v-model="record.name" type="text" placeholder="The name of the record"></b-form-input>
+                                <b-form-input class="record-name-field sm-text" :block="true" size="sm" v-model="record.name" type="text" placeholder="The name of the record"></b-form-input>
 
                                 <!-- Attach Right button Group via slot -->
                                 <b-input-group-button slot="right">
                                     <b-button
-                                        class="sm-text"
+                                        class="create-record-button sm-text"
                                         size="sm"
                                         variant="outline-primary"
                                         v-on:click="createRecord" :disabled="record.created">
@@ -47,11 +47,11 @@
                     <b-row>
                         <b-col>
                             <b-input-group>
-                                <b-form-input class="sm-text" :block="true" size="sm" v-model="snapshot.name" type="text" placeholder="The name of the record"></b-form-input>
+                                <b-form-input class="record-snapshot-field sm-text" :block="true" size="sm" v-model="snapshot.name" type="text" placeholder="The name of the record"></b-form-input>
 
                                 <b-input-group-button slot="right">
                                     <b-button
-                                        class="sm-text"
+                                        class="record-snapshot-button sm-text"
                                         size="sm"
                                         variant="outline-primary"
                                         v-on:click="snapshotRecord"> snapshot </b-button>
@@ -70,19 +70,20 @@
                     <b-row>
                         <b-col>
                             <b-input-group>
-                                <b-form-input class="sm-text" :block="true" size="sm" v-model="has.name" type="text" placeholder="The name of the record"></b-form-input>
+                                <b-form-input class="has-record-name-input sm-text" :block="true" size="sm" v-model="has.name" type="text" placeholder="The name of the record"></b-form-input>
 
                                 <!-- Attach Right button Group via slot -->
                                 <b-input-group-button v-if="has.done" slot="left">
                                     <b-button
-                                        class="sm-text"
+                                        :data-record-name="has.name"
+                                        class="has-record-status-btn sm-text"
                                         size="sm"
                                         :variant="has.exists ? 'outline-success' : 'outline-danger'"
                                         disabled> {{ has.exists ? 'YES' : 'NO' }} </b-button>
                                 </b-input-group-button>
                                 <b-input-group-button slot="right">
                                     <b-button
-                                        class="sm-text"
+                                        class="has-record-submit-button sm-text"
                                         size="sm"
                                         variant="outline-primary"
                                         v-on:click="hasRecord"
@@ -103,7 +104,7 @@
                                 <br>
                                 <tr>
                                     <td>
-                                        <b-button disabled class="sm-text" size="sm" variant="primary">
+                                        <b-button disabled :data-record-name="r.name" class="record-label sm-text" size="sm" variant="primary">
                                             <strong>
                                                 {{ r.name }}
                                             </strong>
@@ -112,7 +113,8 @@
                                     </td>
                                     <td v-if="!r.subscription.isSubscribed">
                                         <b-button
-                                            class="sm-text"
+                                            :data-record-name="r.name"
+                                            class="record-subscribe-button sm-text"
                                             size="sm"
                                             variant="outline-primary"
                                             v-on:click="subscribe(r)"> subscribe </b-button>
@@ -120,7 +122,8 @@
                                     
                                     <td v-if="r.subscription.isSubscribed">
                                         <b-button
-                                            class="sm-text"
+                                            :data-record-name="r.name"
+                                            class="record-unsubscribe-button sm-text"
                                             size="sm"
                                             variant="outline-primary"
                                             v-on:click="unsubscribe(r)"> unsubscribe </b-button>
@@ -130,7 +133,8 @@
                                         <b-input-group>
                                             <b-input-group-button slot="left">
                                                 <b-form-input
-                                                    class="sm-text"
+                                                    :data-record-name="r.name"
+                                                    class="record-set-attribute-name-field sm-text"
                                                     :block="true"
                                                     size="sm"
                                                     v-model="r.set.path"
@@ -141,7 +145,8 @@
                                             <!-- Attach Right button Group via slot -->
                                             <b-input-group-button slot="right">
                                                 <b-button
-                                                    class="sm-text"
+                                                    :data-record-name="r.name"
+                                                    class="record-set-submit-button sm-text"
                                                     size="sm"
                                                     variant="outline-primary"
                                                     @click="setRecord(r)"
@@ -149,7 +154,8 @@
                                             </b-input-group-button>
                                             <b-input-group-button slot="left">
                                                 <b-form-input
-                                                    class="sm-text"
+                                                    :data-record-name="r.name"
+                                                    class="record-set-attribute-value-field sm-text"
                                                     :block="true"
                                                     size="sm"
                                                     v-model="r.set.data"
@@ -161,9 +167,9 @@
                                     </td>
                                 </tr>
                                 <tr><br></tr>
-                                <b-row>
+                                <b-row v-if="r.subscription.isSubscribed">
                                     <b-col lg="8">
-                                        <pre class="sm-text">{{r.subscription.latestUpdate}}</pre>
+                                        <pre :data-record-name="r.name" class="record-subscription-latest-update sm-text">{{r.subscription.latestUpdate}}</pre>
                                     </b-col>
                                 </b-row>
                             </div>
@@ -304,7 +310,10 @@ export default {
         subscribe: function (record) {
             if (!record.subscription.isSubscribed) {
                 record.instance.subscribe(update => {
-                    record.subscription.latestUpdate = JSON.stringify(update)
+                    console.log('record:', record.name, 'update:', update)
+                    if (update) {
+                        record.subscription.latestUpdate = JSON.stringify(update).replace(/"/g, "'")
+                    }
                 })
                 record.subscription.isSubscribed = true
                 this.saveListeningMember(record.name)
@@ -327,6 +336,7 @@ export default {
                     record.set.loading = false
                     record.set.done = true
                     record.set.data = ''
+                    record.set.path = ''
                 })
             }
         },
@@ -334,8 +344,10 @@ export default {
         snapshotRecord: function () {
             const comp = this
             comp.client.record.snapshot(comp.$data.snapshot.name, (err, data) => {
-                comp.$data.snapshot.value = JSON.stringify(data)
-                comp.$data.snapshotRecordName = comp.$data.snapshot.name
+                if (data) {
+                    comp.$data.snapshot.value = JSON.stringify(data).replace(/"/g, "'")
+                    comp.$data.snapshotRecordName = comp.$data.snapshot.name
+                }
             })
         },
 
@@ -436,13 +448,15 @@ export default {
 
             listener.record.listen('.*', (name, response) => {
                 response.accept()
-                console.log('Listening for redeepstream.js?b891:7775 Warning: RECORD (LISTEN): ACK_TIMEOUTcord', name)
+                console.log('Listening for record', name)
                 if (name) {
                     const isNew = component.saveListeningMember(name)
 
                     if (isNew) {
+                        console.log('Saving Interval')
                         let i = 0
                         const intervalId = setInterval(() => {
+                            console.log('Setting data for ', name)
                             listener.record.setData(name, 'provider', `[${++i}]: data sat from provider`, err => {
                                 if (err) {
                                     console.log('Caught error while settign data for record', name, 'error:', err)

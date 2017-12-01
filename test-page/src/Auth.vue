@@ -1,5 +1,5 @@
 <template>
-    <div class="auth">
+    <div class="authentication-component">
         <b-card class="square-border" header-tag="header" footer-tag="footer">
             <p class="mb-0 mt-0">
                 <strong>Authentication</strong>
@@ -15,19 +15,19 @@
                     <b-row>
                         <b-col lg="4">
                             <b-form-group>
-                                <b-form-input :disabled="isLogged" size="sm" v-model="username" type="text" placeholder="username"></b-form-input>
+                                <b-form-input class="auth-username-field" :disabled="isLogged" size="sm" v-model="username" type="text" placeholder="username"></b-form-input>
                             </b-form-group>
                         </b-col>
 
                         <b-col lg="4">
                             <b-form-group>
-                                <b-form-input :disabled="isLogged" size="sm" v-model="password" type="text" placeholder="password"></b-form-input>
+                                <b-form-input class="auth-password-field" :disabled="isLogged" size="sm" v-model="password" type="text" placeholder="password"></b-form-input>
                             </b-form-group>
                         </b-col>
 
                         <b-col lg="4">
                             <b-form-group>
-                                <b-button :block="true" size="sm" :variant="loginActionClass" @click="isLogged ? logout() : login()">
+                                <b-button class="auth-login-btn" :block="true" size="sm" :variant="loginActionClass" @click="isLogged ? logout() : login()">
                                     {{ isLogged ? 'Logout' : 'Login' }} 
                                 </b-button>
                             </b-form-group>

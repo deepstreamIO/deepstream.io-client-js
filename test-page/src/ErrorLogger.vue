@@ -1,5 +1,5 @@
 <template>
-    <div class="error-logger">
+    <div class="error-logger-component">
         <div class="wrapper">
             <b-card class="square-border text-center" header-tag="header" footer-tag="footer">
                 <b-container>
