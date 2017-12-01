@@ -13,12 +13,10 @@ const single_notifier_1 = require("./single-notifier");
 const write_ack_service_1 = require("./write-ack-service");
 const dirty_service_1 = require("./dirty-service");
 const merge_strategy_service_1 = require("./merge-strategy-service");
-const Emitter = require("component-emitter2");
 class RecordHandler {
     constructor(services, options, listener) {
         this.services = services;
         this.options = options;
-        this.emitter = new Emitter();
         this.listener = listener || new listener_1.Listener(message_constants_1.TOPIC.RECORD, this.services);
         this.recordCores = new Map();
         this.dirtyService = new dirty_service_1.DirtyService(services.storage, options.dirtyStorageName);
@@ -335,11 +333,18 @@ class RecordHandler {
     * record state, else emit and error and the record will remain in an
     * inconsistent state until the next update.
     */
-    onMergeConflict(message) {
-        this.services.storage.get(message.name, (recordName, version, data) => {
-            this.recordServices.mergeStrategy.merge(message.name, version, data, message.version, message.parsedData, this.onMergeCompleted);
-        });
-    }
+    // private onMergeConflict (message: RecordWriteMessage): void {
+    //   this.services.storage.get(message.name, (recordName: string, version: number, data: any) => {
+    //     this.recordServices.mergeStrategy.merge(
+    //       message.name,
+    //       version,
+    //       data,
+    //       message.version,
+    //       message.parsedData,
+    //       this.onMergeCompleted
+    //     )
+    //   })
+    // }
     onMergeCompleted(error, recordName, mergeData, remoteVersion, remoteData) {
         this.sendSetData(recordName, remoteVersion + 1, { data: mergeData });
     }

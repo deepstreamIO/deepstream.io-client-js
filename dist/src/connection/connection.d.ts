@@ -21,7 +21,6 @@ export declare class Connection {
     private lastHeartBeat;
     private endpoint;
     private handlers;
-    private deliberateClose;
     private reconnectTimeout;
     private reconnectionAttempt;
     private limboTimeout;

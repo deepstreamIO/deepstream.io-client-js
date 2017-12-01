@@ -17,7 +17,6 @@ class SingleNotifier {
         this.services = services;
         this.topic = topic;
         this.action = action;
-        this.timeoutDuration = timeoutDuration;
         this.requests = new Map();
         this.internalRequests = new Map();
         this.limboQueue = [];

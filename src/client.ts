@@ -15,7 +15,7 @@ import { Storage } from './record/storage-service'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 
-export type offlineStoreWriteResponse = ((error?: string) => void)
+export type offlineStoreWriteResponse = ((error: string | null) => void)
 
 export interface RecordOfflineStore {
   get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object | null) => void)) => void

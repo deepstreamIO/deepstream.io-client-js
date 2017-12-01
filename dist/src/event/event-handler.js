@@ -6,7 +6,6 @@ const listener_1 = require("../util/listener");
 const Emitter = require("component-emitter2");
 class EventHandler {
     constructor(services, options, listeners) {
-        this.options = options;
         this.services = services;
         this.listeners = listeners || new listener_1.Listener(message_constants_1.TOPIC.EVENT, services);
         this.emitter = new Emitter();

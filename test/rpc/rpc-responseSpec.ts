@@ -1,8 +1,6 @@
 import { expect } from 'chai'
-import * as sinon from 'sinon'
 import { getServicesMock } from '../mocks'
-import { EVENT } from '../../src/constants'
-import { TOPIC, RPC_ACTIONS, RPCMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RPC_ACTIONS } from '../../binary-protocol/src/message-constants'
 
 import { DefaultOptions } from '../../src/client-options'
 import { RPCResponse } from '../../src/rpc/rpc-response'

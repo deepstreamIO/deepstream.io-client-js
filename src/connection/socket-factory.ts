@@ -1,6 +1,6 @@
 import { parse } from '../../binary-protocol/src/message-parser'
 import { getMessage } from '../../binary-protocol/src/message-builder'
-import { Message, TOPIC, ACTIONS, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants'
+import { Message, TOPIC, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants'
 
 export type SocketFactory = (url: string, options: object) => Socket
 export interface Socket extends WebSocket {

@@ -1,8 +1,7 @@
 import { Promise as BBPromise } from 'bluebird'
-import { expect } from 'chai'
 import { assert, spy } from 'sinon'
-import { getServicesMock, getLastMessageSent } from '../mocks'
-import { EVENT, CONNECTION_STATE } from '../../src/constants'
+import { getServicesMock } from '../mocks'
+import { EVENT } from '../../src/constants'
 import { TOPIC, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
 
 import { SingleNotifier } from '../../src/record/single-notifier'

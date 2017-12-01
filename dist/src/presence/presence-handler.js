@@ -6,7 +6,7 @@ const Emitter = require("component-emitter2");
 const ONLY_EVENT = 'OE';
 function validateQueryArguments(rest) {
     let users = null;
-    let cb = null;
+    let callback = null;
     if (rest.length === 1) {
         if (Array.isArray(rest[0])) {
             users = rest[0];
@@ -15,22 +15,21 @@ function validateQueryArguments(rest) {
             if (typeof rest[0] !== 'function') {
                 throw new Error('invalid argument: "callback"');
             }
-            cb = rest[0];
+            callback = rest[0];
         }
     }
     else if (rest.length === 2) {
         users = rest[0];
-        cb = rest[1];
-        if (!Array.isArray(users) || typeof cb !== 'function') {
+        callback = rest[1];
+        if (!Array.isArray(users) || typeof callback !== 'function') {
             throw new Error('invalid argument: "users" or "callback"');
         }
     }
-    return { users, callback: cb };
+    return { users, callback };
 }
 class PresenceHandler {
     constructor(services, options) {
         this.services = services;
-        this.options = options;
         this.subscriptionEmitter = new Emitter();
         this.globalSubscriptionEmitter = new Emitter();
         this.queryEmitter = new Emitter();

@@ -500,21 +500,6 @@ class RecordCore extends Emitter {
             }
         }
     }
-    sendHead() {
-        this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this));
-        this.responseTimeout = this.services.timeoutRegistry.add({
-            message: {
-                topic: message_constants_1.TOPIC.RECORD,
-                action: message_constants_1.RECORD_ACTIONS.HEAD_RESPONSE,
-                name: this.name
-            }
-        });
-        this.services.connection.sendMessage({
-            topic: message_constants_1.TOPIC.RECORD,
-            action: message_constants_1.RECORD_ACTIONS.HEAD,
-            name: this.name
-        });
-    }
     sendRead() {
         this.services.connection.sendMessage({
             topic: message_constants_1.TOPIC.RECORD,
@@ -673,7 +658,6 @@ class RecordCore extends Emitter {
         if (error) {
             this.services.logger.error({ topic: message_constants_1.TOPIC.RECORD }, constants_1.EVENT.RECORD_VERSION_EXISTS);
         }
-        const oldVersion = this.version;
         this.version = remoteVersion;
         const oldValue = this.data;
         if (utils.deepEquals(oldValue, remoteData)) {

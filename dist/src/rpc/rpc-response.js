@@ -11,7 +11,6 @@ class RPCResponse {
     constructor(message, options, services) {
         this.name = message.name;
         this.correlationId = message.correlationId;
-        this.options = options;
         this.services = services;
         this.isAccepted = false;
         this.isComplete = false;

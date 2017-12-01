@@ -1,5 +1,5 @@
 /// <reference types="sinon" />
-import { SinonMock, SinonStub } from 'sinon';
+import { SinonStub, SinonMock } from 'sinon';
 import { TimerRegistry } from '../src/util/timer-registry';
 import { Message } from '../binary-protocol/src/message-constants';
 import { SingleNotifier } from '../src/record/single-notifier';
@@ -45,11 +45,7 @@ export declare const getServicesMock: () => {
     verify: () => void;
 };
 export declare const getListenerMock: () => {
-    listener: {
-        listen: () => void;
-        unlisten: () => void;
-        handle: () => void;
-    };
+    listener: any;
     listenerMock: SinonMock;
 };
 export declare const getSingleNotifierMock: () => {

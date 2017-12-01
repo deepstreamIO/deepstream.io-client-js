@@ -225,7 +225,7 @@ describe('Presence handler', () => {
             .expects('remove')
             .once()
             .withExactArgs(messageAck);
-        presenceHandler.handle(messageAck);
+        handle(messageAck);
     });
     it('resubscribes subscriptions when client reconnects', () => __awaiter(this, void 0, void 0, function* () {
         const users = [userA, userB];
@@ -281,8 +281,8 @@ describe('Presence handler', () => {
                 .expects('remove')
                 .once()
                 .withExactArgs(Object.assign({}, messageForPromise, { action: message_constants_1.PRESENCE_ACTIONS.QUERY_ALL_RESPONSE }));
-            presenceHandler.handle(messageForCallback);
-            presenceHandler.handle(messageForPromise);
+            handle(messageForCallback);
+            handle(messageForPromise);
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.calledOnce(callback);
             sinon_1.assert.calledWithExactly(callback, null, users);
@@ -302,8 +302,8 @@ describe('Presence handler', () => {
                 .expects('remove')
                 .once()
                 .withExactArgs(messageForPromise);
-            presenceHandler.handle(messageForCallback);
-            presenceHandler.handle(messageForPromise);
+            handle(messageForCallback);
+            handle(messageForPromise);
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.calledOnce(callback);
             sinon_1.assert.calledWithExactly(callback, message_constants_1.PRESENCE_ACTIONS[error]);
@@ -335,8 +335,8 @@ describe('Presence handler', () => {
                 .expects('remove')
                 .once()
                 .withExactArgs(Object.assign({}, messageForPromise, { action: message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE }));
-            presenceHandler.handle(messageForCallback);
-            presenceHandler.handle(messageForPromise);
+            handle(messageForCallback);
+            handle(messageForPromise);
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.calledOnce(callback);
             sinon_1.assert.calledWithExactly(callback, null, usersPresence);
@@ -356,8 +356,8 @@ describe('Presence handler', () => {
                 .expects('remove')
                 .once()
                 .withExactArgs(messageForPromise);
-            presenceHandler.handle(messageForCallback);
-            presenceHandler.handle(messageForPromise);
+            handle(messageForCallback);
+            handle(messageForPromise);
             yield bluebird_1.Promise.delay(1);
             sinon_1.assert.calledOnce(callback);
             sinon_1.assert.calledWithExactly(callback, message_constants_1.PRESENCE_ACTIONS[error]);
@@ -380,8 +380,8 @@ describe('Presence handler', () => {
             yield bluebird_1.Promise.delay(flushTimeout);
         }));
         it('notifies when userA logs in', () => {
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA));
             sinon_1.assert.calledOnce(userACallback);
             sinon_1.assert.calledWithExactly(userACallback, userA, true);
             sinon_1.assert.notCalled(userBCallback);
@@ -389,8 +389,8 @@ describe('Presence handler', () => {
             sinon_1.assert.calledWithExactly(allUsersCallback, userA, true);
         });
         it('notifies when userB logs out', () => {
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_LEAVE, userB));
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userB));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_LEAVE, userB));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userB));
             sinon_1.assert.notCalled(userACallback);
             sinon_1.assert.calledOnce(userBCallback);
             sinon_1.assert.calledWithExactly(userBCallback, userB, false);
@@ -398,14 +398,14 @@ describe('Presence handler', () => {
             sinon_1.assert.calledWithExactly(allUsersCallback, userB, false);
         });
         it('notifies only the all users callback when userC logs in', () => {
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userC));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userC));
             sinon_1.assert.notCalled(userACallback);
             sinon_1.assert.notCalled(userBCallback);
             sinon_1.assert.calledOnce(allUsersCallback);
             sinon_1.assert.calledWithExactly(allUsersCallback, userC, true);
         });
         it('notifies only the all users callback when userC logs out', () => {
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userC));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userC));
             sinon_1.assert.notCalled(userACallback);
             sinon_1.assert.notCalled(userBCallback);
             sinon_1.assert.calledOnce(allUsersCallback);
@@ -414,7 +414,7 @@ describe('Presence handler', () => {
         it('doesn\'t notify callbacks when userA logs in after unsubscribing', () => __awaiter(this, void 0, void 0, function* () {
             presenceHandler.unsubscribe(userA);
             yield bluebird_1.Promise.delay(flushTimeout);
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
             sinon_1.assert.notCalled(userACallback);
             sinon_1.assert.notCalled(userBCallback);
             sinon_1.assert.notCalled(allUsersCallback);
@@ -422,8 +422,8 @@ describe('Presence handler', () => {
         it('doesn\'t notify userA callback when userA logs in after unsubscribing', () => __awaiter(this, void 0, void 0, function* () {
             presenceHandler.unsubscribe(userA, userACallback);
             yield bluebird_1.Promise.delay(flushTimeout);
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA));
             sinon_1.assert.notCalled(userACallback);
             sinon_1.assert.notCalled(userBCallback);
             sinon_1.assert.calledOnce(allUsersCallback);
@@ -432,8 +432,8 @@ describe('Presence handler', () => {
         it('doesn\'t notify all users callback when userA logs in after unsubscribing', () => __awaiter(this, void 0, void 0, function* () {
             presenceHandler.unsubscribe(allUsersCallback);
             yield bluebird_1.Promise.delay(flushTimeout);
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
-            presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, userA));
+            handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA));
             sinon_1.assert.calledOnce(userACallback);
             sinon_1.assert.calledWithExactly(userACallback, userA, true);
             sinon_1.assert.notCalled(userBCallback);
@@ -444,8 +444,8 @@ describe('Presence handler', () => {
             yield bluebird_1.Promise.delay(flushTimeout);
             const users = [userA, userB];
             users.forEach(user => {
-                presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, user));
-                presenceHandler.handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, user));
+                handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN, user));
+                handle(message(message_constants_1.PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, user));
             });
             sinon_1.assert.notCalled(userACallback);
             sinon_1.assert.notCalled(userBCallback);

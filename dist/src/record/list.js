@@ -141,9 +141,9 @@ class List extends Emitter {
             throw new Error('path is not supported for List.subscribe');
         }
         // Make sure the callback is invoked with an empty array for new records
-        const listCallback = function (cb) {
-            cb(this.getEntries());
-        }.bind(this, parameters.callback);
+        const listCallback = function (scope, cb) {
+            cb(scope.getEntries());
+        }.bind(this, this, parameters.callback);
         /**
         * Adding a property onto a function directly is terrible practice,
         * and we will change this as soon as we have a more seperate approach

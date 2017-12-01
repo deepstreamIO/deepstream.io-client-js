@@ -1,6 +1,6 @@
 import { Services, offlineStoreWriteResponse } from '../client'
 import { Options } from '../client-options'
-import { EVENT, CONNECTION_STATE } from '../constants'
+import { EVENT } from '../constants'
 import { MergeStrategy } from './merge-strategy'
 import { TOPIC, RECORD_ACTIONS as RA, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
@@ -12,7 +12,7 @@ import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
 
-export type WriteAckCallback = (error: string | null) => void
+export type WriteAckCallback = (error: string | null, recordName: string) => void
 
 const enum RECORD_OFFLINE_ACTIONS {
   LOAD,
@@ -377,7 +377,7 @@ export class RecordCore extends Emitter {
       return
     }
     return new Promise((resolve, reject) => {
-      this.services.storage.set(this.name, this.version, this.data, (error: string) => {
+      this.services.storage.set(this.name, this.version, this.data, (error: string | null) => {
         if (error) {
           reject(error)
         } else {
@@ -600,22 +600,6 @@ export class RecordCore extends Emitter {
     }
   }
 
-  private sendHead (): void {
-    this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this))
-    this.responseTimeout = this.services.timeoutRegistry.add({
-      message: {
-        topic: TOPIC.RECORD,
-        action: RA.HEAD_RESPONSE,
-        name: this.name
-      }
-    })
-    this.services.connection.sendMessage({
-      topic: TOPIC.RECORD,
-      action: RA.HEAD,
-      name: this.name
-    })
-  }
-
   private sendRead () {
     this.services.connection.sendMessage({
       topic: TOPIC.RECORD,
@@ -788,7 +772,6 @@ export class RecordCore extends Emitter {
       this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS)
     }
 
-    const oldVersion = this.version
     this.version = remoteVersion
 
     const oldValue = this.data

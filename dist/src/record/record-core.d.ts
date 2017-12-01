@@ -8,7 +8,7 @@ import * as utils from '../util/utils';
 import { Record } from './record';
 import { AnonymousRecord } from './anonymous-record';
 import { List } from './list';
-export declare type WriteAckCallback = (error: string | null) => void;
+export declare type WriteAckCallback = (error: string | null, recordName: string) => void;
 export declare const enum RECORD_STATE {
     INITIAL = 0,
     SUBSCRIBING = 1,
@@ -135,7 +135,6 @@ export declare class RecordCore extends Emitter {
     handle(message: RecordMessage): void;
     private handleReadResponse(message);
     private handleHeadResponse(message);
-    private sendHead();
     private sendRead();
     private saveUpdate();
     private sendUpdate(path, data, callback?);

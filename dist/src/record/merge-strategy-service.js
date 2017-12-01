@@ -31,6 +31,11 @@ class MergeStrategyService {
                 return;
             }
         }
+        if (this.defaultStrategy) {
+            this.defaultStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
+                callback(error, recordName, data, remoteVersion, remoteData, localVersion, localData);
+            });
+        }
         this.services.logger.error({ topic: message_constants_1.TOPIC.RECORD }, constants_1.EVENT.RECORD_VERSION_EXISTS, { remoteVersion, recordName });
     }
 }

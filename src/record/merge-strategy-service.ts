@@ -1,6 +1,6 @@
 import { Services } from '../client'
 import { EVENT } from '../constants'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
+import { TOPIC } from '../../binary-protocol/src/message-constants'
 
 import { MergeStrategy } from './merge-strategy'
 
@@ -45,6 +45,12 @@ export class MergeStrategyService {
         })
         return
       }
+    }
+
+    if (this.defaultStrategy) {
+      this.defaultStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
+        callback(error, recordName, data, remoteVersion, remoteData, localVersion, localData)
+      })
     }
 
     this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, recordName })

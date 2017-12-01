@@ -2,7 +2,6 @@ import { RecordCore, WriteAckCallback } from './record-core';
 import * as Emitter from 'component-emitter2';
 export declare class List extends Emitter {
     private record;
-    private subscriptions;
     private wrappedFunctions;
     private originalApplyUpdate;
     private beforeStructure;

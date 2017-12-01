@@ -61,7 +61,6 @@ export class Connection {
   private lastHeartBeat: number
   private endpoint: Socket
   private handlers: Map<TOPIC, Function>
-  private deliberateClose: boolean
 
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
@@ -559,7 +558,6 @@ export class Connection {
     }
 
     if (message.action === CONNECTION_ACTION.AUTHENTICATION_TIMEOUT) {
-      this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.AUTHENTICATION_TIMEOUT)
       this.services.logger.error(message)
     }
@@ -573,7 +571,6 @@ export class Connection {
    */
   private handleAuthResponse (message: Message): void {
     if (message.action === AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS) {
-      this.deliberateClose = true
       this.stateMachine.transition(TRANSITIONS.TOO_MANY_AUTH_ATTEMPTS)
       this.services.logger.error(message)
       return

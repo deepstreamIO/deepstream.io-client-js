@@ -6,9 +6,11 @@
     "sourceMap": true,
     "allowJs": false,
     "strictNullChecks": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "declaration": true
+    "strict": true,
+    "declaration": true,
+    //"noUnusedParameters": true,    
+    "noUnusedLocals": true,
+    "forceConsistentCasingInFileNames": true    
   },
   "files": [
     "./node_modules/@types/node/index.d.ts",

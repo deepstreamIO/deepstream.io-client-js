@@ -19,7 +19,6 @@ export interface RecordServices {
 }
 export declare class RecordHandler {
     private services;
-    private emitter;
     private options;
     private listener;
     private recordCores;
@@ -146,6 +145,5 @@ export declare class RecordHandler {
     * record state, else emit and error and the record will remain in an
     * inconsistent state until the next update.
     */
-    private onMergeConflict(message);
     private onMergeCompleted(error, recordName, mergeData, remoteVersion, remoteData);
 }

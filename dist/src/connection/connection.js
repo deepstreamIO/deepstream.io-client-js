@@ -434,7 +434,6 @@ class Connection {
             return;
         }
         if (message.action === message_constants_1.CONNECTION_ACTIONS.AUTHENTICATION_TIMEOUT) {
-            this.deliberateClose = true;
             this.stateMachine.transition("authentication-timeout" /* AUTHENTICATION_TIMEOUT */);
             this.services.logger.error(message);
         }
@@ -447,7 +446,6 @@ class Connection {
      */
     handleAuthResponse(message) {
         if (message.action === message_constants_1.AUTH_ACTIONS.TOO_MANY_AUTH_ATTEMPTS) {
-            this.deliberateClose = true;
             this.stateMachine.transition("too-many-auth-attempts" /* TOO_MANY_AUTH_ATTEMPTS */);
             this.services.logger.error(message);
             return;

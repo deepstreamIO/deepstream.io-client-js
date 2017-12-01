@@ -1,6 +1,6 @@
-import { Services, EVENT, Client } from '../client'
+import { Services, EVENT } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, PRESENCE_ACTIONS as PRESENCE_ACTION, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
+import { TOPIC, PRESENCE_ACTIONS as PRESENCE_ACTION, Message } from '../../binary-protocol/src/message-constants'
 import * as Emitter from 'component-emitter2'
 
 export type QueryResult = Array<string>
@@ -8,10 +8,11 @@ export interface IndividualQueryResult { [key: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
 
 const ONLY_EVENT = 'OE'
+type QueryCallback = (error: EVENT, data?: QueryResult | IndividualQueryResult) => void
 
-function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | ((error: EVENT, data?: QueryResult | IndividualQueryResult) => void) } {
+function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | QueryCallback } {
   let users: Array<string> | null = null
-  let cb: ((error: EVENT, data: QueryResult | IndividualQueryResult) => void) | null = null
+  let callback: QueryCallback | null = null
 
   if (rest.length === 1) {
     if (Array.isArray(rest[0])) {
@@ -20,16 +21,16 @@ function validateQueryArguments (rest: Array<any>): { users: Array<string> | nul
       if (typeof rest[0] !== 'function') {
         throw new Error('invalid argument: "callback"')
       }
-      cb = rest[0]
+      callback = rest[0]
     }
   } else if (rest.length === 2) {
     users = rest[0]
-    cb = rest[1]
-    if (!Array.isArray(users) || typeof cb !== 'function') {
+    callback = rest[1]
+    if (!Array.isArray(users) || typeof callback !== 'function') {
       throw new Error('invalid argument: "users" or "callback"')
     }
   }
-  return { users, callback: cb }
+  return { users, callback }
 }
 
 export class PresenceHandler {
@@ -38,7 +39,6 @@ export class PresenceHandler {
   private subscriptionEmitter: Emitter
   private queryEmitter: Emitter
   private queryAllEmitter: Emitter
-  private options: Options
   private counter: number
   private pendingSubscribes: Set<string>
   private pendingUnsubscribes: Set<string>
@@ -47,7 +47,6 @@ export class PresenceHandler {
 
   constructor (services: Services, options: Options) {
     this.services = services
-    this.options = options
     this.subscriptionEmitter = new Emitter()
     this.globalSubscriptionEmitter = new Emitter()
     this.queryEmitter = new Emitter()
@@ -187,7 +186,7 @@ export class PresenceHandler {
     })
   }
 
-  public handle (message: Message): void {
+  private handle (message: Message): void {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
       return

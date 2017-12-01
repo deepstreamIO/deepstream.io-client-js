@@ -1,9 +1,7 @@
 // tslint:disable:no-empty
-import { EventEmitter } from 'events'
-import { mock, stub, SinonMock, SinonStub } from 'sinon'
+import { mock, stub, SinonStub, SinonMock } from 'sinon'
 import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
-import { TimeoutRegistry } from '../src/util/timeout-registry'
 import { Message } from '../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../src/record/single-notifier'
 import { WriteAcknowledgementService } from '../src/record/write-ack-service'
@@ -19,7 +17,7 @@ export const getServicesMock = () => {
 
   const connection = {
       sendMessage: (message: Message) => { lastMessageSent = message },
-      getConnectionState: stub().returns(CONNECTION_STATE.OPEN),
+      getConnectionState: stub().returns(CONNECTION_STATE.OPEN) as SinonStub,
       isConnected: true,
       isInLimbo: false,
       registerHandler: (topic: any, callback: Function): void => {
@@ -121,7 +119,7 @@ export const getServicesMock = () => {
   }
 }
 
-export const getListenerMock = () => {
+export const getListenerMock = (): { listener: any, listenerMock: SinonMock } => {
   const listener = {
     listen: () => {},
     unlisten: () => {},
@@ -134,7 +132,7 @@ export const getListenerMock = () => {
   }
 }
 
-export const getSingleNotifierMock = () => {
+export const getSingleNotifierMock = (): { singleNotifier: SingleNotifier, singleNotifierMock: SinonMock } => {
   const singleNotifier = SingleNotifier.prototype
   const singleNotifierMock = mock(singleNotifier)
   return {
@@ -143,7 +141,7 @@ export const getSingleNotifierMock = () => {
   }
 }
 
-export const getWriteAckNotifierMock = () => {
+export const getWriteAckNotifierMock = (): { writeAckNotifier: WriteAcknowledgementService, writeAckNotifierMock: SinonMock } => {
   const writeAckNotifier = WriteAcknowledgementService.prototype
   const writeAckNotifierMock = mock(writeAckNotifier)
   return {

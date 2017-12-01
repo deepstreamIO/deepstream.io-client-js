@@ -2,7 +2,7 @@ import * as utils from '../util/utils'
 import { EVENT } from '../constants'
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
 import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Record } from './record'
@@ -14,7 +14,6 @@ import { WriteAcknowledgementService } from './write-ack-service'
 import { DirtyService } from './dirty-service'
 import { MergeStrategyService } from './merge-strategy-service'
 import { MergeStrategy } from './merge-strategy'
-import * as Emitter from 'component-emitter2'
 
 export interface RecordServices {
   writeAckService: WriteAcknowledgementService
@@ -26,7 +25,6 @@ export interface RecordServices {
 
 export class RecordHandler {
   private services: Services
-  private emitter: Emitter
   private options: Options
   private listener: Listener
   private recordCores: Map<string, RecordCore>
@@ -36,7 +34,6 @@ export class RecordHandler {
   constructor (services: Services, options: Options, listener?: Listener) {
     this.services = services
     this.options = options
-    this.emitter = new Emitter()
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
     this.recordCores = new Map()
@@ -436,7 +433,7 @@ export class RecordHandler {
     this.sendSetData(recordName, version, { data, callback: this.onRecordUpdated })
   }
 
-  private onRecordUpdated (error: string, recordName: string) {
+  private onRecordUpdated (error: string | null, recordName: string) {
     if (!error) {
       this.dirtyService.setDirty(recordName, false)
     }
@@ -447,18 +444,18 @@ export class RecordHandler {
   * record state, else emit and error and the record will remain in an
   * inconsistent state until the next update.
   */
-  private onMergeConflict (message: RecordWriteMessage): void {
-    this.services.storage.get(message.name, (recordName: string, version: number, data: any) => {
-      this.recordServices.mergeStrategy.merge(
-        message.name,
-        version,
-        data,
-        message.version,
-        message.parsedData,
-        this.onMergeCompleted
-      )
-    })
-  }
+  // private onMergeConflict (message: RecordWriteMessage): void {
+  //   this.services.storage.get(message.name, (recordName: string, version: number, data: any) => {
+  //     this.recordServices.mergeStrategy.merge(
+  //       message.name,
+  //       version,
+  //       data,
+  //       message.version,
+  //       message.parsedData,
+  //       this.onMergeCompleted
+  //     )
+  //   })
+  // }
 
   private onMergeCompleted (error: string | null, recordName: string, mergeData: any, remoteVersion: number, remoteData: any) {
     this.sendSetData(recordName, remoteVersion + 1, { data: mergeData })

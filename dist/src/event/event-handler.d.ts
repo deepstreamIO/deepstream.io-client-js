@@ -5,7 +5,6 @@ export declare class EventHandler {
     private services;
     private emitter;
     private listeners;
-    private options;
     private limboQueue;
     constructor(services: Services, options: Options, listeners?: Listener);
     /**

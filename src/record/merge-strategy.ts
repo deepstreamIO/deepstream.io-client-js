@@ -1,8 +1,3 @@
-import { Record } from './record'
-import { List } from './list'
-import { AnonymousRecord } from './anonymous-record'
-import { RecordCore } from './record-core'
-
 export type MergeCompleteCallback = (error: string | null, mergedData: any) => void
 export type MergeStrategy = (localValue: object, localVersion: number, remoteValue: object, remoteVersion: number, callback: MergeCompleteCallback) => void
 

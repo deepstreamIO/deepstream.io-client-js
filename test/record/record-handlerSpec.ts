@@ -2,11 +2,10 @@ import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { assert, spy, match } from 'sinon'
 import { getServicesMock, getSingleNotifierMock } from '../mocks'
-import { EVENT, CONNECTION_STATE } from '../../src/constants'
 import { TOPIC, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
 import { RecordHandler } from '../../src/record/record-handler'
 
-import { DefaultOptions, Options } from '../../src/client-options'
+import { DefaultOptions } from '../../src/client-options'
 
 describe('Record handler', () => {
   const name = 'recordA'
