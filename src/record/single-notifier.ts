@@ -1,4 +1,4 @@
-import { TOPIC, Message, ALL_ACTIONS } from '../../binary-protocol/src/message-constants'
+import { TOPIC, Message, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
 
 import { EVENT } from '../constants'
 import { Services } from '../client'
@@ -18,14 +18,12 @@ export class SingleNotifier {
 
   private services: Services
   private requests: Map<string, Array<(error?: any, result?: any) => void>>
-  private action: ALL_ACTIONS
-  private topic: TOPIC
+  private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD
   private internalRequests: Map<string, Array<(message: Message) => void>>
   private limboQueue: Array<Message>
 
-  constructor (services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number) {
+  constructor (services: Services, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
     this.services = services
-    this.topic = topic
     this.action = action
     this.requests = new Map()
     this.internalRequests = new Map()
@@ -48,7 +46,7 @@ export class SingleNotifier {
    */
   public request (name: string, callback: (error?: any, result?: any) => void): void {
     const message = {
-      topic: this.topic,
+      topic: TOPIC.RECORD,
       action: this.action,
       name
     }

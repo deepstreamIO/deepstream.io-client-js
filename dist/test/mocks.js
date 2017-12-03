@@ -4,8 +4,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const sinon_1 = require("sinon");
 const constants_1 = require("../src/constants");
 const timer_registry_1 = require("../src/util/timer-registry");
+const message_constants_1 = require("../binary-protocol/src/message-constants");
 const single_notifier_1 = require("../src/record/single-notifier");
 const write_ack_service_1 = require("../src/record/write-ack-service");
+const dirty_service_1 = require("../src/record/dirty-service");
+const listener_1 = require("../src/util/listener");
 let lastMessageSent;
 exports.getLastMessageSent = () => lastMessageSent;
 exports.getServicesMock = () => {
@@ -29,7 +32,9 @@ exports.getServicesMock = () => {
         },
         onExitLimbo: (callback) => {
             onExitLimbo = callback;
-        }
+        },
+        removeOnReestablished: () => { },
+        removeOnLost: () => { }
     };
     const connectionMock = sinon_1.mock(connection);
     const timeoutRegistry = {
@@ -108,32 +113,40 @@ exports.getServicesMock = () => {
         }
     };
 };
-exports.getListenerMock = () => {
-    const listener = {
-        listen: () => { },
-        unlisten: () => { },
-        handle: () => { }
+exports.getRecordServices = (services) => {
+    services.storageMock.expects('get').withArgs('__ds__dirty_records', sinon_1.match.func).atLeast(0).callsArgWith(1, '__ds__dirty_records', 1, {});
+    services.storageMock.expects('set').withArgs('__ds__dirty_records', 1, sinon_1.match.any, sinon_1.match.func).atLeast(0);
+    const dirtyService = new dirty_service_1.DirtyService(services.storage, '__ds__dirty_records');
+    const headRegistry = new single_notifier_1.SingleNotifier(services, message_constants_1.RECORD_ACTIONS.HEAD, 50);
+    const readRegistry = new single_notifier_1.SingleNotifier(services, message_constants_1.RECORD_ACTIONS.READ, 50);
+    const writeAckService = new write_ack_service_1.WriteAcknowledgementService(services);
+    const dirtyServiceMock = sinon_1.mock(dirtyService);
+    const readRegistryMock = sinon_1.mock(readRegistry);
+    const headRegistryMock = sinon_1.mock(headRegistry);
+    const writeAckServiceMock = sinon_1.mock(writeAckService);
+    return {
+        dirtyService,
+        dirtyServiceMock,
+        headRegistry,
+        headRegistryMock,
+        readRegistry,
+        readRegistryMock,
+        writeAckService,
+        writeAckServiceMock,
+        verify: () => {
+            dirtyServiceMock.verify();
+            headRegistryMock.verify();
+            readRegistryMock.verify();
+            writeAckServiceMock.verify();
+        }
     };
+};
+exports.getListenerMock = () => {
+    const listener = listener_1.Listener.prototype;
     const listenerMock = sinon_1.mock(listener);
     return {
         listener,
         listenerMock
-    };
-};
-exports.getSingleNotifierMock = () => {
-    const singleNotifier = single_notifier_1.SingleNotifier.prototype;
-    const singleNotifierMock = sinon_1.mock(singleNotifier);
-    return {
-        singleNotifier,
-        singleNotifierMock
-    };
-};
-exports.getWriteAckNotifierMock = () => {
-    const writeAckNotifier = write_ack_service_1.WriteAcknowledgementService.prototype;
-    const writeAckNotifierMock = sinon_1.mock(writeAckNotifier);
-    return {
-        writeAckNotifier,
-        writeAckNotifierMock
     };
 };
 //# sourceMappingURL=mocks.js.map

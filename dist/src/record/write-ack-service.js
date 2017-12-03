@@ -3,11 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const utils_1 = require("../../binary-protocol/src/utils");
 const constants_1 = require("../constants");
-/**
- * @param {Services} services
- *
- * @constructor
- */
 class WriteAcknowledgementService {
     constructor(services) {
         this.services = services;
@@ -16,14 +11,8 @@ class WriteAcknowledgementService {
         this.services.connection.onLost(this.onConnectionLost.bind(this));
     }
     /**
-   * Send message with write ack callback.
-   *
-   * @param {Message} message
-   * @param {Function} callback
-   *
-   * @public
-   * @returns {void}
-   */
+     * Send message with write ack callback.
+     */
     send(message, callback) {
         if (this.services.connection.isConnected === false) {
             this.services.timerRegistry.requestIdleCallback(callback.bind(this, constants_1.EVENT.CLIENT_OFFLINE));

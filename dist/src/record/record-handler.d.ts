@@ -24,7 +24,7 @@ export declare class RecordHandler {
     private recordCores;
     private recordServices;
     private dirtyService;
-    constructor(services: Services, options: Options, listener?: Listener);
+    constructor(services: Services, options: Options, recordServices?: RecordServices, listener?: Listener);
     setMergeStrategy(recordName: string, mergeStrategy: MergeStrategy): void;
     setMergeStrategyRegExp(regexp: RegExp, mergeStrategy: MergeStrategy): void;
     /**

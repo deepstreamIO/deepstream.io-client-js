@@ -1,7 +1,7 @@
 import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { spy, assert, match } from 'sinon'
-import { getServicesMock, getWriteAckNotifierMock } from '../mocks'
+import { getServicesMock, getRecordServices } from '../mocks'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
 
 import { DefaultOptions, Options } from '../../src/client-options'
@@ -12,26 +12,26 @@ describe('record setData online', () => {
   const topic = TOPIC.RECORD
   const name = 'testRecord'
 
-  let writeAckNotifierMock: any
   let recordHandler: RecordHandler
   let options: Options
   let services: any
+  let recordServices: any
   let handle: Function
 
   beforeEach(() => {
       services = getServicesMock()
-      writeAckNotifierMock = getWriteAckNotifierMock().writeAckNotifierMock
+      recordServices = getRecordServices(services)
 
       options = Object.assign({}, DefaultOptions)
 
       services.connection.isConnected = true
-      recordHandler = new RecordHandler(services, options)
+      recordHandler = new RecordHandler(services, options, recordServices)
       handle = services.getHandle()
   })
 
   afterEach(() => {
       services.verify()
-      writeAckNotifierMock.verify()
+      recordServices.verify()
   })
 
   it('sends update messages for entire data changes', () => {
@@ -128,7 +128,7 @@ describe('record setData online', () => {
     })
 
     it('sends update messages for entire data changes with ack callback', () => {
-      writeAckNotifierMock
+      recordServices.writeAckServiceMock
         .expects('send')
         .once()
         .withExactArgs({
@@ -144,7 +144,7 @@ describe('record setData online', () => {
     })
 
     it('sends update messages for path changes with ack callback', () => {
-      writeAckNotifierMock
+      recordServices.writeAckServiceMock
         .expects('send')
         .once()
         .withExactArgs({
@@ -160,7 +160,7 @@ describe('record setData online', () => {
     })
 
     it('sends update messages for entire data changes with ack promise', () => {
-      writeAckNotifierMock
+      recordServices.writeAckServiceMock
         .expects('send')
         .once()
         .withExactArgs({
@@ -177,7 +177,7 @@ describe('record setData online', () => {
     })
 
     it('sends update messages for path changes with ack promise', () => {
-      writeAckNotifierMock
+      recordServices.writeAckServiceMock
         .expects('send')
         .once()
         .withExactArgs({
@@ -194,7 +194,7 @@ describe('record setData online', () => {
     })
 
     it('deletes value when sending undefined for a path with ack callback', () => {
-      writeAckNotifierMock
+      recordServices.writeAckServiceMock
         .expects('send')
         .once()
         .withExactArgs({
@@ -210,7 +210,7 @@ describe('record setData online', () => {
     })
 
     it('deletes value when sending undefined for a path with ack promise', () => {
-      writeAckNotifierMock
+      recordServices.writeAckServiceMock
         .expects('send')
         .once()
         .withExactArgs({

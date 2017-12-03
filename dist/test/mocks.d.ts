@@ -4,6 +4,7 @@ import { TimerRegistry } from '../src/util/timer-registry';
 import { Message } from '../binary-protocol/src/message-constants';
 import { SingleNotifier } from '../src/record/single-notifier';
 import { WriteAcknowledgementService } from '../src/record/write-ack-service';
+import { DirtyService } from '../src/record/dirty-service';
 export declare const getLastMessageSent: () => Message;
 export declare const getServicesMock: () => {
     socketFactory: (url: string, options: object) => any;
@@ -17,6 +18,8 @@ export declare const getServicesMock: () => {
         onReestablished: (callback: Function) => void;
         onLost: (callback: Function) => void;
         onExitLimbo: (callback: Function) => void;
+        removeOnReestablished: () => void;
+        removeOnLost: () => void;
     };
     connectionMock: SinonMock;
     timeoutRegistry: {
@@ -44,15 +47,18 @@ export declare const getServicesMock: () => {
     storageMock: SinonMock;
     verify: () => void;
 };
+export declare const getRecordServices: (services: any) => {
+    dirtyService: DirtyService;
+    dirtyServiceMock: SinonMock;
+    headRegistry: SingleNotifier;
+    headRegistryMock: SinonMock;
+    readRegistry: SingleNotifier;
+    readRegistryMock: SinonMock;
+    writeAckService: WriteAcknowledgementService;
+    writeAckServiceMock: SinonMock;
+    verify: () => void;
+};
 export declare const getListenerMock: () => {
     listener: any;
     listenerMock: SinonMock;
-};
-export declare const getSingleNotifierMock: () => {
-    singleNotifier: SingleNotifier;
-    singleNotifierMock: SinonMock;
-};
-export declare const getWriteAckNotifierMock: () => {
-    writeAckNotifier: WriteAcknowledgementService;
-    writeAckNotifierMock: SinonMock;
 };

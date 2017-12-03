@@ -1,4 +1,4 @@
-import { Services, offlineStoreWriteResponse } from '../client'
+import { Services } from '../client'
 import { Options } from '../client-options'
 import { EVENT } from '../constants'
 import { MergeStrategy } from './merge-strategy'
@@ -104,26 +104,29 @@ export class RecordCore extends Emitter {
       }
     )
 
-    if (this.services.connection.isConnected) {
-      if (!this.recordServices.dirtyService.isDirty(this.name)) {
-        this.stateMachine.transition(RA.SUBSCRIBE)
-      } else {
-        this.services.storage.get(this.name, (recordName, version, data) => {
-          this.version = version
-          this.data = data as object
-          this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
-        })
-      }
-    } else {
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
-    }
-
+    this.handleReadResponse = this.handleReadResponse.bind(this)
     this.onRecordRecovered = this.onRecordRecovered.bind(this)
     this.onConnectionReestablished = this.onConnectionReestablished.bind(this)
     this.onConnectionLost = this.onConnectionLost.bind(this)
 
-    this.services.connection.onReestablished(this.onConnectionReestablished)
-    this.services.connection.onLost(this.onConnectionLost)
+    this.recordServices.dirtyService.whenLoaded(() => {
+      if (this.services.connection.isConnected) {
+        if (!this.recordServices.dirtyService.isDirty(this.name)) {
+          this.stateMachine.transition(RA.SUBSCRIBE)
+        } else {
+          this.services.storage.get(this.name, (recordName, version, data) => {
+            this.version = version
+            this.data = data as object
+            this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
+          })
+        }
+      } else {
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
+      }
+
+      this.services.connection.onReestablished(this.onConnectionReestablished)
+      this.services.connection.onLost(this.onConnectionLost)
+    })
   }
 
   get recordState (): RECORD_STATE {
@@ -205,7 +208,9 @@ export class RecordCore extends Emitter {
     if (this.services.connection.isConnected) {
       this.sendUpdate(path, data, callback)
     } else {
-      // todo: set, but...
+      if (callback) {
+        callback(EVENT.CLIENT_OFFLINE, this.name)
+      }
       this.saveUpdate()
     }
   }
@@ -216,14 +221,15 @@ export class RecordCore extends Emitter {
    * @returns {Promise} if a callback is omitted a Promise is returned with the result of the write
    */
   public setWithAck (args: utils.RecordSetArguments): Promise<void> | void {
-    if (!args.callback) {
-      return new Promise((resolve, reject) => {
-        args.callback = error => error === null ? resolve() : reject(error)
-        this.set(args)
-      })
-    } else {
+    if (args.callback) {
       this.set(args)
+      return
     }
+
+    return new Promise((resolve, reject) => {
+      args.callback = error => error === null ? resolve() : reject(error)
+      this.set(args)
+    })
   }
 
   /**
@@ -364,27 +370,11 @@ export class RecordCore extends Emitter {
    * the next update merge attempt ).
    */
   public setMergeStrategy (mergeStrategy: MergeStrategy): void {
-    if (typeof mergeStrategy === 'function') {
-      this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy)
-    } else {
-      throw new Error('Invalid merge strategy: Must be a Function')
-    }
+    this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy)
   }
 
-  public dump (callback?: offlineStoreWriteResponse): Promise<void> | void  {
-    if (callback) {
-      this.services.storage.set(this.name, this.version, this.data, callback)
-      return
-    }
-    return new Promise((resolve, reject) => {
-      this.services.storage.set(this.name, this.version, this.data, (error: string | null) => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve()
-        }
-      })
-    })
+  public saveRecordToOffline (): void  {
+    this.services.storage.set(this.name, this.version, this.data, () => {})
   }
 
   /**
@@ -613,7 +603,7 @@ export class RecordCore extends Emitter {
       this.version++
       this.recordServices.dirtyService.setDirty(this.name, true)
     }
-    this.services.storage.set(this.name, this.version, this.data, () => {})
+    this.saveRecordToOffline()
   }
 
   private sendUpdate (path: string | null = null, data: any, callback?: WriteAckCallback) {
@@ -834,7 +824,7 @@ export class RecordCore extends Emitter {
   }
 
   private onConnectionLost (): void {
-    this.services.storage.set(this.name, this.version, this.data, error => {})
+    this.saveRecordToOffline()
   }
 
 }

@@ -31,21 +31,21 @@ export class RecordHandler {
   private recordServices: RecordServices
   private dirtyService: DirtyService
 
-  constructor (services: Services, options: Options, listener?: Listener) {
+  constructor (services: Services, options: Options, recordServices?: RecordServices, listener?: Listener) {
     this.services = services
     this.options = options
     this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
     this.recordCores = new Map()
 
-    this.dirtyService = new DirtyService(services.storage, options.dirtyStorageName)
-    this.recordServices = {
+    this.recordServices = recordServices || {
       writeAckService: new WriteAcknowledgementService(services),
-      readRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.READ, options.recordReadTimeout),
-      headRegistry: new SingleNotifier(services, TOPIC.RECORD, RECORD_ACTION.HEAD, options.recordReadTimeout),
-      dirtyService: this.dirtyService,
+      readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
+      headRegistry: new SingleNotifier(services, RECORD_ACTION.HEAD, options.recordReadTimeout),
+      dirtyService: new DirtyService(services.storage, options.dirtyStorageName),
       mergeStrategy: new MergeStrategyService(services, options.mergeStrategy)
     } as RecordServices
+    this.dirtyService = this.recordServices.dirtyService
 
     this.onMergeCompleted = this.onMergeCompleted.bind(this)
     this.getRecordCore = this.getRecordCore.bind(this)
@@ -158,6 +158,7 @@ export class RecordHandler {
       }
       return
     }
+
     if (callback) {
       this.recordServices.readRegistry.request(name, callback)
     } else {

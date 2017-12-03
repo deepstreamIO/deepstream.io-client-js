@@ -1,4 +1,4 @@
-import { Services, offlineStoreWriteResponse } from '../client';
+import { Services } from '../client';
 import { Options } from '../client-options';
 import { MergeStrategy } from './merge-strategy';
 import { RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants';
@@ -122,7 +122,7 @@ export declare class RecordCore extends Emitter {
      * the next update merge attempt ).
      */
     setMergeStrategy(mergeStrategy: MergeStrategy): void;
-    dump(callback?: offlineStoreWriteResponse): Promise<void> | void;
+    saveRecordToOffline(): void;
     /**
      * Transition States
      */

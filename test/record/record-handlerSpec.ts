@@ -1,7 +1,7 @@
 import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { assert, spy, match } from 'sinon'
-import { getServicesMock, getSingleNotifierMock } from '../mocks'
+import { getServicesMock, getRecordServices } from '../mocks'
 import { TOPIC, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
 import { RecordHandler } from '../../src/record/record-handler'
 
@@ -12,7 +12,7 @@ describe('Record handler', () => {
   const options = Object.assign({}, DefaultOptions)
 
   let services: any
-  let singleNotifierMock: any
+  let recordServices: any
   let callbackSpy: sinon.SinonSpy
   let resolveSpy: sinon.SinonSpy
   let rejectSpy: sinon.SinonSpy
@@ -24,15 +24,15 @@ describe('Record handler', () => {
     resolveSpy = spy()
     rejectSpy = spy()
     services = getServicesMock()
-    singleNotifierMock = getSingleNotifierMock().singleNotifierMock
+    recordServices = getRecordServices(services)
 
-    recordHandler = new RecordHandler(services, options)
+    recordHandler = new RecordHandler(services, options, recordServices)
     handle = services.getHandle()
   })
 
   afterEach(() => {
-    singleNotifierMock.verify()
     services.verify()
+    recordServices.verify()
   })
 
   it('validates on has, head and snapshot', () => {
@@ -68,7 +68,7 @@ describe('Record handler', () => {
   })
 
   it('snapshots record remotely using callback and promise style', async () => {
-    singleNotifierMock
+    recordServices.readRegistryMock
       .expects('request')
       .twice()
       .withExactArgs(name, match.func)
@@ -135,7 +135,7 @@ describe('Record handler', () => {
   })
 
   it('queries for the record version remotely using callback and promise', () => {
-    singleNotifierMock
+    recordServices.headRegistryMock
       .expects('request')
       .twice()
       .withExactArgs(name, match.func)
@@ -204,7 +204,7 @@ describe('Record handler', () => {
   })
 
   it('queries for record exists remotely using callback and promise', () => {
-    singleNotifierMock
+    recordServices.headRegistryMock
       .expects('request')
       .twice()
       .withExactArgs(name, match.func)

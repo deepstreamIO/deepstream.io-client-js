@@ -1,4 +1,4 @@
-import { TOPIC, Message, ALL_ACTIONS } from '../../binary-protocol/src/message-constants';
+import { Message, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
@@ -15,10 +15,9 @@ export declare class SingleNotifier {
     private services;
     private requests;
     private action;
-    private topic;
     private internalRequests;
     private limboQueue;
-    constructor(services: Services, topic: TOPIC, action: ALL_ACTIONS, timeoutDuration: number);
+    constructor(services: Services, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number);
     /**
    * Add a request. If one has already been made it will skip the server request
    * and multiplex the response

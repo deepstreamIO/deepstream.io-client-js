@@ -16,15 +16,15 @@ const message_constants_1 = require("../../binary-protocol/src/message-constants
 const single_notifier_1 = require("../../src/record/single-notifier");
 describe('Single Notifier', () => {
     const timeout = 10;
-    const topic = message_constants_1.TOPIC.RECORD;
     const action = message_constants_1.RECORD_ACTIONS.READ;
     const name = 'name';
+    const topic = message_constants_1.TOPIC.RECORD;
     let services;
     let singleNotifier;
     let callbackSpy;
     beforeEach(() => {
         services = mocks_1.getServicesMock();
-        singleNotifier = new single_notifier_1.SingleNotifier(services, topic, action, timeout);
+        singleNotifier = new single_notifier_1.SingleNotifier(services, action, timeout);
         callbackSpy = sinon_1.spy();
     });
     afterEach(() => {

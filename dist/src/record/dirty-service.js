@@ -8,6 +8,7 @@ class DirtyService {
         this.name = dirtyStorageName;
         this.loaded = false;
         this.emitter = new Emitter();
+        this.dirtyRecords = {};
         this.load();
     }
     isDirty(recordName) {

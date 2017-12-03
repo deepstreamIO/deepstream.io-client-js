@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const constants_1 = require("../constants");
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT
@@ -13,9 +14,8 @@ const constants_1 = require("../constants");
  * @constructor
  */
 class SingleNotifier {
-    constructor(services, topic, action, timeoutDuration) {
+    constructor(services, action, timeoutDuration) {
         this.services = services;
-        this.topic = topic;
         this.action = action;
         this.requests = new Map();
         this.internalRequests = new Map();
@@ -36,7 +36,7 @@ class SingleNotifier {
    */
     request(name, callback) {
         const message = {
-            topic: this.topic,
+            topic: message_constants_1.TOPIC.RECORD,
             action: this.action,
             name
         };

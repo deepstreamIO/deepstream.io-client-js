@@ -14,19 +14,19 @@ const write_ack_service_1 = require("./write-ack-service");
 const dirty_service_1 = require("./dirty-service");
 const merge_strategy_service_1 = require("./merge-strategy-service");
 class RecordHandler {
-    constructor(services, options, listener) {
+    constructor(services, options, recordServices, listener) {
         this.services = services;
         this.options = options;
         this.listener = listener || new listener_1.Listener(message_constants_1.TOPIC.RECORD, this.services);
         this.recordCores = new Map();
-        this.dirtyService = new dirty_service_1.DirtyService(services.storage, options.dirtyStorageName);
-        this.recordServices = {
+        this.recordServices = recordServices || {
             writeAckService: new write_ack_service_1.WriteAcknowledgementService(services),
-            readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
-            headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.TOPIC.RECORD, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout),
-            dirtyService: this.dirtyService,
+            readRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.RECORD_ACTIONS.READ, options.recordReadTimeout),
+            headRegistry: new single_notifier_1.SingleNotifier(services, message_constants_1.RECORD_ACTIONS.HEAD, options.recordReadTimeout),
+            dirtyService: new dirty_service_1.DirtyService(services.storage, options.dirtyStorageName),
             mergeStrategy: new merge_strategy_service_1.MergeStrategyService(services, options.mergeStrategy)
         };
+        this.dirtyService = this.recordServices.dirtyService;
         this.onMergeCompleted = this.onMergeCompleted.bind(this);
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.RECORD, this.handle.bind(this));

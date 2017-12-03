@@ -124,4 +124,3 @@ export class Client extends EventEmitter {
     return `${timestamp}-${randomString}`
   }
 }
-

@@ -18,22 +18,22 @@ const record_handler_1 = require("../../src/record/record-handler");
 describe('record setData online', () => {
     const topic = message_constants_1.TOPIC.RECORD;
     const name = 'testRecord';
-    let writeAckNotifierMock;
     let recordHandler;
     let options;
     let services;
+    let recordServices;
     let handle;
     beforeEach(() => {
         services = mocks_1.getServicesMock();
-        writeAckNotifierMock = mocks_1.getWriteAckNotifierMock().writeAckNotifierMock;
+        recordServices = mocks_1.getRecordServices(services);
         options = Object.assign({}, client_options_1.DefaultOptions);
         services.connection.isConnected = true;
-        recordHandler = new record_handler_1.RecordHandler(services, options);
+        recordHandler = new record_handler_1.RecordHandler(services, options, recordServices);
         handle = services.getHandle();
     });
     afterEach(() => {
         services.verify();
-        writeAckNotifierMock.verify();
+        recordServices.verify();
     });
     it('sends update messages for entire data changes', () => {
         const data = { firstname: 'Wolfram' };
@@ -111,7 +111,7 @@ describe('record setData online', () => {
             cb = () => { };
         });
         it('sends update messages for entire data changes with ack callback', () => {
-            writeAckNotifierMock
+            recordServices.writeAckServiceMock
                 .expects('send')
                 .once()
                 .withExactArgs({
@@ -125,7 +125,7 @@ describe('record setData online', () => {
             recordHandler.setData(name, data, cb);
         });
         it('sends update messages for path changes with ack callback', () => {
-            writeAckNotifierMock
+            recordServices.writeAckServiceMock
                 .expects('send')
                 .once()
                 .withExactArgs({
@@ -139,7 +139,7 @@ describe('record setData online', () => {
             recordHandler.setData(name, path, data, cb);
         });
         it('sends update messages for entire data changes with ack promise', () => {
-            writeAckNotifierMock
+            recordServices.writeAckServiceMock
                 .expects('send')
                 .once()
                 .withExactArgs({
@@ -154,7 +154,7 @@ describe('record setData online', () => {
             chai_1.expect(promise).is.a('promise');
         });
         it('sends update messages for path changes with ack promise', () => {
-            writeAckNotifierMock
+            recordServices.writeAckServiceMock
                 .expects('send')
                 .once()
                 .withExactArgs({
@@ -169,7 +169,7 @@ describe('record setData online', () => {
             chai_1.expect(promise).is.a('promise');
         });
         it('deletes value when sending undefined for a path with ack callback', () => {
-            writeAckNotifierMock
+            recordServices.writeAckServiceMock
                 .expects('send')
                 .once()
                 .withExactArgs({
@@ -183,7 +183,7 @@ describe('record setData online', () => {
             recordHandler.setDataWithAck(name, path, undefined, cb);
         });
         it('deletes value when sending undefined for a path with ack promise', () => {
-            writeAckNotifierMock
+            recordServices.writeAckServiceMock
                 .expects('send')
                 .once()
                 .withExactArgs({

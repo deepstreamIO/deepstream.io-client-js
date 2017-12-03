@@ -5,11 +5,6 @@ import { EVENT } from '../constants'
 import { Services } from '../client'
 import { WriteAckCallback } from './record-core'
 
-/**
- * @param {Services} services
- *
- * @constructor
- */
 export class WriteAcknowledgementService {
 
   private services: Services
@@ -24,14 +19,8 @@ export class WriteAcknowledgementService {
     this.services.connection.onLost(this.onConnectionLost.bind(this))
   }
 
-    /**
+  /**
    * Send message with write ack callback.
-   *
-   * @param {Message} message
-   * @param {Function} callback
-   *
-   * @public
-   * @returns {void}
    */
   public send (message: Message, callback: WriteAckCallback): void {
     if (this.services.connection.isConnected === false) {

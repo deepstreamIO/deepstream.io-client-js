@@ -19,7 +19,7 @@ describe('Record handler', () => {
     const name = 'recordA';
     const options = Object.assign({}, client_options_1.DefaultOptions);
     let services;
-    let singleNotifierMock;
+    let recordServices;
     let callbackSpy;
     let resolveSpy;
     let rejectSpy;
@@ -30,13 +30,13 @@ describe('Record handler', () => {
         resolveSpy = sinon_1.spy();
         rejectSpy = sinon_1.spy();
         services = mocks_1.getServicesMock();
-        singleNotifierMock = mocks_1.getSingleNotifierMock().singleNotifierMock;
-        recordHandler = new record_handler_1.RecordHandler(services, options);
+        recordServices = mocks_1.getRecordServices(services);
+        recordHandler = new record_handler_1.RecordHandler(services, options, recordServices);
         handle = services.getHandle();
     });
     afterEach(() => {
-        singleNotifierMock.verify();
         services.verify();
+        recordServices.verify();
     });
     it('validates on has, head and snapshot', () => {
         chai_1.expect(recordHandler.has.bind(recordHandler, '')).to.throw();
@@ -65,7 +65,7 @@ describe('Record handler', () => {
         chai_1.expect(recordHandler.snapshot.bind(recordHandler, name, {})).to.throw();
     });
     it('snapshots record remotely using callback and promise style', () => __awaiter(this, void 0, void 0, function* () {
-        singleNotifierMock
+        recordServices.readRegistryMock
             .expects('request')
             .twice()
             .withExactArgs(name, sinon_1.match.func);
@@ -117,7 +117,7 @@ describe('Record handler', () => {
         }));
     });
     it('queries for the record version remotely using callback and promise', () => {
-        singleNotifierMock
+        recordServices.headRegistryMock
             .expects('request')
             .twice()
             .withExactArgs(name, sinon_1.match.func);
@@ -170,7 +170,7 @@ describe('Record handler', () => {
         }));
     });
     it('queries for record exists remotely using callback and promise', () => {
-        singleNotifierMock
+        recordServices.headRegistryMock
             .expects('request')
             .twice()
             .withExactArgs(name, sinon_1.match.func);

@@ -1,10 +1,12 @@
 // tslint:disable:no-empty
-import { mock, stub, SinonStub, SinonMock } from 'sinon'
+import { mock, stub, SinonStub, SinonMock, match } from 'sinon'
 import { CONNECTION_STATE } from '../src/constants'
 import { TimerRegistry } from '../src/util/timer-registry'
-import { Message } from '../binary-protocol/src/message-constants'
+import { Message, RECORD_ACTIONS } from '../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../src/record/single-notifier'
 import { WriteAcknowledgementService } from '../src/record/write-ack-service'
+import { DirtyService } from '../src/record/dirty-service'
+import { Listener } from '../src/util/listener'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -31,7 +33,9 @@ export const getServicesMock = () => {
       },
       onExitLimbo: (callback: Function): void => {
         onExitLimbo = callback
-      }
+      },
+      removeOnReestablished: () => {},
+      removeOnLost: () => {}
   }
   const connectionMock = mock(connection)
 
@@ -119,33 +123,42 @@ export const getServicesMock = () => {
   }
 }
 
-export const getListenerMock = (): { listener: any, listenerMock: SinonMock } => {
-  const listener = {
-    listen: () => {},
-    unlisten: () => {},
-    handle : () => {}
+export const getRecordServices = (services: any) => {
+  services.storageMock.expects('get').withArgs('__ds__dirty_records', match.func).atLeast(0).callsArgWith(1, '__ds__dirty_records', 1, {})
+  services.storageMock.expects('set').withArgs('__ds__dirty_records', 1, match.any, match.func).atLeast(0)
+  const dirtyService = new DirtyService(services.storage, '__ds__dirty_records')
+  const headRegistry = new SingleNotifier(services, RECORD_ACTIONS.HEAD, 50)
+  const readRegistry = new SingleNotifier(services, RECORD_ACTIONS.READ, 50)
+  const writeAckService = new WriteAcknowledgementService(services)
+
+  const dirtyServiceMock = mock(dirtyService)
+  const readRegistryMock =  mock(readRegistry)
+  const headRegistryMock = mock(headRegistry)
+  const writeAckServiceMock = mock(writeAckService)
+
+  return {
+    dirtyService,
+    dirtyServiceMock,
+    headRegistry,
+    headRegistryMock,
+    readRegistry,
+    readRegistryMock,
+    writeAckService,
+    writeAckServiceMock,
+    verify: () => {
+      dirtyServiceMock.verify()
+      headRegistryMock.verify()
+      readRegistryMock.verify()
+      writeAckServiceMock.verify()
+    }
   }
+}
+
+export const getListenerMock = (): { listener: any, listenerMock: SinonMock } => {
+  const listener = Listener.prototype
   const listenerMock = mock(listener)
   return {
     listener,
     listenerMock
-  }
-}
-
-export const getSingleNotifierMock = (): { singleNotifier: SingleNotifier, singleNotifierMock: SinonMock } => {
-  const singleNotifier = SingleNotifier.prototype
-  const singleNotifierMock = mock(singleNotifier)
-  return {
-    singleNotifier,
-    singleNotifierMock
-  }
-}
-
-export const getWriteAckNotifierMock = (): { writeAckNotifier: WriteAcknowledgementService, writeAckNotifierMock: SinonMock } => {
-  const writeAckNotifier = WriteAcknowledgementService.prototype
-  const writeAckNotifierMock = mock(writeAckNotifier)
-  return {
-    writeAckNotifier,
-    writeAckNotifierMock
   }
 }
