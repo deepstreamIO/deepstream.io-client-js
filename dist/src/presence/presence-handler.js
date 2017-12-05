@@ -55,7 +55,7 @@ class PresenceHandler {
             return;
         }
         if (typeof userOrCallback === 'function' && typeof callback === 'undefined') {
-            if (!this.subscriptionEmitter.hasListeners(ONLY_EVENT)) {
+            if (!this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)) {
                 this.subscribeToAllChanges();
             }
             this.globalSubscriptionEmitter.on(ONLY_EVENT, userOrCallback);
@@ -85,7 +85,7 @@ class PresenceHandler {
         if (userOrCallback && typeof userOrCallback === 'function') {
             callback = userOrCallback;
             this.globalSubscriptionEmitter.off(ONLY_EVENT, callback);
-            if (!this.subscriptionEmitter.hasListeners(ONLY_EVENT)) {
+            if (!this.globalSubscriptionEmitter.hasListeners(ONLY_EVENT)) {
                 this.unsubscribeToAllChanges();
             }
             return;
