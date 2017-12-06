@@ -16,9 +16,13 @@
                                     </td>
                                     <td class="sm-text">
                                         <b-input-group>
-                                            <b-form-input class="rpc-data-field esm-text" :id="'data-field-rpc-' + rpc.name" :block="true" size="sm" v-model="rpc.model" type="text" placeholder="data"></b-form-input>
-                                            <b-input-group-button slot="right">
+                                            <b-form-input v-if="rpc.provided" class="rpc-data-field esm-text" :id="'data-field-rpc-' + rpc.name" :block="true" size="sm" v-model="rpc.model" type="text" :placeholder="rpc.inputPlaceholder || 'data'"></b-form-input>
+                                            <b-input-group-button v-if="rpc.provided" slot="right">
                                                 <b-button @click="make(rpc)" size="sm" class="rpc-make-btn sm-text" :id="'make-btn-rpc-' + rpc.name" variant="link">make</b-button>
+                                            </b-input-group-button>
+                                            <b-input-group-button v-if="!rpc.provided" slot="right">
+                                                <b-button @click="provide(rpc)" size="sm" class="rpc-make-btn sm-text" :id="'make-btn-rpc-' + rpc.name" variant="link">provide</b-button>
+                                                console.log('rpc:', rpc)
                                             </b-input-group-button>
                                         </b-input-group>
                                     </td>
@@ -51,6 +55,18 @@
 <script>
 import MemoryTest from './MemoryTest.vue'
 
+const additionRpc = (data, response) => {
+    const result = parseInt(data.a) + parseInt(data.b)
+    console.log(data, {result})
+    response.send(result)
+}
+
+const multiplicationRpc = (data, response) => {
+    const result = parseInt(data.a) * parseInt(data.b)
+    console.log(data, {result})
+    response.send(result)
+}
+
 export default {
   name: "rpcs",
   props: ["client"],
@@ -59,25 +75,72 @@ export default {
   },
   created () {
     this.client.rpc.provide('echo', (data, response) => {
-        response.send(data)
+        console.log('echo:', data)
+        let exception = null
+        try {
+            response.send(data)
+        } catch (e) {
+            exception = e
+        } finally {
+            if (exception) {
+                console.log(exception)
+            } else {
+                console.log('rpc echo made without throwing')
+            }
+        }
     })
   },
   data() {
     return {
         rpcs: [
-            { id: 1, name: "echo", data: [], model: null, provided: false }
+            { id: 1, name: "echo", data: [], model: null, provided: true },
+            { 
+                id: 2, name: "addition", data: [], model: null, provided: false,
+                args: {a: 0, b: 0}, handler: additionRpc, 
+                inputPlaceholder: 'enter 2 numbers separated with a comma' 
+            },
+            { 
+                id: 3, name: "multiplication", data: [], model: null, provided: false,
+                args: {a: 0, b: 0}, handler: multiplicationRpc,
+                inputPlaceholder: 'enter 2 numbers separated with a comma' 
+            }
         ],
         scenario: { rpcs: [], nexts: [] }
     }
   },
   methods: {
     make: function(rpc) {
-        const comp = this;
-        comp.client.rpc.make(rpc.name, rpc.model, (err, response) => {
-            rpc.data.push({ id: rpc.data.length, content: err || response });
-        });
+        const comp = this
+        const rpcArgs = typeof rpc.args === 'undefined'
+            ? rpc.model
+            : rpc.model
+                .split(',')
+                .reduce((acc, arg, i) => {
+                    if (i < 2) {
+                        const key = i%2 === 0 ? 'a':'b'
+                        return Object.assign(
+                            acc, {
+                                [key]: arg.trim(" ") 
+                            }
+                        )
+                    }
+                    return acc
+                }, {})
+
+        console.log({rpcArgs})
+        comp.client.rpc.make(rpc.name, rpcArgs, (err, response) => {
+            console.log('made', rpcArgs, 'received', response)
+            rpc.data.push({ id: rpc.data.length, content: err || response })
+            rpc.model = ''
+        })
     },
-    
+    provide: function(rpc) {
+        console.log('provided rpc:', rpc.name, rpc)
+        this.client.rpc.provide(rpc.name, rpc.handler)
+        setTimeout(() => {
+            rpc.provided = true   
+        })
+    },
     play: function () {
         const client = this.client
         const scenario = this.$data.scenario
