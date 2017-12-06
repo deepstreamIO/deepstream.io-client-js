@@ -10,7 +10,7 @@
             <br>
             <p class="card-desc">Enter login credentials:</p>
 
-            <b-form>
+            <b-form class="auth-input-group">
                 <b-container fluid>
                     <b-row>
                         <b-col lg="4">
