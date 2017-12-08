@@ -16,6 +16,7 @@
   "scripts": {
     "tsc": "rm -rf dist && tsc",
     "precommit": "npm run tsc && git add dist/",
+    "postinstall": "node -e \"process.env.NODE_ENV != 'test' && process.exit(1)\" && npm --prefix ./test-page install ./test-page && npm --prefix ./test-page/test/selenium install ./test-page/test/selenium",
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
     "rebuild": "rimraf dist && webpack",
@@ -23,7 +24,8 @@
     "lint": "tslint test/*.ts test/**/*.ts src/*.ts src/**/*.ts -t verbose",
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run tsc && mocha dist/test --recursive --reporter dot --require source-map-support/register",
-    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot --require source-map-support/register"
+    "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot --require source-map-support/register",
+    "test:e2e:test-page" : "(npm --prefix ./test-page run start:silent &> /dev/null &) && npm --prefix ./test-page/test/selenium run chrome-dev"
   },
   "repository": {
     "type": "git",
