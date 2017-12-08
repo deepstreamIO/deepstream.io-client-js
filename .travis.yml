@@ -7,6 +7,9 @@ node_js:
   - "8"
   - "6"
 
+env:
+  - NODE_ENV=test
+
 script:
   - if [ "$TRAVIS_NODE_VERSION" ~= "8" ]; then
       npm run lint;
