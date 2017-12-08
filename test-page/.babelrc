@@ -1,5 +1,16 @@
 {
   "presets": [
-    ["env", { "modules": false }]
+    [
+      "env",
+      {
+        "targets": {
+          "browsers": [
+            "ie >= 10"
+          ]
+        },
+        "include": [],
+        "exclude": []
+      }
+    ]
   ]
 }
