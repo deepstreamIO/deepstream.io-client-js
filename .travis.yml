@@ -1,6 +1,9 @@
 dist: trusty
 sudo: required
 
+services:
+  - docker
+
 language: node_js
 
 node_js:
@@ -8,24 +11,29 @@ node_js:
   - "6"
 
 env:
-  - NODE_ENV=test
+  global:
+    - NODE_ENV=test
+    - DEEPSTREAMIO_SERVER_GITURL=https://github.com/deepstreamIO/deepstream.io.git
+    - SELENIUM_NET=172.17.0.0
+    - SELENIUM_HUB_IP=172.17.0.2
+    - TEST_PAGE_HOST=172.17.0.1 # required for ci:e2e:test-page
+    - DEEPSTREAM_HOST=172.17.0.1
 
 before_install:
-  - export CHROME_BIN=/usr/bin/google-chrome
-  - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
-  - sudo apt-get update
-  - sudo apt-get install -y libappindicator1 fonts-liberation
-  - wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-  - sudo dpkg -i google-chrome*.deb
+  - docker network create --subnet=$SELENIUM_NET/16 seleniumnet
+  - docker run -d -p 4444:4444 --name selenium-hub --network seleniumnet --ip $SELENIUM_HUB_IP selenium/hub:3.8.1-aluminum
+  - docker run -d --link selenium-hub:hub --network seleniumnet selenium/node-chrome:3.8.1-aluminum
+  - docker run -d --link selenium-hub:hub --network seleniumnet selenium/node-firefox:3.8.1-aluminum
+  - git clone $DEEPSTREAMIO_SERVER_GITURL deepstream.io && cd deepstream.io
+  - npm install && npm run tsc && chmod +x ./dist/bin/deepstream
+  - ./dist/bin/deepstream start --host $DEEPSTREAM_HOST --http-port 3030 # providing http port to avoid port conflict with test page (uses 8080)
 
 script:
-  - jdk_switcher use oraclejdk8
   - if [ "$TRAVIS_NODE_VERSION" ~= "8" ]; then
       npm run lint;
     fi
   - npm run test:coverage
-  - npm run test:e2e:test-page
+  - npm run ci:e2e:test-page
 
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
 
