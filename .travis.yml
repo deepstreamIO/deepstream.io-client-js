@@ -39,11 +39,11 @@ script:
       npm run lint;
     fi
   - npm run test:coverage
+  - npm run build
   - npm --prefix ./test-page run start:silent -- --host $TEST_PAGE_HOST &
   - sleep 20
   - wget -O- http://$TEST_PAGE_HOST:8080
   - npm --prefix ./test-page/test/selenium run chrome-dev -- --use-docker
-
 
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
 
