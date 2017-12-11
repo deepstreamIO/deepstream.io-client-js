@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
-      "start:silent": "cross-env NODE_ENV=development webpack-dev-server --quiet > /dev/null 2>&1",
+    "start:silent": "cross-env NODE_ENV=development webpack-dev-server --quiet > /dev/null 2>&1",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
