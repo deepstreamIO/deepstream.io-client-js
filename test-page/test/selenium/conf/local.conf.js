@@ -10,21 +10,22 @@ require('nightwatch-cucumber')({
 const dockerizedSeleniumArgs = process.argv.splice(2, process.argv.length)
 const useDockerizedSelenium = dockerizedSeleniumArgs.some(element => element === '--use-docker')
 
+if (useDockerizedSelenium) {
+  console.log('Using dockerized selenium ...')
+}
+
 module.exports = {
   output_folder: 'reports',
   custom_assertions_path: '',
   live_output: false,
   disable_colors: false,
-  selenium: Object.assign({
+  selenium: {
     log_path: '',
-    host: '127.0.0.1',
-    port: 4444
-  }, useDockerizedSelenium ? {
-    start_process: false,
-  } : {
-    start_process: true,
-    server_path: seleniumServer.path,
-  }),
+    host: useDockerizedSelenium ? '172.17.0.2' : '127.0.0.1',
+    port: 4444,
+    start_process: !useDockerizedSelenium,
+    server_path: !useDockerizedSelenium ? seleniumServer.path : undefined,
+  },
   test_settings: {
     default: {
       screenshots : {
@@ -34,13 +35,13 @@ module.exports = {
       },
       launch_url: useDockerizedSelenium ? 'http://172.17.0.1:8080' : 'http://localhost:8080',
       selenium_port: 4444,
-      selenium_host: '127.0.0.1',
-      'webdriver.firefox.profile': 'webdriver',
-      desiredCapabilities: Object.assign({
+      selenium_host: useDockerizedSelenium ? '172.17.0.2' : '127.0.0.1',
+      desiredCapabilities: {
         browserName: 'phantomjs',
         javascriptEnabled: true,
         acceptSslCerts: true,
-      }, useDockerizedSelenium ? {} : { 'phantomjs.binary.path': phantomjs.path })
+        'phantomjs.binary.path': phantomjs.path
+      }
     },
     chrome: {
       screenshots : {
@@ -72,11 +73,10 @@ module.exports = {
         acceptSslCerts: true
       },
       selenium: {
-        cli_args: Object.assign({
-          'webdriver.firefox.profile': 'elton'
-        }, useDockerizedSelenium ? {} : {
+        cli_args: {
+          'webdriver.firefox.profile': 'elton',
           'webdriver.firefox.driver': geckodriver.path
-        })
+        }
       }
     },
     ie: {
