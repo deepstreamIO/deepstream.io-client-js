@@ -25,7 +25,8 @@
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run tsc && mocha dist/test --recursive --reporter dot --require source-map-support/register",
     "test:coverage": "npm run tsc && istanbul cover _mocha dist/test -- --recursive --reporter dot --require source-map-support/register",
-    "test:e2e:test-page" : "(npm --prefix ./test-page run start:silent &) && npm --prefix ./test-page/test/selenium run chrome-dev"
+    "test:e2e:test-page" : "(npm --prefix ./test-page run start:silent &) && npm --prefix ./test-page/test/selenium run chrome-dev",
+    "ci:e2e:test-page" : "(npm --prefix ./test-page run start:silent -- --host $TEST_PAGE_HOST &) && npm --prefix ./test-page/test/selenium run chrome-dev -- --use-docker"
   },
   "repository": {
     "type": "git",
