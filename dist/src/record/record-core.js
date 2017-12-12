@@ -18,6 +18,7 @@ class RecordCore extends Emitter {
         this.whenComplete = whenComplete;
         this.references = 1;
         this.hasProvider = false;
+        this.pendingWrites = [];
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }
@@ -125,7 +126,7 @@ class RecordCore extends Emitter {
             return;
         }
         if (!this.isReady) {
-            // TODO
+            this.pendingWrites.push({ path, data, callback });
             return;
         }
         const oldValue = this.data;
@@ -362,8 +363,39 @@ class RecordCore extends Emitter {
     }
     onReady() {
         this.services.timeoutRegistry.clear(this.responseTimeout);
+        this.applyPendingWrites();
         this.isReady = true;
         this.emit(constants_1.EVENT.RECORD_READY);
+    }
+    applyPendingWrites() {
+        const writeCallbacks = [];
+        const oldData = this.data;
+        let newData = oldData;
+        for (let i = 0; i < this.pendingWrites.length; i++) {
+            const { callback, path, data } = this.pendingWrites[i];
+            if (callback) {
+                writeCallbacks.push(callback);
+            }
+            newData = json_path_1.setValue(newData, path || null, data);
+        }
+        this.pendingWrites = [];
+        this.applyChange(newData);
+        const runFns = (err) => {
+            for (let i = 0; i < writeCallbacks.length; i++) {
+                writeCallbacks[i](err, this.name);
+            }
+        };
+        if (utils.deepEquals(oldData, newData)) {
+            runFns(null);
+            return;
+        }
+        if (this.services.connection.isConnected) {
+            this.sendUpdate(null, newData, runFns);
+        }
+        else {
+            runFns(constants_1.EVENT.CLIENT_OFFLINE);
+            this.saveUpdate();
+        }
     }
     onUnsubscribed() {
         if (this.services.connection.isConnected) {

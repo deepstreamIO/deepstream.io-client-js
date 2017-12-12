@@ -39,6 +39,7 @@ export declare class RecordCore extends Emitter {
     private deletedTimeout;
     private deleteResponse;
     private whenComplete;
+    private pendingWrites;
     constructor(name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void);
     readonly recordState: RECORD_STATE;
     usages: number;
@@ -130,6 +131,7 @@ export declare class RecordCore extends Emitter {
     private onResubscribing();
     private onOfflineLoading();
     private onReady();
+    private applyPendingWrites();
     private onUnsubscribed();
     private onDeleted();
     handle(message: RecordMessage): void;

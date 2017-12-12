@@ -59,6 +59,7 @@ export class RecordCore extends Emitter {
     resolve?: () => void
   }
   private whenComplete: (recordName: string) => void
+  private pendingWrites: Array<any>
 
   constructor (name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void) {
     super()
@@ -71,6 +72,7 @@ export class RecordCore extends Emitter {
     this.whenComplete = whenComplete
     this.references = 1
     this.hasProvider = false
+    this.pendingWrites = []
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
@@ -190,7 +192,7 @@ export class RecordCore extends Emitter {
     }
 
     if (!this.isReady) {
-      // TODO
+      this.pendingWrites.push({ path, data, callback })
       return
     }
 
@@ -449,8 +451,42 @@ export class RecordCore extends Emitter {
 
   private onReady (): void {
     this.services.timeoutRegistry.clear(this.responseTimeout)
+    this.applyPendingWrites()
     this.isReady = true
     this.emit(EVENT.RECORD_READY)
+  }
+
+  private applyPendingWrites (): void {
+    const writeCallbacks: Array<WriteAckCallback> = []
+    const oldData = this.data
+    let newData = oldData
+    for (let i = 0; i < this.pendingWrites.length; i++) {
+      const { callback, path, data } = this.pendingWrites[i]
+      if (callback) {
+        writeCallbacks.push(callback)
+      }
+      newData = setPath(newData, path || null, data)
+    }
+    this.pendingWrites = []
+    this.applyChange(newData)
+
+    const runFns = (err: any) => {
+      for (let i = 0; i < writeCallbacks.length; i++) {
+        writeCallbacks[i](err, this.name)
+      }
+    }
+
+    if (utils.deepEquals(oldData, newData)) {
+      runFns(null)
+      return
+    }
+
+    if (this.services.connection.isConnected) {
+      this.sendUpdate(null, newData, runFns)
+    } else {
+      runFns(EVENT.CLIENT_OFFLINE)
+      this.saveUpdate()
+    }
   }
 
   private onUnsubscribed (): void {
