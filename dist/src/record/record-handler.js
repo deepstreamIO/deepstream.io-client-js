@@ -27,6 +27,8 @@ class RecordHandler {
             mergeStrategy: new merge_strategy_service_1.MergeStrategyService(services, options.mergeStrategy)
         };
         this.dirtyService = this.recordServices.dirtyService;
+        this.sendUpdatedData = this.sendUpdatedData.bind(this);
+        this.onRecordUpdated = this.onRecordUpdated.bind(this);
         this.onMergeCompleted = this.onMergeCompleted.bind(this);
         this.getRecordCore = this.getRecordCore.bind(this);
         this.services.connection.registerHandler(message_constants_1.TOPIC.RECORD, this.handle.bind(this));

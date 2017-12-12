@@ -91,6 +91,7 @@ export class RecordCore extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
+          { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
           { name: RA.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
@@ -406,6 +407,7 @@ export class RecordCore extends Emitter {
   }
 
   private onResubscribing (): void {
+    this.services.timerRegistry.remove(this.discardTimeout)
     this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this))
     this.services.timeoutRegistry.add({
       message: {

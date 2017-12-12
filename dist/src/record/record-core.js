@@ -34,6 +34,7 @@ class RecordCore extends Emitter {
                 { name: 2 /* SUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
                 { name: 3 /* RESUBSCRIBE */, from: 0 /* INITIAL */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
                 { name: 3 /* RESUBSCRIBE */, from: 4 /* READY */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
+                { name: 3 /* RESUBSCRIBE */, from: 6 /* UNSUBSCRIBING */, to: 2 /* RESUBSCRIBING */, handler: this.onResubscribing.bind(this) },
                 { name: 4 /* RESUBSCRIBED */, from: 2 /* RESUBSCRIBING */, to: 4 /* READY */ },
                 { name: 5 /* INVALID_VERSION */, from: 2 /* RESUBSCRIBING */, to: 5 /* MERGING */ },
                 { name: message_constants_1.RECORD_ACTIONS.DELETE, from: 4 /* READY */, to: 8 /* DELETING */ },
@@ -320,6 +321,7 @@ class RecordCore extends Emitter {
         });
     }
     onResubscribing() {
+        this.services.timerRegistry.remove(this.discardTimeout);
         this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this));
         this.services.timeoutRegistry.add({
             message: {

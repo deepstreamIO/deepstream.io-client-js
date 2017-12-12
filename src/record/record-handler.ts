@@ -47,6 +47,8 @@ export class RecordHandler {
     } as RecordServices
     this.dirtyService = this.recordServices.dirtyService
 
+    this.sendUpdatedData = this.sendUpdatedData.bind(this)
+    this.onRecordUpdated = this.onRecordUpdated.bind(this)
     this.onMergeCompleted = this.onMergeCompleted.bind(this)
     this.getRecordCore = this.getRecordCore.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
