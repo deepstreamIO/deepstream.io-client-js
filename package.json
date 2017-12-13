@@ -15,7 +15,7 @@
   },
   "scripts": {
     "tsc": "rm -rf dist && tsc",
-    "precommit": "npm run tsc && git add dist/",
+    "precommit": "npm run tsc && npm run build && git add dist/",
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
     "rebuild": "rimraf dist && webpack",
