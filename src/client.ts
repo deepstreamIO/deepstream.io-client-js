@@ -22,8 +22,8 @@ export interface RecordOfflineStore {
 
 export interface Services {
   logger: Logger
-  connection: Connection
-  timeoutRegistry: TimeoutRegistry
+  connection?: Connection
+  timeoutRegistry?: TimeoutRegistry
   timerRegistry: TimerRegistry
   socketFactory: SocketFactory
   storage: RecordOfflineStore
@@ -41,17 +41,17 @@ export class Client extends EventEmitter {
   constructor (url: string, options: any = {}) {
     super()
     this.options = Object.assign({}, DefaultOptions, options)
-    const services: any = {}
-    services.storage = options.storage || new Storage(this.options)
-    services.logger = new Logger(this)
-    services.timerRegistry = new TimerRegistry()
-    services.timeoutRegistry = new TimeoutRegistry(services, this.options)
-    services.socketFactory = options.socketFactory || socketFactory
-    services.connection = new Connection(services, this.options, url, this)
-    this.services = services as Services
-
+    this.services = {
+        storage: options.storage || new Storage(this.options),
+        logger: new Logger(this),
+        timerRegistry: new TimerRegistry(),
+        socketFactory: options.socketFactory || socketFactory,
+    }
+    // @todo -> remove dependency on the own service object
+    this.services.timeoutRegistry = new TimeoutRegistry(this.services, this.options)
+    this.services.connection = new Connection(this.services, this.options, url, this)
     this.services.connection.onLost(
-      services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
+        this.services.timeoutRegistry.onConnectionLost.bind(this.services.timeoutRegistry)
     )
 
     this.event = new EventHandler(this.services, this.options)
