@@ -20,13 +20,16 @@ export interface RecordOfflineStore {
   delete: (recordName: string, callback: offlineStoreWriteResponse) => void
 }
 
-export interface Services {
+export interface UninitializedServices {
   logger: Logger
-  connection?: Connection
-  timeoutRegistry?: TimeoutRegistry
   timerRegistry: TimerRegistry
   socketFactory: SocketFactory
   storage: RecordOfflineStore
+}
+
+export interface Services extends UninitializedServices {
+    connection: Connection
+    timeoutRegistry: TimeoutRegistry
 }
 
 export class Client extends EventEmitter {
@@ -41,15 +44,19 @@ export class Client extends EventEmitter {
   constructor (url: string, options: any = {}) {
     super()
     this.options = Object.assign({}, DefaultOptions, options)
-    this.services = {
-        storage: options.storage || new Storage(this.options),
-        logger: new Logger(this),
-        timerRegistry: new TimerRegistry(),
-        socketFactory: options.socketFactory || socketFactory,
+    let services: UninitializedServices = {
+      storage: options.storage || new Storage(this.options),
+      logger: new Logger(this),
+      timerRegistry: new TimerRegistry(),
+      socketFactory: options.socketFactory || socketFactory,
     }
     // @todo -> remove dependency on the own service object
-    this.services.timeoutRegistry = new TimeoutRegistry(this.services, this.options)
-    this.services.connection = new Connection(this.services, this.options, url, this)
+    // @todo use a factory method instead and remove as Services, to be clear with constraint
+    services = this.services = Object.assign(services, {
+      timeoutRegistry: new TimeoutRegistry(services as Services, this.options),
+      connection: new Connection(services as Services, this.options, url, this),
+    })
+
     this.services.connection.onLost(
         this.services.timeoutRegistry.onConnectionLost.bind(this.services.timeoutRegistry)
     )
