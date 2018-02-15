@@ -13,6 +13,8 @@ export declare enum META_KEYS {
     originalTopic = "t",
     originalAction = "a",
     protocolVersion = "x",
+    requestorName = "rn",
+    requestorData = "rd",
 }
 export declare enum PAYLOAD_ENCODING {
     JSON = "j",
@@ -77,7 +79,7 @@ export interface RecordAckMessage extends RecordMessage {
     data: any;
 }
 export interface ParseError {
-    parseError: true;
+    parseError: boolean;
     action: PARSER_ACTIONS;
     parsedMessage: Message;
     raw?: Buffer;

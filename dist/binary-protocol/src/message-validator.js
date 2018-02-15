@@ -77,7 +77,7 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.RECORD_ACTIONS.RECORD_DELETE_ERROR]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.RECORD_NOT_FOUND]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], []],
         [message_constants_1.RECORD_ACTIONS.INVALID_VERSION]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], [message_constants_1.META_KEYS.correlationId]],
-        [message_constants_1.RECORD_ACTIONS.INVALID_PATCH_ON_HOTPATH]: [[message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
+        [message_constants_1.RECORD_ACTIONS.INVALID_PATCH_ON_HOTPATH]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.originalAction], [message_constants_1.META_KEYS.correlationId]],
         [message_constants_1.RECORD_ACTIONS.LISTEN]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.LISTEN_ACK]: [[message_constants_1.META_KEYS.name], []],
         [message_constants_1.RECORD_ACTIONS.UNLISTEN]: [[message_constants_1.META_KEYS.name], []],
@@ -93,7 +93,7 @@ exports.META_PARAMS_SPEC = {
     },
     [message_constants_1.TOPIC.RPC]: {
         [message_constants_1.RPC_ACTIONS.REQUEST_ERROR]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], [message_constants_1.META_KEYS.reason]],
-        [message_constants_1.RPC_ACTIONS.REQUEST]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], []],
+        [message_constants_1.RPC_ACTIONS.REQUEST]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], [message_constants_1.META_KEYS.requestorName, message_constants_1.META_KEYS.requestorData]],
         [message_constants_1.RPC_ACTIONS.ACCEPT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RPC_ACTIONS.REJECT]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], []],
         [message_constants_1.RPC_ACTIONS.RESPONSE]: [[message_constants_1.META_KEYS.name, message_constants_1.META_KEYS.correlationId], []],

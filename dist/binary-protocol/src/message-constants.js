@@ -14,6 +14,8 @@ var META_KEYS;
     META_KEYS["originalTopic"] = "t";
     META_KEYS["originalAction"] = "a";
     META_KEYS["protocolVersion"] = "x";
+    META_KEYS["requestorName"] = "rn";
+    META_KEYS["requestorData"] = "rd";
 })(META_KEYS = exports.META_KEYS || (exports.META_KEYS = {}));
 var PAYLOAD_ENCODING;
 (function (PAYLOAD_ENCODING) {

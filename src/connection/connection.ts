@@ -397,7 +397,7 @@ export class Connection {
         )
         return
       }
-      const message: Message = parseResult
+      const message: any = parseResult
       const res = parseData(message)
       if (res !== true) {
         this.services.logger.error({ topic: TOPIC.PARSER }, PARSER_ACTION.INVALID_MESSAGE, res)
