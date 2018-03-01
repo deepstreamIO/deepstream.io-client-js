@@ -26,7 +26,7 @@ export declare class RecordCore extends Emitter {
     name: string;
     isReady: boolean;
     hasProvider: boolean;
-    version: number;
+    version: number | null;
     private references;
     private services;
     private options;

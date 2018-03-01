@@ -64,7 +64,7 @@ export class Client extends EventEmitter {
   public login (callback: AuthenticationCallback): void
   public login (details: object): Promise<object>
   public login (details: object, callback: AuthenticationCallback): void
-  public login (detailsOrCallback?: object | AuthenticationCallback, callback?: AuthenticationCallback): void | Promise<object> {
+  public login (detailsOrCallback?: object | AuthenticationCallback, callback?: AuthenticationCallback): void | Promise<object | null> {
     if (detailsOrCallback && typeof detailsOrCallback === 'object') {
       if (callback) {
         this.services.connection.authenticate(detailsOrCallback, callback)

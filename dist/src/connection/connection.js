@@ -18,6 +18,13 @@ class Connection {
         this.emitter = emitter;
         this.internalEmitter = new Emitter();
         this.isInLimbo = true;
+        this.clientData = null;
+        this.heartbeatInterval = null;
+        this.lastHeartBeat = null;
+        this.endpoint = null;
+        this.reconnectTimeout = null;
+        this.reconnectionAttempt = 0;
+        this.limboTimeout = null;
         let isReconnecting = false;
         let firstOpen = true;
         this.stateMachine = new state_machine_1.StateMachine(this.services.logger, {
@@ -109,7 +116,9 @@ class Connection {
             this.services.logger.error(message, constants_1.EVENT.IS_CLOSED);
             return;
         }
-        this.endpoint.sendParsedMessage(message);
+        if (this.endpoint) {
+            this.endpoint.sendParsedMessage(message);
+        }
     }
     /**
      * Sends the specified authentication parameters
@@ -185,7 +194,9 @@ class Connection {
     pause() {
         this.stateMachine.transition("pause" /* PAUSE */);
         this.services.timerRegistry.remove(this.heartbeatInterval);
-        this.endpoint.close();
+        if (this.endpoint) {
+            this.endpoint.close();
+        }
     }
     resume(callback) {
         this.stateMachine.transition("resume" /* RESUME */);
@@ -339,7 +350,9 @@ class Connection {
         if (Date.now() - this.lastHeartBeat > heartBeatTolerance) {
             this.services.timerRegistry.remove(this.heartbeatInterval);
             this.services.logger.error({ topic: message_constants_1.TOPIC.CONNECTION }, constants_1.EVENT.HEARTBEAT_TIMEOUT);
-            this.endpoint.close();
+            if (this.endpoint) {
+                this.endpoint.close();
+            }
             return;
         }
         this.heartbeatInterval = this.services.timerRegistry.add({
@@ -424,13 +437,17 @@ class Connection {
         }
         if (message.action === message_constants_1.CONNECTION_ACTIONS.REJECT) {
             this.stateMachine.transition("challenge-denied" /* CHALLENGE_DENIED */);
-            this.endpoint.close();
+            if (this.endpoint) {
+                this.endpoint.close();
+            }
             return;
         }
         if (message.action === message_constants_1.CONNECTION_ACTIONS.REDIRECT) {
             this.url = message.url;
             this.stateMachine.transition("redirected" /* CONNECTION_REDIRECTED */);
-            this.endpoint.close();
+            if (this.endpoint) {
+                this.endpoint.close();
+            }
             return;
         }
         if (message.action === message_constants_1.CONNECTION_ACTIONS.AUTHENTICATION_TIMEOUT) {
@@ -493,7 +510,7 @@ class Connection {
     }
     updateClientData(data) {
         const newClientData = data || null;
-        if (this.clientData === undefined &&
+        if (this.clientData === null &&
             (newClientData === null || Object.keys(newClientData).length === 0)) {
             return;
         }

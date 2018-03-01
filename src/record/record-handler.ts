@@ -217,12 +217,12 @@ export class RecordHandler {
     if (recordCore) {
       if (callback) {
         recordCore.whenReady(null, () => {
-          callback(null, recordCore.version)
+          callback(null, recordCore.version as number)
         })
       } else {
         return new Promise((resolve, reject) => {
           recordCore.whenReady(null, () => {
-            resolve(recordCore.version)
+            resolve(recordCore.version as number)
           })
         })
       }

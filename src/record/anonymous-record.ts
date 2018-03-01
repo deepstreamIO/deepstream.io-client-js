@@ -33,7 +33,7 @@ export class AnonymousRecord extends Emitter  {
         if (!this.record) {
             return -1
         }
-        return this.record.version
+        return this.record.version as number
     }
 
     public whenReady (callback?: ((record: AnonymousRecord) => void)): void | Promise<AnonymousRecord> {

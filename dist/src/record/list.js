@@ -10,6 +10,9 @@ class List extends Emitter {
         this.originalApplyUpdate = this.record.applyUpdate.bind(this.record);
         this.record.applyUpdate = this.applyUpdate.bind(this);
         this.wrappedFunctions = new Map();
+        this.hasAddListener = false;
+        this.hasRemoveListener = false;
+        this.hasMoveListener = false;
     }
     get name() {
         return this.record.name;

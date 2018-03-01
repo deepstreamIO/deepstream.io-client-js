@@ -19,6 +19,12 @@ class RecordCore extends Emitter {
         this.references = 1;
         this.hasProvider = false;
         this.pendingWrites = [];
+        this.isReady = false;
+        this.version = null;
+        this.responseTimeout = -1;
+        this.discardTimeout = -1;
+        this.deletedTimeout = -1;
+        this.deleteResponse = {};
         if (typeof name !== 'string' || name.length === 0) {
             throw new Error('invalid argument name');
         }

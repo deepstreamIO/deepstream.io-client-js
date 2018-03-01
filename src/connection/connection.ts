@@ -17,7 +17,7 @@ import { Options } from '../client-options'
 import { Socket } from './socket-factory'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
-export type AuthenticationCallback = (success: boolean, clientData: object) => void
+export type AuthenticationCallback = (success: boolean, clientData: object | null) => void
 export type ResumeCallback = (error?: object) => void
 
 const enum TRANSITIONS {
@@ -52,19 +52,19 @@ export class Connection {
   private options: Options
   private stateMachine: StateMachine
   private authParams: object | null
-  private clientData: object
+  private clientData: object | null
   private authCallback: AuthenticationCallback | null
   private resumeCallback: ResumeCallback | null
   private originalUrl: string
   private url: string
-  private heartbeatInterval: number
-  private lastHeartBeat: number
-  private endpoint: Socket
+  private heartbeatInterval: number | null
+  private lastHeartBeat: number | null
+  private endpoint: Socket | null
   private handlers: Map<TOPIC, Function>
 
   private reconnectTimeout: number | null
   private reconnectionAttempt: number
-  private limboTimeout: number
+  private limboTimeout: number | null
 
   constructor (services: Services, options: Options, url: string, emitter: Emitter) {
     this.options = options
@@ -77,6 +77,13 @@ export class Connection {
     this.emitter = emitter
     this.internalEmitter = new Emitter()
     this.isInLimbo = true
+    this.clientData = null
+    this.heartbeatInterval = null
+    this.lastHeartBeat = null
+    this.endpoint = null
+    this.reconnectTimeout = null
+    this.reconnectionAttempt = 0
+    this.limboTimeout = null
 
     let isReconnecting = false
     let firstOpen = true
@@ -108,7 +115,7 @@ export class Connection {
             firstOpen = false
             this.isInLimbo = false
             this.internalEmitter.emit(EVENT.CONNECTION_REESTABLISHED)
-            this.services.timerRegistry.remove(this.limboTimeout)
+            this.services.timerRegistry.remove(this.limboTimeout as number)
           }
         },
         transitions: [
@@ -181,7 +188,9 @@ export class Connection {
       this.services.logger.error(message, EVENT.IS_CLOSED)
       return
     }
-    this.endpoint.sendParsedMessage(message)
+    if (this.endpoint) {
+      this.endpoint.sendParsedMessage(message)
+    }
   }
 
   /**
@@ -259,7 +268,7 @@ export class Connection {
    * will prevent the client from reconnecting.
    */
   public close (): void {
-    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.services.timerRegistry.remove(this.heartbeatInterval as number)
     this.sendMessage({
       topic: TOPIC.CONNECTION,
       action: CONNECTION_ACTION.CLOSING
@@ -269,8 +278,10 @@ export class Connection {
 
   public pause (): void {
     this.stateMachine.transition(TRANSITIONS.PAUSE)
-    this.services.timerRegistry.remove(this.heartbeatInterval)
-    this.endpoint.close()
+    this.services.timerRegistry.remove(this.heartbeatInterval as number)
+    if (this.endpoint) {
+      this.endpoint.close()
+    }
   }
 
   public resume (callback: ResumeCallback): void {
@@ -341,7 +352,7 @@ export class Connection {
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.CONNECTION_ERROR, msg)
     }, 1)
 
-    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.services.timerRegistry.remove(this.heartbeatInterval as number)
     this.stateMachine.transition(TRANSITIONS.ERROR)
     this.tryReconnect()
   }
@@ -355,7 +366,7 @@ export class Connection {
    * strategy.
    */
   private onClose (): void {
-    this.services.timerRegistry.remove(this.heartbeatInterval)
+    this.services.timerRegistry.remove(this.heartbeatInterval as number)
 
     if (this.stateMachine.state === CONNECTION_STATE.REDIRECTING) {
       this.createEndpoint()
@@ -442,10 +453,12 @@ export class Connection {
   private checkHeartBeat (): void {
     const heartBeatTolerance = this.options.heartbeatInterval * 2
 
-    if (Date.now() - this.lastHeartBeat > heartBeatTolerance) {
-      this.services.timerRegistry.remove(this.heartbeatInterval)
+    if (Date.now() - (this.lastHeartBeat as number) > heartBeatTolerance) {
+      this.services.timerRegistry.remove(this.heartbeatInterval as number)
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.HEARTBEAT_TIMEOUT)
-      this.endpoint.close()
+      if (this.endpoint) {
+        this.endpoint.close()
+      }
       return
     }
 
@@ -546,14 +559,18 @@ export class Connection {
 
     if (message.action === CONNECTION_ACTION.REJECT) {
       this.stateMachine.transition(TRANSITIONS.CHALLENGE_DENIED)
-      this.endpoint.close()
+      if (this.endpoint) {
+        this.endpoint.close()
+      }
       return
     }
 
     if (message.action === CONNECTION_ACTION.REDIRECT) {
       this.url = message.url as string
       this.stateMachine.transition(TRANSITIONS.CONNECTION_REDIRECTED)
-      this.endpoint.close()
+      if (this.endpoint) {
+        this.endpoint.close()
+      }
       return
     }
 
@@ -627,7 +644,7 @@ export class Connection {
   private updateClientData (data: any) {
     const newClientData = data || null
     if (
-      this.clientData === undefined &&
+      this.clientData === null &&
       (newClientData === null || Object.keys(newClientData).length === 0)
     ) {
       return

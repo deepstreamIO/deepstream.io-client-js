@@ -41,7 +41,7 @@ export class RecordCore extends Emitter {
   public name: string
   public isReady: boolean
   public hasProvider: boolean
-  public version: number
+  public version: number | null
 
   private references: number
   private services: Services
@@ -73,6 +73,13 @@ export class RecordCore extends Emitter {
     this.references = 1
     this.hasProvider = false
     this.pendingWrites = []
+    this.isReady = false
+
+    this.version = null
+    this.responseTimeout = -1
+    this.discardTimeout = -1
+    this.deletedTimeout = -1
+    this.deleteResponse = {}
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
@@ -377,7 +384,7 @@ export class RecordCore extends Emitter {
   }
 
   public saveRecordToOffline (): void  {
-    this.services.storage.set(this.name, this.version, this.data, () => {})
+    this.services.storage.set(this.name, this.version as number, this.data, () => {})
   }
 
   /**
@@ -614,7 +621,7 @@ export class RecordCore extends Emitter {
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
       }
     } else {
-      if (remoteVersion < this.version) {
+      if (remoteVersion < (this.version as number)) {
         /**
          *  deleted and created again remotely
         */
@@ -638,7 +645,7 @@ export class RecordCore extends Emitter {
 
   private saveUpdate (): void {
     if (!this.recordServices.dirtyService.isDirty(this.name)) {
-      this.version++
+      (this.version as number)++
       this.recordServices.dirtyService.setDirty(this.name, true)
     }
     this.saveRecordToOffline()
@@ -648,7 +655,7 @@ export class RecordCore extends Emitter {
     if (this.recordServices.dirtyService.isDirty(this.name)) {
       this.recordServices.dirtyService.setDirty(this.name, false)
     } else {
-      this.version++
+      (this.version as number)++
     }
 
     const message = {
@@ -782,7 +789,7 @@ export class RecordCore extends Emitter {
   private recoverRecord (remoteVersion: number, remoteData: any, message: RecordMessage) {
     this.recordServices.mergeStrategy.merge(
       this.name,
-      this.version,
+      (this.version as number),
       this.get(),
       remoteVersion,
       remoteData,

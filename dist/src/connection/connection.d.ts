@@ -2,7 +2,7 @@ import { CONNECTION_STATE } from '../constants';
 import { TOPIC, Message } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 import { Options } from '../client-options';
-export declare type AuthenticationCallback = (success: boolean, clientData: object) => void;
+export declare type AuthenticationCallback = (success: boolean, clientData: object | null) => void;
 export declare type ResumeCallback = (error?: object) => void;
 export declare class Connection {
     emitter: Emitter;

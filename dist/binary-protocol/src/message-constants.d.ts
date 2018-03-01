@@ -1,5 +1,5 @@
 /// <reference types="node" />
-export declare type ALL_ACTIONS = RECORD_ACTIONS | PRESENCE_ACTIONS | RPC_ACTIONS | EVENT_ACTIONS | AUTH_ACTIONS | CONNECTION_ACTIONS | PARSER_ACTIONS;
+export declare type ALL_ACTIONS = RECORD_ACTIONS | PRESENCE_ACTIONS | RPC_ACTIONS | EVENT_ACTIONS | AUTH_ACTIONS | CONNECTION_ACTIONS | PARSER_ACTIONS | STATE_ACTIONS | CLUSTER_ACTIONS | LOCK_ACTIONS;
 export declare enum META_KEYS {
     payloadEncoding = "e",
     name = "n",
@@ -15,6 +15,7 @@ export declare enum META_KEYS {
     protocolVersion = "x",
     requestorName = "rn",
     requestorData = "rd",
+    registryTopic = "rt",
 }
 export declare enum PAYLOAD_ENCODING {
     JSON = "j",
@@ -42,6 +43,9 @@ export interface Message {
     reason?: string;
     url?: string;
     protocolVersion?: string;
+}
+export interface StateMessage extends Message {
+    name: string;
 }
 export interface SubscriptionMessage extends Message {
     name: string;
@@ -107,6 +111,9 @@ export declare enum TOPIC {
     EVENT_PUBLISHED_SUBSCRIPTIONS = 39,
     RECORD_LISTENING = 40,
     EVENT_LISTENING = 41,
+    STATE_REGISTRY = 48,
+    CLUSTER = 49,
+    LOCK = 50,
 }
 export declare enum PARSER_ACTIONS {
     UNKNOWN_TOPIC = 80,
@@ -264,6 +271,29 @@ export declare enum PRESENCE_ACTIONS {
     MULTIPLE_SUBSCRIPTIONS = 99,
     NOT_SUBSCRIBED = 100,
 }
+export declare enum LOCK_ACTIONS {
+    ERROR = 0,
+    REQUEST = 1,
+    RESPONSE = 2,
+    RELEASE = 3,
+}
+export declare enum STATE_ACTIONS {
+    ERROR = 0,
+    ADD = 1,
+    REMOVE = 2,
+    REQUEST_FULL_STATE = 3,
+    FULL_STATE = 4,
+}
+export declare enum CLUSTER_ACTIONS {
+    PING = 0,
+    PONG = 1,
+    CLOSE = 2,
+    REJECT = 3,
+    REJECT_DUPLICATE = 4,
+    IDENTIFICATION_REQUEST = 5,
+    IDENTIFICATION_RESPONSE = 6,
+    KNOWN_PEERS = 7,
+}
 export declare const ACTIONS: {
     [TOPIC.PARSER]: typeof PARSER_ACTIONS;
     [TOPIC.CONNECTION]: typeof CONNECTION_ACTIONS;
@@ -272,6 +302,9 @@ export declare const ACTIONS: {
     [TOPIC.RECORD]: typeof RECORD_ACTIONS;
     [TOPIC.RPC]: typeof RPC_ACTIONS;
     [TOPIC.PRESENCE]: typeof PRESENCE_ACTIONS;
+    [TOPIC.LOCK]: typeof LOCK_ACTIONS;
+    [TOPIC.STATE_REGISTRY]: typeof STATE_ACTIONS;
+    [TOPIC.CLUSTER]: typeof CLUSTER_ACTIONS;
 };
 export declare enum EVENT {
     INFO = "INFO",
@@ -289,4 +322,5 @@ export declare enum EVENT {
     LOCAL_LISTEN = "LOCAL_LISTEN",
     INVALID_CONFIG_DATA = "INVALID_CONFIG_DATA",
     INVALID_STATE_TRANSITION = "INVALID_STATE_TRANSITION",
+    INVALID_LEADER_REQUEST = "INVALID_LEADER_REQUEST",
 }

@@ -42,6 +42,7 @@ class PresenceHandler {
         this.pendingSubscribes = new Set();
         this.pendingUnsubscribes = new Set();
         this.limboQueue = [];
+        this.flushTimeout = null;
     }
     subscribe(userOrCallback, callback) {
         if (typeof userOrCallback === 'string' && userOrCallback.length > 0 && typeof callback === 'function') {

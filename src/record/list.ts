@@ -13,12 +13,17 @@ export class List extends Emitter {
     private hasAddListener: boolean
     private hasRemoveListener: boolean
     private hasMoveListener: boolean
+
     constructor (record: RecordCore) {
         super()
         this.record = record
         this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
         this.record.applyUpdate = this.applyUpdate.bind(this)
         this.wrappedFunctions = new Map()
+
+        this.hasAddListener = false
+        this.hasRemoveListener = false
+        this.hasMoveListener = false
     }
 
     get name (): string {
@@ -30,7 +35,7 @@ export class List extends Emitter {
     }
 
     get version (): number {
-        return this.record.version
+        return this.record.version as number
     }
 
     public whenReady (callback?: ((list: List) => void)): void | Promise<List> {

@@ -158,7 +158,25 @@ exports.META_PARAMS_SPEC = {
         [message_constants_1.PRESENCE_ACTIONS.INVALID_PRESENCE_USERS]: [[], []],
         [message_constants_1.PRESENCE_ACTIONS.MESSAGE_PERMISSION_ERROR]: [[message_constants_1.META_KEYS.originalAction, message_constants_1.META_KEYS.name], [message_constants_1.META_KEYS.correlationId]],
         [message_constants_1.PRESENCE_ACTIONS.MESSAGE_DENIED]: [[message_constants_1.META_KEYS.originalAction], [message_constants_1.META_KEYS.correlationId, message_constants_1.META_KEYS.name]],
-    }
+    },
+    [message_constants_1.TOPIC.CLUSTER]: {
+        [message_constants_1.CLUSTER_ACTIONS.CLOSE]: [[], []],
+        [message_constants_1.CLUSTER_ACTIONS.IDENTIFICATION_REQUEST]: [[], []],
+        [message_constants_1.CLUSTER_ACTIONS.IDENTIFICATION_RESPONSE]: [[], []],
+        [message_constants_1.CLUSTER_ACTIONS.KNOWN_PEERS]: [[], []],
+        [message_constants_1.CLUSTER_ACTIONS.PING]: [[], []],
+        [message_constants_1.CLUSTER_ACTIONS.PONG]: [[], []],
+        [message_constants_1.CLUSTER_ACTIONS.REJECT]: [[], []],
+        [message_constants_1.CLUSTER_ACTIONS.REJECT_DUPLICATE]: [[], []]
+    },
+    [message_constants_1.TOPIC.STATE_REGISTRY]: {
+        [message_constants_1.STATE_ACTIONS.ERROR]: [[message_constants_1.META_KEYS.registryTopic], []],
+        [message_constants_1.STATE_ACTIONS.ADD]: [[message_constants_1.META_KEYS.registryTopic], []],
+        [message_constants_1.STATE_ACTIONS.REMOVE]: [[message_constants_1.META_KEYS.registryTopic], []],
+        [message_constants_1.STATE_ACTIONS.REQUEST_FULL_STATE]: [[message_constants_1.META_KEYS.registryTopic], []],
+        [message_constants_1.STATE_ACTIONS.FULL_STATE]: [[message_constants_1.META_KEYS.registryTopic], []]
+    },
+    [message_constants_1.TOPIC.LOCK]: {}
 };
 const payloadMap = {
     [message_constants_1.TOPIC.PARSER]: [
@@ -192,7 +210,16 @@ const payloadMap = {
     ],
     [message_constants_1.TOPIC.PRESENCE]: [
         message_constants_1.PRESENCE_ACTIONS.QUERY_RESPONSE,
-    ]
+    ],
+    [message_constants_1.TOPIC.CLUSTER]: [
+        message_constants_1.CLUSTER_ACTIONS.IDENTIFICATION_REQUEST,
+        message_constants_1.CLUSTER_ACTIONS.IDENTIFICATION_RESPONSE,
+        message_constants_1.CLUSTER_ACTIONS.KNOWN_PEERS
+    ],
+    [message_constants_1.TOPIC.STATE_REGISTRY]: [
+        message_constants_1.STATE_ACTIONS.FULL_STATE
+    ],
+    [message_constants_1.TOPIC.LOCK]: []
 };
 function mapOfArraysHas(map, topic, action) {
     const actions = map[topic];

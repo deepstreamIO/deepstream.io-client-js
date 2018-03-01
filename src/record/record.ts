@@ -27,7 +27,7 @@ export class Record extends Emitter  {
     }
 
     get version (): number {
-        return this.record.version
+        return this.record.version as number
     }
 
     get hasProvider (): boolean {

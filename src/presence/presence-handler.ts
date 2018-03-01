@@ -62,6 +62,7 @@ export class PresenceHandler {
     this.pendingSubscribes = new Set()
     this.pendingUnsubscribes = new Set()
     this.limboQueue = []
+    this.flushTimeout = null
   }
 
   public subscribe (callback: SubscribeCallback): void
