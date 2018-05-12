@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "component-emitter2": "^1.3.5",
-    "ws": "^4"
+    "ws": "^5"
   },
   "browser": {
     "net": false,
