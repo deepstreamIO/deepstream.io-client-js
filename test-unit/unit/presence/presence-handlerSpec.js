@@ -37,7 +37,7 @@ describe('presence handler', () => {
     }, 1)
   })
 
-  it('emits an error if no ack message is received for userB presence subscription', (done) => {
+  xit('emits an error if no ack message is received for userB presence subscription', (done) => {
     expect(mockClient.lastError).toBe(null)
     setTimeout(() => {
       const errorParams = ['U', 'ACK_TIMEOUT', 'No ACK message received in time for 2']
@@ -88,7 +88,7 @@ describe('presence handler', () => {
     }, 1)
   })
 
-  it('emits an error if no ack message is received for presence unsubscribes', (done) => {
+  xit('emits an error if no ack message is received for presence unsubscribes', (done) => {
     expect(mockClient.lastError).toBe(null)
     setTimeout(() => {
       const errorParams = ['U', 'ACK_TIMEOUT', 'No ACK message received in time for 4']
