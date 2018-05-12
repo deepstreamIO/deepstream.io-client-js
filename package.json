@@ -44,7 +44,7 @@
     "babelify": "^8.0.0",
     "coveralls": "^3.0.1",
     "cucumber": "^4.2.1",
-    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git#v3",
+    "deepstream.io": "git+https://github.com/deepstreamIO/deepstream.io.git",
     "derequire": "^2.0.6",
     "eslint-config-deepstream": "^2.2.1",
     "grunt-browserify": "^5.3.0",
