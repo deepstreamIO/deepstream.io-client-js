@@ -42,6 +42,10 @@ export class List extends Emitter {
         return this.record.whenReady(this, callback)
     }
 
+    public discard (): void {
+      return this.record.discard()
+    }
+
     /**
      * Returns the array of list entries or an
      * empty array if the list hasn't been populated yet.
