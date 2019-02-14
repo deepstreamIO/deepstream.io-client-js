@@ -29,13 +29,13 @@ export declare class PresenceHandler {
     getAll(users: Array<string>, callback: (error: {
         reason: EVENT;
     }, result?: IndividualQueryResult) => void): void;
-    private handle(message);
-    private sendQuery(message);
-    private flush();
-    private bulkSubscription(action, names);
-    private subscribeToAllChanges();
-    private unsubscribeToAllChanges();
-    private registerFlushTimeout();
-    private onConnectionReestablished();
-    private onExitLimbo();
+    private handle;
+    private sendQuery;
+    private flush;
+    private bulkSubscription;
+    private subscribeToAllChanges;
+    private unsubscribeToAllChanges;
+    private registerFlushTimeout;
+    private onConnectionReestablished;
+    private onExitLimbo;
 }

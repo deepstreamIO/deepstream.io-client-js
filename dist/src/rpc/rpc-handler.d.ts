@@ -47,15 +47,15 @@ export declare class RPCHandler {
      * is present (which shouldn't really happen, but might be the result of a race condition
      * if this client sends a unprovide message whilst an incoming request is already in flight)
      */
-    private respondToRpc(message);
+    private respondToRpc;
     /**
      * Distributes incoming messages from the server
      * based on their action
      */
-    private handle(message);
-    private getRPC(message);
-    private sendProvide(name);
-    private onConnectionReestablished();
-    private onExitLimbo();
-    private onConnectionLost();
+    private handle;
+    private getRPC;
+    private sendProvide;
+    private onConnectionReestablished;
+    private onExitLimbo;
+    private onConnectionLost;
 }

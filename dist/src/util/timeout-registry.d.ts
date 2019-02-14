@@ -35,11 +35,11 @@ export declare class TimeoutRegistry extends EventEmitter {
     /**
      * Will be invoked if the timeout has occured before the ack message was received
      */
-    private onTimeout(internalTimeout);
+    private onTimeout;
     /**
      * Returns a unique name from the timeout
      */
-    private getUniqueName(message);
+    private getUniqueName;
     /**
      * Remote all timeouts when connection disconnects
      */

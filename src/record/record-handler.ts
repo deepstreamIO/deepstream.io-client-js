@@ -2,7 +2,12 @@ import * as utils from '../util/utils'
 import { EVENT } from '../constants'
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
+import {
+  TOPIC,
+  RECORD_ACTIONS as RECORD_ACTION,
+  RecordMessage,
+  ListenMessage
+} from '../../binary-protocol/src/message-constants'
 import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Record } from './record'
@@ -342,7 +347,7 @@ export class RecordHandler {
       message.action === RECORD_ACTION.LISTEN ||
       message.action === RECORD_ACTION.UNLISTEN
     ) {
-      this.listener.handle(message)
+      this.listener.handle(message as ListenMessage)
       return
     }
 

@@ -20,7 +20,7 @@ export declare const enum RECORD_STATE {
     UNSUBSCRIBED = 7,
     DELETING = 8,
     DELETED = 9,
-    ERROR = 10,
+    ERROR = 10
 }
 export declare class RecordCore extends Emitter {
     name: string;
@@ -61,7 +61,7 @@ export declare class RecordCore extends Emitter {
    *                                     two arguments or the data itself
    * @param {Object} data     The data that should be stored in the record
    */
-    set({path, data, callback}: utils.RecordSetArguments): void;
+    set({ path, data, callback }: utils.RecordSetArguments): void;
     /**
      * Wrapper function around the record.set that returns a promise
      * if no callback is supplied.
@@ -127,20 +127,20 @@ export declare class RecordCore extends Emitter {
     /**
      * Transition States
      */
-    private onSubscribing();
-    private onResubscribing();
-    private onOfflineLoading();
-    private onReady();
-    private applyPendingWrites();
-    private onUnsubscribed();
-    private onDeleted();
+    private onSubscribing;
+    private onResubscribing;
+    private onOfflineLoading;
+    private onReady;
+    private applyPendingWrites;
+    private onUnsubscribed;
+    private onDeleted;
     handle(message: RecordMessage): void;
-    private handleReadResponse(message);
-    private handleHeadResponse(message);
-    private sendRead();
-    private saveUpdate();
-    private sendUpdate(path, data, callback?);
-    private sendCreateUpdate(data);
+    private handleReadResponse;
+    private handleHeadResponse;
+    private sendRead;
+    private saveUpdate;
+    private sendUpdate;
+    private sendCreateUpdate;
     /**
      * Applies incoming updates and patches to the record's dataset
      */
@@ -149,12 +149,12 @@ export declare class RecordCore extends Emitter {
      * Compares the new values for every path with the previously stored ones and
      * updates the subscribers if the value has changed
      */
-    private applyChange(newData);
+    private applyChange;
     /**
      * If connected sends the delete message to server, otherwise
      * we delete in local storage and transition to delete success.
      */
-    private sendDelete();
+    private sendDelete;
     /**
      * Called when a merge conflict is detected by a VERSION_EXISTS error or if an update recieved
      * is directly after the clients. If no merge strategy is configure it will emit a VERSION_EXISTS
@@ -164,23 +164,23 @@ export declare class RecordCore extends Emitter {
      * @param   {Object} remoteData The remote object data
      * @param   {Object} message parsed and validated deepstream message
      */
-    private recoverRecord(remoteVersion, remoteData, message);
+    private recoverRecord;
     /**
    * Callback once the record merge has completed. If successful it will set the
    * record state, else emit and error and the record will remain in an
    * inconsistent state until the next update.
    */
-    private onRecordRecovered(error, mergedData, remoteVersion, remoteData);
+    private onRecordRecovered;
     /**
    * A quick check that's carried out by most methods that interact with the record
    * to make sure it hasn't been destroyed yet - and to handle it gracefully if it has.
    */
-    private checkDestroyed(methodName);
+    private checkDestroyed;
     /**
      * Destroys the record and nulls all
      * its dependencies
      */
-    private destroy();
-    private onConnectionReestablished();
-    private onConnectionLost();
+    private destroy;
+    private onConnectionReestablished;
+    private onConnectionLost;
 }

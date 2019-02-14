@@ -41,28 +41,10 @@ describe('Record handler', () => {
     it('validates on has, head and snapshot', () => {
         chai_1.expect(recordHandler.has.bind(recordHandler, '')).to.throw();
         chai_1.expect(recordHandler.has.bind(recordHandler, '', () => { })).to.throw();
-        chai_1.expect(recordHandler.has.bind(recordHandler, 123, () => { })).to.throw();
-        chai_1.expect(recordHandler.has.bind(recordHandler, null, () => { })).to.throw();
-        chai_1.expect(recordHandler.has.bind(recordHandler, name, null)).to.throw();
-        chai_1.expect(recordHandler.has.bind(recordHandler, name, 123)).to.throw();
-        chai_1.expect(recordHandler.has.bind(recordHandler, name, [])).to.throw();
-        chai_1.expect(recordHandler.has.bind(recordHandler, name, {})).to.throw();
         chai_1.expect(recordHandler.head.bind(recordHandler, '')).to.throw();
         chai_1.expect(recordHandler.head.bind(recordHandler, '', () => { })).to.throw();
-        chai_1.expect(recordHandler.head.bind(recordHandler, 123, () => { })).to.throw();
-        chai_1.expect(recordHandler.head.bind(recordHandler, null, () => { })).to.throw();
-        chai_1.expect(recordHandler.head.bind(recordHandler, name, null)).to.throw();
-        chai_1.expect(recordHandler.head.bind(recordHandler, name, 123)).to.throw();
-        chai_1.expect(recordHandler.head.bind(recordHandler, name, [])).to.throw();
-        chai_1.expect(recordHandler.head.bind(recordHandler, name, {})).to.throw();
         chai_1.expect(recordHandler.snapshot.bind(recordHandler, '')).to.throw();
         chai_1.expect(recordHandler.snapshot.bind(recordHandler, '', () => { })).to.throw();
-        chai_1.expect(recordHandler.snapshot.bind(recordHandler, 123, () => { })).to.throw();
-        chai_1.expect(recordHandler.snapshot.bind(recordHandler, null, () => { })).to.throw();
-        chai_1.expect(recordHandler.snapshot.bind(recordHandler, name, null)).to.throw();
-        chai_1.expect(recordHandler.snapshot.bind(recordHandler, name, 123)).to.throw();
-        chai_1.expect(recordHandler.snapshot.bind(recordHandler, name, [])).to.throw();
-        chai_1.expect(recordHandler.snapshot.bind(recordHandler, name, {})).to.throw();
     });
     it('snapshots record remotely using callback and promise style', () => __awaiter(this, void 0, void 0, function* () {
         recordServices.readRegistryMock

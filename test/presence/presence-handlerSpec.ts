@@ -40,25 +40,9 @@ describe('Presence handler', () => {
   it('validates parameters on subscribe, unsubscribe and getAll', () => {
     expect(presenceHandler.subscribe.bind(presenceHandler)).to.throw()
     expect(presenceHandler.subscribe.bind(presenceHandler, 'name')).to.throw()
-    expect(presenceHandler.subscribe.bind(presenceHandler, 'name', 123)).to.throw()
-    expect(presenceHandler.subscribe.bind(presenceHandler, 'name', {})).to.throw()
     expect(presenceHandler.subscribe.bind(presenceHandler, '', () => {})).to.throw()
-    expect(presenceHandler.subscribe.bind(presenceHandler, 123, () => {})).to.throw()
-    expect(presenceHandler.subscribe.bind(presenceHandler, null, () => {})).to.throw()
-    expect(presenceHandler.subscribe.bind(presenceHandler, undefined, () => {})).to.throw()
 
     expect(presenceHandler.unsubscribe.bind(presenceHandler, '')).to.throw()
-    expect(presenceHandler.unsubscribe.bind(presenceHandler, 123)).to.throw()
-    expect(presenceHandler.unsubscribe.bind(presenceHandler, null)).to.throw()
-    expect(presenceHandler.unsubscribe.bind(presenceHandler, 'name', 1)).to.throw()
-    expect(presenceHandler.unsubscribe.bind(presenceHandler, 'name', {})).to.throw()
-    expect(presenceHandler.unsubscribe.bind(presenceHandler, 'name', 'name')).to.throw()
-
-    expect(presenceHandler.getAll.bind(presenceHandler, '')).to.throw()
-    expect(presenceHandler.getAll.bind(presenceHandler, 123)).to.throw()
-    expect(presenceHandler.getAll.bind(presenceHandler, null)).to.throw()
-    expect(presenceHandler.getAll.bind(presenceHandler, 'name', {})).to.throw()
-    expect(presenceHandler.getAll.bind(presenceHandler, 'name', 1)).to.throw()
   })
 
   it('cant\'t query getAll when client is offline', async () => {

@@ -25,7 +25,6 @@ describe('connection', () => {
     let emitterMock;
     let socket;
     let socketMock;
-    let logger;
     let loggerMock;
     let authCallback;
     const url = 'wss://localhost:6020/deepstream';
@@ -573,8 +572,7 @@ describe('connection', () => {
     }
     function getLoggerMock() {
         const loggerService = services.getLogger();
-        logger = loggerService.logger,
-            loggerMock = loggerService.loggerMock;
+        loggerMock = loggerService.loggerMock;
     }
 });
 //# sourceMappingURL=connectionSpec.js.map

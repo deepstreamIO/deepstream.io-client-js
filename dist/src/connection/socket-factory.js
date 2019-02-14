@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const NodeWebSocket = require("ws");
 const message_parser_1 = require("../../binary-protocol/src/message-parser");
 const message_builder_1 = require("../../binary-protocol/src/message-builder");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket);
-const NodeWebSocket = require("ws");
 exports.socketFactory = (url, options) => {
     const socket = BrowserWebsocket
         ? new BrowserWebsocket(url, [], options)

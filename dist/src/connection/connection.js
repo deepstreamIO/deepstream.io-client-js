@@ -120,15 +120,6 @@ class Connection {
             this.endpoint.sendParsedMessage(message);
         }
     }
-    /**
-     * Sends the specified authentication parameters
-     * to the server. Can be called up to <maxAuthAttempts>
-     * times for the same connection.
-     *
-     * @param   {Object}   authParams A map of user defined auth parameters.
-     *                E.g. { username:<String>, password:<String> }
-     * @param   {Function} callback   A callback that will be invoked with the authenticationr result
-     */
     authenticate(authParamsOrCallback, callback) {
         if (authParamsOrCallback &&
             typeof authParamsOrCallback !== 'object' &&

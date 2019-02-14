@@ -1,4 +1,4 @@
-import { TOPIC, EventMessage, RecordMessage } from '../../binary-protocol/src/message-constants';
+import { TOPIC, ListenMessage } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 export interface ListenResponse {
     accept: () => void;
@@ -15,12 +15,12 @@ export declare class Listener {
     constructor(topic: TOPIC, services: Services);
     listen(pattern: string, callback: ListenCallback): void;
     unlisten(pattern: string): void;
-    private accept(pattern, subscription);
-    private reject(pattern, subscription);
-    private stop(subscription, callback);
-    handle(message: EventMessage | RecordMessage): void;
-    private onConnectionLost();
-    private onConnectionReestablished();
-    private sendListen(pattern);
-    private sendUnlisten(pattern);
+    private accept;
+    private reject;
+    private stop;
+    handle(message: ListenMessage): void;
+    private onConnectionLost;
+    private onConnectionReestablished;
+    private sendListen;
+    private sendUnlisten;
 }

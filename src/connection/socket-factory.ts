@@ -1,16 +1,16 @@
+import * as NodeWebSocket from 'ws'
+
 import { parse } from '../../binary-protocol/src/message-parser'
 import { getMessage } from '../../binary-protocol/src/message-builder'
 import { Message, TOPIC, CONNECTION_ACTIONS } from '../../binary-protocol/src/message-constants'
 
 export type SocketFactory = (url: string, options: object) => Socket
-export interface Socket extends WebSocket {
+export interface Socket extends NodeWebSocket {
     onparsedmessages: (messages: Array<Message>) => void
     sendParsedMessage: (message: Message) => void
 }
 
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
-
-import * as NodeWebSocket from 'ws'
 
 export const socketFactory = (url: string, options: any): Socket => {
     const socket = BrowserWebsocket

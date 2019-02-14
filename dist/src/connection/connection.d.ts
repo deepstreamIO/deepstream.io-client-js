@@ -42,9 +42,10 @@ export declare class Connection {
      *                E.g. { username:<String>, password:<String> }
      * @param   {Function} callback   A callback that will be invoked with the authenticationr result
      */
-    authenticate(authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void;
+    authenticate(authCallback: AuthenticationCallback): void;
+    authenticate(authParms: object | null, callback: AuthenticationCallback): void;
     getConnectionState(): CONNECTION_STATE;
-    private isOpen();
+    private isOpen;
     /**
      * Closes the connection. Using this method
      * will prevent the client from reconnecting.
@@ -56,7 +57,7 @@ export declare class Connection {
      * Creates the endpoint to connect to using the url deepstream
      * was initialised with.
      */
-    private createEndpoint();
+    private createEndpoint;
     /********************************
     ****** Endpoint Callbacks ******
     /********************************/
@@ -65,7 +66,7 @@ export declare class Connection {
     * can't send messages yet, and needs to get a connection ACK or REDIRECT
     * from the server before authenticating
     */
-    private onOpen();
+    private onOpen;
     /**
      * Callback for generic connection errors. Forwards
      * the error to the client.
@@ -73,7 +74,7 @@ export declare class Connection {
      * The connection is considered broken once this method has been
      * invoked.
      */
-    private onError(error);
+    private onError;
     /**
      * Callback when the connection closes. This might have been a deliberate
      * close triggered by the client or the result of the connection getting
@@ -82,21 +83,21 @@ export declare class Connection {
      * In the latter case the client will try to reconnect using the configured
      * strategy.
      */
-    private onClose();
+    private onClose;
     /**
      * Callback for messages received on the connection.
      */
-    private onMessages(parseResults);
+    private onMessages;
     /**
     * Sends authentication params to the server. Please note, this
     * doesn't use the queued message mechanism, but rather sends the message directly
     */
-    private sendAuthParams();
+    private sendAuthParams;
     /**
     * Ensures that a heartbeat was not missed more than once, otherwise it considers the connection
     * to have been lost and closes it for reconnection.
     */
-    private checkHeartBeat();
+    private checkHeartBeat;
     /**
     * If the connection drops or is closed in error this
     * method schedules increasing reconnection intervals
@@ -104,18 +105,18 @@ export declare class Connection {
     * If the number of failed reconnection attempts exceeds
     * options.maxReconnectAttempts the connection is closed
     */
-    private tryReconnect();
+    private tryReconnect;
     /**
      * Attempts to open a errourosly closed connection
      */
-    private tryOpen();
+    private tryOpen;
     /**
      * Stops all further reconnection attempts,
      * either because the connection is open again
      * or because the maximal number of reconnection
      * attempts has been exceeded
      */
-    private clearReconnect();
+    private clearReconnect;
     /**
      * The connection response will indicate whether the deepstream connection
      * can be used or if it should be forwarded to another instance. This
@@ -133,16 +134,16 @@ export declare class Connection {
      * If a redirect is recieved, this connection is closed and updated with
      * a connection to the url supplied in the message.
      */
-    private handleConnectionResponse(message);
+    private handleConnectionResponse;
     /**
      * Callback for messages received for the AUTH topic. If
      * the authentication was successful this method will
      * open the connection and send all messages that the client
      * tried to send so far.
      */
-    private handleAuthResponse(message);
-    private onAwaitingAuthentication();
-    private onAuthSuccessful(clientData);
-    private onAuthUnSuccessful();
-    private updateClientData(data);
+    private handleAuthResponse;
+    private onAwaitingAuthentication;
+    private onAuthSuccessful;
+    private onAuthUnSuccessful;
+    private updateClientData;
 }

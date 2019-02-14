@@ -124,26 +124,26 @@ export declare class RecordHandler {
     setData(recordName: string, data: any): void;
     setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void;
     setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
-    private sendSetData(recordName, version, args);
+    private sendSetData;
     /**
      * Will be called by the client for incoming messages on the RECORD topic
      *
      * @param   {Object} message parsed and validated deepstream message
      */
-    private handle(message);
+    private handle;
     /**
      * Callback for 'deleted' and 'discard' events from a record. Removes the record from
      * the registry
      */
-    private removeRecord(recordName);
-    private getRecordCore(recordName);
-    private syncDirtyRecords();
-    private sendUpdatedData(recordName, version, data);
-    private onRecordUpdated(error, recordName);
+    private removeRecord;
+    private getRecordCore;
+    private syncDirtyRecords;
+    private sendUpdatedData;
+    private onRecordUpdated;
     /**
     * Callback once the record merge has completed. If successful it will set the
     * record state, else emit and error and the record will remain in an
     * inconsistent state until the next update.
     */
-    private onMergeCompleted(error, recordName, mergeData, remoteVersion, remoteData);
+    private onMergeCompleted;
 }

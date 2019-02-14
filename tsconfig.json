@@ -2,6 +2,9 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
+    "lib": [
+      "es2015"
+    ],
     "outDir": "dist",
     "sourceMap": true,
     "allowJs": false,
@@ -13,7 +16,6 @@
     "forceConsistentCasingInFileNames": true    
   },
   "files": [
-    "./node_modules/@types/node/index.d.ts",
     "./node_modules/@types/bluebird/index.d.ts",
     "./node_modules/@types/ws/index.d.ts",
     "./src/dependencies.d.ts"

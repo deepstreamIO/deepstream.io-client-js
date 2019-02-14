@@ -16,6 +16,7 @@ var META_KEYS;
     META_KEYS["protocolVersion"] = "x";
     META_KEYS["requestorName"] = "rn";
     META_KEYS["requestorData"] = "rd";
+    META_KEYS["trustedSender"] = "ts";
     META_KEYS["registryTopic"] = "rt";
 })(META_KEYS = exports.META_KEYS || (exports.META_KEYS = {}));
 var PAYLOAD_ENCODING;

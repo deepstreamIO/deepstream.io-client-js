@@ -15,11 +15,12 @@ export declare enum META_KEYS {
     protocolVersion = "x",
     requestorName = "rn",
     requestorData = "rd",
-    registryTopic = "rt",
+    trustedSender = "ts",
+    registryTopic = "rt"
 }
 export declare enum PAYLOAD_ENCODING {
     JSON = "j",
-    BINARY = "b",
+    BINARY = "b"
 }
 export interface Message {
     topic: TOPIC;
@@ -113,7 +114,7 @@ export declare enum TOPIC {
     EVENT_LISTENING = 41,
     STATE_REGISTRY = 48,
     CLUSTER = 49,
-    LOCK = 50,
+    LOCK = 50
 }
 export declare enum PARSER_ACTIONS {
     UNKNOWN_TOPIC = 80,
@@ -122,7 +123,7 @@ export declare enum PARSER_ACTIONS {
     MESSAGE_PARSE_ERROR = 83,
     MAXIMUM_MESSAGE_SIZE_EXCEEDED = 84,
     ERROR = 85,
-    INVALID_META_PARAMS = 86,
+    INVALID_META_PARAMS = 86
 }
 export declare enum CONNECTION_ACTIONS {
     ERROR = 0,
@@ -135,7 +136,7 @@ export declare enum CONNECTION_ACTIONS {
     CLOSING = 8,
     CLOSED = 9,
     AUTHENTICATION_TIMEOUT = 80,
-    INVALID_MESSAGE = 82,
+    INVALID_MESSAGE = 82
 }
 export declare enum AUTH_ACTIONS {
     ERROR = 0,
@@ -144,7 +145,7 @@ export declare enum AUTH_ACTIONS {
     AUTH_UNSUCCESSFUL = 3,
     TOO_MANY_AUTH_ATTEMPTS = 80,
     INVALID_MESSAGE = 82,
-    INVALID_MESSAGE_DATA = 98,
+    INVALID_MESSAGE_DATA = 98
 }
 export declare enum EVENT_ACTIONS {
     ERROR = 0,
@@ -166,7 +167,7 @@ export declare enum EVENT_ACTIONS {
     MESSAGE_DENIED = 97,
     INVALID_MESSAGE_DATA = 98,
     MULTIPLE_SUBSCRIPTIONS = 99,
-    NOT_SUBSCRIBED = 100,
+    NOT_SUBSCRIBED = 100
 }
 export declare enum RECORD_ACTIONS {
     ERROR = 0,
@@ -222,7 +223,7 @@ export declare enum RECORD_ACTIONS {
     MESSAGE_DENIED = 97,
     INVALID_MESSAGE_DATA = 98,
     MULTIPLE_SUBSCRIPTIONS = 99,
-    NOT_SUBSCRIBED = 100,
+    NOT_SUBSCRIBED = 100
 }
 export declare enum RPC_ACTIONS {
     ERROR = 0,
@@ -245,7 +246,7 @@ export declare enum RPC_ACTIONS {
     MESSAGE_DENIED = 97,
     INVALID_MESSAGE_DATA = 98,
     MULTIPLE_PROVIDERS = 99,
-    NOT_PROVIDED = 100,
+    NOT_PROVIDED = 100
 }
 export declare enum PRESENCE_ACTIONS {
     ERROR = 0,
@@ -269,20 +270,20 @@ export declare enum PRESENCE_ACTIONS {
     MESSAGE_PERMISSION_ERROR = 96,
     MESSAGE_DENIED = 97,
     MULTIPLE_SUBSCRIPTIONS = 99,
-    NOT_SUBSCRIBED = 100,
+    NOT_SUBSCRIBED = 100
 }
 export declare enum LOCK_ACTIONS {
     ERROR = 0,
     REQUEST = 1,
     RESPONSE = 2,
-    RELEASE = 3,
+    RELEASE = 3
 }
 export declare enum STATE_ACTIONS {
     ERROR = 0,
     ADD = 1,
     REMOVE = 2,
     REQUEST_FULL_STATE = 3,
-    FULL_STATE = 4,
+    FULL_STATE = 4
 }
 export declare enum CLUSTER_ACTIONS {
     PING = 0,
@@ -292,7 +293,7 @@ export declare enum CLUSTER_ACTIONS {
     REJECT_DUPLICATE = 4,
     IDENTIFICATION_REQUEST = 5,
     IDENTIFICATION_RESPONSE = 6,
-    KNOWN_PEERS = 7,
+    KNOWN_PEERS = 7
 }
 export declare const ACTIONS: {
     [TOPIC.PARSER]: typeof PARSER_ACTIONS;
@@ -322,5 +323,5 @@ export declare enum EVENT {
     LOCAL_LISTEN = "LOCAL_LISTEN",
     INVALID_CONFIG_DATA = "INVALID_CONFIG_DATA",
     INVALID_STATE_TRANSITION = "INVALID_STATE_TRANSITION",
-    INVALID_LEADER_REQUEST = "INVALID_LEADER_REQUEST",
+    INVALID_LEADER_REQUEST = "INVALID_LEADER_REQUEST"
 }

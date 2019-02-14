@@ -72,11 +72,11 @@ export class TimeoutRegistry extends EventEmitter {
     }, { timeout })
 
     internalTimeout.timerId = this.services.timerRegistry.add({
-      context: this,
-      callback: this.onTimeout,
-      duration: timeout.duration,
-      data: internalTimeout
-    })
+        context: this,
+        callback: this.onTimeout,
+        duration: timeout.duration,
+        data: internalTimeout
+    }) as unknown as number
     this.register.set(internalTimeout.timerId, internalTimeout)
     return internalTimeout.timerId
   }
@@ -141,7 +141,7 @@ export class TimeoutRegistry extends EventEmitter {
    */
   public onConnectionLost (): void {
     for (const [ timerId ] of this.register) {
-      clearTimeout(timerId)
+      clearTimeout(timerId as NodeJS.Timeout)
       this.register.delete(timerId)
     }
   }
