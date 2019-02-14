@@ -1,4 +1,3 @@
-/// <reference types="sinon" />
 import { SinonStub, SinonMock } from 'sinon';
 import { TimerRegistry } from '../src/util/timer-registry';
 import { Message } from '../binary-protocol/src/message-constants';
@@ -11,7 +10,7 @@ export declare const getServicesMock: () => {
     getSocket: () => any;
     connection: {
         sendMessage: (message: Message) => void;
-        getConnectionState: SinonStub;
+        getConnectionState: SinonStub<any[], any>;
         isConnected: boolean;
         isInLimbo: boolean;
         registerHandler: (topic: any, callback: Function) => void;

@@ -202,7 +202,9 @@ export class Connection {
    *                E.g. { username:<String>, password:<String> }
    * @param   {Function} callback   A callback that will be invoked with the authenticationr result
    */
-  public authenticate (authParamsOrCallback?: object | null, callback?: AuthenticationCallback | null): void {
+  public authenticate (authCallback: AuthenticationCallback): void
+  public authenticate (authParms: object | null, callback: AuthenticationCallback): void
+  public authenticate (authParamsOrCallback?: object | AuthenticationCallback | null, callback?: AuthenticationCallback | null): void {
     if (
       authParamsOrCallback &&
       typeof authParamsOrCallback !== 'object' &&
@@ -228,7 +230,7 @@ export class Connection {
     }
 
     if (authParamsOrCallback && typeof authParamsOrCallback === 'function') {
-      this.authCallback = authParamsOrCallback
+      this.authCallback = authParamsOrCallback as AuthenticationCallback
     } else if (callback) {
       this.authCallback = callback
     } else {
@@ -302,6 +304,7 @@ export class Connection {
     this.endpoint.onclose = this.onClose.bind(this)
     this.endpoint.onparsedmessages = this.onMessages.bind(this)
   }
+
 
   /********************************
   ****** Endpoint Callbacks ******

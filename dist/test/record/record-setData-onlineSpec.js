@@ -86,11 +86,6 @@ describe('record setData online', () => {
     it('throws error for invalid arguments', () => {
         chai_1.expect(recordHandler.setData.bind(recordHandler)).to.throw();
         chai_1.expect(recordHandler.setData.bind(recordHandler, name)).to.throw();
-        const data = { some: 'data' };
-        chai_1.expect(recordHandler.setData.bind(recordHandler, undefined, data)).to.throw();
-        chai_1.expect(recordHandler.setData.bind(recordHandler, null, data)).to.throw();
-        chai_1.expect(recordHandler.setData.bind(recordHandler, 123, data)).to.throw();
-        chai_1.expect(recordHandler.setData.bind(recordHandler, {}, data)).to.throw();
         chai_1.expect(recordHandler.setData.bind(recordHandler, name, undefined)).to.throw();
         chai_1.expect(recordHandler.setData.bind(recordHandler, name, undefined, () => { })).to.throw();
         chai_1.expect(recordHandler.setData.bind(recordHandler, name, null)).to.throw();
@@ -99,7 +94,6 @@ describe('record setData online', () => {
         chai_1.expect(recordHandler.setData.bind(recordHandler, name, 'Some String')).to.throw();
         chai_1.expect(recordHandler.setData.bind(recordHandler, name, 100.24)).to.throw();
         chai_1.expect(recordHandler.setData.bind(recordHandler, name, {}, { not: 'func' })).to.throw();
-        chai_1.expect(recordHandler.setData.bind(recordHandler, name, 'path', 'val', { not: 'func' })).to.throw();
     });
     describe('with ack', () => {
         let data;

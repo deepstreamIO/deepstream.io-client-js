@@ -1,5 +1,4 @@
 var webpack = require('webpack');
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
   entry: ['./src/deepstream.ts'],
@@ -14,12 +13,12 @@ module.exports = {
     extensions: ['.js', '.ts'],
   },
   module: {
-    loaders: [{
-      test: /\.ts$/, loaders: ['babel-loader', 'ts-loader'], exclude: /node_modules/
+    rules: [{
+      test: /\.ts$/, loaders: ['ts-loader'], exclude: /node_modules/
     }],
   },
   plugins: [
-    // new webpack.IgnorePlugin(/ws/),
+    new webpack.IgnorePlugin(/ws/),
   ],
   node: {
     fs: 'empty'

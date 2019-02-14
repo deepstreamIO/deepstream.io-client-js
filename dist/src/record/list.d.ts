@@ -58,11 +58,11 @@ export declare class List extends Emitter {
      * Proxies the underlying Record's _update method. Set's
      * data to an empty array if no data is provided.
      */
-    private applyUpdate(message);
+    private applyUpdate;
     /**
      * Validates that the index provided is within the current set of entries.
      */
-    private hasIndex(index?);
+    private hasIndex;
     /**
      * Establishes the current structure of the list, provided the client has attached any
      * add / move / remove listener
@@ -70,12 +70,12 @@ export declare class List extends Emitter {
      * This will be called before any change to the list, regardsless if the change was triggered
      * by an incoming message from the server or by the client
      */
-    private beforeChange();
+    private beforeChange;
     /**
      * Compares the structure of the list after a change to its previous structure and notifies
      * any add / move / remove listener. Won't do anything if no listeners are attached.
      */
-    private afterChange();
+    private afterChange;
     /**
      * Iterates through the list and creates a map with the entry as a key
      * and an array of its position(s) within the list as a value, e.g.
@@ -86,5 +86,5 @@ export declare class List extends Emitter {
      *   'recordC': [ 2 ]
      * }
      */
-    private getStructure();
+    private getStructure;
 }

@@ -36,11 +36,11 @@ export declare class EventHandler {
     /**
    * Handles incoming messages from the server
    */
-    private handle(message);
+    private handle;
     /**
      * Resubscribes to events when connection is lost
      */
-    private onConnectionReestablished();
-    private onExitLimbo();
-    private sendSubscriptionMessage(name);
+    private onConnectionReestablished;
+    private onExitLimbo;
+    private sendSubscriptionMessage;
 }

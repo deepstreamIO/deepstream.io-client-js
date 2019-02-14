@@ -28,11 +28,7 @@ describe('listener', () => {
 
   it('validates parameters on listen and unlisten', () => {
     expect(listener.listen.bind(listener, '', listenCallback)).to.throw()
-    expect(listener.listen.bind(listener, 1, listenCallback)).to.throw()
-    expect(listener.listen.bind(listener, pattern, null)).to.throw()
-
     expect(listener.unlisten.bind(listener, '')).to.throw()
-    expect(listener.unlisten.bind(listener, 1)).to.throw()
   })
 
   it('sends event listen message', () => {

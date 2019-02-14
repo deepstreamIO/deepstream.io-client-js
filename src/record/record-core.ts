@@ -118,6 +118,7 @@ export class RecordCore extends Emitter {
     this.onRecordRecovered = this.onRecordRecovered.bind(this)
     this.onConnectionReestablished = this.onConnectionReestablished.bind(this)
     this.onConnectionLost = this.onConnectionLost.bind(this)
+    this.handleReadResponse = this.handleReadResponse.bind(this)
 
     this.recordServices.dirtyService.whenLoaded(() => {
       if (this.services.connection.isConnected) {
@@ -618,7 +619,7 @@ export class RecordCore extends Emitter {
       } else {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
         this.sendRead()
-        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+        this.recordServices.readRegistry.register<RecordMessage>(this.name, this.handleReadResponse)
       }
     } else {
       if (remoteVersion < (this.version as number)) {
@@ -630,7 +631,7 @@ export class RecordCore extends Emitter {
       } else {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
         this.sendRead()
-        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse)
       }
     }
   }

@@ -34,10 +34,10 @@ export declare class RPC {
      * if a response arrives later on it will be ignored / cause an
      * UNSOLICITED_MESSAGE error
      */
-    private onTimeout(event, message);
+    private onTimeout;
     /**
      * Called after either an error or a response
      * was received
     */
-    private complete();
+    private complete;
 }

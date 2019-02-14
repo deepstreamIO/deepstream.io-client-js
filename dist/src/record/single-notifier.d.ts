@@ -38,7 +38,7 @@ export declare class SingleNotifier {
      */
     register(name: string, callback: (message: Message) => void): void;
     recieve(message: Message, error?: any, data?: any): void;
-    private onConnectionLost();
-    private onExitLimbo();
-    private onConnectionReestablished();
+    private onConnectionLost;
+    private onExitLimbo;
+    private onConnectionReestablished;
 }

@@ -95,12 +95,6 @@ describe('record setData online', () => {
     expect(recordHandler.setData.bind(recordHandler)).to.throw()
     expect(recordHandler.setData.bind(recordHandler, name)).to.throw()
 
-    const data = { some: 'data' }
-    expect(recordHandler.setData.bind(recordHandler, undefined, data)).to.throw()
-    expect(recordHandler.setData.bind(recordHandler, null, data)).to.throw()
-    expect(recordHandler.setData.bind(recordHandler, 123, data)).to.throw()
-    expect(recordHandler.setData.bind(recordHandler, {} , data)).to.throw()
-
     expect(recordHandler.setData.bind(recordHandler, name, undefined)).to.throw()
     expect(recordHandler.setData.bind(recordHandler, name, undefined, () => {})).to.throw()
 
@@ -113,7 +107,6 @@ describe('record setData online', () => {
 
     expect(recordHandler.setData.bind(recordHandler, name, 100.24)).to.throw()
     expect(recordHandler.setData.bind(recordHandler, name, {}, { not: 'func' })).to.throw()
-    expect(recordHandler.setData.bind(recordHandler, name, 'path', 'val', { not: 'func' })).to.throw()
   })
 
   describe('with ack', () => {

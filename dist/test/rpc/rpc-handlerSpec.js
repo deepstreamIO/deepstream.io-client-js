@@ -44,19 +44,9 @@ describe('RPC handler', () => {
     });
     it('validates parameters on provide, unprovide and make', () => {
         chai_1.expect(rpcHandler.provide.bind(rpcHandler, '', () => { })).to.throw();
-        chai_1.expect(rpcHandler.provide.bind(rpcHandler, 123, () => { })).to.throw();
-        chai_1.expect(rpcHandler.provide.bind(rpcHandler, null, () => { })).to.throw();
-        chai_1.expect(rpcHandler.provide.bind(rpcHandler, name, null)).to.throw();
-        chai_1.expect(rpcHandler.provide.bind(rpcHandler, name, 123)).to.throw();
         chai_1.expect(rpcHandler.unprovide.bind(rpcHandler, '')).to.throw();
-        chai_1.expect(rpcHandler.unprovide.bind(rpcHandler, 123)).to.throw();
-        chai_1.expect(rpcHandler.unprovide.bind(rpcHandler, null)).to.throw();
         chai_1.expect(rpcHandler.unprovide.bind(rpcHandler)).to.throw();
         chai_1.expect(rpcHandler.make.bind(rpcHandler, '')).to.throw();
-        chai_1.expect(rpcHandler.make.bind(rpcHandler, 123)).to.throw();
-        chai_1.expect(rpcHandler.make.bind(rpcHandler, null)).to.throw();
-        chai_1.expect(rpcHandler.make.bind(rpcHandler, name, {}, {})).to.throw();
-        chai_1.expect(rpcHandler.make.bind(rpcHandler, name, {}, 123)).to.throw();
         chai_1.expect(rpcHandler.make.bind(rpcHandler)).to.throw();
     });
     it('registers a provider', () => {

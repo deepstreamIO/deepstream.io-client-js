@@ -11,5 +11,5 @@ export declare class WriteAcknowledgementService {
      */
     send(message: Message, callback: WriteAckCallback): void;
     recieve(message: Message): void;
-    private onConnectionLost();
+    private onConnectionLost;
 }

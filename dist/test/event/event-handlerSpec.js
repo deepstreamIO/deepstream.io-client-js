@@ -36,15 +36,8 @@ describe('event handler', () => {
     });
     it('validates parameters on subscribe, unsubscribe and emit', () => {
         chai_1.expect(eventHandler.subscribe.bind(eventHandler, '', () => { })).to.throw();
-        chai_1.expect(eventHandler.subscribe.bind(eventHandler, 1, () => { })).to.throw();
-        chai_1.expect(eventHandler.subscribe.bind(eventHandler, 'event', null)).to.throw();
         chai_1.expect(eventHandler.unsubscribe.bind(eventHandler, '', () => { })).to.throw();
-        chai_1.expect(eventHandler.unsubscribe.bind(eventHandler, 1, () => { })).to.throw();
-        chai_1.expect(eventHandler.unsubscribe.bind(eventHandler, 'event', null)).to.throw();
-        chai_1.expect(eventHandler.unsubscribe.bind(eventHandler, null)).to.throw();
         chai_1.expect(eventHandler.emit.bind(eventHandler, '', () => { })).to.throw();
-        chai_1.expect(eventHandler.emit.bind(eventHandler, 1, () => { })).to.throw();
-        chai_1.expect(eventHandler.emit.bind(eventHandler, null, () => { })).to.throw();
     });
     it('emits an event it has no listeners for', () => {
         services.connectionMock

@@ -24,10 +24,7 @@ describe('listener', () => {
     });
     it('validates parameters on listen and unlisten', () => {
         chai_1.expect(listener.listen.bind(listener, '', listenCallback)).to.throw();
-        chai_1.expect(listener.listen.bind(listener, 1, listenCallback)).to.throw();
-        chai_1.expect(listener.listen.bind(listener, pattern, null)).to.throw();
         chai_1.expect(listener.unlisten.bind(listener, '')).to.throw();
-        chai_1.expect(listener.unlisten.bind(listener, 1)).to.throw();
     });
     it('sends event listen message', () => {
         const message = {

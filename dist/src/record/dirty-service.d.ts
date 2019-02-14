@@ -10,6 +10,6 @@ export declare class DirtyService {
     setDirty(recordName: string, isDirty: boolean): void;
     whenLoaded(callback: () => void): void;
     getAll(): Map<string, boolean>;
-    private load();
-    private updateDirtyRecords(recordName, isDirty);
+    private load;
+    private updateDirtyRecords;
 }

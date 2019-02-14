@@ -8,10 +8,7 @@ export interface Timeout {
 export class TimerRegistry {
 
     public add (timeout: Timeout): number {
-        return setTimeout(
-            timeout.callback.bind(timeout.context, timeout.data),
-            timeout.duration
-        )
+        return setTimeout(timeout.callback.bind(timeout.context, timeout.data), timeout.duration) as unknown as number
     }
 
     public remove (timerId: number): boolean {

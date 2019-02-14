@@ -47,5 +47,5 @@ export declare class RPCResponse {
      * Callback for the autoAck timeout. Executes ack
      * if autoAck is not disabled
      */
-    private performAutoAck();
+    private performAutoAck;
 }

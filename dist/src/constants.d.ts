@@ -28,7 +28,7 @@ export declare enum EVENT {
     RECORD_STATE_CHANGED = "onRecordStateChanged",
     ENTRY_ADDED_EVENT = "entry-added",
     ENTRY_REMOVED_EVENT = "entry-removed",
-    ENTRY_MOVED_EVENT = "entry-moved",
+    ENTRY_MOVED_EVENT = "entry-moved"
 }
 export declare enum CONNECTION_STATE {
     CLOSING = "CLOSING",
@@ -46,5 +46,5 @@ export declare enum CONNECTION_STATE {
     TOO_MANY_AUTH_ATTEMPTS = "TOO_MANY_AUTH_ATTEMPTS",
     AUTHENTICATION_TIMEOUT = "AUTHENTICATION_TIMEOUT",
     PAUSING = "PAUSING",
-    OFFLINE = "OFFLINE",
+    OFFLINE = "OFFLINE"
 }

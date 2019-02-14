@@ -1,4 +1,9 @@
-import { TOPIC, EVENT_ACTIONS, RECORD_ACTIONS, EventMessage, RecordMessage } from '../../binary-protocol/src/message-constants'
+import {
+  TOPIC,
+  EVENT_ACTIONS,
+  RECORD_ACTIONS,
+  ListenMessage
+} from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../../src/constants'
 import { Services } from '../client'
 
@@ -107,7 +112,7 @@ export class Listener {
     this.stopCallbacks.set(subscription, callback)
   }
 
-  public handle (message: EventMessage | RecordMessage) {
+  public handle (message: ListenMessage) {
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
       return

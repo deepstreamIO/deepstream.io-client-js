@@ -23,7 +23,6 @@ describe('connection', () => {
   let emitterMock: sinon.SinonMock
   let socket: any
   let socketMock: sinon.SinonMock
-  let logger: any
   let loggerMock: sinon.SinonMock
   let authCallback: sinon.SinonSpy
 
@@ -672,7 +671,6 @@ describe('connection', () => {
 
   function getLoggerMock () {
     const loggerService = services.getLogger()
-    logger = loggerService.logger,
-      loggerMock = loggerService.loggerMock
+    loggerMock = loggerService.loggerMock
   }
 })

@@ -38,33 +38,12 @@ describe('Record handler', () => {
   it('validates on has, head and snapshot', () => {
     expect(recordHandler.has.bind(recordHandler, '')).to.throw()
     expect(recordHandler.has.bind(recordHandler, '', () => {})).to.throw()
-    expect(recordHandler.has.bind(recordHandler, 123, () => {})).to.throw()
-    expect(recordHandler.has.bind(recordHandler, null, () => {})).to.throw()
-
-    expect(recordHandler.has.bind(recordHandler, name, null)).to.throw()
-    expect(recordHandler.has.bind(recordHandler, name, 123)).to.throw()
-    expect(recordHandler.has.bind(recordHandler, name, [])).to.throw()
-    expect(recordHandler.has.bind(recordHandler, name, {})).to.throw()
 
     expect(recordHandler.head.bind(recordHandler, '')).to.throw()
     expect(recordHandler.head.bind(recordHandler, '', () => {})).to.throw()
-    expect(recordHandler.head.bind(recordHandler, 123, () => {})).to.throw()
-    expect(recordHandler.head.bind(recordHandler, null, () => {})).to.throw()
-
-    expect(recordHandler.head.bind(recordHandler, name, null)).to.throw()
-    expect(recordHandler.head.bind(recordHandler, name, 123)).to.throw()
-    expect(recordHandler.head.bind(recordHandler, name, [])).to.throw()
-    expect(recordHandler.head.bind(recordHandler, name, {})).to.throw()
 
     expect(recordHandler.snapshot.bind(recordHandler, '')).to.throw()
     expect(recordHandler.snapshot.bind(recordHandler, '', () => {})).to.throw()
-    expect(recordHandler.snapshot.bind(recordHandler, 123, () => {})).to.throw()
-    expect(recordHandler.snapshot.bind(recordHandler, null, () => {})).to.throw()
-
-    expect(recordHandler.snapshot.bind(recordHandler, name, null)).to.throw()
-    expect(recordHandler.snapshot.bind(recordHandler, name, 123)).to.throw()
-    expect(recordHandler.snapshot.bind(recordHandler, name, [])).to.throw()
-    expect(recordHandler.snapshot.bind(recordHandler, name, {})).to.throw()
   })
 
   it('snapshots record remotely using callback and promise style', async () => {
