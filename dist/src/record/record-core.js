@@ -307,7 +307,7 @@ class RecordCore extends Emitter {
      * Transition States
      */
     onSubscribing() {
-        this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this));
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse);
         this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RECORD,
@@ -330,7 +330,7 @@ class RecordCore extends Emitter {
     }
     onResubscribing() {
         this.services.timerRegistry.remove(this.discardTimeout);
-        this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this));
+        this.recordServices.headRegistry.register(this.name, this.handleHeadResponse);
         this.services.timeoutRegistry.add({
             message: {
                 topic: message_constants_1.TOPIC.RECORD,

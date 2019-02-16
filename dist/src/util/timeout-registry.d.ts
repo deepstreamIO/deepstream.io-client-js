@@ -3,10 +3,11 @@ import { Options } from '../client-options';
 import { EVENT } from '../constants';
 import { RECORD_ACTIONS as RECORD_ACTION, RPC_ACTIONS as RPC_ACTION, Message } from '../../binary-protocol/src/message-constants';
 import * as EventEmitter from 'component-emitter2';
+export declare type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION;
 export interface Timeout {
-    event?: EVENT | RPC_ACTION | RECORD_ACTION;
+    event?: TimeoutAction;
     message: Message;
-    callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void;
+    callback?: (event: TimeoutAction, message: Message) => void;
     duration?: number;
 }
 /**

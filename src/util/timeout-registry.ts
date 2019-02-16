@@ -10,10 +10,12 @@ import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 
 import * as EventEmitter from 'component-emitter2'
 
+export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION;
+
 export interface Timeout {
-    event?: EVENT | RPC_ACTION | RECORD_ACTION
+    event?: TimeoutAction
     message: Message,
-    callback?: (event: EVENT | RPC_ACTION | RECORD_ACTION, message: Message) => void,
+    callback?: (event: TimeoutAction, message: Message) => void,
     duration?: number
 }
 
@@ -141,7 +143,8 @@ export class TimeoutRegistry extends EventEmitter {
    */
   public onConnectionLost (): void {
     for (const [ timerId ] of this.register) {
-      clearTimeout(timerId as NodeJS.Timeout)
+      // @ts-ignore
+      clearTimeout(timerId)
       this.register.delete(timerId)
     }
   }

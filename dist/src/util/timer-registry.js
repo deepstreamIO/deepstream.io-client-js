@@ -5,6 +5,7 @@ class TimerRegistry {
         return setTimeout(timeout.callback.bind(timeout.context, timeout.data), timeout.duration);
     }
     remove(timerId) {
+        // @ts-ignore
         clearTimeout(timerId);
         return true;
     }

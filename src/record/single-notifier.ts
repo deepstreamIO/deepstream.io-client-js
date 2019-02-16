@@ -72,9 +72,6 @@ export class SingleNotifier {
   /**
    * Adds a callback to a (possibly) inflight request that will be called
    * on the response.
-   *
-   * @param name
-   * @param response
    */
   public register (name: string, callback: (message: Message) => void): void {
     const request = this.internalRequests.get(name)
