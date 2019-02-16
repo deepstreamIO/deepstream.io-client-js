@@ -1,6 +1,7 @@
 var webpack = require('webpack');
 
 module.exports = {
+  mode: 'development',
   entry: ['./src/deepstream.ts'],
   output: {
     path: __dirname,
@@ -21,6 +22,7 @@ module.exports = {
     new webpack.IgnorePlugin(/ws/),
   ],
   node: {
-    fs: 'empty'
+    fs: 'empty',
+    module: 'empty'
   }
 };
