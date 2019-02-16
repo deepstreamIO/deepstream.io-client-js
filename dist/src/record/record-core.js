@@ -58,6 +58,7 @@ class RecordCore extends Emitter {
         this.onConnectionReestablished = this.onConnectionReestablished.bind(this);
         this.onConnectionLost = this.onConnectionLost.bind(this);
         this.handleReadResponse = this.handleReadResponse.bind(this);
+        this.handleHeadResponse = this.handleHeadResponse.bind(this);
         this.recordServices.dirtyService.whenLoaded(() => {
             if (this.services.connection.isConnected) {
                 if (!this.recordServices.dirtyService.isDirty(this.name)) {
