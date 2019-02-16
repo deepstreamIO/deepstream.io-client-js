@@ -15,7 +15,6 @@
   },
   "scripts": {
     "tsc": "rm -rf dist && tsc",
-    "precommit": "npm run tsc && npm run build && git add dist/",
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
     "rebuild": "rimraf dist && webpack",
@@ -79,5 +78,10 @@
   "homepage": "http://deepstream.io",
   "eslintConfig": {
     "extends": "deepstream"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run tsc && npm run build && git add dist/"
+    }
   }
 }
