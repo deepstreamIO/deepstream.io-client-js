@@ -2,7 +2,13 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import { EVENT } from '../constants'
 import { MergeStrategy } from './merge-strategy'
-import { TOPIC, RECORD_ACTIONS as RA, RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants'
+import {
+  TOPIC,
+  RECORD_ACTIONS as RA,
+  RecordMessage,
+  RecordWriteMessage,
+  Message
+} from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
 import { get as getPath, setValue as setPath } from './json-path'
 import * as Emitter from 'component-emitter2'
@@ -393,7 +399,7 @@ export class RecordCore extends Emitter {
    */
 
   private onSubscribing (): void {
-    this.recordServices.readRegistry.register(this.name, this.handleReadResponse.bind(this))
+    this.recordServices.readRegistry.register(this.name, this.handleReadResponse)
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -418,7 +424,7 @@ export class RecordCore extends Emitter {
 
   private onResubscribing (): void {
     this.services.timerRegistry.remove(this.discardTimeout)
-    this.recordServices.headRegistry.register(this.name, this.handleHeadResponse.bind(this))
+    this.recordServices.headRegistry.register(this.name, this.handleHeadResponse)
     this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -590,9 +596,9 @@ export class RecordCore extends Emitter {
     }
   }
 
-  private handleReadResponse (message: RecordMessage): void {
+  private handleReadResponse (message: Message): void {
     if (this.stateMachine.state === RECORD_STATE.MERGING) {
-      this.recoverRecord(message.version as number, message.parsedData, message)
+      this.recoverRecord(message.version as number, message.parsedData, message as RecordMessage)
       this.recordServices.dirtyService.setDirty(this.name, false)
       return
     }
@@ -601,7 +607,7 @@ export class RecordCore extends Emitter {
     this.stateMachine.transition(RA.READ_RESPONSE)
   }
 
-  private handleHeadResponse (message: RecordMessage): void {
+  private handleHeadResponse (message: Message): void {
     const remoteVersion = message.version as number
     if (this.recordServices.dirtyService.isDirty(this.name)) {
       if (remoteVersion === -1 && this.version === 1) {
@@ -619,7 +625,7 @@ export class RecordCore extends Emitter {
       } else {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
         this.sendRead()
-        this.recordServices.readRegistry.register<RecordMessage>(this.name, this.handleReadResponse)
+        this.recordServices.readRegistry.register(this.name, this.handleReadResponse)
       }
     } else {
       if (remoteVersion < (this.version as number)) {

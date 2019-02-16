@@ -60,9 +60,6 @@ class SingleNotifier {
     /**
      * Adds a callback to a (possibly) inflight request that will be called
      * on the response.
-     *
-     * @param name
-     * @param response
      */
     register(name, callback) {
         const request = this.internalRequests.get(name);

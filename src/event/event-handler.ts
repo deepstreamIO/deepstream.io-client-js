@@ -1,6 +1,11 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, EventMessage } from '../../binary-protocol/src/message-constants'
+import {
+  TOPIC,
+  EVENT_ACTIONS as EVENT_ACTION,
+  EventMessage,
+  ListenMessage
+} from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
 import * as Emitter from 'component-emitter2'
@@ -169,7 +174,7 @@ private handle (message: EventMessage): void {
       message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
       message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
     ) {
-      this.listeners.handle(message)
+      this.listeners.handle(message as ListenMessage)
       return
     }
 

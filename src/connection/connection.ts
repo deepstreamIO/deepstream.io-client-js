@@ -300,11 +300,11 @@ export class Connection {
     this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions)
 
     this.endpoint.onopen = this.onOpen.bind(this)
+    // @ts-ignore
     this.endpoint.onerror = this.onError.bind(this)
     this.endpoint.onclose = this.onClose.bind(this)
     this.endpoint.onparsedmessages = this.onMessages.bind(this)
   }
-
 
   /********************************
   ****** Endpoint Callbacks ******
@@ -485,6 +485,7 @@ export class Connection {
     }
     if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
       this.stateMachine.transition(TRANSITIONS.RECONNECT)
+      // @ts-ignore
       this.reconnectTimeout = setTimeout(
         this.tryOpen.bind(this),
         Math.min(
@@ -520,6 +521,7 @@ export class Connection {
    */
   private clearReconnect (): void {
     if (this.reconnectTimeout) {
+      // @ts-ignore
       clearTimeout(this.reconnectTimeout)
     }
     this.reconnectTimeout = null

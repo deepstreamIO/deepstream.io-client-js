@@ -22,7 +22,7 @@ declare module 'component-emitter2' {
 // tslint:disable-next-line
 declare namespace NodeJS  {
     interface Global {
-        WebSocket: WebSocket,
-        MozWebSocket: WebSocket
+        WebSocket: any,
+        MozWebSocket: any
     }
   }

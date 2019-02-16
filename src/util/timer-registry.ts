@@ -12,6 +12,7 @@ export class TimerRegistry {
     }
 
     public remove (timerId: number): boolean {
+        // @ts-ignore
         clearTimeout(timerId)
         return true
     }

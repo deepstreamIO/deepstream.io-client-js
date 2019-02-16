@@ -1,6 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+import {TOPIC, RPC_ACTIONS as RPC_ACTION, Message} from '../../binary-protocol/src/message-constants'
+import {TimeoutAction} from '../util/timeout-registry'
 
 export type RPCMakeCallback = (error: string | null, result?: any) => void
 
@@ -25,6 +26,7 @@ export class RPC {
       this.name = name
       this.correlationId = correlationId
       this.response = response
+      this.onTimeout = this.onTimeout.bind(this)
 
       const message = {
         topic: TOPIC.RPC,
@@ -55,7 +57,7 @@ export class RPC {
         },
         event: RPC_ACTION.RESPONSE_TIMEOUT,
         duration: this.options.rpcResponseTimeout,
-        callback: this.onTimeout.bind(this)
+        callback: this.onTimeout
       })
       this.services.connection.sendMessage(message)
     }
@@ -89,8 +91,8 @@ export class RPC {
      * if a response arrives later on it will be ignored / cause an
      * UNSOLICITED_MESSAGE error
      */
-    private onTimeout (event: RPC_ACTION, message: RPCMessage) {
-      this.response(RPC_ACTION[event])
+    private onTimeout (event: TimeoutAction, message: Message) {
+      this.response(RPC_ACTION[event as RPC_ACTION])
       this.complete()
     }
 

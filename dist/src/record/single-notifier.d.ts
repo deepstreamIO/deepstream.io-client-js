@@ -32,9 +32,6 @@ export declare class SingleNotifier {
     /**
      * Adds a callback to a (possibly) inflight request that will be called
      * on the response.
-     *
-     * @param name
-     * @param response
      */
     register(name: string, callback: (message: Message) => void): void;
     recieve(message: Message, error?: any, data?: any): void;

@@ -14,6 +14,7 @@ class RPC {
         this.name = name;
         this.correlationId = correlationId;
         this.response = response;
+        this.onTimeout = this.onTimeout.bind(this);
         const message = {
             topic: message_constants_1.TOPIC.RPC,
             action: message_constants_1.RPC_ACTIONS.REQUEST,
@@ -41,7 +42,7 @@ class RPC {
             },
             event: message_constants_1.RPC_ACTIONS.RESPONSE_TIMEOUT,
             duration: this.options.rpcResponseTimeout,
-            callback: this.onTimeout.bind(this)
+            callback: this.onTimeout
         });
         this.services.connection.sendMessage(message);
     }
