@@ -1,0 +1,5 @@
+src/**/*.spec.ts
+--recursive
+--reporter dot
+--require ts-node/register/transpile-only
+--exit

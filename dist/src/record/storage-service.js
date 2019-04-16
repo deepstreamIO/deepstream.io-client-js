@@ -2,13 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 class Storage {
     constructor(options) {
-        // @ts-ignore
         if (typeof localStorage === 'undefined' || localStorage === null) {
             const LocalStorage = require('node-localstorage').LocalStorage;
             this.storage = new LocalStorage(options.nodeStoragePath, options.nodeStorageSize * 1024 * 1024);
         }
         else {
-            // @ts-ignore
             this.storage = window.localStorage;
         }
     }

@@ -1,3 +1,4 @@
+/// <reference types="component-emitter2" />
 import { EVENT } from '../constants';
 import { TOPIC, ALL_ACTIONS, Message } from '../../binary-protocol/src/message-constants';
 export declare class Logger {

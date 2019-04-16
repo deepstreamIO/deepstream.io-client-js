@@ -1,3 +1,4 @@
+/// <reference types="component-emitter2" />
 import { CONNECTION_STATE } from '../constants';
 import { TOPIC, Message } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
@@ -15,7 +16,7 @@ export declare class Connection {
     private clientData;
     private authCallback;
     private resumeCallback;
-    private originalUrl;
+    private readonly originalUrl;
     private url;
     private heartbeatInterval;
     private lastHeartBeat;

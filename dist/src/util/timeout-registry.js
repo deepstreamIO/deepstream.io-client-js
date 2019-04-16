@@ -109,7 +109,6 @@ class TimeoutRegistry extends EventEmitter {
      */
     onConnectionLost() {
         for (const [timerId] of this.register) {
-            // @ts-ignore
             clearTimeout(timerId);
             this.register.delete(timerId);
         }

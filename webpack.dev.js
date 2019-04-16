@@ -1,4 +1,4 @@
-var webpack = require('webpack');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
@@ -11,7 +11,7 @@ module.exports = {
     umdNamedDefine: true
   },
   resolve: {
-    extensions: ['.js', '.ts'],
+    extensions: ['.ts'],
   },
   module: {
     rules: [{
@@ -20,9 +20,11 @@ module.exports = {
   },
   plugins: [
     new webpack.IgnorePlugin(/ws/),
+    new webpack.IgnorePlugin(/node-localstorage/),
   ],
   node: {
     fs: 'empty',
-    module: 'empty'
+    module: 'empty',
+    url: 'empty',
   }
 };

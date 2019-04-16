@@ -1,3 +1,5 @@
+dist
+.nyc_output
 .vscode
 
 # Logs

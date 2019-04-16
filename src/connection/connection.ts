@@ -17,6 +17,8 @@ import { Options } from '../client-options'
 import { Socket } from './socket-factory'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
+import Timeout = NodeJS.Timeout
+
 export type AuthenticationCallback = (success: boolean, clientData: object | null) => void
 export type ResumeCallback = (error?: object) => void
 
@@ -55,14 +57,14 @@ export class Connection {
   private clientData: object | null
   private authCallback: AuthenticationCallback | null
   private resumeCallback: ResumeCallback | null
-  private originalUrl: string
+  private readonly originalUrl: string
   private url: string
   private heartbeatInterval: number | null
   private lastHeartBeat: number | null
   private endpoint: Socket | null
   private handlers: Map<TOPIC, Function>
 
-  private reconnectTimeout: number | null
+  private reconnectTimeout: Timeout | null
   private reconnectionAttempt: number
   private limboTimeout: number | null
 
@@ -71,7 +73,6 @@ export class Connection {
     this.services = services
     this.authParams = null
     this.handlers = new Map()
-    // tslint:disable-next-line:no-empty
     this.authCallback = null
     this.resumeCallback = null
     this.emitter = emitter
@@ -300,7 +301,6 @@ export class Connection {
     this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions)
 
     this.endpoint.onopen = this.onOpen.bind(this)
-    // @ts-ignore
     this.endpoint.onerror = this.onError.bind(this)
     this.endpoint.onclose = this.onClose.bind(this)
     this.endpoint.onparsedmessages = this.onMessages.bind(this)
@@ -336,7 +336,7 @@ export class Connection {
    * The connection is considered broken once this method has been
    * invoked.
    */
-  private onError (error: NodeJS.ErrnoException) {
+  private onError (error: any) {
     /*
      * If the implementation isn't listening on the error event this will throw
      * an error. So let's defer it to allow the reconnection to kick in.
@@ -485,7 +485,6 @@ export class Connection {
     }
     if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
       this.stateMachine.transition(TRANSITIONS.RECONNECT)
-      // @ts-ignore
       this.reconnectTimeout = setTimeout(
         this.tryOpen.bind(this),
         Math.min(
@@ -521,7 +520,6 @@ export class Connection {
    */
   private clearReconnect (): void {
     if (this.reconnectTimeout) {
-      // @ts-ignore
       clearTimeout(this.reconnectTimeout)
     }
     this.reconnectTimeout = null

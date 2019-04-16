@@ -1,4 +1,3 @@
-require('source-map-support').install()
 import { Client } from './client'
 import { EVENT, CONNECTION_STATE } from './constants'
 import * as C from '../binary-protocol/src/message-constants'

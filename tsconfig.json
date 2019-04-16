@@ -3,8 +3,10 @@
     "target": "es6",
     "module": "commonjs",
     "lib": [
-      "es2015"
+      "es2015",
+      "dom"
     ],
+    "typeRoots": [ "./types", "./node_modules/@types"],
     "outDir": "dist",
     "sourceMap": true,
     "allowJs": false,
@@ -15,14 +17,8 @@
     "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true    
   },
-  "files": [
-    "./node_modules/@types/bluebird/index.d.ts",
-    "./node_modules/@types/ws/index.d.ts",
-    "./src/dependencies.d.ts"
-  ],
   "include": [
     "src/**/*",
-    "test/**/*",
     "package.json"
   ],
   "exclude": [

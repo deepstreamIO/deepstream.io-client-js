@@ -1,5 +1,4 @@
 "use strict";
-require('source-map-support').install();
 const client_1 = require("./client");
 const constants_1 = require("./constants");
 const C = require("../binary-protocol/src/message-constants");
