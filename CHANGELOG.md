@@ -1,4 +1,4 @@
-# [4.0.0-beta.1] - 2017-11-21
+# [4.0.0-rc.1] - 2019-04-20
 
 This release of the client includes a full rewrite in TypeScript and a move away from the old text-based protocol to the Universal Realtime Protocol (URP). This means the client is not compatible with [deepstream.io](https://github.com/deepstreamio/deepstream.io) prior to version v4.0.0.
 
