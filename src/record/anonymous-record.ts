@@ -42,7 +42,7 @@ export class AnonymousRecord extends Emitter  {
         }
     }
 
-    public setName (recordName: string, callback: (record: AnonymousRecord) => void): void | Promise<AnonymousRecord> {
+    public setName (recordName: string, callback?: (record: AnonymousRecord) => void): void | Promise<AnonymousRecord> {
         if (this.name === recordName) {
             return
         }

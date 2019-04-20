@@ -19,26 +19,27 @@ import { StateMachine } from '../util/state-machine'
 export type WriteAckCallback = (error: string | null, recordName: string) => void
 
 const enum RECORD_OFFLINE_ACTIONS {
-  LOAD,
-  LOADED,
-  SUBSCRIBED,
-  RESUBSCRIBE,
-  RESUBSCRIBED,
-  INVALID_VERSION
+  LOAD = 'LOAD',
+  LOADED = 'LOADED',
+  SUBSCRIBED = 'SUBSCRIBED',
+  RESUBSCRIBE = 'RESUBSCRIBE',
+  RESUBSCRIBED = 'RESUBSCRIBED',
+  INVALID_VERSION = 'INVALID_VERSION',
+  MERGED = 'MERGED',
 }
 
 export const enum RECORD_STATE {
-  INITIAL,
-  SUBSCRIBING,
-  RESUBSCRIBING,
-  LOADING_OFFLINE,
-  READY,
-  MERGING,
-  UNSUBSCRIBING,
-  UNSUBSCRIBED,
-  DELETING,
-  DELETED,
-  ERROR
+  INITIAL = 'INITIAL',
+  SUBSCRIBING = 'SUBSCRIBING',
+  RESUBSCRIBING = 'RESUBSCRIBING',
+  LOADING_OFFLINE = 'LOADING_OFFLINE',
+  READY = 'READY',
+  MERGING = 'MERGING',
+  UNSUBSCRIBING = 'UNSUBSCRIBING',
+  UNSUBSCRIBED = 'UNSUBSCRIBED',
+  DELETING = 'DELETING',
+  DELETED = 'DELETED',
+  ERROR = 'ERROR'
 }
 
 export class RecordCore<Context = null> extends Emitter {
@@ -64,6 +65,7 @@ export class RecordCore<Context = null> extends Emitter {
   }
   private whenComplete: (recordName: string) => void
   private pendingWrites: Array<utils.RecordSetArguments>
+    private offlineLoadingAborted: boolean
 
   constructor (name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void) {
     super()
@@ -79,6 +81,7 @@ export class RecordCore<Context = null> extends Emitter {
     this.pendingWrites = []
     this.isReady = false
 
+      this.offlineLoadingAborted = false
     this.version = null
     this.responseTimeout = -1
     this.discardTimeout = -1
@@ -100,6 +103,7 @@ export class RecordCore<Context = null> extends Emitter {
           { name: RA.SUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: this.onSubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: this.onOfflineLoading.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
+          { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.RESUBSCRIBING, handler: this.abortOfflineLoading.bind(this) },
           { name: RA.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: this.onReady.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
@@ -107,6 +111,7 @@ export class RecordCore<Context = null> extends Emitter {
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.RESUBSCRIBING, handler: this.onResubscribing.bind(this) },
           { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
           { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
+          { name: RECORD_OFFLINE_ACTIONS.MERGED, from: RECORD_STATE.MERGING, to: RECORD_STATE.READY },
           { name: RA.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
           { name: RA.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this)  },
           { name: RA.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: this.onDeleted.bind(this) },
@@ -441,7 +446,7 @@ export class RecordCore<Context = null> extends Emitter {
     this.responseTimeout = this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
-        action: RA.HEAD_RESPONSE,
+        action: RA.HEAD,
         name: this.name
       }
     })
@@ -454,6 +459,12 @@ export class RecordCore<Context = null> extends Emitter {
 
   private onOfflineLoading (): void {
     this.services.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
+        if (this.offlineLoadingAborted) {
+            // This occurred since we got a connection to the server
+            // meaning we no longer care about current state currently
+            this.offlineLoadingAborted = false
+            return
+        }
       if (version === -1) {
         this.data = {}
         this.version = 1
@@ -467,6 +478,12 @@ export class RecordCore<Context = null> extends Emitter {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
       }
     })
+  }
+
+  private abortOfflineLoading (): void {
+      console.log('aborted')
+      this.offlineLoadingAborted = true
+      this.onResubscribing()
   }
 
   private onReady (): void {
@@ -535,6 +552,14 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     if (message.action === RA.PATCH || message.action === RA.UPDATE || message.action === RA.ERASE) {
+      if (this.stateMachine.state === RECORD_STATE.MERGING) {
+        // The scenario this covers is when a read is requested because the head doesn't match
+        // but an updated comes in because we subscribed. In that scenario we just ignore the update
+        // and wait for the read response. Hopefully the messages don't cross on the wire in which case
+        // it might result in another merge conflict.
+        return
+      }
+
       this.applyUpdate(message as RecordWriteMessage)
       return
     }
@@ -625,11 +650,14 @@ export class RecordCore<Context = null> extends Emitter {
         this.sendCreateUpdate(this.data)
       } else if (this.version === remoteVersion + 1) {
         /**
-         * record updated while offline
+         * record updated by client while offline
         */
         this.sendUpdate(null, this.data)
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
       } else {
+        /**
+         * record updated by server when offline, get latest data
+         */
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
         this.sendRead()
         this.recordServices.readRegistry.register(this.name, this.handleReadResponse)
@@ -840,11 +868,11 @@ export class RecordCore<Context = null> extends Emitter {
       //   callback(null)
       //   this.writeCallbacks.delete(remoteVersion)
       // }
-      // return
+    } else {
+        this.applyChange(newValue)
+        // this.sendUpdate(null, data, message.isWriteAck)
     }
-
-    // this.sendUpdate(null, data, message.isWriteAck)
-    this.applyChange(newValue)
+    this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
   }
 
   /**

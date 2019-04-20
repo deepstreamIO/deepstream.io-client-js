@@ -1,5 +1,3 @@
-import * as NodeWebSocket from 'ws'
-
 import { parse } from '../../binary-protocol/src/message-parser'
 import { getMessage } from '../../binary-protocol/src/message-builder'
 import { Message, TOPIC, CONNECTION_ACTIONS, JSONObject } from '../../binary-protocol/src/message-constants'
@@ -12,7 +10,7 @@ export type SocketFactory = (url: string, options: JSONObject) => Socket
 export const socketFactory = (url: string, options: any): Socket => {
     const socket = BrowserWebsocket
         ? new BrowserWebsocket(url, [], options)
-        : new NodeWebSocket(url, options) as any
+        : new (require('ws'))(url, options) as any
 
     if (BrowserWebsocket) {
         socket.binaryType = 'arraybuffer'

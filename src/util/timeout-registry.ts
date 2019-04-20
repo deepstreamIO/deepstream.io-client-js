@@ -92,7 +92,7 @@ export class TimeoutRegistry extends EventEmitter {
     if (!action) {
       requestMsg = message
     } else {
-      requestMsg = Object.assign({}, message, { action })
+      requestMsg = { ...message, action }
     }
     const uniqueName = this.getUniqueName(requestMsg)
     for (const [timerId, timeout] of this.register) {
@@ -129,6 +129,7 @@ export class TimeoutRegistry extends EventEmitter {
    */
   private getUniqueName (message: Message): string {
     const action = message.originalAction || message.action
+
     let name = `${message.topic}${action}_`
     if (message.correlationId) {
       name += message.correlationId

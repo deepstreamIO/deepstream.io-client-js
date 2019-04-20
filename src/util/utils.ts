@@ -1,5 +1,3 @@
-import * as URL from 'url'
-
 /**
  * A regular expression that matches whitespace on either side, but
  * not in the center of a string
@@ -108,13 +106,13 @@ export const parseUrl = (initialURl: string, defaultPath: string): string => {
   } else if (url.indexOf('//') === 0) {
     url = `ws:${url}`
   }
-  const serverUrl = URL.parse(url)
+  const serverUrl = new URL(url)
   if (!serverUrl.host) {
     throw new Error('invalid url, missing host')
   }
   serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:'
-  serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath
-  return URL.format(serverUrl)
+  serverUrl.pathname = serverUrl.pathname && serverUrl.pathname !== '/' ? serverUrl.pathname : defaultPath
+  return serverUrl.href
 }
 
 /**

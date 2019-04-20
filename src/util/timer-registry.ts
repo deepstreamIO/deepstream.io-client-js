@@ -19,7 +19,7 @@ export class TimerRegistry {
     }
 
     public requestIdleCallback (callback: Function): void {
-        process.nextTick(callback)
+        setTimeout(callback, 0);
     }
 
 }
