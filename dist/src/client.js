@@ -16,12 +16,13 @@ class Client extends EventEmitter {
     constructor(url, options = {}) {
         super();
         this.options = Object.assign({}, client_options_1.DefaultOptions, options);
+        // @ts-ignore
         const services = {};
-        services.storage = options.storage || new storage_service_1.Storage(this.options);
+        services.storage = this.options.storage || new storage_service_1.Storage(this.options);
         services.logger = new logger_1.Logger(this);
         services.timerRegistry = new timer_registry_1.TimerRegistry();
         services.timeoutRegistry = new timeout_registry_1.TimeoutRegistry(services, this.options);
-        services.socketFactory = options.socketFactory || socket_factory_1.socketFactory;
+        services.socketFactory = this.options.socketFactory || socket_factory_1.socketFactory;
         services.connection = new connection_1.Connection(services, this.options, url, this);
         this.services = services;
         this.services.connection.onLost(services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry));

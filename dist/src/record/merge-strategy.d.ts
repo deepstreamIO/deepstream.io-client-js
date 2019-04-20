@@ -1,10 +1,11 @@
-export declare type MergeCompleteCallback = (error: string | null, mergedData: any) => void;
-export declare type MergeStrategy = (localValue: object, localVersion: number, remoteValue: object, remoteVersion: number, callback: MergeCompleteCallback) => void;
+import { RecordData } from '../../binary-protocol/src/message-constants';
+export declare type MergeCompleteCallback = (error: string | null, mergedData: RecordData) => void;
+export declare type MergeStrategy = (localValue: RecordData, localVersion: number, remoteValue: RecordData, remoteVersion: number, callback: MergeCompleteCallback) => void;
 /**
  *  Choose the server's state over the client's
 **/
-export declare const REMOTE_WINS: (localValue: object, localVersion: number, remoteValue: object, remoteVersion: number, callback: MergeCompleteCallback) => void;
+export declare const REMOTE_WINS: (localValue: RecordData, localVersion: number, remoteValue: RecordData, remoteVersion: number, callback: MergeCompleteCallback) => void;
 /**
  *  Choose the local state over the server's
 **/
-export declare const LOCAL_WINS: (localValue: object, localVersion: number, remoteValue: object, remoteVersion: number, callback: MergeCompleteCallback) => void;
+export declare const LOCAL_WINS: (localValue: RecordData, localVersion: number, remoteValue: RecordData, remoteVersion: number, callback: MergeCompleteCallback) => void;

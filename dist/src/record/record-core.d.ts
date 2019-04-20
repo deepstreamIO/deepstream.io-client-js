@@ -1,13 +1,10 @@
 import { Services } from '../client';
 import { Options } from '../client-options';
 import { MergeStrategy } from './merge-strategy';
-import { RecordMessage, RecordWriteMessage } from '../../binary-protocol/src/message-constants';
+import { RecordMessage, RecordWriteMessage, RecordData } from '../../binary-protocol/src/message-constants';
 import { RecordServices } from './record-handler';
 import * as Emitter from 'component-emitter2';
 import * as utils from '../util/utils';
-import { Record } from './record';
-import { AnonymousRecord } from './anonymous-record';
-import { List } from './list';
 export declare type WriteAckCallback = (error: string | null, recordName: string) => void;
 export declare const enum RECORD_STATE {
     INITIAL = 0,
@@ -22,7 +19,7 @@ export declare const enum RECORD_STATE {
     DELETED = 9,
     ERROR = 10
 }
-export declare class RecordCore extends Emitter {
+export declare class RecordCore<Context = null> extends Emitter {
     name: string;
     isReady: boolean;
     hasProvider: boolean;
@@ -44,12 +41,15 @@ export declare class RecordCore extends Emitter {
     readonly recordState: RECORD_STATE;
     usages: number;
     /**
-   * Convenience method, similar to promises. Executes callback
-   * whenever the record is ready, either immediatly or once the ready
-   * event is fired
-   * @param   {[Function]} callback Will be called when the record is ready
+     * Convenience method, similar to promises. Executes callback
+     * whenever the record is ready, either immediatly or once the ready
+     * event is fired
+     * @param   {[Function]} callback Will be called when the record is ready
+     */
+    whenReady(context: Context, callback?: (context: Context) => void): Promise<Context> | void;
+    /**
    */
-    whenReady(context: null | List | Record | AnonymousRecord, callback?: (context: any) => void): Promise<any> | void;
+    private whenReadyInternal;
     /**
    * Sets the value of either the entire dataset
    * or of a specific path within the record
@@ -77,7 +77,7 @@ export declare class RecordCore extends Emitter {
    * the record getting out of sync due to unintentional changes to
    * its data
    */
-    get(path?: string): any;
+    get(path?: string): RecordData;
     /**
    * Subscribes to changes to the records dataset.
    *

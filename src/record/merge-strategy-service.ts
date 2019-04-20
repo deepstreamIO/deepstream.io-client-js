@@ -1,10 +1,10 @@
 import { Services } from '../client'
 import { EVENT } from '../constants'
-import { TOPIC } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RecordData } from '../../binary-protocol/src/message-constants'
 
 import { MergeStrategy } from './merge-strategy'
 
-export type MergeCompleteInternal = (error: string | null, recordName: string, mergedData: any, localVersion: number, localData: object, remoteVersion: number, remoteData: object) => void
+export type MergeCompleteInternal = (error: string | null, recordName: string, mergedData: RecordData, localVersion: number, localData: RecordData, remoteVersion: number, remoteData: RecordData) => void
 export class MergeStrategyService {
 
   private services: Services
@@ -28,7 +28,7 @@ export class MergeStrategyService {
   }
 
   public merge (
-    recordName: string, localVersion: number, localData: object, remoteVersion: number, remoteData: object, callback: MergeCompleteInternal
+    recordName: string, localVersion: number, localData: RecordData, remoteVersion: number, remoteData: RecordData, callback: MergeCompleteInternal
   ): void {
     const exactMergeStrategy = this.strategiesByRecord.get(recordName)
     if (exactMergeStrategy) {

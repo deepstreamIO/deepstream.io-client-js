@@ -1,5 +1,6 @@
 import { Services } from '../client';
 import { Options } from '../client-options';
+import { RecordData, RecordPathData } from '../../binary-protocol/src/message-constants';
 import { WriteAckCallback } from './record-core';
 import { Record } from './record';
 import { AnonymousRecord } from './anonymous-record';
@@ -72,8 +73,8 @@ export declare class RecordHandler {
      * @param   {String}  name the unique name of the record
      * @param   {Function}  callback
      */
-    snapshot(name: string): Promise<any>;
-    snapshot(name: string, callback: (error: string | null, data: any) => void): void;
+    snapshot(name: string): Promise<RecordData>;
+    snapshot(name: string, callback: (error: string | null, data: RecordData) => void): void;
     /**
      * Allows the user to query to see whether or not the record exists.
      *
@@ -104,8 +105,8 @@ export declare class RecordHandler {
      * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
      *                    with the result of the write
      */
-    setDataWithAck(recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
-    setDataWithAck(recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void;
+    setDataWithAck(recordName: string, data: RecordData | undefined, callback?: WriteAckCallback): Promise<string | void> | void;
+    setDataWithAck(recordName: string, path: string, data: RecordData | undefined, callback?: WriteAckCallback): Promise<string | void> | void;
     /**
      * Allows setting the data for a record without being subscribed to it. If
      * the client is subscribed to the record locally, the update will be proxied
@@ -121,9 +122,9 @@ export declare class RecordHandler {
      * @param {Function} callback if provided this will be called with the result of the
      *                            write
      */
-    setData(recordName: string, data: any): void;
-    setData(recordName: string, path: string, data: any, callback: WriteAckCallback): void;
-    setData(recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void;
+    setData(recordName: string, data: RecordData): void;
+    setData(recordName: string, path: string, data: RecordPathData | undefined, callback: WriteAckCallback): void;
+    setData(recordName: string, pathOrData: string | RecordData, dataOrCallback: RecordPathData | WriteAckCallback | undefined, callback?: WriteAckCallback): void;
     private sendSetData;
     /**
      * Will be called by the client for incoming messages on the RECORD topic

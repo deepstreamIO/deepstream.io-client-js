@@ -6,7 +6,7 @@ import { RecordHandler } from './record-handler'
 
 import { DefaultOptions } from '../client-options'
 import { WriteAckCallback } from './record-core'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage, RecordData } from '../../binary-protocol/src/message-constants'
 
 describe('Record handler', () => {
   const name = 'recordA'
@@ -271,8 +271,7 @@ describe('Record handler', () => {
     })
   })
 
-
-    describe('record setData online', () => {
+  describe('record setData online', () => {
       const topic = TOPIC.RECORD
 
       beforeEach(() => {
@@ -292,7 +291,7 @@ describe('Record handler', () => {
       })
 
       it('sends update messages for entire data changes', () => {
-        const data: any = { firstname: 'Wolfram' }
+        const data: RecordData = { firstname: 'Wolfram' }
         services.connectionMock
             .expects('sendMessage')
             .once()
@@ -327,7 +326,7 @@ describe('Record handler', () => {
         recordHandler.setData(name, path, data)
       })
 
-      it('deletes value when sending undefined for a path', () => {
+      it('deletes value when sending undefined for a value', () => {
         const path = 'lastName'
         services.connectionMock
             .expects('sendMessage')
@@ -352,7 +351,9 @@ describe('Record handler', () => {
         expect(recordHandler.setData.bind(recordHandler)).to.throw()
         expect(recordHandler.setData.bind(recordHandler, name)).to.throw()
 
+        // @ts-ignore
         expect(recordHandler.setData.bind(recordHandler, name, undefined)).to.throw()
+        // @ts-ignore
         expect(recordHandler.setData.bind(recordHandler, name, undefined, () => {})).to.throw()
 
         expect(recordHandler.setData.bind(recordHandler, name, null)).to.throw()
@@ -362,6 +363,7 @@ describe('Record handler', () => {
 
         expect(recordHandler.setData.bind(recordHandler, name, 'Some String')).to.throw()
 
+        // @ts-ignore
         expect(recordHandler.setData.bind(recordHandler, name, 100.24)).to.throw()
         expect(recordHandler.setData.bind(recordHandler, name, {}, { not: 'func' })).to.throw()
       })

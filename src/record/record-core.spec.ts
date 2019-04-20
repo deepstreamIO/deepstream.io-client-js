@@ -65,7 +65,7 @@ describe('online', () => {
     })
 
     it('triggers ready callback on read response', () => {
-        const context = null
+        const context = {} as any
         const readySpy = spy()
         recordCore.whenReady(context, readySpy)
         recordServices.readRegistry.recieve(READ_RESPONSE)
@@ -339,11 +339,12 @@ describe('record core offline', () => {
     })
 
     it('triggers ready callback on load', () => {
+        const context = {} as any
         const readySpy = spy()
-        recordCore.whenReady(null, readySpy)
+        recordCore.whenReady(context, readySpy)
 
         assert.calledOnce(readySpy)
-        assert.calledWithExactly(readySpy, null)
+        assert.calledWithExactly(readySpy, context)
     })
 
     it('sets update messages for updates after when ready', () => {

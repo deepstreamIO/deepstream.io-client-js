@@ -1,12 +1,14 @@
 import * as Emitter from 'component-emitter2'
 import { RecordOfflineStore } from '../client'
+import {RecordData} from '../../binary-protocol/src/message-constants'
 
 const DIRTY_SERVICE_LOADED = 'dirty-service-loaded'
+export interface DirtyRecordsIndex { [index: string]: boolean }
 
 export class DirtyService {
-  private name: string
+  private readonly name: string
   private storage: RecordOfflineStore
-  private dirtyRecords: any
+  private dirtyRecords: DirtyRecordsIndex
   private loaded: boolean
   private emitter: Emitter
 
@@ -24,7 +26,12 @@ export class DirtyService {
   }
 
   public setDirty (recordName: string, isDirty: boolean): void {
-    this.updateDirtyRecords(recordName, isDirty)
+    if (isDirty) {
+      this.dirtyRecords[recordName] = true
+    } else {
+      delete this.dirtyRecords[recordName]
+    }
+    this.storage.set(this.name, 1, this.dirtyRecords, () => {})
   }
 
   public whenLoaded (callback: () => void): void {
@@ -37,7 +44,7 @@ export class DirtyService {
     })
   }
 
-  public getAll (): Map<string, boolean> {
+  public getAll (): DirtyRecordsIndex {
     return this.dirtyRecords
   }
 
@@ -45,19 +52,11 @@ export class DirtyService {
     if (this.loaded) {
       return
     }
-    this.storage.get(this.name, (recordName: string, version: number, data: Array<string> | object | null) => {
-      this.dirtyRecords = version !== -1 ? data : {}
+    this.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
+      // @ts-ignore
+      this.dirtyRecords = data || {}
       this.loaded = true
       this.emitter.emit(DIRTY_SERVICE_LOADED)
     })
-  }
-
-  private updateDirtyRecords (recordName: string, isDirty: boolean): void {
-    if (isDirty) {
-      this.dirtyRecords[recordName] = true
-    } else {
-      delete this.dirtyRecords[recordName]
-    }
-    this.storage.set(this.name, 1, this.dirtyRecords, () => {})
   }
 }

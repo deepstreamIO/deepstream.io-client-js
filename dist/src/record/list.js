@@ -95,6 +95,7 @@ class List extends Emitter {
             // ...
             return;
         }
+        // @ts-ignore
         const currentEntries = this.record.get();
         const hasIndex = this.hasIndex(index);
         const entries = [];
@@ -277,7 +278,7 @@ class List extends Emitter {
     getStructure() {
         const structure = {};
         let i;
-        const entries = this.record.get();
+        const entries = this.getEntries();
         for (i = 0; i < entries.length; i++) {
             if (structure[entries[i]] === undefined) {
                 structure[entries[i]] = [i];

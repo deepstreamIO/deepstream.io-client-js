@@ -1,10 +1,10 @@
 /// <reference types="component-emitter2" />
 import { CONNECTION_STATE } from '../constants';
-import { TOPIC, Message } from '../../binary-protocol/src/message-constants';
+import { TOPIC, Message, JSONObject } from '../../binary-protocol/src/message-constants';
 import { Services } from '../client';
 import { Options } from '../client-options';
-export declare type AuthenticationCallback = (success: boolean, clientData: object | null) => void;
-export declare type ResumeCallback = (error?: object) => void;
+export declare type AuthenticationCallback = (success: boolean, clientData: JSONObject | null) => void;
+export declare type ResumeCallback = (error?: JSONObject) => void;
 export declare class Connection {
     emitter: Emitter;
     isInLimbo: boolean;
@@ -44,7 +44,7 @@ export declare class Connection {
      * @param   {Function} callback   A callback that will be invoked with the authenticationr result
      */
     authenticate(authCallback: AuthenticationCallback): void;
-    authenticate(authParms: object | null, callback: AuthenticationCallback): void;
+    authenticate(authParms: JSONObject | null, callback: AuthenticationCallback): void;
     getConnectionState(): CONNECTION_STATE;
     private isOpen;
     /**

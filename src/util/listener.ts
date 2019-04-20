@@ -19,7 +19,7 @@ export class Listener {
   private topic: TOPIC
   private actions: any
   private services: Services
-  private listeners: Map<string, ListenCallback> // <patterm, callback>
+  private listeners: Map<string, ListenCallback> // <pattern, callback>
   private stopCallbacks: Map<string, Function> // <subscription, callback>
 
   constructor (topic: TOPIC, services: Services) {

@@ -31,10 +31,10 @@ class Record extends Emitter {
     get(path) {
         return this.record.get(path);
     }
-    set(path, data, callback) {
+    set(dataOrPath, dataOrCallback, callback) {
         return this.record.set(utils.normalizeSetArguments(arguments));
     }
-    setWithAck(path, data, callback) {
+    setWithAck(pathOrData, dataOrCallback, callback) {
         return this.record.setWithAck(utils.normalizeSetArguments(arguments));
     }
     /**

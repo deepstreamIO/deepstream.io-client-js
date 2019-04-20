@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const constants_1 = require("../constants");
 const message_constants_1 = require("../../binary-protocol/src/message-constants");
 function isEvent(action) {
+    // @ts-ignore
     return constants_1.EVENT[action] !== undefined;
 }
 class Logger {
@@ -25,7 +26,6 @@ class Logger {
         console.warn(warnMessage);
     }
     error(message, event, meta) {
-        // tslint:disable-next-line:no-console
         if (isEvent(event)) {
             if (event === constants_1.EVENT.IS_CLOSED) {
                 this.emitter.emit('error', meta, constants_1.EVENT[event], message_constants_1.TOPIC[message_constants_1.TOPIC.CONNECTION]);

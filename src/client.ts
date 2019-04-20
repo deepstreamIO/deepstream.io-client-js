@@ -4,20 +4,26 @@ import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
 import { TimerRegistry } from './util/timer-registry'
 import { Connection, AuthenticationCallback, ResumeCallback } from './connection/connection'
-import { socketFactory, SocketFactory } from './connection/socket-factory'
+import { socketFactory, SocketFactory} from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
-import { RecordHandler } from './record/record-handler'
+import { RecordHandler} from './record/record-handler'
 import { Storage } from './record/storage-service'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
+import {RecordData, JSONObject, Message} from '../binary-protocol/src/message-constants'
 
 export type offlineStoreWriteResponse = ((error: string | null) => void)
 
 export interface RecordOfflineStore {
-  get: (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object | null) => void)) => void
-  set: (recordName: string, version: number, data: Array<string> | object, callback: offlineStoreWriteResponse) => void
+  get: (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) => void
+  set: (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) => void
   delete: (recordName: string, callback: offlineStoreWriteResponse) => void
+}
+
+export interface Socket extends WebSocket {
+  onparsedmessages: (messages: Array<Message>) => void
+  sendParsedMessage: (message: Message) => void
 }
 
 export interface Services {
@@ -38,15 +44,16 @@ export class Client extends EventEmitter {
   private services: Services
   private options: Options
 
-  constructor (url: string, options: any = {}) {
+  constructor (url: string, options: Partial<Options> = {}) {
     super()
-    this.options = Object.assign({}, DefaultOptions, options)
-    const services: any = {}
-    services.storage = options.storage || new Storage(this.options)
+    this.options = { ...DefaultOptions, ...options } as Options
+    // @ts-ignore
+    const services: Services = {}
+    services.storage = this.options.storage || new Storage(this.options)
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
-    services.socketFactory = options.socketFactory || socketFactory
+    services.socketFactory = this.options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
     this.services = services as Services
 
@@ -60,11 +67,11 @@ export class Client extends EventEmitter {
     this.presence = new PresenceHandler(this.services, this.options)
   }
 
-  public login (): Promise<object>
-  public login (callback: AuthenticationCallback): void
-  public login (details: object): Promise<object>
-  public login (details: object, callback: AuthenticationCallback): void
-  public login (detailsOrCallback?: object | AuthenticationCallback, callback?: AuthenticationCallback): void | Promise<object | null> {
+  public login (): Promise<JSONObject>
+  public login (callback: JSONObject): void
+  public login (details: JSONObject): Promise<JSONObject>
+  public login (details: JSONObject, callback: AuthenticationCallback): void
+  public login (detailsOrCallback?: JSONObject | AuthenticationCallback, callback?: AuthenticationCallback): void | Promise<JSONObject | null> {
     if (detailsOrCallback && typeof detailsOrCallback === 'object') {
       if (callback) {
         this.services.connection.authenticate(detailsOrCallback, callback)
@@ -100,7 +107,7 @@ export class Client extends EventEmitter {
     this.services.connection.pause()
   }
 
-  public resume (callback?: ResumeCallback): void | Promise<object> {
+  public resume (callback?: ResumeCallback): void | Promise<JSONObject> {
     if (callback) {
       this.services.connection.resume(callback)
       return

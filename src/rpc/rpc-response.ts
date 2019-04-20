@@ -1,6 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage, RPCResult } from '../../binary-protocol/src/message-constants'
 
 /**
  * This class represents a single remote procedure
@@ -70,7 +70,7 @@ export class RPCResponse {
      * Notifies the server that an error has occured while trying to process the request.
      * This will complete the rpc.
      */
-    public error (error: any): void {
+    public error (error: RPCResult): void {
       if (this.isComplete === true) {
         throw new Error(`Rpc ${this.name} already completed`)
       }
@@ -94,7 +94,7 @@ export class RPCResponse {
      * the ack message the request will still be completed and the
      * ack message ignored
      */
-    public send (data: any): void {
+    public send (data: RPCResult): void {
       if (this.isComplete === true) {
         throw new Error(`Rpc ${this.name} already completed`)
       }

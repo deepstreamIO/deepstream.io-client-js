@@ -336,7 +336,7 @@ class RecordHandler {
     * inconsistent state until the next update.
     */
     // private onMergeConflict (message: RecordWriteMessage): void {
-    //   this.services.storage.get(message.name, (recordName: string, version: number, data: any) => {
+    //   this.services.storage.get(message.name, (recordName: string, version: number, data: RecordData) => {
     //     this.recordServices.mergeStrategy.merge(
     //       message.name,
     //       version,

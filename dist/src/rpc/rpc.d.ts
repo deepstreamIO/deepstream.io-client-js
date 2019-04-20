@@ -1,6 +1,7 @@
 import { Services } from '../client';
 import { Options } from '../client-options';
-export declare type RPCMakeCallback = (error: string | null, result?: any) => void;
+import { RPCResult } from '../../binary-protocol/src/message-constants';
+export declare type RPCMakeCallback = (error: string | null, result?: RPCResult) => void;
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function

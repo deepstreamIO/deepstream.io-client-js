@@ -1,6 +1,6 @@
 import { Services } from '../client';
 import { Options } from '../client-options';
-import { RPCMessage } from '../../binary-protocol/src/message-constants';
+import { RPCMessage, RPCResult } from '../../binary-protocol/src/message-constants';
 /**
  * This class represents a single remote procedure
  * call made from the client to the server. It's main function
@@ -33,7 +33,7 @@ export declare class RPCResponse {
      * Notifies the server that an error has occured while trying to process the request.
      * This will complete the rpc.
      */
-    error(error: any): void;
+    error(error: RPCResult): void;
     /**
      * Completes the request by sending the response data
      * to the server. If data is an array or object it will
@@ -42,7 +42,7 @@ export declare class RPCResponse {
      * the ack message the request will still be completed and the
      * ack message ignored
      */
-    send(data: any): void;
+    send(data: RPCResult): void;
     /**
      * Callback for the autoAck timeout. Executes ack
      * if autoAck is not disabled

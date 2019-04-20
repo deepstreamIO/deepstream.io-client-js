@@ -10,7 +10,7 @@ import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 
 import * as EventEmitter from 'component-emitter2'
 
-export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION;
+export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION
 
 export interface Timeout {
     event?: TimeoutAction

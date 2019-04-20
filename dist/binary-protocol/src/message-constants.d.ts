@@ -22,6 +22,18 @@ export declare enum PAYLOAD_ENCODING {
     JSON = "j",
     BINARY = "b"
 }
+export declare type JSONPrimitive = string | number | boolean | null;
+export interface JSONObject {
+    [member: string]: JSONValue;
+}
+export interface JSONArray extends Array<JSONValue> {
+}
+export declare type JSONValue = JSONPrimitive | JSONObject | JSONArray;
+export declare type RecordPathData = JSONValue;
+export declare type RecordData = JSONObject | Array<string> | null | undefined;
+export declare type RPCResult = JSONValue;
+export declare type EventData = JSONValue;
+export declare type AuthData = JSONObject;
 export interface Message {
     topic: TOPIC;
     action: ALL_ACTIONS;
@@ -29,7 +41,7 @@ export interface Message {
     isError?: boolean;
     isAck?: boolean;
     data?: string | Buffer;
-    parsedData?: any;
+    parsedData?: RecordData | RPCResult | EventData | AuthData;
     payloadEncoding?: PAYLOAD_ENCODING;
     parseError?: false;
     raw?: string | Buffer;

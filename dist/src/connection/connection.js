@@ -135,6 +135,7 @@ class Connection {
             return;
         }
         if (authParamsOrCallback) {
+            // @ts-ignore
             this.authParams = typeof authParamsOrCallback === 'object' ? authParamsOrCallback : {};
         }
         if (authParamsOrCallback && typeof authParamsOrCallback === 'function') {

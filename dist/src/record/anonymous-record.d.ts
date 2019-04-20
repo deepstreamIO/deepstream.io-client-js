@@ -5,7 +5,7 @@ export declare class AnonymousRecord extends Emitter {
     private record;
     private subscriptions;
     private getRecordCore;
-    constructor(getRecordCore: (recordName: string) => RecordCore);
+    constructor(getRecordCore: (recordName: string) => RecordCore<AnonymousRecord>);
     readonly name: string;
     readonly isReady: boolean;
     readonly version: number;

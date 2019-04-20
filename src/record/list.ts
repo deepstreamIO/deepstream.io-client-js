@@ -5,7 +5,7 @@ import { RecordCore, WriteAckCallback } from './record-core'
 import * as Emitter from 'component-emitter2'
 
 export class List extends Emitter {
-    private record: RecordCore
+    private record: RecordCore<List>
     private wrappedFunctions: Map<Function, Function>
     private originalApplyUpdate: Function
     private beforeStructure: any
@@ -14,7 +14,7 @@ export class List extends Emitter {
     private hasRemoveListener: boolean
     private hasMoveListener: boolean
 
-    constructor (record: RecordCore) {
+    constructor (record: RecordCore<List>) {
         super()
         this.record = record
         this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
@@ -119,6 +119,7 @@ export class List extends Emitter {
             return
         }
 
+        // @ts-ignore
         const currentEntries: Array<string> = this.record.get()
         const hasIndex = this.hasIndex(index)
         const entries: Array<string> = []
@@ -318,7 +319,7 @@ private applyUpdate  (message: RecordMessage) {
   private getStructure (): any {
     const structure: any = {}
     let i
-    const entries = this.record.get()
+    const entries = this.getEntries()
 
     for (i = 0; i < entries.length; i++) {
       if (structure[entries[i]] === undefined) {

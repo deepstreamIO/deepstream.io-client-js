@@ -4,11 +4,11 @@ import { MergeStrategy } from './merge-strategy'
 import * as Emitter from 'component-emitter2'
 
 export class AnonymousRecord extends Emitter  {
-    private record: RecordCore | null
+    private record: RecordCore<AnonymousRecord> | null
     private subscriptions: Array<utils.RecordSubscribeArguments>
-    private getRecordCore: (recordName: string) => RecordCore
+    private getRecordCore: (recordName: string) => RecordCore<AnonymousRecord>
 
-    constructor (getRecordCore: (recordName: string) => RecordCore) {
+    constructor (getRecordCore: (recordName: string) => RecordCore<AnonymousRecord>) {
         super()
         this.record = null
         this.subscriptions = []

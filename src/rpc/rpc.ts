@@ -1,9 +1,9 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import {TOPIC, RPC_ACTIONS as RPC_ACTION, Message} from '../../binary-protocol/src/message-constants'
+import {TOPIC, RPC_ACTIONS as RPC_ACTION, Message, RPCResult} from '../../binary-protocol/src/message-constants'
 import {TimeoutAction} from '../util/timeout-registry'
 
-export type RPCMakeCallback = (error: string | null, result?: any) => void
+export type RPCMakeCallback = (error: string | null, result?: RPCResult) => void
 
 /**
  * This class represents a single remote procedure

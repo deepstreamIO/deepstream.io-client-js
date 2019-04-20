@@ -1,5 +1,6 @@
 import { RecordOfflineStore, offlineStoreWriteResponse } from '../client'
 import { Options } from '../client-options'
+import {RecordData} from '../../binary-protocol/src/message-constants'
 
 export class Storage implements RecordOfflineStore {
   private storage: any
@@ -13,7 +14,7 @@ export class Storage implements RecordOfflineStore {
     }
   }
 
-  public get (recordName: string, callback: ((recordName: string, version: number, data: Array<string> | object | null) => void)) {
+  public get (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) {
     const item = this.storage.getItem(recordName)
     if (item) {
       const doc = JSON.parse(item)
@@ -23,7 +24,7 @@ export class Storage implements RecordOfflineStore {
     setTimeout(callback.bind(this, recordName, -1, null), 0)
   }
 
-  public set (recordName: string, version: number, data: Array<string> | object, callback: offlineStoreWriteResponse) {
+  public set (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) {
     this.storage.setItem(recordName, JSON.stringify({ recordName, version, data }))
     setTimeout(callback, 0)
   }

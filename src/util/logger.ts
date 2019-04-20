@@ -3,10 +3,12 @@ import {
   TOPIC,
   ALL_ACTIONS,
   ACTIONS,
-  Message
+  Message,
+  JSONObject
 } from '../../binary-protocol/src/message-constants'
 
-function isEvent (action: any): action is EVENT {
+function isEvent (action: EVENT | ALL_ACTIONS | undefined): boolean {
+  // @ts-ignore
   return EVENT[action] !== undefined
 }
 
@@ -35,8 +37,7 @@ export class Logger {
     console.warn(warnMessage)
   }
 
-  public error (message: { topic: TOPIC } | Message, event?: EVENT | ALL_ACTIONS, meta?: string | object): void {
-    // tslint:disable-next-line:no-console
+  public error (message: { topic: TOPIC } | Message, event?: EVENT | ALL_ACTIONS, meta?: string | JSONObject | Error): void {
     if (isEvent(event)) {
       if (event === EVENT.IS_CLOSED) {
         this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION])

@@ -1,6 +1,11 @@
 import { MergeStrategy, REMOTE_WINS } from './record/merge-strategy'
+import {RecordOfflineStore, Socket } from './client'
 
 export interface Options {
+    storage?: RecordOfflineStore,
+
+    socketFactory?: (url: string, options: any) => Socket
+
     /**
      * A global merge strategy that is applied whenever two clients write to the same record at the same time. Can be overwritten on a per record level.
      * Default merge strategies are exposed by the client constructor. It's also possible to write custom merge strategies as functions. You can find

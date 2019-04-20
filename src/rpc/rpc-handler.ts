@@ -1,6 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage } from '../../binary-protocol/src/message-constants'
+import {TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage, RPCResult} from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
@@ -130,7 +130,7 @@ export class RPCHandler {
         this.limboQueue.push({ correlationId, name, data, callback })
       } else {
         return new Promise((resolve, reject) => {
-          this.limboQueue.push({ correlationId, name, data, callback: (error: string | null, result: any) => error ? reject(error) : resolve(result) })
+          this.limboQueue.push({ correlationId, name, data, callback: (error: string | null, result?: RPCResult) => error ? reject(error) : resolve(result) })
         })
       }
     } else {

@@ -7,16 +7,14 @@ import {
   RECORD_ACTIONS as RA,
   RecordMessage,
   RecordWriteMessage,
-  Message
+  Message,
+  RecordData
 } from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
 import { get as getPath, setValue as setPath } from './json-path'
 import * as Emitter from 'component-emitter2'
 import * as utils from '../util/utils'
 import { StateMachine } from '../util/state-machine'
-import { Record } from './record'
-import { AnonymousRecord } from './anonymous-record'
-import { List } from './list'
 
 export type WriteAckCallback = (error: string | null, recordName: string) => void
 
@@ -43,7 +41,7 @@ export const enum RECORD_STATE {
   ERROR
 }
 
-export class RecordCore extends Emitter {
+export class RecordCore<Context = null> extends Emitter {
   public name: string
   public isReady: boolean
   public hasProvider: boolean
@@ -54,7 +52,7 @@ export class RecordCore extends Emitter {
   private options: Options
   private recordServices: RecordServices
   private emitter: Emitter
-  private data: object
+  private data: RecordData
   private stateMachine: StateMachine
   private responseTimeout: number
   private discardTimeout: number
@@ -65,7 +63,7 @@ export class RecordCore extends Emitter {
     resolve?: () => void
   }
   private whenComplete: (recordName: string) => void
-  private pendingWrites: Array<any>
+  private pendingWrites: Array<utils.RecordSetArguments>
 
   constructor (name: string, services: Services, options: Options, recordServices: RecordServices, whenComplete: (recordName: string) => void) {
     super()
@@ -134,7 +132,7 @@ export class RecordCore extends Emitter {
         } else {
           this.services.storage.get(this.name, (recordName, version, data) => {
             this.version = version
-            this.data = data as object
+            this.data = data
             this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
           })
         }
@@ -164,25 +162,32 @@ export class RecordCore extends Emitter {
   }
 
   /**
- * Convenience method, similar to promises. Executes callback
- * whenever the record is ready, either immediatly or once the ready
- * event is fired
- * @param   {[Function]} callback Will be called when the record is ready
- */
-  public whenReady (context: null | List | Record | AnonymousRecord, callback?: (context: any) => void): Promise<any> | void {
-    if (this.isReady === true) {
-      if (callback) {
-        callback(context)
-        return
+   * Convenience method, similar to promises. Executes callback
+   * whenever the record is ready, either immediatly or once the ready
+   * event is fired
+   * @param   {[Function]} callback Will be called when the record is ready
+   */
+  public whenReady (context: Context, callback?: (context: Context) => void): Promise<Context> | void {
+    this.whenReadyInternal(context, (realContext: Context | null) => {
+      if (realContext) {
+        if (callback) {
+          callback(realContext)
+          return
+        }
+        return Promise.resolve(realContext)
       }
-      return Promise.resolve(context)
+    })
+  }
+
+  /**
+ */
+  private whenReadyInternal (context: Context | null, callback: (context: Context | null) => void): void {
+    if (this.isReady === true) {
+      callback(context)
+      return
     }
     if (callback) {
       this.once(EVENT.RECORD_READY, () => callback(context))
-    } else {
-      return new Promise((resolve, reject) => {
-        this.once(EVENT.RECORD_READY, () => resolve(context))
-      })
     }
   }
 
@@ -259,7 +264,7 @@ export class RecordCore extends Emitter {
  * the record getting out of sync due to unintentional changes to
  * its data
  */
-  public get (path?: string): any {
+  public get (path?: string): RecordData {
     return getPath(this.data, path || null, this.options.recordDeepCopy)
   }
 
@@ -287,7 +292,7 @@ export class RecordCore extends Emitter {
     }
 
     if (args.triggerNow) {
-      this.whenReady(null, () => {
+      this.whenReadyInternal(null, () => {
         this.emitter.on(args.path || '', args.callback)
         args.callback(this.get(args.path))
       })
@@ -334,7 +339,7 @@ export class RecordCore extends Emitter {
     if (this.checkDestroyed('discard')) {
       return
     }
-    this.whenReady(null, () => {
+    this.whenReadyInternal(null, () => {
       this.references--
       if (this.references <= 0) {
         this.discardTimeout = this.services.timerRegistry.add({
@@ -448,7 +453,7 @@ export class RecordCore extends Emitter {
   }
 
   private onOfflineLoading (): void {
-    this.services.storage.get(this.name, (recordName: string, version: number, data: any) => {
+    this.services.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
       if (version === -1) {
         this.data = {}
         this.version = 1
@@ -599,6 +604,7 @@ export class RecordCore extends Emitter {
 
   private handleReadResponse (message: Message): void {
     if (this.stateMachine.state === RECORD_STATE.MERGING) {
+      // @ts-ignore
       this.recoverRecord(message.version as number, message.parsedData, message as RecordMessage)
       this.recordServices.dirtyService.setDirty(this.name, false)
       return
@@ -659,7 +665,7 @@ export class RecordCore extends Emitter {
     this.saveRecordToOffline()
   }
 
-  private sendUpdate (path: string | null = null, data: any, callback?: WriteAckCallback) {
+  private sendUpdate (path: string | null = null, data: RecordData, callback?: WriteAckCallback) {
     if (this.recordServices.dirtyService.isDirty(this.name)) {
       this.recordServices.dirtyService.setDirty(this.name, false)
     } else {
@@ -688,7 +694,7 @@ export class RecordCore extends Emitter {
     }
   }
 
-  private sendCreateUpdate (data: any) {
+  private sendCreateUpdate (data: RecordData) {
     this.services.connection.sendMessage({
       name: this.name,
       topic: TOPIC.RECORD,
@@ -717,7 +723,8 @@ export class RecordCore extends Emitter {
         **/
         this.sendRead()
       } else {
-        this.recoverRecord(message.version, message.parsedData, message)
+        // @ts-ignore
+        this.recoverRecord(message.version, data, message)
       }
       return
     }
@@ -738,7 +745,7 @@ export class RecordCore extends Emitter {
    * Compares the new values for every path with the previously stored ones and
    * updates the subscribers if the value has changed
    */
-  private applyChange (newData: any) {
+  private applyChange (newData: RecordData) {
     if (this.stateMachine.inEndState) {
       return
     }
@@ -762,7 +769,7 @@ export class RecordCore extends Emitter {
    * we delete in local storage and transition to delete success.
    */
   private sendDelete (): void {
-    this.whenReady(null, () => {
+    this.whenReadyInternal(null, () => {
       if (this.services.connection.isConnected) {
         const message = {
           topic: TOPIC.RECORD,
@@ -794,7 +801,7 @@ export class RecordCore extends Emitter {
    * @param   {Object} remoteData The remote object data
    * @param   {Object} message parsed and validated deepstream message
    */
-  private recoverRecord (remoteVersion: number, remoteData: any, message: RecordMessage) {
+  private recoverRecord (remoteVersion: number, remoteData: RecordData, message: RecordMessage) {
     this.recordServices.mergeStrategy.merge(
       this.name,
       (this.version as number),
@@ -810,7 +817,7 @@ export class RecordCore extends Emitter {
  * record state, else emit and error and the record will remain in an
  * inconsistent state until the next update.
  */
-  private onRecordRecovered (error: string | null, mergedData: any, remoteVersion: number, remoteData: any): void {
+  private onRecordRecovered (error: string | null, recordName: string, mergedData: RecordData, remoteVersion: number, remoteData: RecordData): void {
     if (error) {
       this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS)
     }

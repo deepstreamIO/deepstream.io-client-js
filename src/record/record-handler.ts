@@ -6,7 +6,9 @@ import {
   TOPIC,
   RECORD_ACTIONS as RECORD_ACTION,
   RecordMessage,
-  ListenMessage
+  ListenMessage,
+  RecordData,
+  RecordPathData
 } from '../../binary-protocol/src/message-constants'
 import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
@@ -140,9 +142,9 @@ export class RecordHandler {
    * @param   {String}  name the unique name of the record
    * @param   {Function}  callback
    */
-  public snapshot (name: string): Promise<any>
-  public snapshot (name: string, callback: (error: string | null, data: any) => void): void
-  public snapshot (name: string, callback?: (error: string | null, data: any) => void): void | Promise<any> {
+  public snapshot (name: string): Promise<RecordData>
+  public snapshot (name: string, callback: (error: string | null, data: RecordData) => void): void
+  public snapshot (name: string, callback?: (error: string | null, data: RecordData) => void): void | Promise<RecordData> {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument: name')
     }
@@ -257,9 +259,9 @@ export class RecordHandler {
    * @returns {Promise} if a callback is omitted a Promise will be returned that resolves
    *                    with the result of the write
    */
-  public setDataWithAck (recordName: string, data: any, callback?: WriteAckCallback): Promise<string> | void
-  public setDataWithAck (recordName: string, path: string, data: any, callback?: WriteAckCallback): Promise<string> | void
-  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<string> | void {
+  public setDataWithAck (recordName: string, data: RecordData | undefined, callback?: WriteAckCallback): Promise<string | void> | void
+  public setDataWithAck (recordName: string, path: string, data: RecordData | undefined, callback?: WriteAckCallback): Promise<string | void> | void
+  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<string | void> | void {
     const args = utils.normalizeSetArguments(arguments, 1)
     if (!args.callback) {
       return new Promise((resolve, reject) => {
@@ -285,9 +287,9 @@ export class RecordHandler {
    * @param {Function} callback if provided this will be called with the result of the
    *                            write
    */
-  public setData (recordName: string, data: any): void
-  public setData (recordName: string, path: string, data: any, callback: WriteAckCallback): void
-  public setData (recordName: string, pathOrData: string | any, dataOrCallback: any | WriteAckCallback, callback?: WriteAckCallback): void
+  public setData (recordName: string, data: RecordData): void
+  public setData (recordName: string, path: string, data: RecordPathData | undefined, callback: WriteAckCallback): void
+  public setData (recordName: string, pathOrData: string | RecordData, dataOrCallback: RecordPathData | WriteAckCallback | undefined, callback?: WriteAckCallback): void
   public setData (recordName: string): void {
     const args = utils.normalizeSetArguments(arguments, 1)
     this.sendSetData(recordName, -1, args)
@@ -412,7 +414,7 @@ export class RecordHandler {
     this.recordCores.delete(recordName)
   }
 
-  private getRecordCore (recordName: string): RecordCore {
+  private getRecordCore (recordName: string): RecordCore<any> {
     let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
       recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this))
@@ -437,7 +439,7 @@ export class RecordHandler {
     })
   }
 
-  private sendUpdatedData (recordName: string, version: number, data: any) {
+  private sendUpdatedData (recordName: string, version: number, data: RecordData) {
     this.sendSetData(recordName, version, { data, callback: this.onRecordUpdated })
   }
 
@@ -453,7 +455,7 @@ export class RecordHandler {
   * inconsistent state until the next update.
   */
   // private onMergeConflict (message: RecordWriteMessage): void {
-  //   this.services.storage.get(message.name, (recordName: string, version: number, data: any) => {
+  //   this.services.storage.get(message.name, (recordName: string, version: number, data: RecordData) => {
   //     this.recordServices.mergeStrategy.merge(
   //       message.name,
   //       version,
@@ -465,7 +467,7 @@ export class RecordHandler {
   //   })
   // }
 
-  private onMergeCompleted (error: string | null, recordName: string, mergeData: any, remoteVersion: number, remoteData: any) {
+  private onMergeCompleted (error: string | null, recordName: string, mergeData: RecordData, remoteVersion: number, remoteData: RecordData) {
     this.sendSetData(recordName, remoteVersion + 1, { data: mergeData })
   }
 }

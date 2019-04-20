@@ -5,22 +5,22 @@ import {
   AUTH_ACTIONS as AUTH_ACTION,
   PARSER_ACTIONS as PARSER_ACTION,
   Message,
-  ParseResult
+  ParseResult,
+  JSONObject
 } from '../../binary-protocol/src/message-constants'
 import {
   parseData
 } from '../../binary-protocol/src/message-parser'
 
 import { StateMachine } from '../util/state-machine'
-import { Services } from '../client'
+import {Services, Socket} from '../client'
 import { Options } from '../client-options'
-import { Socket } from './socket-factory'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
 import Timeout = NodeJS.Timeout
 
-export type AuthenticationCallback = (success: boolean, clientData: object | null) => void
-export type ResumeCallback = (error?: object) => void
+export type AuthenticationCallback = (success: boolean, clientData: JSONObject | null) => void
+export type ResumeCallback = (error?: JSONObject) => void
 
 const enum TRANSITIONS {
   INITIALISED = 'initialised',
@@ -53,8 +53,8 @@ export class Connection {
   private services: Services
   private options: Options
   private stateMachine: StateMachine
-  private authParams: object | null
-  private clientData: object | null
+  private authParams: JSONObject | null
+  private clientData: JSONObject | null
   private authCallback: AuthenticationCallback | null
   private resumeCallback: ResumeCallback | null
   private readonly originalUrl: string
@@ -204,8 +204,8 @@ export class Connection {
    * @param   {Function} callback   A callback that will be invoked with the authenticationr result
    */
   public authenticate (authCallback: AuthenticationCallback): void
-  public authenticate (authParms: object | null, callback: AuthenticationCallback): void
-  public authenticate (authParamsOrCallback?: object | AuthenticationCallback | null, callback?: AuthenticationCallback | null): void {
+  public authenticate (authParms: JSONObject | null, callback: AuthenticationCallback): void
+  public authenticate (authParamsOrCallback?: JSONObject | AuthenticationCallback | null, callback?: AuthenticationCallback | null): void {
     if (
       authParamsOrCallback &&
       typeof authParamsOrCallback !== 'object' &&
@@ -227,6 +227,7 @@ export class Connection {
     }
 
     if (authParamsOrCallback) {
+      // @ts-ignore
       this.authParams = typeof authParamsOrCallback === 'object' ? authParamsOrCallback : {}
     }
 

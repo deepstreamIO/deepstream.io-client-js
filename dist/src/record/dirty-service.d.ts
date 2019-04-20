@@ -1,6 +1,9 @@
 import { RecordOfflineStore } from '../client';
+export interface DirtyRecordsIndex {
+    [index: string]: boolean;
+}
 export declare class DirtyService {
-    private name;
+    private readonly name;
     private storage;
     private dirtyRecords;
     private loaded;
@@ -9,7 +12,6 @@ export declare class DirtyService {
     isDirty(recordName: string): boolean;
     setDirty(recordName: string, isDirty: boolean): void;
     whenLoaded(callback: () => void): void;
-    getAll(): Map<string, boolean>;
+    getAll(): DirtyRecordsIndex;
     private load;
-    private updateDirtyRecords;
 }

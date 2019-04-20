@@ -1,22 +1,24 @@
 import { RecordCore, WriteAckCallback } from './record-core';
 import { MergeStrategy } from './merge-strategy';
 import * as Emitter from 'component-emitter2';
+import { JSONObject, RecordData } from '../../binary-protocol/src/message-constants';
 export declare class Record extends Emitter {
     private record;
     private subscriptions;
-    constructor(record: RecordCore);
+    constructor(record: RecordCore<Record>);
     readonly name: string;
     readonly isReady: boolean;
     readonly version: number;
     readonly hasProvider: boolean;
     whenReady(callback?: ((record: Record) => void)): void | Promise<Record>;
     get(path?: string): any;
-    set(data: any, callback?: WriteAckCallback): void;
-    setWithAck(data: any): Promise<void>;
-    setWithAck(data: any, callback: ((error: string) => void)): void;
-    setWithAck(path: string, data: any): Promise<void>;
-    setWithAck(path: string, data: any, callback: ((error: string) => void)): void;
-    setWithAck(data: any, callback?: ((error: string) => void)): Promise<void> | void;
+    set(data: JSONObject, callback?: WriteAckCallback): void;
+    set(path: string, data: RecordData, callback?: WriteAckCallback): void;
+    setWithAck(data: JSONObject): Promise<void>;
+    setWithAck(data: JSONObject, callback: ((error: string) => void)): void;
+    setWithAck(path: string, data: RecordData): Promise<void>;
+    setWithAck(path: string, data: RecordData, callback: ((error: string) => void)): void;
+    setWithAck(data: JSONObject, callback?: ((error: string) => void)): Promise<void> | void;
     /**
      * Deletes a path from the record. Equivalent to doing `record.set(path, undefined)`
      *

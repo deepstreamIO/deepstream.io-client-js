@@ -1,9 +1,10 @@
 import { expect } from 'chai'
 import { spy } from 'sinon'
 import * as MERGE_STRATEGIES from './merge-strategy'
+import {JSONObject} from '../../binary-protocol/src/message-constants'
 
 describe('merge strategies @unit', () => {
-  let localData: object
+  let localData: JSONObject
   let localVersion: number
   describe('remote wins', () => {
     beforeEach(function () {

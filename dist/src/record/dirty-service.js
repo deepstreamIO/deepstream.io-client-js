@@ -15,7 +15,13 @@ class DirtyService {
         return !!this.dirtyRecords[recordName];
     }
     setDirty(recordName, isDirty) {
-        this.updateDirtyRecords(recordName, isDirty);
+        if (isDirty) {
+            this.dirtyRecords[recordName] = true;
+        }
+        else {
+            delete this.dirtyRecords[recordName];
+        }
+        this.storage.set(this.name, 1, this.dirtyRecords, () => { });
     }
     whenLoaded(callback) {
         if (this.loaded) {
@@ -34,19 +40,11 @@ class DirtyService {
             return;
         }
         this.storage.get(this.name, (recordName, version, data) => {
-            this.dirtyRecords = version !== -1 ? data : {};
+            // @ts-ignore
+            this.dirtyRecords = data || {};
             this.loaded = true;
             this.emitter.emit(DIRTY_SERVICE_LOADED);
         });
-    }
-    updateDirtyRecords(recordName, isDirty) {
-        if (isDirty) {
-            this.dirtyRecords[recordName] = true;
-        }
-        else {
-            delete this.dirtyRecords[recordName];
-        }
-        this.storage.set(this.name, 1, this.dirtyRecords, () => { });
     }
 }
 exports.DirtyService = DirtyService;

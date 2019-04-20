@@ -4,7 +4,8 @@ import {
   TOPIC,
   EVENT_ACTIONS as EVENT_ACTION,
   EventMessage,
-  ListenMessage
+  ListenMessage,
+  EventData
 } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
@@ -31,7 +32,7 @@ export class EventHandler {
   * Subscribe to an event. This will receive both locally emitted events
   * as well as events emitted by other connected clients.
   */
-  public subscribe (name: string, callback: (data: any) => void) {
+  public subscribe (name: string, callback: (data: EventData) => void) {
     if (typeof name !== 'string' || name.length === 0) {
         throw new Error('invalid argument name')
     }
@@ -52,7 +53,7 @@ export class EventHandler {
  * for an event have been removed, the server will be notified
  * that the client is unsubscribed as a listener
  */
-public unsubscribe (name: string, callback: (data: any) => void): void {
+public unsubscribe (name: string, callback: (data: EventData) => void): void {
     if (!name || typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
@@ -86,7 +87,7 @@ public unsubscribe (name: string, callback: (data: any) => void): void {
    * Emits an event locally and sends a message to the server to
    * broadcast the event to the other connected clients
    */
-  public emit (name: string, data: any): void {
+  public emit (name: string, data: EventData): void {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }

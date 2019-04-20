@@ -1,5 +1,6 @@
 import { Services } from '../client';
 import { Options } from '../client-options';
+import { EventData } from '../../binary-protocol/src/message-constants';
 import { Listener, ListenCallback } from '../util/listener';
 export declare class EventHandler {
     private services;
@@ -11,18 +12,18 @@ export declare class EventHandler {
     * Subscribe to an event. This will receive both locally emitted events
     * as well as events emitted by other connected clients.
     */
-    subscribe(name: string, callback: (data: any) => void): void;
+    subscribe(name: string, callback: (data: EventData) => void): void;
     /**
      * Removes a callback for a specified event. If all callbacks
      * for an event have been removed, the server will be notified
      * that the client is unsubscribed as a listener
      */
-    unsubscribe(name: string, callback: (data: any) => void): void;
+    unsubscribe(name: string, callback: (data: EventData) => void): void;
     /**
      * Emits an event locally and sends a message to the server to
      * broadcast the event to the other connected clients
      */
-    emit(name: string, data: any): void;
+    emit(name: string, data: EventData): void;
     /**
    * Allows to listen for event subscriptions made by this or other clients. This
    * is useful to create "active" data providers, e.g. providers that only provide

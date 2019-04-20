@@ -8,7 +8,7 @@ export declare class List extends Emitter {
     private hasAddListener;
     private hasRemoveListener;
     private hasMoveListener;
-    constructor(record: RecordCore);
+    constructor(record: RecordCore<List>);
     readonly name: string;
     readonly isReady: boolean;
     readonly version: number;

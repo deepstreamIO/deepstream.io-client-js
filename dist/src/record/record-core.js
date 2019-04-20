@@ -93,26 +93,31 @@ class RecordCore extends Emitter {
         return this.references;
     }
     /**
-   * Convenience method, similar to promises. Executes callback
-   * whenever the record is ready, either immediatly or once the ready
-   * event is fired
-   * @param   {[Function]} callback Will be called when the record is ready
-   */
+     * Convenience method, similar to promises. Executes callback
+     * whenever the record is ready, either immediatly or once the ready
+     * event is fired
+     * @param   {[Function]} callback Will be called when the record is ready
+     */
     whenReady(context, callback) {
-        if (this.isReady === true) {
-            if (callback) {
-                callback(context);
-                return;
+        this.whenReadyInternal(context, (realContext) => {
+            if (realContext) {
+                if (callback) {
+                    callback(realContext);
+                    return;
+                }
+                return Promise.resolve(realContext);
             }
-            return Promise.resolve(context);
+        });
+    }
+    /**
+   */
+    whenReadyInternal(context, callback) {
+        if (this.isReady === true) {
+            callback(context);
+            return;
         }
         if (callback) {
             this.once(constants_1.EVENT.RECORD_READY, () => callback(context));
-        }
-        else {
-            return new Promise((resolve, reject) => {
-                this.once(constants_1.EVENT.RECORD_READY, () => resolve(context));
-            });
         }
     }
     /**
@@ -205,7 +210,7 @@ class RecordCore extends Emitter {
             return;
         }
         if (args.triggerNow) {
-            this.whenReady(null, () => {
+            this.whenReadyInternal(null, () => {
                 this.emitter.on(args.path || '', args.callback);
                 args.callback(this.get(args.path));
             });
@@ -249,7 +254,7 @@ class RecordCore extends Emitter {
         if (this.checkDestroyed('discard')) {
             return;
         }
-        this.whenReady(null, () => {
+        this.whenReadyInternal(null, () => {
             this.references--;
             if (this.references <= 0) {
                 this.discardTimeout = this.services.timerRegistry.add({
@@ -481,6 +486,7 @@ class RecordCore extends Emitter {
     }
     handleReadResponse(message) {
         if (this.stateMachine.state === 5 /* MERGING */) {
+            // @ts-ignore
             this.recoverRecord(message.version, message.parsedData, message);
             this.recordServices.dirtyService.setDirty(this.name, false);
             return;
@@ -601,7 +607,8 @@ class RecordCore extends Emitter {
                 this.sendRead();
             }
             else {
-                this.recoverRecord(message.version, message.parsedData, message);
+                // @ts-ignore
+                this.recoverRecord(message.version, data, message);
             }
             return;
         }
@@ -642,7 +649,7 @@ class RecordCore extends Emitter {
      * we delete in local storage and transition to delete success.
      */
     sendDelete() {
-        this.whenReady(null, () => {
+        this.whenReadyInternal(null, () => {
             if (this.services.connection.isConnected) {
                 const message = {
                     topic: message_constants_1.TOPIC.RECORD,
@@ -682,7 +689,7 @@ class RecordCore extends Emitter {
    * record state, else emit and error and the record will remain in an
    * inconsistent state until the next update.
    */
-    onRecordRecovered(error, mergedData, remoteVersion, remoteData) {
+    onRecordRecovered(error, recordName, mergedData, remoteVersion, remoteData) {
         if (error) {
             this.services.logger.error({ topic: message_constants_1.TOPIC.RECORD }, constants_1.EVENT.RECORD_VERSION_EXISTS);
         }

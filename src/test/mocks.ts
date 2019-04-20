@@ -2,7 +2,7 @@
 import { mock, stub, SinonStub, SinonMock, match } from 'sinon'
 import { CONNECTION_STATE } from '../constants'
 import { TimerRegistry } from '../util/timer-registry'
-import { Message, RECORD_ACTIONS } from '../../binary-protocol/src/message-constants'
+import { Message, RECORD_ACTIONS, JSONObject } from '../../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../record/single-notifier'
 import { WriteAcknowledgementService } from '../record/write-ack-service'
 import { DirtyService } from '../record/dirty-service'
@@ -85,7 +85,7 @@ export const getServicesMock = () => {
   }
 
   let socket: Socket
-  const socketFactory = (url: string, options: object): any => {
+  const socketFactory = (url: string, options: JSONObject): any => {
     socket = new Socket(url)
     return socket
   }
