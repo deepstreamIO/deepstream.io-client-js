@@ -78,7 +78,7 @@ export class TimeoutRegistry extends EventEmitter {
         callback: this.onTimeout,
         duration: timeout.duration,
         data: internalTimeout
-    }) as unknown as number
+    })
     this.register.set(internalTimeout.timerId, internalTimeout)
     return internalTimeout.timerId
   }

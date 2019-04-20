@@ -5,13 +5,15 @@ export interface Timeout {
     data?: any
 }
 
+export type TimeoutRef = number
+
 export class TimerRegistry {
 
-    public add (timeout: Timeout): number {
-        return setTimeout(timeout.callback.bind(timeout.context, timeout.data), timeout.duration) as unknown as number
+    public add (timeout: Timeout): TimeoutRef {
+        return setTimeout(timeout.callback.bind(timeout.context, timeout.data), timeout.duration) as unknown as TimeoutRef
     }
 
-    public remove (timerId: number): boolean {
+    public remove (timerId: TimeoutRef): boolean {
         clearTimeout(timerId)
         return true
     }
