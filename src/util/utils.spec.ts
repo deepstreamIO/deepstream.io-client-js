@@ -619,6 +619,6 @@ describe('parseUrl adds all missing parts of the url', () => {
 
   it('rejects urls with no host', () => {
     expect(utils.parseUrl.bind(utils, '', '/deepstream'))
-      .to.throw('invalid url, missing host')
+      .to.throw('Invalid URL: ws://')
   })
 })

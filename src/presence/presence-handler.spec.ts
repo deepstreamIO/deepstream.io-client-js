@@ -51,7 +51,7 @@ describe('Presence handler', () => {
     presenceHandler.getAll(callbackSpy)
     presenceHandler.getAll().then(promiseSuccess).catch(promiseError)
 
-    await BBPromise.delay(1)
+    await BBPromise.delay(2)
 
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
