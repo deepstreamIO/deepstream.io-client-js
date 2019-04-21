@@ -2,7 +2,7 @@ import { Promise as BBPromise } from 'bluebird'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../test/mocks'
 import { EVENT } from '../constants'
-import { RECORD_ACTIONS, TOPIC } from '../../binary-protocol/src/message-constants'
+import { RECORD_ACTIONS, TOPIC, Message } from '../../binary-protocol/src/message-constants'
 
 import { SingleNotifier } from './single-notifier'
 
@@ -12,7 +12,7 @@ describe('Single Notifier', () => {
   const name = 'name'
   const topic = TOPIC.RECORD
   let services: any
-  let singleNotifier: SingleNotifier
+  let singleNotifier: SingleNotifier<Message>
   let callbackSpy: sinon.SinonSpy
 
   beforeEach(() => {

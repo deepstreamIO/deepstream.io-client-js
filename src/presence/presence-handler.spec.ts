@@ -374,7 +374,8 @@ describe('Presence handler', () => {
       handle(messageForCallback)
       handle(messageForPromise)
 
-      await BBPromise.delay(1)
+      await BBPromise.delay(2)
+
       assert.calledOnce(callback)
       assert.calledWithExactly(callback, null, usersPresence)
 

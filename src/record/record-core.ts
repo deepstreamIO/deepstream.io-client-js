@@ -7,7 +7,6 @@ import {
   RECORD_ACTIONS as RA,
   RecordMessage,
   RecordWriteMessage,
-  Message,
   RecordData
 } from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
@@ -627,10 +626,9 @@ export class RecordCore<Context = null> extends Emitter {
     }
   }
 
-  private handleReadResponse (message: Message): void {
+  private handleReadResponse (message: RecordMessage): void {
     if (this.stateMachine.state === RECORD_STATE.MERGING) {
-      // @ts-ignore
-      this.recoverRecord(message.version as number, message.parsedData, message as RecordMessage)
+      this.recoverRecord(message.version!, message.parsedData, message)
       this.recordServices.dirtyService.setDirty(this.name, false)
       return
     }
@@ -639,8 +637,8 @@ export class RecordCore<Context = null> extends Emitter {
     this.stateMachine.transition(RA.READ_RESPONSE)
   }
 
-  private handleHeadResponse (message: Message): void {
-    const remoteVersion = message.version as number
+  private handleHeadResponse (message: RecordMessage): void {
+    const remoteVersion = message.version!
     if (this.recordServices.dirtyService.isDirty(this.name)) {
       if (remoteVersion === -1 && this.version === 1) {
         /**

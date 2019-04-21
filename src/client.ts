@@ -12,6 +12,7 @@ import { Storage } from './record/storage-service'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 import {RecordData, JSONObject, Message} from '../binary-protocol/src/message-constants'
+import {NoopStorage} from './record/noop-storage-service'
 
 export type offlineStoreWriteResponse = ((error: string | null) => void)
 
@@ -49,12 +50,16 @@ export class Client extends EventEmitter {
     this.options = { ...DefaultOptions, ...options } as Options
     // @ts-ignore
     const services: Services = {}
-    services.storage = this.options.storage || new Storage(this.options)
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry()
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = this.options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)
+    if (this.options.offlineEnabled) {
+      services.storage = this.options.storage || new Storage(this.options)
+    } else {
+      services.storage = new NoopStorage()
+    }
     this.services = services as Services
 
     this.services.connection.onLost(
@@ -122,7 +127,7 @@ export class Client extends EventEmitter {
   /**
   * Returns a random string. The first block of characters
   * is a timestamp, in order to allow databases to optimize for semi-
-  * sequentuel numberings
+  * sequential numberings
   */
   public getUid (): string {
     const timestamp = (new Date()).getTime().toString(36)

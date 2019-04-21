@@ -14,12 +14,12 @@ import { Services } from '../client'
  *
  * @constructor
  */
-export class SingleNotifier {
+export class SingleNotifier<MessageType extends Message> {
 
   private services: Services
   private requests: Map<string, Array<(error?: any, result?: any) => void>>
   private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD
-  private internalRequests: Map<string, Array<(message: Message) => void>>
+  private internalRequests: Map<string, Array<(message: MessageType) => void>>
   private limboQueue: Array<Message>
 
   constructor (services: Services, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
@@ -73,7 +73,7 @@ export class SingleNotifier {
    * Adds a callback to a (possibly) inflight request that will be called
    * on the response.
    */
-  public register (name: string, callback: (message: Message) => void): void {
+  public register (name: string, callback: (message: MessageType) => void): void {
     const request = this.internalRequests.get(name)
     if (!request) {
       this.internalRequests.set(name, [callback])
@@ -82,9 +82,9 @@ export class SingleNotifier {
     }
   }
 
-  public recieve (message: Message, error?: any, data?: any): void {
+  public recieve (message: MessageType, error?: any, data?: any): void {
     this.services.timeoutRegistry.remove(message)
-    const name = message.name as string
+    const name = message.name!
     const responses = this.requests.get(name) || []
     const internalResponses = this.internalRequests.get(name) || []
     if (!responses && !internalResponses) {

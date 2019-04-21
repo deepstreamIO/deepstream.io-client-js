@@ -4,6 +4,7 @@ import { TOPIC, RPC_ACTIONS } from '../../binary-protocol/src/message-constants'
 
 import { DefaultOptions } from '../client-options'
 import { RPCResponse } from './rpc-response'
+import { Promise as BBPromise } from 'bluebird'
 
 describe('RPC response', () => {
   let services: any
@@ -29,15 +30,15 @@ describe('RPC response', () => {
     services.connectionMock.verify()
   })
 
-  it('doesn\'t accept automatically when autoAccept == false', done => {
+  it('doesn\'t accept automatically when autoAccept == false', async () => {
     services.connectionMock
       .expects('sendMessage')
       .never()
 
-    process.nextTick(done)
+    await BBPromise.delay(2)
   })
 
-  it('sends an accept message automatically when autoAccept == true ', done => {
+  it('sends an accept message automatically when autoAccept == true ', async () => {
     services.connectionMock
       .expects('sendMessage')
       .once()
@@ -49,7 +50,8 @@ describe('RPC response', () => {
       })
 
     rpcResponse.autoAccept = true
-    process.nextTick(done)
+
+    await BBPromise.delay(2)
   })
 
   it('sends an accept message manually', () => {

@@ -24,8 +24,8 @@ import { MergeStrategy } from './merge-strategy'
 
 export interface RecordServices {
   writeAckService: WriteAcknowledgementService
-  readRegistry: SingleNotifier,
-  headRegistry: SingleNotifier,
+  readRegistry: SingleNotifier<RecordMessage>,
+  headRegistry: SingleNotifier<RecordMessage>,
   dirtyService: DirtyService,
   mergeStrategy: MergeStrategyService
 }
