@@ -457,7 +457,7 @@ export class RecordCore<Context = null> extends Emitter {
             this.offlineLoadingAborted = false
             return
         }
-      if (version === -1) {
+        if (version === -1) {
         this.data = {}
         this.version = 1
         this.recordServices.dirtyService.setDirty(this.name, true)
