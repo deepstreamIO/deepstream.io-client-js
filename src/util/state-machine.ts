@@ -4,13 +4,13 @@ export class StateMachine {
   public inEndState: boolean
 
   private transitions: any
-  private stateMachine: any
+  private context: any
 
-  constructor (logger: any, stateMachine: any) {
+  constructor (logger: any, private stateMachine: any) {
     this.inEndState = false
     this.transitions = stateMachine.transitions
     this.state = stateMachine.init
-    this.stateMachine = stateMachine
+    this.context = stateMachine.context;
   }
 
   /**
@@ -24,10 +24,10 @@ export class StateMachine {
         const oldState = this.state
         this.state = transition.to
         if (this.stateMachine.onStateChanged) {
-          this.stateMachine.onStateChanged(this.state, oldState)
+          this.stateMachine.onStateChanged.call(this.context, this.state, oldState)
         }
         if (transition.handler) {
-          transition.handler()
+          transition.handler.call(this.context)
         }
         return
       }

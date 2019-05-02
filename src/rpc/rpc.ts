@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import {TOPIC, RPC_ACTIONS as RPC_ACTION, Message, RPCResult} from '../../binary-protocol/src/message-constants'
-import {TimeoutAction} from '../util/timeout-registry'
+import {TimeoutAction, TimeoutId} from '../util/timeout-registry'
 
 export type RPCMakeCallback = (error: string | null, result?: RPCResult) => void
 
@@ -17,8 +17,9 @@ export class RPC {
     private name: string
     private correlationId: string
     private response: RPCMakeCallback
-    private acceptTimeout: number
-    private responseTimeout: number
+    private acceptTimeout: TimeoutId
+
+    private responseTimeout: TimeoutId
 
     constructor (name: string, correlationId: string, data: any, response: RPCMakeCallback, options: Options, services: Services) {
       this.options = options

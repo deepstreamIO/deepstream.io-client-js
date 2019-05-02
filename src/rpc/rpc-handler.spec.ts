@@ -18,8 +18,8 @@ describe('RPC handler', () => {
   let rpcMakeSpy: sinon.SinonSpy
   let data: any
   const name = 'myRpc'
-  const rpcAcceptTimeout = 3
-  const rpcResponseTimeout = 10
+  const rpcAcceptTimeout = 10
+  const rpcResponseTimeout = 30
   const options = Object.assign({}, DefaultOptions, { rpcAcceptTimeout, rpcResponseTimeout })
 
   beforeEach(() => {

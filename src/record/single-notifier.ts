@@ -15,26 +15,17 @@ import { Services } from '../client'
  * @constructor
  */
 export class SingleNotifier<MessageType extends Message> {
+  private requests = new Map<string, Array<(error?: any, result?: any) => void>>()
+  private internalRequests = new Map<string, Array<{ context: any, callback: (message: MessageType) => void }>>()
+  private limboQueue: Array<Message> = []
 
-  private services: Services
-  private requests: Map<string, Array<(error?: any, result?: any) => void>>
-  private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD
-  private internalRequests: Map<string, Array<(message: MessageType) => void>>
-  private limboQueue: Array<Message>
-
-  constructor (services: Services, action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
-    this.services = services
-    this.action = action
-    this.requests = new Map()
-    this.internalRequests = new Map()
-    this.limboQueue = []
-
+  constructor (private services: Services, private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
     this.services.connection.onLost(this.onConnectionLost.bind(this))
     this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
     this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
   }
 
-    /**
+  /**
    * Add a request. If one has already been made it will skip the server request
    * and multiplex the response
    *
@@ -45,12 +36,6 @@ export class SingleNotifier<MessageType extends Message> {
    * @returns {void}
    */
   public request (name: string, callback: (error?: any, result?: any) => void): void {
-    const message = {
-      topic: TOPIC.RECORD,
-      action: this.action,
-      name
-    }
-
     const req = this.requests.get(name)
     if (req) {
       req.push(callback)
@@ -59,6 +44,12 @@ export class SingleNotifier<MessageType extends Message> {
 
     this.requests.set(name, [callback])
 
+    const message = {
+      topic: TOPIC.RECORD,
+      action: this.action,
+      name
+    }
+    
     if (this.services.connection.isConnected) {
       this.services.connection.sendMessage(message)
       this.services.timeoutRegistry.add({ message })
@@ -73,12 +64,12 @@ export class SingleNotifier<MessageType extends Message> {
    * Adds a callback to a (possibly) inflight request that will be called
    * on the response.
    */
-  public register (name: string, callback: (message: MessageType) => void): void {
+  public register (name: string, context: any, callback: (message: MessageType) => void): void {
     const request = this.internalRequests.get(name)
     if (!request) {
-      this.internalRequests.set(name, [callback])
+      this.internalRequests.set(name, [{ callback, context }])
     } else {
-      request.push(callback)
+      request.push({ callback, context })
     }
   }
 
@@ -92,7 +83,7 @@ export class SingleNotifier<MessageType extends Message> {
     }
 
     for (let i = 0; i < internalResponses.length; i++) {
-      internalResponses[i](message)
+      internalResponses[i].callback.call(internalResponses[i].context, message)
     }
     this.internalRequests.delete(name)
 

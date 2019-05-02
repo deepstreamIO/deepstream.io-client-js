@@ -8,7 +8,8 @@ import {
   RecordMessage,
   ListenMessage,
   RecordData,
-  RecordPathData
+  RecordPathData,
+  ALL_ACTIONS
 } from '../../binary-protocol/src/message-constants'
 import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
@@ -21,8 +22,10 @@ import { WriteAcknowledgementService } from './write-ack-service'
 import { DirtyService } from './dirty-service'
 import { MergeStrategyService } from './merge-strategy-service'
 import { MergeStrategy } from './merge-strategy'
+import {BulkSubscriptionService} from '../util/bulk-subscription-service';
 
 export interface RecordServices {
+  bulkSubscriptionService: { [index in ALL_ACTIONS]: BulkSubscriptionService<RECORD_ACTION> };
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier<RecordMessage>,
   headRegistry: SingleNotifier<RecordMessage>,
@@ -46,6 +49,11 @@ export class RecordHandler {
     this.recordCores = new Map()
 
     this.recordServices = recordServices || {
+      bulkSubscriptionService: {
+        [RECORD_ACTION.BULK_SUBSCRIBECREATEANDREAD]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options, TOPIC.RECORD, RECORD_ACTION.BULK_SUBSCRIBECREATEANDREAD),
+        [RECORD_ACTION.BULK_SUBSCRIBEANDHEAD]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options, TOPIC.RECORD, RECORD_ACTION.BULK_SUBSCRIBEANDHEAD),
+        [RECORD_ACTION.BULK_SUBSCRIBEANDREAD]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options, TOPIC.RECORD, RECORD_ACTION.BULK_SUBSCRIBEANDREAD)
+      },
       writeAckService: new WriteAcknowledgementService(services),
       readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
       headRegistry: new SingleNotifier(services, RECORD_ACTION.HEAD, options.recordReadTimeout),

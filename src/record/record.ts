@@ -6,12 +6,10 @@ import * as Emitter from 'component-emitter2'
 import {JSONObject, RecordData} from '../../binary-protocol/src/message-constants'
 
 export class Record extends Emitter  {
-    private record: RecordCore<Record>
     private subscriptions: Array<utils.RecordSubscribeArguments>
 
-    constructor (record: RecordCore<Record>) {
+    constructor (private record: RecordCore<Record>) {
         super()
-        this.record = record
         this.subscriptions = []
         this.record.on(EVENT.RECORD_READY, this.emit.bind(this, EVENT.RECORD_READY, this))
         this.record.on(EVENT.RECORD_DISCARDED, this.emit.bind(this, EVENT.RECORD_DISCARDED))
@@ -44,17 +42,17 @@ export class Record extends Emitter  {
     }
 
     public set (data: JSONObject, callback?: WriteAckCallback): void
-    public set (path: string, data: RecordData, callback?: WriteAckCallback): void
-    public set (dataOrPath: string | JSONObject, dataOrCallback: WriteAckCallback | RecordData, callback?: WriteAckCallback): void {
+    public set (path: string, data: RecordData | undefined, callback?: WriteAckCallback): void
+    public set (dataOrPath: string | JSONObject, dataOrCallback: WriteAckCallback | RecordData | undefined, callback?: WriteAckCallback): void {
         return this.record.set(utils.normalizeSetArguments(arguments))
     }
 
     public setWithAck (data: JSONObject): Promise<void>
     public setWithAck (data: JSONObject, callback: ((error: string) => void)): void
-    public setWithAck (path: string, data: RecordData): Promise<void>
-    public setWithAck (path: string, data: RecordData, callback: ((error: string) => void)): void
+    public setWithAck (path: string, data: RecordData | undefined): Promise<void>
+    public setWithAck (path: string, data: RecordData | undefined, callback: ((error: string) => void)): void
     public setWithAck (data: JSONObject, callback?: ((error: string) => void)): Promise<void> | void
-    public setWithAck (pathOrData: string | JSONObject, dataOrCallback?: RecordData | ((error: string) => void), callback?: ((error: string) => void)): Promise<void> | void {
+    public setWithAck (pathOrData: string | JSONObject, dataOrCallback?: RecordData | ((error: string) => void) | undefined, callback?: ((error: string) => void)): Promise<void> | void {
         return this.record.setWithAck(utils.normalizeSetArguments(arguments))
     }
 

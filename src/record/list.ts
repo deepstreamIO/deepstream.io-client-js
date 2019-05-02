@@ -53,7 +53,7 @@ export class List extends Emitter {
             return []
         }
 
-        return entries
+        return entries as Array<string>
     }
 
     /**

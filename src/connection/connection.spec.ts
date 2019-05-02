@@ -34,9 +34,9 @@ describe('connection', () => {
   const initialUrl = 'wss://localhost:6020/deepstream'
   const otherUrl = 'wss://otherhost:6020/deepstream'
 
-  const reconnectIntervalIncrement = 10
+  const reconnectIntervalIncrement = 20
   const maxReconnectAttempts = 3
-  const maxReconnectInterval = 30
+  const maxReconnectInterval = 300
   const offlineBufferTimeout = 10
 
   beforeEach(() => {
