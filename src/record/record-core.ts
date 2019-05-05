@@ -320,7 +320,6 @@ export class RecordCore<Context = null> extends Emitter {
     if (this.checkDestroyed('discard')) {
       return
     }
-
     this.whenReadyInternal(null, () => {
       this.references--
       if (this.references <= 0) {
@@ -427,13 +426,13 @@ export class RecordCore<Context = null> extends Emitter {
 
   public onOfflineLoading () {
     this.services.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
-      if (this.offlineLoadingAborted) {
-          // This occurred since we got a connection to the server
-          // meaning we no longer care about current state currently
-          this.offlineLoadingAborted = false
-          return
-      }
       if (version === -1) {
+        if (this.offlineLoadingAborted) {
+            // This occurred since we got a connection to the server
+            // meaning we no longer care about current state currently
+            this.offlineLoadingAborted = false
+            return
+        }
         this.data = {}
         this.version = 1
         this.recordServices.dirtyService.setDirty(this.name, true)
@@ -764,7 +763,7 @@ export class RecordCore<Context = null> extends Emitter {
    * If connected sends the delete message to server, otherwise
    * we delete in local storage and transition to delete success.
    */
-  public sendDelete (): void {
+  private sendDelete (): void {
     this.whenReadyInternal(null, () => {
       if (this.services.connection.isConnected) {
         const message = {
@@ -885,7 +884,6 @@ export class RecordCore<Context = null> extends Emitter {
   public onConnectionLost (): void {
     this.saveRecordToOffline()
   }
-
 }
 
 const recordStateTransitions = [
