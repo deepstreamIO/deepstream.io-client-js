@@ -49,7 +49,7 @@ export class SingleNotifier<MessageType extends Message> {
       action: this.action,
       name
     }
-    
+
     if (this.services.connection.isConnected) {
       this.services.connection.sendMessage(message)
       this.services.timeoutRegistry.add({ message })

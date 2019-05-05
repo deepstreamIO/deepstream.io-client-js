@@ -10,7 +10,7 @@ export class StateMachine {
     this.inEndState = false
     this.transitions = stateMachine.transitions
     this.state = stateMachine.init
-    this.context = stateMachine.context;
+    this.context = stateMachine.context
   }
 
   /**

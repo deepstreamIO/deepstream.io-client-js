@@ -36,7 +36,7 @@ export class TimerRegistry {
     public add (timeout: Timeout): TimerRef {
         this.timerIdCounter++
         (timeout as InternalTimeout).created = Date.now()
-        this.registry.set(this.timerIdCounter, timeout as InternalTimeout);
+        this.registry.set(this.timerIdCounter, timeout as InternalTimeout)
         return this.timerIdCounter
     }
 

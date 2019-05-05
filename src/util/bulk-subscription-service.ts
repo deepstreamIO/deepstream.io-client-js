@@ -1,6 +1,5 @@
-import {TOPIC} from '../../binary-protocol/dist/src/message-constants'
+import {TOPIC, Message} from '../../binary-protocol/src/message-constants'
 import {Services} from '../client'
-import {Message} from '../../binary-protocol/src/message-constants'
 
 export class BulkSubscriptionService<ACTION> {
     private subscribeNames = new Set<string>()
