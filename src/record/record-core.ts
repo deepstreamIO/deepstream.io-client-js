@@ -80,7 +80,7 @@ export class RecordCore<Context = null> extends Emitter {
     this.pendingWrites = []
     this.isReady = false
 
-      this.offlineLoadingAborted = false
+    this.offlineLoadingAborted = false
     this.version = null
     this.responseTimeout = -1
     this.discardTimeout = -1
@@ -169,29 +169,21 @@ export class RecordCore<Context = null> extends Emitter {
    * Convenience method, similar to promises. Executes callback
    * whenever the record is ready, either immediatly or once the ready
    * event is fired
-   * @param   {[Function]} callback Will be called when the record is ready
    */
-  public whenReady (context: Context, callback?: (context: Context) => void): Promise<Context> | void {
-    this.whenReadyInternal(context, (realContext: Context | null) => {
-      if (realContext) {
-        if (callback) {
-          callback(realContext)
-          return
-        }
-        return Promise.resolve(realContext)
-      }
-    })
-  }
-
-  /**
- */
-  private whenReadyInternal (context: Context | null, callback: (context: Context | null) => void): void {
-    if (this.isReady === true) {
-      callback(context)
-      return
-    }
+  public whenReady (context: Context | null, callback: (context: Context | null) => void): Promise<Context | null> | void {
     if (callback) {
-      this.once(EVENT.RECORD_READY, () => callback(context))
+      if (this.isReady === true) {
+        callback(context)
+      } else {
+        this.once(EVENT.RECORD_READY, () => callback(context))
+      }
+    } else if (context) {
+      if (this.isReady) {
+        return Promise.resolve(context)
+      }
+      return new Promise<Context>(resolve => {
+        this.once(EVENT.RECORD_READY, () => resolve(context))
+      })
     }
   }
 
@@ -296,7 +288,7 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     if (args.triggerNow) {
-      this.whenReadyInternal(null, () => {
+      this.whenReady(null, () => {
         this.emitter.on(args.path || '', args.callback)
         args.callback(this.get(args.path))
       })
@@ -343,7 +335,7 @@ export class RecordCore<Context = null> extends Emitter {
     if (this.checkDestroyed('discard')) {
       return
     }
-    this.whenReadyInternal(null, () => {
+    this.whenReady(null, () => {
       this.references--
       if (this.references <= 0) {
         this.discardTimeout = this.services.timerRegistry.add({
@@ -464,7 +456,7 @@ export class RecordCore<Context = null> extends Emitter {
             this.offlineLoadingAborted = false
             return
         }
-      if (version === -1) {
+        if (version === -1) {
         this.data = {}
         this.version = 1
         this.recordServices.dirtyService.setDirty(this.name, true)
@@ -795,7 +787,7 @@ export class RecordCore<Context = null> extends Emitter {
    * we delete in local storage and transition to delete success.
    */
   private sendDelete (): void {
-    this.whenReadyInternal(null, () => {
+    this.whenReady(null, () => {
       if (this.services.connection.isConnected) {
         const message = {
           topic: TOPIC.RECORD,
@@ -912,5 +904,4 @@ export class RecordCore<Context = null> extends Emitter {
   private onConnectionLost (): void {
     this.saveRecordToOffline()
   }
-
 }
