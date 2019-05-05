@@ -397,7 +397,7 @@ export class RecordCore<Context = null> extends Emitter {
     //   }
     // })
 
-    this.recordServices.bulkSubscriptionService[RA.BULK_SUBSCRIBECREATEANDREAD].subscribe(this.name)
+    this.recordServices.bulkSubscriptionService[RA.SUBSCRIBECREATEANDREAD_BULK].subscribe(this.name)
   }
 
   public onResubscribing (): void {
@@ -418,7 +418,7 @@ export class RecordCore<Context = null> extends Emitter {
     //     name: this.name
     //   }
     // })
-    this.recordServices.bulkSubscriptionService[RA.BULK_SUBSCRIBEANDHEAD].subscribe(this.name)
+    this.recordServices.bulkSubscriptionService[RA.SUBSCRIBEANDHEAD_BULK].subscribe(this.name)
   }
 
   onOfflineLoading (): void {
