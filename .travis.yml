@@ -10,7 +10,7 @@ node_js:
   - "6"
 
 script:
-  - if [[ "$TRAVIS_NODE_VERSION" ~= "8" ]]; then
+  - if [[ "$TRAVIS_NODE_VERSION" == 8 ]]; then
       npm run lint;
     fi
   - npm run test
