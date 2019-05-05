@@ -104,10 +104,10 @@ describe('Presence handler', () => {
       .expects('sendMessage')
       .once()
       .withExactArgs(subscribeMessage)
-    // services.timeoutRegistryMock
-    //   .expects('add')
-    //   .once()
-    //   .withExactArgs({ message: subscribeMessage })
+    services.timeoutRegistryMock
+      .expects('add')
+      .once()
+      .withExactArgs({ message: subscribeMessage })
 
     presenceHandler.subscribe(userA, callbackSpy)
     await BBPromise.delay(options.subscriptionInterval * 2)
@@ -177,10 +177,10 @@ describe('Presence handler', () => {
       .expects('sendMessage')
       .once()
       .withExactArgs(subMsg)
-    // services.timeoutRegistryMock
-    //   .expects('add')
-    //   .once()
-    //   .withExactArgs({ message: subMsg })
+    services.timeoutRegistryMock
+      .expects('add')
+      .once()
+      .withExactArgs({ message: subMsg })
 
     presenceHandler.subscribe(user, callbackSpy)
     await BBPromise.delay(options.subscriptionInterval * 2)
@@ -189,10 +189,10 @@ describe('Presence handler', () => {
       .expects('sendMessage')
       .once()
       .withExactArgs(unsubMsg)
-    // services.timeoutRegistryMock
-    //   .expects('add')
-    //   .once()
-    //   .withExactArgs({ message: unsubMsg })
+    services.timeoutRegistryMock
+      .expects('add')
+      .once()
+      .withExactArgs({ message: unsubMsg })
 
     presenceHandler.unsubscribe(user)
     await BBPromise.delay(options.subscriptionInterval * 2)
@@ -270,10 +270,10 @@ describe('Presence handler', () => {
       .expects('sendMessage')
       .once()
      .withExactArgs(messageSubscribe)
-    // services.timeoutRegistryMock
-    //   .expects('add')
-    //   .once()
-    //  .withExactArgs({ message: messageSubscribe })
+    services.timeoutRegistryMock
+      .expects('add')
+      .once()
+     .withExactArgs({ message: messageSubscribe })
 
     services.simulateConnectionReestablished()
     await BBPromise.delay(options.subscriptionInterval * 2)

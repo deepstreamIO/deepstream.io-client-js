@@ -51,7 +51,8 @@ export class PresenceHandler {
   constructor (private services: Services, options: Options) {
     this.bulkSubscription = new BulkSubscriptionService<PA>(
         this.services, options.subscriptionInterval, TOPIC.PRESENCE,
-        PA.SUBSCRIBE_BULK, null, PA.UNSUBSCRIBE_BULK, null
+        PA.SUBSCRIBE_BULK, null, PA.UNSUBSCRIBE_BULK, null,
+        this.onBulkSubscriptionSent.bind(this)
     )
 
     this.services.connection.registerHandler(TOPIC.PRESENCE, this.handle.bind(this))
@@ -277,5 +278,9 @@ export class PresenceHandler {
     this.limboQueue = []
     this.queryAllEmitter.off()
     this.queryEmitter.off()
+  }
+
+  private onBulkSubscriptionSent (message: Message) {
+    this.services.timeoutRegistry.add({ message })
   }
 }

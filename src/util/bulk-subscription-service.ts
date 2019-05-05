@@ -1,5 +1,6 @@
 import {TOPIC} from '../../binary-protocol/dist/src/message-constants'
 import {Services} from '../client'
+import {Message} from '../../binary-protocol/src/message-constants'
 
 export class BulkSubscriptionService<ACTION> {
     private subscribeNames = new Set<string>()
@@ -15,6 +16,7 @@ export class BulkSubscriptionService<ACTION> {
         private subscribeOriginalAction: ACTION | null,
         private unsubscribeBulkAction: ACTION,
         private unsubscribeOriginalAction: ACTION | null,
+        private onSubscriptionSent: (message: Message) => void = (() => {})
         ) {
         this.services.connection.onLost(this.onLost.bind(this))
     }
@@ -74,22 +76,26 @@ export class BulkSubscriptionService<ACTION> {
         }
 
         if (this.subscribeNames.size > 0) {
-            this.services.connection.sendMessage({
+            const message = {
                 topic: this.topic,
                 action: this.subscribeBulkAction as any,
                 names: [...this.subscribeNames],
                 correlationId: (this.correlationId++).toString()
-            })
+            }
+            this.services.connection.sendMessage(message)
+            this.onSubscriptionSent(message)
             this.subscribeNames.clear()
         }
 
         if (this.unsubscribeNames.size  > 0) {
-            this.services.connection.sendMessage({
+            const message = {
                 topic: this.topic,
                 action: this.unsubscribeBulkAction as any,
                 names: [...this.unsubscribeNames],
                 correlationId: (this.correlationId++).toString()
-            })
+            }
+            this.services.connection.sendMessage(message)
+            this.onSubscriptionSent(message)
             this.unsubscribeNames.clear()
         }
     }

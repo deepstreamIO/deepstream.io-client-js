@@ -50,8 +50,8 @@ export class RecordHandler {
     this.recordServices = recordServices || {
       bulkSubscriptionService: {
         [RA.SUBSCRIBECREATEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBECREATEANDREAD_BULK, RA.SUBSCRIBECREATEANDREAD),
-        [RA.SUBSCRIBECREATEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDHEAD_BULK, RA.SUBSCRIBEANDHEAD),
-        [RA.SUBSCRIBECREATEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDREAD_BULK, RA.SUBSCRIBEANDREAD),
+        [RA.SUBSCRIBEANDHEAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDHEAD_BULK, RA.SUBSCRIBEANDHEAD),
+        [RA.SUBSCRIBEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDREAD_BULK, RA.SUBSCRIBEANDREAD),
       },
       writeAckService: new WriteAcknowledgementService(services),
       readRegistry: new SingleNotifier(services, RA.READ, options.recordReadTimeout),
