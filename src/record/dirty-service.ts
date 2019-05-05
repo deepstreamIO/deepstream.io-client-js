@@ -1,47 +1,36 @@
-import * as Emitter from 'component-emitter2'
 import { RecordOfflineStore } from '../client'
-import {RecordData} from '../../binary-protocol/src/message-constants'
 
-const DIRTY_SERVICE_LOADED = 'dirty-service-loaded'
-export interface DirtyRecordsIndex { [index: string]: boolean }
+export type DirtyRecordsIndex = Map<string, boolean>
 
 export class DirtyService {
-  private readonly name: string
-  private storage: RecordOfflineStore
-  private dirtyRecords: DirtyRecordsIndex
+  private dirtyRecords: DirtyRecordsIndex = new Map()
   private loaded: boolean
-  private emitter: Emitter
+  private loadedCallback: Array<{ callback: Function, context: any }> = []
 
-  constructor (storage: RecordOfflineStore, dirtyStorageName: string) {
-    this.storage = storage
-    this.name = dirtyStorageName
+  constructor (private storage: RecordOfflineStore, private readonly dirtyStorageName: string) {
     this.loaded = false
-    this.emitter = new Emitter()
-    this.dirtyRecords = {}
     this.load()
   }
 
   public isDirty (recordName: string): boolean {
-    return !!this.dirtyRecords[recordName]
+    return this.dirtyRecords.has(recordName)
   }
 
   public setDirty (recordName: string, isDirty: boolean): void {
     if (isDirty) {
-      this.dirtyRecords[recordName] = true
+      this.dirtyRecords.set(recordName, true)
     } else {
-      delete this.dirtyRecords[recordName]
+      this.dirtyRecords.delete(recordName)
     }
-    this.storage.set(this.name, 1, this.dirtyRecords, () => {})
+    this.storage.set(this.dirtyStorageName, 1, [...this.dirtyRecords] as any, () => {})
   }
 
-  public whenLoaded (callback: () => void): void {
+  public whenLoaded (context: any, callback: () => void): void {
     if (this.loaded) {
-      callback()
+      callback.call(context)
       return
     }
-    this.emitter.once(DIRTY_SERVICE_LOADED, () => {
-      callback()
-    })
+    this.loadedCallback.push({ callback, context })
   }
 
   public getAll (): DirtyRecordsIndex {
@@ -52,11 +41,12 @@ export class DirtyService {
     if (this.loaded) {
       return
     }
-    this.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
-      // @ts-ignore
-      this.dirtyRecords = data || {}
+    this.storage.get(this.dirtyStorageName, (recordName: string, version: number, data: any) => {
+      this.dirtyRecords = data ? new Map(data) : new Map()
       this.loaded = true
-      this.emitter.emit(DIRTY_SERVICE_LOADED)
+      this.loadedCallback.forEach(({ callback, context }) =>
+        callback.call(context)
+      )
     })
   }
 }

@@ -38,8 +38,14 @@ export class List extends Emitter {
         return this.record.version as number
     }
 
+    public whenReady (): Promise<List>
+    public whenReady (callback: ((list: List) => void)): void
     public whenReady (callback?: ((list: List) => void)): void | Promise<List> {
-        return this.record.whenReady(this, callback)
+        if (callback) {
+            this.record.whenReady(this, callback)
+        } else {
+            return this.record.whenReady(this)
+        }
     }
 
     /**
@@ -53,7 +59,7 @@ export class List extends Emitter {
             return []
         }
 
-        return entries
+        return entries as Array<string>
     }
 
     /**
@@ -66,6 +72,8 @@ export class List extends Emitter {
         /**
     * Updates the list with a new set of entries
     */
+    public setEntriesWithAck (entries: Array<string>): Promise<void>
+    public setEntriesWithAck (entries: Array<string>, callback: WriteAckCallback): void
     public setEntriesWithAck (entries: Array<string>, callback?: WriteAckCallback): Promise<void> | void {
         if (!callback) {
             return new Promise(( resolve, reject ) => {

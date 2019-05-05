@@ -10,6 +10,7 @@ import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 
 import * as EventEmitter from 'component-emitter2'
 
+export type TimeoutId = string | null
 export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION
 
 export interface Timeout {
@@ -32,24 +33,20 @@ interface InternalTimeout {
  * their respective timeouts.
  */
 export class TimeoutRegistry extends EventEmitter {
-  private options: Options
-  private services: Services
-  private register: Map<number, InternalTimeout>
+  private register: Map<string, InternalTimeout> = new Map()
 
-  constructor (services: Services, options: Options) {
+  constructor (private services: Services, private options: Options) {
     super()
-    this.options = options
-    this.services = services
-    this.register = new Map()
   }
 
   /**
    * Add an entry
    */
-  public add (timeout: Timeout): number {
+  public add (timeout: Timeout): TimeoutId {
     if (timeout.duration === undefined) {
       timeout.duration = this.options.subscriptionTimeout
     }
+
     if (timeout.event === undefined) {
       timeout.event = EVENT.ACK_TIMEOUT
     }
@@ -62,25 +59,26 @@ export class TimeoutRegistry extends EventEmitter {
     */
 
     if (!this.services.connection.isConnected) {
-      return -1
+      return null
     }
 
     this.remove(timeout.message)
 
-    const internalTimeout: InternalTimeout = Object.assign({}, {
+    const internalTimeout: InternalTimeout = {
       timerId: -1,
-      uniqueName: this.getUniqueName(timeout.message),
-      event: timeout.event
-    }, { timeout })
+      uniqueName: this.getUniqueName(timeout.message)!,
+      // event: timeout.event,
+      timeout
+    }
 
     internalTimeout.timerId = this.services.timerRegistry.add({
         context: this,
         callback: this.onTimeout,
-        duration: timeout.duration,
+        duration: timeout.duration!,
         data: internalTimeout
     })
-    this.register.set(internalTimeout.timerId, internalTimeout)
-    return internalTimeout.timerId
+    this.register.set(internalTimeout.uniqueName, internalTimeout)
+    return internalTimeout.uniqueName
   }
 
   /**
@@ -95,27 +93,25 @@ export class TimeoutRegistry extends EventEmitter {
       requestMsg = { ...message, action }
     }
     const uniqueName = this.getUniqueName(requestMsg)
-    for (const [timerId, timeout] of this.register) {
-      if (timeout.uniqueName === uniqueName) {
-        this.services.timerRegistry.remove(timerId)
-        this.register.delete(timerId)
-      }
-    }
+    this.clear(uniqueName)
   }
 
   /**
    * Processes an incoming ACK-message and removes the corresponding subscription
    */
-  public clear (timerId: number): void {
-    this.services.timerRegistry.remove(timerId)
-    this.register.delete(timerId)
+  public clear (uniqueName: TimeoutId): void {
+    const timeout = this.register.get(uniqueName!)
+    if (timeout) {
+      this.register.delete(uniqueName!)
+      this.services.timerRegistry.remove(timeout.timerId)
+    }
   }
 
   /**
    * Will be invoked if the timeout has occured before the ack message was received
    */
   private onTimeout (internalTimeout: InternalTimeout): void {
-    this.register.delete(internalTimeout.timerId)
+    this.register.delete(internalTimeout.uniqueName)
     const timeout = internalTimeout.timeout
     if (timeout.callback) {
       timeout.callback(timeout.event as EVENT, timeout.message)
@@ -127,7 +123,7 @@ export class TimeoutRegistry extends EventEmitter {
   /**
    * Returns a unique name from the timeout
    */
-  private getUniqueName (message: Message): string {
+  private getUniqueName (message: Message): TimeoutId {
     const action = message.originalAction || message.action
 
     let name = `${message.topic}${action}_`
@@ -143,9 +139,9 @@ export class TimeoutRegistry extends EventEmitter {
    * Remote all timeouts when connection disconnects
    */
   public onConnectionLost (): void {
-    for (const [ timerId ] of this.register) {
-      clearTimeout(timerId)
-      this.register.delete(timerId)
+    for (const [ uniqueName, timeout ] of this.register) {
+      this.services.timerRegistry.remove(timeout.timerId)
+      this.register.delete(uniqueName)
     }
   }
 }

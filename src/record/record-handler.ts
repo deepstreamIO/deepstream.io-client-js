@@ -4,11 +4,11 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import {
   TOPIC,
-  RECORD_ACTIONS as RECORD_ACTION,
   RecordMessage,
   ListenMessage,
   RecordData,
-  RecordPathData
+  RecordPathData,
+  RECORD_ACTIONS as RA,
 } from '../../binary-protocol/src/message-constants'
 import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
@@ -21,8 +21,10 @@ import { WriteAcknowledgementService } from './write-ack-service'
 import { DirtyService } from './dirty-service'
 import { MergeStrategyService } from './merge-strategy-service'
 import { MergeStrategy } from './merge-strategy'
+import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
 export interface RecordServices {
+  bulkSubscriptionService: { [index in RA]: BulkSubscriptionService<RA> }
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier<RecordMessage>,
   headRegistry: SingleNotifier<RecordMessage>,
@@ -46,9 +48,14 @@ export class RecordHandler {
     this.recordCores = new Map()
 
     this.recordServices = recordServices || {
+      bulkSubscriptionService: {
+        [RA.SUBSCRIBECREATEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBECREATEANDREAD_BULK, RA.SUBSCRIBECREATEANDREAD),
+        [RA.SUBSCRIBEANDHEAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDHEAD_BULK, RA.SUBSCRIBEANDHEAD),
+        [RA.SUBSCRIBEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDREAD_BULK, RA.SUBSCRIBEANDREAD),
+      },
       writeAckService: new WriteAcknowledgementService(services),
-      readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
-      headRegistry: new SingleNotifier(services, RECORD_ACTION.HEAD, options.recordReadTimeout),
+      readRegistry: new SingleNotifier(services, RA.READ, options.recordReadTimeout),
+      headRegistry: new SingleNotifier(services, RA.HEAD, options.recordReadTimeout),
       dirtyService: new DirtyService(services.storage, options.dirtyStorageName),
       mergeStrategy: new MergeStrategyService(services, options.mergeStrategy)
     } as RecordServices
@@ -58,6 +65,7 @@ export class RecordHandler {
     this.onRecordUpdated = this.onRecordUpdated.bind(this)
     this.onMergeCompleted = this.onMergeCompleted.bind(this)
     this.getRecordCore = this.getRecordCore.bind(this)
+    this.removeRecord = this.removeRecord.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
     this.services.connection.onReestablished(this.syncDirtyRecords.bind(this))
 
@@ -313,12 +321,12 @@ export class RecordHandler {
     let action
     if (path) {
       if (data === undefined) {
-        action = RECORD_ACTION.ERASE
+        action = RA.ERASE
       } else {
-        action = RECORD_ACTION.CREATEANDPATCH
+        action = RA.CREATEANDPATCH
       }
     } else {
-      action = RECORD_ACTION.CREATEANDUPDATE
+      action = RA.CREATEANDUPDATE
     }
 
     const message = {
@@ -344,23 +352,23 @@ export class RecordHandler {
    */
   private handle (message: RecordMessage) {
     if (
-      message.action === RECORD_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
-      message.action === RECORD_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED ||
-      message.action === RECORD_ACTION.LISTEN ||
-      message.action === RECORD_ACTION.UNLISTEN
+      message.action === RA.SUBSCRIPTION_FOR_PATTERN_FOUND ||
+      message.action === RA.SUBSCRIPTION_FOR_PATTERN_REMOVED ||
+      message.action === RA.LISTEN ||
+      message.action === RA.UNLISTEN
     ) {
       this.listener.handle(message as ListenMessage)
       return
     }
 
-    if (isWriteAck(message.action) || isWriteAck(message.originalAction as RECORD_ACTION)) {
+    if (isWriteAck(message.action) || isWriteAck(message.originalAction as RA)) {
       this.recordServices.writeAckService.recieve(message)
       return
     }
 
-    if (message.action === RECORD_ACTION.READ_RESPONSE || message.originalAction === RECORD_ACTION.READ) {
+    if (message.action === RA.READ_RESPONSE || message.originalAction === RA.READ) {
       if (message.isError) {
-        this.recordServices.readRegistry.recieve(message, RECORD_ACTION[message.action])
+        this.recordServices.readRegistry.recieve(message, RA[message.action])
       } else {
         this.recordServices.readRegistry.recieve(message, null, message.parsedData)
       }
@@ -368,11 +376,11 @@ export class RecordHandler {
     }
 
     if (
-      message.action === RECORD_ACTION.HEAD_RESPONSE ||
-      message.originalAction === RECORD_ACTION.HEAD
+      message.action === RA.HEAD_RESPONSE ||
+      message.originalAction === RA.HEAD
     ) {
       if (message.isError) {
-        this.recordServices.headRegistry.recieve(message, RECORD_ACTION[message.action])
+        this.recordServices.headRegistry.recieve(message, RA[message.action])
       } else {
         this.recordServices.headRegistry.recieve(message, null, message.version)
       }
@@ -385,14 +393,14 @@ export class RecordHandler {
     }
 
     if (
-      message.action === RECORD_ACTION.VERSION_EXISTS
+      message.action === RA.VERSION_EXISTS
     ) {
       return
     }
 
     if (
-      message.action === RECORD_ACTION.SUBSCRIPTION_HAS_PROVIDER ||
-      message.action === RECORD_ACTION.SUBSCRIPTION_HAS_NO_PROVIDER
+      message.action === RA.SUBSCRIPTION_HAS_PROVIDER ||
+      message.action === RA.SUBSCRIPTION_HAS_NO_PROVIDER
     ) {
       // record can receive a HAS_PROVIDER after discarding the record
       return
@@ -417,7 +425,7 @@ export class RecordHandler {
   private getRecordCore (recordName: string): RecordCore<any> {
     let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
-      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this))
+      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord)
       this.recordCores.set(recordName, recordCore)
     } else {
       recordCore.usages++
@@ -426,17 +434,19 @@ export class RecordHandler {
   }
 
   private syncDirtyRecords () {
-    this.dirtyService.whenLoaded(() => {
-      const dirtyRecords = this.dirtyService.getAll()
-      for (const recordName in dirtyRecords) {
-        const recordCore = this.recordCores.get(recordName)
-        if (recordCore && recordCore.usages > 0) {
-          // if it isn't zero.. problem.
-          continue
-        }
-        this.services.storage.get(recordName, this.sendUpdatedData)
+    this.dirtyService.whenLoaded(this, this._syncDirtyRecords)
+  }
+
+  private _syncDirtyRecords () {
+    const dirtyRecords = this.dirtyService.getAll()
+    for (const recordName in dirtyRecords) {
+      const recordCore = this.recordCores.get(recordName)
+      if (recordCore && recordCore.usages > 0) {
+        // if it isn't zero.. problem.
+        continue
       }
-    })
+      this.services.storage.get(recordName, this.sendUpdatedData)
+    }
   }
 
   private sendUpdatedData (recordName: string, version: number, data: RecordData) {
@@ -470,4 +480,9 @@ export class RecordHandler {
   private onMergeCompleted (error: string | null, recordName: string, mergeData: RecordData, remoteVersion: number, remoteData: RecordData) {
     this.sendSetData(recordName, remoteVersion + 1, { data: mergeData })
   }
+
+  private getBulkSubscriptionService (bulkSubscribe: RA, subscribe: RA) {
+    return new BulkSubscriptionService<RA>(this.services, this.options.subscriptionInterval, TOPIC.RECORD, bulkSubscribe, subscribe, RA.UNSUBSCRIBE_BULK, RA.UNSUBSCRIBE)
+  }
+
 }

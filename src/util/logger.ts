@@ -21,7 +21,6 @@ export class Logger {
   }
 
   public warn (message: { topic: TOPIC } | Message, event?: EVENT | ALL_ACTIONS, meta?: any): void {
-    // tslint:disable-next-line:no-console
     let warnMessage = `Warning: ${TOPIC[message.topic]}`
     const action = (message as Message).action
     if (action) {
@@ -33,7 +32,7 @@ export class Logger {
     if (meta) {
       warnMessage += ` – ${typeof meta === 'string' ? meta : JSON.stringify(meta)}`
     }
-
+    // tslint:disable-next-line:no-console
     console.warn(warnMessage)
   }
 

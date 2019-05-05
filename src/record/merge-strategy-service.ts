@@ -28,12 +28,12 @@ export class MergeStrategyService {
   }
 
   public merge (
-    recordName: string, localVersion: number, localData: RecordData, remoteVersion: number, remoteData: RecordData, callback: MergeCompleteInternal
+    recordName: string, localVersion: number, localData: RecordData, remoteVersion: number, remoteData: RecordData, callback: MergeCompleteInternal, context: any
   ): void {
     const exactMergeStrategy = this.strategiesByRecord.get(recordName)
     if (exactMergeStrategy) {
       exactMergeStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
-        callback(error, recordName, data, remoteVersion, remoteData, localVersion, localData)
+        callback.call(context, error, recordName, data, remoteVersion, remoteData, localVersion, localData)
       })
       return
     }
@@ -41,7 +41,7 @@ export class MergeStrategyService {
     for (const [pattern, patternMergeStrategy] of this.strategiesByPattern) {
       if (pattern.test(recordName)) {
         patternMergeStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
-          callback(error, recordName, data, remoteVersion, remoteData, localVersion, localData)
+          callback.call(context, error, recordName, data, remoteVersion, remoteData, localVersion, localData)
         })
         return
       }
@@ -49,7 +49,7 @@ export class MergeStrategyService {
 
     if (this.defaultStrategy) {
       this.defaultStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
-        callback(error, recordName, data, remoteVersion, remoteData, localVersion, localData)
+        callback.call(context, error, recordName, data, remoteVersion, remoteData, localVersion, localData)
       })
     }
 

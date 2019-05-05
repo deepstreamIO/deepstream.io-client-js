@@ -9,7 +9,6 @@ import { DefaultOptions } from '../client-options'
 import { PresenceHandler, IndividualQueryResult } from './presence-handler'
 
 describe('Presence handler', () => {
-  const flushTimeout = 10
   const userA = 'userA'
   const userB = 'userB'
   const userC = 'userC'
@@ -20,7 +19,7 @@ describe('Presence handler', () => {
   let callbackSpy: sinon.SinonSpy
   let promiseSuccess: sinon.SinonSpy
   let promiseError: sinon.SinonSpy
-  const options = Object.assign({}, DefaultOptions)
+  const options = { ...DefaultOptions, subscriptionInterval: 10 }
   let counter: number
 
   beforeEach(() => {
@@ -45,13 +44,13 @@ describe('Presence handler', () => {
     expect(presenceHandler.unsubscribe.bind(presenceHandler, '')).to.throw()
   })
 
-  it('cant\'t query getAll when client is offline', async () => {
+  it('can\'t query getAll when client is offline', async () => {
     services.connection.isConnected = false
 
     presenceHandler.getAll(callbackSpy)
     presenceHandler.getAll().then(promiseSuccess).catch(promiseError)
 
-    await BBPromise.delay(2)
+    await BBPromise.delay(5)
 
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
@@ -97,9 +96,9 @@ describe('Presence handler', () => {
   it('subscribes to presence with user a', async () => {
     const subscribeMessage = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE,
-      correlationId: counter.toString(),
-      names: [userA]
+      action: PRESENCE_ACTIONS.SUBSCRIBE_BULK,
+      names: [userA],
+      correlationId: '0'
     }
     services.connectionMock
       .expects('sendMessage')
@@ -111,7 +110,7 @@ describe('Presence handler', () => {
       .withExactArgs({ message: subscribeMessage })
 
     presenceHandler.subscribe(userA, callbackSpy)
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
   })
 
   it('subscribes to presence for all users', async () => {
@@ -129,7 +128,7 @@ describe('Presence handler', () => {
       .withExactArgs({ message: subscribeAllMessage })
 
     presenceHandler.subscribe(callbackSpy)
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
   })
 
   it('queries for specific users presence', () => {
@@ -171,9 +170,8 @@ describe('Presence handler', () => {
 
   it('sends unsubscribe for specific user presence', async () => {
     const user = 'user'
-    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE, correlationId: counter.toString(), names: [ user ] }
-    counter++
-    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE, correlationId: counter.toString(), names: [ user ] }
+    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE_BULK, names: [ user ], correlationId: '0' }
+    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE_BULK, names: [ user ], correlationId: '1' }
 
     services.connectionMock
       .expects('sendMessage')
@@ -185,7 +183,7 @@ describe('Presence handler', () => {
       .withExactArgs({ message: subMsg })
 
     presenceHandler.subscribe(user, callbackSpy)
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
 
     services.connectionMock
       .expects('sendMessage')
@@ -197,7 +195,7 @@ describe('Presence handler', () => {
       .withExactArgs({ message: unsubMsg })
 
     presenceHandler.unsubscribe(user)
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
   })
 
   it('sends unsubscribe for all users presence', async () => {
@@ -214,7 +212,7 @@ describe('Presence handler', () => {
       .withExactArgs({ message: subMsg })
 
     presenceHandler.subscribe(callbackSpy)
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
 
     services.connectionMock
       .expects('sendMessage')
@@ -226,13 +224,13 @@ describe('Presence handler', () => {
       .withExactArgs({ message: unsubMsg })
 
     presenceHandler.unsubscribe()
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
   })
 
   it('handles acks messages', () => {
     const messageAck: Message = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE_ACK,
+      action: PRESENCE_ACTIONS.SUBSCRIBE_BULK_ACK,
       isAck: true
     }
     services.timeoutRegistryMock
@@ -248,15 +246,15 @@ describe('Presence handler', () => {
     presenceHandler.subscribe(userA, () => {})
     presenceHandler.subscribe(userB, () => {})
     presenceHandler.subscribe(() => {})
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
 
     counter = parseInt(getLastMessageSent().correlationId as string, 10) + 1
     const messageSubscribeAll = message(PRESENCE_ACTIONS.SUBSCRIBE_ALL)
     const messageSubscribe = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE,
-      correlationId: counter.toString(),
-      names: users
+      action: PRESENCE_ACTIONS.SUBSCRIBE_BULK,
+      names: users,
+      correlationId: '1'
     }
 
     services.connectionMock
@@ -278,7 +276,7 @@ describe('Presence handler', () => {
      .withExactArgs({ message: messageSubscribe })
 
     services.simulateConnectionReestablished()
-    await BBPromise.delay(flushTimeout)
+    await BBPromise.delay(options.subscriptionInterval * 2)
   })
 
   describe('when server responds for getAll for all users ', () => {
@@ -424,7 +422,7 @@ describe('Presence handler', () => {
       presenceHandler.subscribe(userA, userACallback)
       presenceHandler.subscribe(userB, userBCallback)
       presenceHandler.subscribe(allUsersCallback)
-      await BBPromise.delay(flushTimeout)
+      await BBPromise.delay(options.subscriptionInterval * 2)
     })
 
     it('notifies when userA logs in', () => {
@@ -477,7 +475,7 @@ describe('Presence handler', () => {
 
     it('doesn\'t notify callbacks when userA logs in after unsubscribing', async () => {
       presenceHandler.unsubscribe(userA)
-      await BBPromise.delay(flushTimeout)
+      await BBPromise.delay(options.subscriptionInterval * 2)
 
       handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
 
@@ -490,7 +488,7 @@ describe('Presence handler', () => {
 
     it('doesn\'t notify userA callback when userA logs in after unsubscribing', async () => {
       presenceHandler.unsubscribe(userA, userACallback)
-      await BBPromise.delay(flushTimeout)
+      await BBPromise.delay(options.subscriptionInterval * 2)
 
       handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
       handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
@@ -505,7 +503,7 @@ describe('Presence handler', () => {
 
     it('doesn\'t notify all users callback when userA logs in after unsubscribing', async () => {
       presenceHandler.unsubscribe(allUsersCallback)
-      await BBPromise.delay(flushTimeout)
+      await BBPromise.delay(options.subscriptionInterval * 2)
 
       handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
       handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
@@ -520,7 +518,7 @@ describe('Presence handler', () => {
 
     it('doesn\'t notify callbacks after unsubscribing all', async () => {
       presenceHandler.unsubscribe()
-      await BBPromise.delay(flushTimeout)
+      await BBPromise.delay(options.subscriptionInterval * 2)
       const users = [userA, userB]
 
       users.forEach( user => {
@@ -535,7 +533,6 @@ describe('Presence handler', () => {
   })
 
   describe('limbo', () => {
-
     beforeEach(() => {
       services.connection.isConnected = false
       services.connection.isInLimbo = true

@@ -22,7 +22,7 @@ describe('online', () => {
         whenCompleted = spy()
         services = getServicesMock()
         recordServices = getRecordServices(services)
-        options = Object.assign({}, DefaultOptions, { discardTimeout: 20 })
+        options = { ...DefaultOptions, discardTimeout: 20, recordReadTimeout: 20 }
 
         services.connection.isConnected = true
         recordCore = new RecordCore(name, services, options, recordServices, whenCompleted)
@@ -74,18 +74,16 @@ describe('online', () => {
         assert.calledWithExactly(readySpy, context)
     })
 
-    it.skip('triggers ready promise on read response', () => {
-        let promiseResult = null
-        const context = { ola: 1 }
-        const promise = recordCore.whenReady(null)
-        if (promise) {
-            promise.then(result => {
-                promiseResult = result
-            })
-        }
-        recordCore.handle(READ_RESPONSE)
+    it('triggers ready promise on read response', async () => {
+        const context = {} as any
+        let readyContext = null
+        const promise = recordCore.whenReady(context)
+        promise.then(result => readyContext = result)
 
-        expect(promiseResult).to.equal(context)
+        recordServices.readRegistry.recieve(READ_RESPONSE)
+
+        await BBPromise.delay(0)
+        expect(readyContext).to.equal(context)
     })
 
     it('sends update messages for updates after when ready', () => {
@@ -201,21 +199,19 @@ describe('online', () => {
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.true
+        expect(recordCore.isReady).to.equal(true)
     })
 
     it('removes pending discard when usages increases', async () => {
         recordServices.readRegistry.recieve(READ_RESPONSE)
         recordCore.discard()
-        recordCore.usages++
+        recordCore.usages = 1
 
         await BBPromise.delay(30)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.READY)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.true
+        expect(recordCore.isReady).to.equal(true)
     })
 
     it('sends discard when unsubscribe timeout completed', async () => {
@@ -238,8 +234,7 @@ describe('online', () => {
         assert.calledOnce(whenCompleted)
         assert.calledWithExactly(whenCompleted, name)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.false
+        expect(recordCore.isReady).to.equal(false)
     })
 
     it('sends delete when ready', async () => {
@@ -260,8 +255,7 @@ describe('online', () => {
 
         assert.notCalled(whenCompleted)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.true
+        expect(recordCore.isReady).to.equal(true)
     })
 
     it('calls delete when delete is confirmed', async () => {
@@ -285,7 +279,7 @@ describe('online', () => {
         assert.calledWithExactly(whenCompleted, name)
 
         // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.false
+        expect(recordCore.isReady).to.equal(false)
     })
 
     it('calls delete when delete happens remotely', async () => {
@@ -303,7 +297,7 @@ describe('online', () => {
         assert.calledWithExactly(whenCompleted, name)
 
         // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.false
+        expect(recordCore.isReady).to.equal(false)
     })
 })
 
@@ -318,7 +312,7 @@ describe('record core offline', () => {
         whenCompleted = spy()
         services = getServicesMock()
         recordServices = getRecordServices(services)
-        options = Object.assign({}, DefaultOptions, { discardTimeout: 20 })
+        options = Object.assign({}, DefaultOptions, { discardTimeout: 20, recordReadTimeout: 20 })
 
         services.connectionMock
             .expects('sendMessage')
@@ -427,8 +421,7 @@ describe('record core offline', () => {
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.true
+        expect(recordCore.isReady).to.equal(true)
     })
 
     it('removes pending discard when usages increases', async () => {
@@ -439,22 +432,20 @@ describe('record core offline', () => {
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.READY)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.true
+        expect(recordCore.isReady).to.equal(true)
     })
 
     it('removes record when completed', async () => {
         recordCore.discard()
 
-        await BBPromise.delay(30)
+        await BBPromise.delay(40)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBED)
 
         assert.calledOnce(whenCompleted)
         assert.calledWithExactly(whenCompleted, name)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.false
+        expect(recordCore.isReady).to.equal(false)
     })
 
     it.skip('sends delete when ready', async () => {
@@ -469,8 +460,7 @@ describe('record core offline', () => {
 
         assert.notCalled(whenCompleted)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.true
+        expect(recordCore.isReady).to.equal(true)
     })
 
     it.skip('calls delete when delete is confirmed', async () => {
@@ -490,8 +480,7 @@ describe('record core offline', () => {
         assert.calledOnce(whenCompleted)
         assert.calledWithExactly(whenCompleted, name)
 
-        // tslint:disable-next-line:no-unused-expression
-        expect(recordCore.isReady).to.be.false
+        expect(recordCore.isReady).to.equal(false)
     })
     })
 })

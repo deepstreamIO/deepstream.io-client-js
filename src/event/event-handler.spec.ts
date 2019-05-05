@@ -19,7 +19,7 @@ describe('event handler', () => {
     services = getServicesMock()
     listener = getListenerMock()
 
-    eventHandler = new EventHandler(services, DefaultOptions, listener.listener)
+    eventHandler = new EventHandler(services, { ...DefaultOptions, subscriptionInterval: 0 }, listener.listener)
     handle = services.getHandle()
     spy = sinon.spy()
   })

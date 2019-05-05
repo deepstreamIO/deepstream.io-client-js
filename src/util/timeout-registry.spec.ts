@@ -1,4 +1,4 @@
-import { TimeoutRegistry } from './timeout-registry'
+import {TimeoutId, TimeoutRegistry} from './timeout-registry'
 import * as sinon from 'sinon'
 import { getServicesMock } from '../test/mocks'
 import { DefaultOptions, Options } from '../client-options'
@@ -9,7 +9,7 @@ describe('timeout registry', () => {
     let timeoutRegistry: TimeoutRegistry
     let services: any
     let options: Options
-    let timerId: number
+    let timeoutId: TimeoutId
     const name = 'event'
     const message = {
         topic: TOPIC.EVENT,
@@ -33,7 +33,7 @@ describe('timeout registry', () => {
     describe('adding timeout when connection down', () => {
         beforeEach(() => {
             services.connection.isConnected = false
-            timerId = timeoutRegistry.add({ message })
+            timeoutId = timeoutRegistry.add({ message })
         })
 
         it('does not invoke an error', done => {
@@ -43,7 +43,7 @@ describe('timeout registry', () => {
 
     describe('generic timeout', () => {
         beforeEach(() => {
-            timerId = timeoutRegistry.add({ message })
+            timeoutId = timeoutRegistry.add({ message })
         })
 
         it('invokes the error callback once the timeout has occured', done => {
@@ -66,7 +66,7 @@ describe('timeout registry', () => {
         })
 
         it('clearing timer id clears timeout', done => {
-            timeoutRegistry.clear(timerId)
+            timeoutRegistry.clear(timeoutId)
             setTimeout(done, 10)
         })
 
@@ -81,7 +81,7 @@ describe('timeout registry', () => {
 
         beforeEach(() => {
             spy = sinon.spy()
-            timerId = timeoutRegistry.add({
+            timeoutId = timeoutRegistry.add({
                 message,
                 event: RPC_ACTION.RESPONSE_TIMEOUT,
                 duration: 25,
@@ -113,7 +113,7 @@ describe('timeout registry', () => {
         })
 
         it('clearing timer id clears timeout', done => {
-            timeoutRegistry.clear(timerId)
+            timeoutRegistry.clear(timeoutId)
             setTimeout(() => {
                 sinon.assert.callCount(spy, 0)
                 done()

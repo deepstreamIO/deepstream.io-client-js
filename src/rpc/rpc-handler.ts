@@ -9,18 +9,11 @@ import { getUid } from '../util/utils'
 export type RPCProvider = (rpcData: any, response: RPCResponse) => void
 
 export class RPCHandler {
-  private services: Services
-  private options: Options
-  private rpcs: Map<string, RPC>
-  private providers: Map<string, RPCProvider>
-  private limboQueue: Array<{ name: string, data: any, correlationId: string, callback: RPCMakeCallback }>
+  private rpcs = new Map<string, RPC>()
+  private providers = new Map<string, RPCProvider>()
+  private limboQueue: Array<{ name: string, data: any, correlationId: string, callback: RPCMakeCallback }> = []
 
-  constructor (services: Services, options: Options) {
-    this.services = services
-    this.options = options
-    this.rpcs = new Map<string, RPC>()
-    this.providers = new Map<string, RPCProvider>()
-    this.limboQueue = []
+  constructor (private services: Services, private options: Options) {
     this.services.connection.registerHandler(TOPIC.RPC, this.handle.bind(this))
     this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
     this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
