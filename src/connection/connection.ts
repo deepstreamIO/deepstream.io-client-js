@@ -17,7 +17,6 @@ import {Services, Socket} from '../client'
 import { Options } from '../client-options'
 import * as utils from '../util/utils'
 import * as Emitter from 'component-emitter2'
-import Timeout = NodeJS.Timeout
 
 export type AuthenticationCallback = (success: boolean, clientData: JSONObject | null) => void
 export type ResumeCallback = (error?: JSONObject) => void
@@ -50,8 +49,6 @@ export class Connection {
   public isInLimbo: boolean
 
   private internalEmitter: Emitter
-  private services: Services
-  private options: Options
   private stateMachine: StateMachine
   private authParams: JSONObject | null
   private clientData: JSONObject | null
@@ -63,13 +60,11 @@ export class Connection {
   private endpoint: Socket | null
   private handlers: Map<TOPIC, Function>
 
-  private reconnectTimeout: Timeout | null
+  private reconnectTimeout: number | null = -1
   private reconnectionAttempt: number
   private limboTimeout: number | null
 
-  constructor (services: Services, options: Options, url: string, emitter: Emitter) {
-    this.options = options
-    this.services = services
+  constructor (private services: Services, private options: Options, url: string, emitter: Emitter) {
     this.authParams = null
     this.handlers = new Map()
     this.authCallback = null
@@ -80,7 +75,6 @@ export class Connection {
     this.clientData = null
     this.heartbeatIntervalTimeout = null
     this.endpoint = null
-    this.reconnectTimeout = null
     this.reconnectionAttempt = 0
     this.limboTimeout = null
 
@@ -480,25 +474,26 @@ export class Connection {
  * options.maxReconnectAttempts the connection is closed
  */
   private tryReconnect (): void {
-    if (this.reconnectTimeout !== null) {
+   if (this.reconnectTimeout !== null) {
       return
     }
-    if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
+   if (this.reconnectionAttempt < this.options.maxReconnectAttempts) {
       this.stateMachine.transition(TRANSITIONS.RECONNECT)
-      this.reconnectTimeout = setTimeout(
-        this.tryOpen.bind(this),
-        Math.min(
-          this.options.maxReconnectInterval,
-          this.options.reconnectIntervalIncrement * this.reconnectionAttempt
+      this.reconnectTimeout = this.services.timerRegistry.add({
+        callback: this.tryOpen,
+        context: this,
+        duration: Math.min(
+            this.options.maxReconnectInterval,
+            this.options.reconnectIntervalIncrement * this.reconnectionAttempt
         )
-      )
+      })
       this.reconnectionAttempt++
       return
     }
 
-    this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
-    this.clearReconnect()
-    this.close()
+   this.emitter.emit(EVENT[EVENT.MAX_RECONNECTION_ATTEMPTS_REACHED], this.reconnectionAttempt)
+   this.clearReconnect()
+   this.close()
   }
 
   /**
@@ -519,9 +514,7 @@ export class Connection {
    * attempts has been exceeded
    */
   private clearReconnect (): void {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-    }
+    this.services.timerRegistry.remove(this.reconnectTimeout!)
     this.reconnectTimeout = null
     this.reconnectionAttempt = 0
   }
