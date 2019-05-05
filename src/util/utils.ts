@@ -1,3 +1,10 @@
+let URL: any
+try {
+  URL = require('url').URL
+} catch (e) {
+  URL = window && window.URL
+}
+
 /**
  * A regular expression that matches whitespace on either side, but
  * not in the center of a string

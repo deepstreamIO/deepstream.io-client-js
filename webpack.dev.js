@@ -19,6 +19,7 @@ module.exports = {
     }],
   },
   plugins: [
+    new webpack.IgnorePlugin(/url/),
     new webpack.IgnorePlugin(/ws/),
     new webpack.IgnorePlugin(/node-localstorage/),
   ],
