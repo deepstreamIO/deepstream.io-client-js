@@ -6,22 +6,6 @@ try {
 }
 
 /**
- * A regular expression that matches whitespace on either side, but
- * not in the center of a string
- */
-const TRIM_REGULAR_EXPRESSION: RegExp = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g
-
-/**
- * Removes whitespace from the beginning and end of a string
- */
-export const trim = function (inputString: string): string {
-  if (inputString.trim) {
-    return inputString.trim()
-  }
-  return inputString.replace(TRIM_REGULAR_EXPRESSION, '')
-}
-
-/**
  * Compares two objects for deep (recoursive) equality
  *
  * This used to be a significantly more complex custom implementation,

@@ -91,7 +91,7 @@
     "reporter": [
       "lcov"
     ],
-    "sourceMap": true,
-    "instrument": true
+    "sourceMap": false,
+    "instrument": false
   }
 }

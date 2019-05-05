@@ -308,32 +308,6 @@ describe('shallowCopy', () => {
 
 })
 
-describe('trim', () => {
-  it('removes various kinds of whitespace from Strings having String.prototype.trim polyfill', () => {
-    expect(utils.trim('a    '))
-      .to.equal('a')
-
-    expect(utils.trim('   b    '))
-      .to.equal('b')
-
-    expect(utils.trim('   c d    '))
-      .to.equal('c d')
-  })
-
-  it('removes various kinds of whitespace from string having no String.prototype.trim polyfill', () => {
-    delete String.prototype.trim
-
-    expect(utils.trim('a    '))
-      .to.equal('a')
-
-    expect(utils.trim('   b    '))
-      .to.equal('b')
-
-    expect(utils.trim('   c d    '))
-      .to.equal('c d')
-  })
-})
-
 describe('normalizeSetArguments', () => {
   it('normalizes argument list containing only a data argument as object', () => {
     const argumentsSet = utils.normalizeSetArguments([{title: 'awesome post'}] as any)
