@@ -29,11 +29,13 @@ export class BulkSubscriptionService<ACTION> {
             return
         }
 
-        this.services.connection.sendMessage({
+        const message = {
             topic: this.topic,
             action: this.subscribeOriginalAction as any,
             name
-        })
+        }
+        this.services.connection.sendMessage(message)
+        this.onSubscriptionSent(message)
     }
 
     public subscribeList (users: Array<string>) {
@@ -48,11 +50,13 @@ export class BulkSubscriptionService<ACTION> {
             return
         }
 
-        this.services.connection.sendMessage({
+        const message = {
             topic: this.topic,
             action: this.unsubscribeOriginalAction as any,
             name
-        })
+        }
+        this.services.connection.sendMessage(message)
+        this.onSubscriptionSent(message)
     }
 
     public unsubscribeList (users: Array<string>) {

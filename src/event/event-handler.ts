@@ -2,30 +2,34 @@ import { Services } from '../client'
 import { Options } from '../client-options'
 import {
   TOPIC,
-  EVENT_ACTIONS as EVENT_ACTION,
+  EVENT_ACTIONS as EA,
   EventMessage,
   ListenMessage,
-  EventData
+  EventData,
+  Message
 } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
 import * as Emitter from 'component-emitter2'
+import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
 export class EventHandler {
-
-  private services: Services
-  private emitter: Emitter
+  private emitter = new Emitter()
   private listeners: Listener
-  private limboQueue: Array<EventMessage>
+  private limboQueue: Array<EventMessage> = []
+  private bulkSubscription: BulkSubscriptionService<EA>
 
-  constructor (services: Services, options: Options, listeners?: Listener) {
-    this.services = services
-    this.listeners = listeners || new Listener(TOPIC.EVENT, services)
-    this.emitter = new Emitter()
-    this.limboQueue = []
-    this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
-    this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
-    this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
+    constructor (private services: Services, options: Options, listeners?: Listener) {
+      this.bulkSubscription = new BulkSubscriptionService<EA>(
+          this.services, options.subscriptionInterval, TOPIC.EVENT,
+          EA.SUBSCRIBE_BULK, EA.SUBSCRIBE, EA.UNSUBSCRIBE_BULK, EA.UNSUBSCRIBE,
+          this.onBulkSubscriptionSent.bind(this)
+      )
+
+      this.listeners = listeners || new Listener(TOPIC.EVENT, services)
+      this.services.connection.registerHandler(TOPIC.EVENT, this.handle.bind(this))
+      this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
+      this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
   }
 
   /**
@@ -42,7 +46,7 @@ export class EventHandler {
 
     if (!this.emitter.hasListeners(name)) {
       if (this.services.connection.isConnected) {
-        this.sendSubscriptionMessage(name)
+        this.bulkSubscription.subscribe(name)
       }
     }
     this.emitter.on(name, callback)
@@ -64,7 +68,7 @@ public unsubscribe (name: string, callback: (data: EventData) => void): void {
     if (!this.emitter.hasListeners(name)) {
       this.services.logger.warn({
         topic: TOPIC.EVENT,
-        action: EVENT_ACTION.NOT_SUBSCRIBED,
+        action: EA.NOT_SUBSCRIBED,
         name
       })
       return
@@ -73,13 +77,7 @@ public unsubscribe (name: string, callback: (data: EventData) => void): void {
     this.emitter.off(name, callback)
 
     if (!this.emitter.hasListeners(name)) {
-      const message = {
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.UNSUBSCRIBE,
-        name
-      }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
+      this.bulkSubscription.unsubscribe(name)
     }
   }
 
@@ -94,7 +92,7 @@ public unsubscribe (name: string, callback: (data: EventData) => void): void {
 
     const message = {
       topic: TOPIC.EVENT,
-      action: EVENT_ACTION.EMIT,
+      action: EA.EMIT,
       name,
       parsedData: data
     }
@@ -133,7 +131,7 @@ private handle (message: EventMessage): void {
       return
     }
 
-    if (message.action === EVENT_ACTION.EMIT) {
+    if (message.action === EA.EMIT) {
       if (message.parsedData !== undefined) {
         this.emitter.emit(message.name as string, message.parsedData)
       } else {
@@ -142,29 +140,29 @@ private handle (message: EventMessage): void {
       return
     }
 
-    if (message.action === EVENT_ACTION.MESSAGE_DENIED) {
-      this.services.logger.error({ topic: TOPIC.EVENT }, EVENT_ACTION.MESSAGE_DENIED)
+    if (message.action === EA.MESSAGE_DENIED) {
+      this.services.logger.error({ topic: TOPIC.EVENT }, EA.MESSAGE_DENIED)
       this.services.timeoutRegistry.remove(message)
-      if (message.originalAction === EVENT_ACTION.SUBSCRIBE) {
+      if (message.originalAction === EA.SUBSCRIBE) {
         this.emitter.off(message.name)
       }
       return
     }
 
-    if (message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS) {
+    if (message.action === EA.MULTIPLE_SUBSCRIPTIONS) {
       this.services.timeoutRegistry.remove(
         Object.assign({}, message, {
-          action: EVENT_ACTION.SUBSCRIBE
+          action: EA.SUBSCRIBE
         })
       )
       this.services.logger.warn(message)
       return
     }
 
-    if (message.action === EVENT_ACTION.NOT_SUBSCRIBED) {
+    if (message.action === EA.NOT_SUBSCRIBED) {
       this.services.timeoutRegistry.remove(
         Object.assign({}, message, {
-          action: EVENT_ACTION.SUBSCRIBE
+          action: EA.SUBSCRIBE
         })
       )
       this.services.logger.warn(message)
@@ -172,14 +170,14 @@ private handle (message: EventMessage): void {
     }
 
     if (
-      message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
-      message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
+      message.action === EA.SUBSCRIPTION_FOR_PATTERN_FOUND ||
+      message.action === EA.SUBSCRIPTION_FOR_PATTERN_REMOVED
     ) {
       this.listeners.handle(message as ListenMessage)
       return
     }
 
-    if (message.action === EVENT_ACTION.INVALID_LISTEN_REGEX) {
+    if (message.action === EA.INVALID_LISTEN_REGEX) {
       this.services.logger.error(message)
       return
     }
@@ -191,10 +189,8 @@ private handle (message: EventMessage): void {
    * Resubscribes to events when connection is lost
    */
   private onConnectionReestablished () {
-    const callbacks = this.emitter.eventNames()
-    for (const name of callbacks) {
-      this.sendSubscriptionMessage(name)
-    }
+    this.bulkSubscription.subscribeList(this.emitter.eventNames())
+
     for (let i = 0; i < this.limboQueue.length; i++) {
       this.services.connection.sendMessage(this.limboQueue[i])
     }
@@ -205,14 +201,9 @@ private handle (message: EventMessage): void {
     this.limboQueue = []
   }
 
-  private sendSubscriptionMessage (name: string) {
-    const message = {
-      topic: TOPIC.EVENT,
-      action: EVENT_ACTION.SUBSCRIBE,
-      name
+  private onBulkSubscriptionSent (message: Message) {
+    if (!message.names) {
+      this.services.timeoutRegistry.add({ message })
     }
-
-    this.services.timeoutRegistry.add({ message })
-    this.services.connection.sendMessage(message)
   }
 }
