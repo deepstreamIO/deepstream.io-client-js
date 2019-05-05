@@ -94,9 +94,8 @@ describe('connection', () => {
         EVENT.HEARTBEAT_TIMEOUT
       )
 
+    socket.getTimeSinceLastMessage = () => 200
     await openConnection()
-    await BBPromise.delay(heartbeatInterval * 3)
-    await BBPromise.delay(10)
   })
 
   it('get redirected to server B while connecting to server A, reconnect to server A when connection to server B is lost', async () => {
@@ -230,7 +229,7 @@ describe('connection', () => {
     await sendBadAuthDataAndReceiveError()
   })
 
-  it('tries to reconnect everytome connection fails, stops when max reconnection attempts is reached and closes connection', async () => {
+  it('tries to reconnect every time connection fails, stops when max reconnection attempts is reached and closes connection', async () => {
     emitterMock
       .expects('emit')
       .once()
@@ -256,15 +255,15 @@ describe('connection', () => {
 
     // try to reconnect second time
     await receiveConnectionError()
-    await BBPromise.delay(10)
+    await BBPromise.delay(25)
 
-    // try to reconnct third time (now max is reached)
+    // try to reconnect third time (now max is reached)
     await receiveConnectionError()
-    await BBPromise.delay(20)
+    await BBPromise.delay(45)
 
     // try to reconnect fourth time (try to surpass the allowed max, fail)
     await receiveConnectionError()
-    await BBPromise.delay(30)
+    await BBPromise.delay(70)
   })
 
   it('tries to reconnect if the connection drops unexpectedly', async () => {
@@ -322,6 +321,7 @@ describe('connection', () => {
     expect(connection.isInLimbo).to.equal(true)
 
     await BBPromise.delay(20)
+
     assert.calledOnce(limboSpy)
     expect(connection.isInLimbo).to.equal(false)
   })
@@ -538,7 +538,7 @@ describe('connection', () => {
       )
 
     socket.simulateError()
-    await BBPromise.delay(0)
+    await BBPromise.delay(1)
   }
 
   async function receiveRedirect () {
@@ -589,7 +589,7 @@ describe('connection', () => {
       .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
 
     socket.close()
-    await BBPromise.delay(0)
+    await BBPromise.delay(2)
     expect(connection.isConnected).to.equal(false)
   }
 

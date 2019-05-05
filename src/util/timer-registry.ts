@@ -13,10 +13,10 @@ export type TimerRef = number
 
 export class TimerRegistry {
     private registry = new Map<number, InternalTimeout>()
-    private timerIdCounter = 0;
+    private timerIdCounter = 0
 
-    constructor () {
-        setInterval(this.triggerTimeouts.bind(this), 50)
+    constructor (timerResolution: number) {
+        setInterval(this.triggerTimeouts.bind(this), timerResolution)
     }
 
     private triggerTimeouts () {
@@ -34,9 +34,10 @@ export class TimerRegistry {
     }
 
     public add (timeout: Timeout): TimerRef {
+        this.timerIdCounter++
         (timeout as InternalTimeout).created = Date.now()
-        this.registry.set(this.timerIdCounter++, timeout as InternalTimeout);
-        return this.timerIdCounter;
+        this.registry.set(this.timerIdCounter, timeout as InternalTimeout);
+        return this.timerIdCounter
     }
 
     public remove (timerId: TimerRef): boolean {

@@ -9,7 +9,6 @@ import {
   ListenMessage,
   RecordData,
   RecordPathData,
-  ALL_ACTIONS
 } from '../../binary-protocol/src/message-constants'
 import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
@@ -25,7 +24,7 @@ import { MergeStrategy } from './merge-strategy'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service';
 
 export interface RecordServices {
-  bulkSubscriptionService: { [index in ALL_ACTIONS]: BulkSubscriptionService<RECORD_ACTION> };
+  bulkSubscriptionService: { [index in RECORD_ACTION]: BulkSubscriptionService<RECORD_ACTION> };
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier<RecordMessage>,
   headRegistry: SingleNotifier<RecordMessage>,
@@ -50,9 +49,9 @@ export class RecordHandler {
 
     this.recordServices = recordServices || {
       bulkSubscriptionService: {
-        [RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK),
-        [RECORD_ACTION.SUBSCRIBEANDHEAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDHEAD_BULK),
-        [RECORD_ACTION.SUBSCRIBEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDREAD_BULK)
+        [RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options.subscriptionInterval, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK, RECORD_ACTION.SUBSCRIBECREATEANDREAD),
+        [RECORD_ACTION.SUBSCRIBEANDHEAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options.subscriptionInterval, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDHEAD_BULK, RECORD_ACTION.SUBSCRIBEANDHEAD),
+        [RECORD_ACTION.SUBSCRIBEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(this.services, this.options.subscriptionInterval, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDREAD_BULK, RECORD_ACTION.SUBSCRIBEANDREAD)
       },
       writeAckService: new WriteAcknowledgementService(services),
       readRegistry: new SingleNotifier(services, RECORD_ACTION.READ, options.recordReadTimeout),
@@ -66,6 +65,7 @@ export class RecordHandler {
     this.onRecordUpdated = this.onRecordUpdated.bind(this)
     this.onMergeCompleted = this.onMergeCompleted.bind(this)
     this.getRecordCore = this.getRecordCore.bind(this)
+    this.removeRecord = this.removeRecord.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
     this.services.connection.onReestablished(this.syncDirtyRecords.bind(this))
 
@@ -425,7 +425,7 @@ export class RecordHandler {
   private getRecordCore (recordName: string): RecordCore<any> {
     let recordCore = this.recordCores.get(recordName)
     if (!recordCore) {
-      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord.bind(this))
+      recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord)
       this.recordCores.set(recordName, recordCore)
     } else {
       recordCore.usages++
@@ -434,17 +434,19 @@ export class RecordHandler {
   }
 
   private syncDirtyRecords () {
-    this.dirtyService.whenLoaded(() => {
-      const dirtyRecords = this.dirtyService.getAll()
-      for (const recordName in dirtyRecords) {
-        const recordCore = this.recordCores.get(recordName)
-        if (recordCore && recordCore.usages > 0) {
-          // if it isn't zero.. problem.
-          continue
-        }
-        this.services.storage.get(recordName, this.sendUpdatedData)
+    this.dirtyService.whenLoaded(this, this._syncDirtyRecords)
+  }
+
+  private _syncDirtyRecords () {
+    const dirtyRecords = this.dirtyService.getAll()
+    for (const recordName in dirtyRecords) {
+      const recordCore = this.recordCores.get(recordName)
+      if (recordCore && recordCore.usages > 0) {
+        // if it isn't zero.. problem.
+        continue
       }
-    })
+      this.services.storage.get(recordName, this.sendUpdatedData)
+    }
   }
 
   private sendUpdatedData (recordName: string, version: number, data: RecordData) {

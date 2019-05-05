@@ -36,12 +36,20 @@ export class AnonymousRecord extends Emitter  {
         return this.record.version as number
     }
 
+    public whenReady (): Promise<AnonymousRecord>
+    public whenReady (callback: ((record: AnonymousRecord) => void)): void
     public whenReady (callback?: ((record: AnonymousRecord) => void)): void | Promise<AnonymousRecord> {
         if (this.record) {
-            return this.record.whenReady(this, callback)
+            if (callback) {
+                this.record.whenReady(this, callback)
+            } else {
+                return this.record.whenReady(this)
+            }
         }
     }
 
+    public setName (recordName: string): Promise<AnonymousRecord>
+    public setName (recordName: string, callback: (record: AnonymousRecord) => void): void
     public setName (recordName: string, callback?: (record: AnonymousRecord) => void): void | Promise<AnonymousRecord> {
         if (this.name === recordName) {
             return
@@ -56,7 +64,12 @@ export class AnonymousRecord extends Emitter  {
         }
 
         this.emit('nameChanged', recordName)
-        return this.record.whenReady(this, callback)
+
+        if (callback) {
+            this.record.whenReady(this, callback)
+        } else {
+            return this.record.whenReady(this)
+        }
     }
 
     public get (path?: string): any {

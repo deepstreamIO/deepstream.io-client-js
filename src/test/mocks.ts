@@ -2,11 +2,17 @@
 import { mock, stub, SinonStub, SinonMock, match } from 'sinon'
 import { CONNECTION_STATE } from '../constants'
 import { TimerRegistry } from '../util/timer-registry'
-import { Message, RECORD_ACTIONS, JSONObject } from '../../binary-protocol/src/message-constants'
+import {
+  Message,
+  RECORD_ACTIONS,
+  JSONObject,
+  RECORD_ACTIONS as RECORD_ACTION, TOPIC
+} from '../../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../record/single-notifier'
 import { WriteAcknowledgementService } from '../record/write-ack-service'
 import { DirtyService } from '../record/dirty-service'
 import { Listener } from '../util/listener'
+import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -39,22 +45,30 @@ export const getServicesMock = () => {
   }
   const connectionMock = mock(connection)
 
-  const timeoutRegistry = {
-      add: () => {},
-      remove: () => {},
-      clear: () => {}
-  }
-  const timeoutRegistryMock = mock(timeoutRegistry)
-
   const logger = {
-      warn: () => {},
-      error: () => {}
+    warn: () => {},
+    error: () => {}
   }
   const loggerMock = mock(logger)
   loggerMock.expects('warn').never()
   // loggerMock.expects('error').never()
 
-  const timerRegistry = new TimerRegistry()
+  const timerRegistry = new TimerRegistry(1)
+
+  const timeoutRegistry = {
+    add: () => {},
+    remove: () => {},
+    clear: () => {}
+  }
+  const timeoutRegistryMock = mock(timeoutRegistry)
+
+  // TODO: Use a real timeout registry to catch potential errors
+  // const timeoutRegistry = new TimeoutRegistry({
+  //   timerRegistry,
+  //   logger,
+  //   connection
+  // } as any, { subscriptionTimeout: 20 } as any)
+  // const timeoutRegistryMock = mock(timeoutRegistry)
 
   // tslint:disable-next-line
   class Socket {
@@ -81,6 +95,9 @@ export const getServicesMock = () => {
     }
     public simulateMessages (messages: Array<Message>): void {
       process.nextTick(this.onparsedmessages.bind(this, messages))
+    }
+    public getTimeSinceLastMessage () {
+      return 1
     }
   }
 
@@ -124,12 +141,18 @@ export const getServicesMock = () => {
 }
 
 export const getRecordServices = (services: any) => {
-  services.storageMock.expects('get').withArgs('__ds__dirty_records', match.func).atLeast(0).callsArgWith(1, '__ds__dirty_records', 1, {})
+  services.storageMock.expects('get').withArgs('__ds__dirty_records', match.func).atLeast(0).callsArgWith(1, '__ds__dirty_records', 1, [])
   services.storageMock.expects('set').withArgs('__ds__dirty_records', 1, match.any, match.func).atLeast(0)
   const dirtyService = new DirtyService(services.storage, '__ds__dirty_records')
   const headRegistry = new SingleNotifier(services, RECORD_ACTIONS.HEAD, 50)
   const readRegistry = new SingleNotifier(services, RECORD_ACTIONS.READ, 50)
   const writeAckService = new WriteAcknowledgementService(services)
+
+  const bulkSubscriptionService = {
+    [RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK, RECORD_ACTION.SUBSCRIBECREATEANDREAD),
+    [RECORD_ACTION.SUBSCRIBEANDHEAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDHEAD_BULK, RECORD_ACTION.SUBSCRIBEANDHEAD),
+    [RECORD_ACTION.SUBSCRIBEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDREAD_BULK,  RECORD_ACTION.SUBSCRIBEANDREAD)
+  }
 
   const dirtyServiceMock = mock(dirtyService)
   const readRegistryMock =  mock(readRegistry)
@@ -145,6 +168,7 @@ export const getRecordServices = (services: any) => {
     readRegistryMock,
     writeAckService,
     writeAckServiceMock,
+    bulkSubscriptionService,
     verify: () => {
       dirtyServiceMock.verify()
       headRegistryMock.verify()

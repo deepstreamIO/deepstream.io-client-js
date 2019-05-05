@@ -20,7 +20,7 @@ describe('Presence handler', () => {
   let callbackSpy: sinon.SinonSpy
   let promiseSuccess: sinon.SinonSpy
   let promiseError: sinon.SinonSpy
-  const options = Object.assign({}, DefaultOptions)
+  const options = { ...DefaultOptions }
   let counter: number
 
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe('Presence handler', () => {
     expect(presenceHandler.unsubscribe.bind(presenceHandler, '')).to.throw()
   })
 
-  it('cant\'t query getAll when client is offline', async () => {
+  it('can\'t query getAll when client is offline', async () => {
     services.connection.isConnected = false
 
     presenceHandler.getAll(callbackSpy)

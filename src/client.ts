@@ -25,6 +25,7 @@ export interface RecordOfflineStore {
 export interface Socket extends WebSocket {
   onparsedmessages: (messages: Array<Message>) => void
   sendParsedMessage: (message: Message) => void
+  getTimeSinceLastMessage: () => number
 }
 
 export interface Services {
@@ -51,7 +52,7 @@ export class Client extends EventEmitter {
     // @ts-ignore
     const services: Services = {}
     services.logger = new Logger(this)
-    services.timerRegistry = new TimerRegistry()
+    services.timerRegistry = new TimerRegistry(this.options.timerResolution)
     services.timeoutRegistry = new TimeoutRegistry(services, this.options)
     services.socketFactory = this.options.socketFactory || socketFactory
     services.connection = new Connection(services, this.options, url, this)

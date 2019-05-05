@@ -63,6 +63,8 @@ export class RecordCore<Context = null> extends Emitter {
   public offlineLoadingAborted: boolean
   public readyTimer: number
 
+  public readyCallbacks: Array<{ context: any, callback: Function }> = []
+
   constructor (public name: string, public services: Services, public options: Options, public recordServices: RecordServices, public whenComplete: (recordName: string) => void) {
     super()
     this.emitter = new Emitter()
@@ -97,7 +99,27 @@ export class RecordCore<Context = null> extends Emitter {
         }
     )
 
-    this.recordServices.dirtyService.whenLoaded(() => {
+    this.recordServices.dirtyService.whenLoaded(this, this.onRecordLoadedFromStorage)
+  }
+
+  get recordState (): RECORD_STATE {
+    return this.stateMachine.state
+  }
+
+  set usages (usages: number) {
+    this.references = usages
+    if (this.references === 1) {
+      this.services.timeoutRegistry.clear(this.discardTimeout!)
+      this.services.timerRegistry.remove(this.readyTimer!)
+      this.stateMachine.transition(RA.SUBSCRIBE)
+    }
+  }
+
+  get usages (): number {
+    return this.references
+  }
+
+  private onRecordLoadedFromStorage () {
       if (this.services.connection.isConnected) {
         if (!this.recordServices.dirtyService.isDirty(this.name)) {
           this.stateMachine.transition(RA.SUBSCRIBE)
@@ -114,44 +136,28 @@ export class RecordCore<Context = null> extends Emitter {
 
       this.services.connection.onReestablished(this.onConnectionReestablished)
       this.services.connection.onLost(this.onConnectionLost)
-    })
   }
 
-  get recordState (): RECORD_STATE {
-    return this.stateMachine.state
-  }
-
-  set usages (usages: number) {
-    this.references = usages
-    if (this.references === 1) {
-      this.services.timeoutRegistry.clear(this.discardTimeout!)
-      this.stateMachine.transition(RA.SUBSCRIBE)
-    }
-  }
-
-  get usages (): number {
-    return this.references
-  }
-
-  public onStateChanged = (newState: string, oldState: string) => {
+  public onStateChanged (newState: string, oldState: string) {
     this.emitter.emit(EVENT.RECORD_STATE_CHANGED, newState)
   }
+
   /**
    * Convenience method, similar to promises. Executes callback
-   * whenever the record is ready, either immediatly or once the ready
+   * whenever the record is ready, either immediately or once the ready
    * event is fired
-   * @param   {[Function]} callback Will be called when the record is ready
    */
-  public whenReady (context: Context, callback?: (context: Context) => void): Promise<Context> | void {
-    this.whenReadyInternal(context, (realContext: Context | null) => {
-      if (realContext) {
-        if (callback) {
-          callback(realContext)
-          return
-        }
-        return Promise.resolve(realContext)
-      }
-    })
+  public whenReady (context: Context): Promise<Context>
+  public whenReady (context: Context, callback: (context: Context) => void): void
+  public whenReady (context: Context, callback?: (context: Context) => void | undefined): Promise<Context> | void {
+    if (callback) {
+      this.whenReadyInternal(context, (realContext: Context | null) => {
+        callback(realContext!)
+      })
+      return
+    }
+
+    return new Promise<Context>(resolve => this.whenReadyInternal(context, () => resolve(context)))
   }
 
   /**
@@ -162,7 +168,7 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
     if (callback) {
-      this.once(EVENT.RECORD_READY, () => callback(context))
+      this.readyCallbacks.push({ callback, context })
     }
   }
 
@@ -324,7 +330,6 @@ export class RecordCore<Context = null> extends Emitter {
           context: this.stateMachine,
           data: RA.UNSUBSCRIBE_ACK
         })
-
       }
     })
     this.stateMachine.transition(RA.UNSUBSCRIBE)
@@ -380,23 +385,22 @@ export class RecordCore<Context = null> extends Emitter {
    * Transition States
    */
 
-  onSubscribing (): void {
+  public onSubscribing (): void {
     this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
-    // this.services.timeoutRegistry.add({
-    //   message: {
-    //     topic: TOPIC.RECORD,
-    //     action: RA.SUBSCRIBE,
-    //     name: this.name,
-    //   }
-    // })
-    // this.responseTimeout = this.services.timeoutRegistry.add({
-    //   message: {
-    //     topic: TOPIC.RECORD,
-    //     action: RA.READ_RESPONSE,
-    //     name: this.name
-    //   }
-    // })
-
+    this.services.timeoutRegistry.add({
+      message: {
+        topic: TOPIC.RECORD,
+        action: RA.SUBSCRIBE,
+        name: this.name,
+      }
+    })
+    this.responseTimeout = this.services.timeoutRegistry.add({
+      message: {
+        topic: TOPIC.RECORD,
+        action: RA.READ_RESPONSE,
+        name: this.name
+      }
+    })
     this.recordServices.bulkSubscriptionService[RA.SUBSCRIBECREATEANDREAD_BULK].subscribe(this.name)
   }
 
@@ -404,24 +408,24 @@ export class RecordCore<Context = null> extends Emitter {
     this.services.timerRegistry.remove(this.readyTimer!)
 
     this.recordServices.headRegistry.register(this.name, this, this.handleHeadResponse)
-    // this.services.timeoutRegistry.add({
-    //   message: {
-    //     topic: TOPIC.RECORD,
-    //     action: RA.SUBSCRIBE,
-    //     name: this.name,
-    //   }
-    // })
-    // this.responseTimeout = this.services.timeoutRegistry.add({
-    //   message: {
-    //     topic: TOPIC.RECORD,
-    //     action: RA.HEAD,
-    //     name: this.name
-    //   }
-    // })
+    this.services.timeoutRegistry.add({
+      message: {
+        topic: TOPIC.RECORD,
+        action: RA.SUBSCRIBE,
+        name: this.name,
+      }
+    })
+    this.responseTimeout = this.services.timeoutRegistry.add({
+      message: {
+        topic: TOPIC.RECORD,
+        action: RA.HEAD,
+        name: this.name
+      }
+    })
     this.recordServices.bulkSubscriptionService[RA.SUBSCRIBEANDHEAD_BULK].subscribe(this.name)
   }
 
-  onOfflineLoading (): void {
+  public onOfflineLoading () {
     this.services.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
       if (this.offlineLoadingAborted) {
           // This occurred since we got a connection to the server
@@ -453,7 +457,9 @@ export class RecordCore<Context = null> extends Emitter {
     this.services.timeoutRegistry.clear(this.responseTimeout!)
     this.applyPendingWrites()
     this.isReady = true
-    this.emit(EVENT.RECORD_READY)
+    this.readyCallbacks.forEach(({ context, callback }) => {
+      callback.call(context, context)
+    })
   }
 
   public applyPendingWrites (): void {

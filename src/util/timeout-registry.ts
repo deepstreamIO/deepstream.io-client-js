@@ -43,8 +43,6 @@ export class TimeoutRegistry extends EventEmitter {
    * Add an entry
    */
   public add (timeout: Timeout): TimeoutId {
-    return 'unique'
-
     if (timeout.duration === undefined) {
       timeout.duration = this.options.subscriptionTimeout
     }

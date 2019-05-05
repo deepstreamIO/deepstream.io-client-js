@@ -20,7 +20,7 @@ describe('RPC handler', () => {
   const name = 'myRpc'
   const rpcAcceptTimeout = 10
   const rpcResponseTimeout = 30
-  const options = Object.assign({}, DefaultOptions, { rpcAcceptTimeout, rpcResponseTimeout })
+  const options = { ...DefaultOptions, rpcAcceptTimeout, rpcResponseTimeout }
 
   beforeEach(() => {
     services = getServicesMock()
@@ -370,6 +370,7 @@ describe('RPC handler', () => {
 
     it('responds rpc with error when request is not accepted in time', async () => {
       await BBPromise.delay(rpcAcceptTimeout * 2)
+
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT])
 

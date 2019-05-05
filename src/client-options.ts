@@ -2,7 +2,8 @@ import { MergeStrategy, REMOTE_WINS } from './record/merge-strategy'
 import {RecordOfflineStore, Socket } from './client'
 
 export interface  Options {
-    subscriptionInterval: number;
+    timerResolution: number,
+    subscriptionInterval: number,
     offlineEnabled: boolean,
     storage?: RecordOfflineStore,
 
@@ -80,7 +81,7 @@ export interface  Options {
     maxReconnectInterval: number,
 
     recordDeepCopy: boolean,
-    discardTimeout: 5000,
+    discardTimeout: number,
 
     /**
      * Options for the provided socket factory
@@ -109,6 +110,7 @@ export interface  Options {
 }
 
 export const DefaultOptions: Options = {
+    timerResolution: 50,
     subscriptionInterval: 100,
     offlineEnabled: true,
     heartbeatInterval: 30000,

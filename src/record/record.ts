@@ -33,8 +33,14 @@ export class Record extends Emitter  {
         return this.record.hasProvider
     }
 
+    public whenReady (): Promise<Record>
+    public whenReady (callback: ((record: Record) => void)): void
     public whenReady (callback?: ((record: Record) => void)): void | Promise<Record> {
-        return this.record.whenReady(this, callback)
+        if (callback) {
+            this.record.whenReady(this, callback)
+        } else {
+            return this.record.whenReady(this)
+        }
     }
 
     public get (path?: string): any {

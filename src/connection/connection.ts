@@ -59,8 +59,7 @@ export class Connection {
   private resumeCallback: ResumeCallback | null
   private readonly originalUrl: string
   private url: string
-  private heartbeatInterval: number | null
-  private lastHeartBeat: number | null
+  private heartbeatIntervalTimeout: number | null
   private endpoint: Socket | null
   private handlers: Map<TOPIC, Function>
 
@@ -79,8 +78,7 @@ export class Connection {
     this.internalEmitter = new Emitter()
     this.isInLimbo = true
     this.clientData = null
-    this.heartbeatInterval = null
-    this.lastHeartBeat = null
+    this.heartbeatIntervalTimeout = null
     this.endpoint = null
     this.reconnectTimeout = null
     this.reconnectionAttempt = 0
@@ -272,7 +270,7 @@ export class Connection {
    * will prevent the client from reconnecting.
    */
   public close (): void {
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
+    this.services.timerRegistry.remove(this.heartbeatIntervalTimeout!)
     this.sendMessage({
       topic: TOPIC.CONNECTION,
       action: CONNECTION_ACTION.CLOSING
@@ -282,7 +280,7 @@ export class Connection {
 
   public pause (): void {
     this.stateMachine.transition(TRANSITIONS.PAUSE)
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
+    this.services.timerRegistry.remove(this.heartbeatIntervalTimeout!)
     if (this.endpoint) {
       this.endpoint.close()
     }
@@ -299,7 +297,7 @@ export class Connection {
    * was initialised with.
    */
   private createEndpoint (): void {
-    this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions)
+    this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions, this.options.heartbeatInterval)
 
     this.endpoint.onopen = this.onOpen.bind(this)
     this.endpoint.onerror = this.onError.bind(this)
@@ -318,7 +316,6 @@ export class Connection {
   */
   private onOpen (): void {
     this.clearReconnect()
-    this.lastHeartBeat = Date.now()
     this.checkHeartBeat()
     this.stateMachine.transition(TRANSITIONS.CONNECTED)
     this.sendMessage({
@@ -356,7 +353,7 @@ export class Connection {
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.CONNECTION_ERROR, msg)
     }, 1)
 
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
+    this.services.timerRegistry.remove(this.heartbeatIntervalTimeout!)
     this.stateMachine.transition(TRANSITIONS.ERROR)
     this.tryReconnect()
   }
@@ -370,7 +367,7 @@ export class Connection {
    * strategy.
    */
   private onClose (): void {
-    this.services.timerRegistry.remove(this.heartbeatInterval as number)
+    this.services.timerRegistry.remove(this.heartbeatIntervalTimeout!)
 
     if (this.stateMachine.state === CONNECTION_STATE.REDIRECTING) {
       this.createEndpoint()
@@ -457,16 +454,18 @@ export class Connection {
   private checkHeartBeat (): void {
     const heartBeatTolerance = this.options.heartbeatInterval * 2
 
-    if (Date.now() - (this.lastHeartBeat as number) > heartBeatTolerance) {
-      this.services.timerRegistry.remove(this.heartbeatInterval as number)
-      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.HEARTBEAT_TIMEOUT)
-      if (this.endpoint) {
-        this.endpoint.close()
-      }
+    if (!this.endpoint) {
       return
     }
 
-    this.heartbeatInterval = this.services.timerRegistry.add({
+    if (this.endpoint.getTimeSinceLastMessage() > heartBeatTolerance) {
+      this.services.timerRegistry.remove(this.heartbeatIntervalTimeout!)
+      this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.HEARTBEAT_TIMEOUT)
+      this.endpoint.close()
+      return
+    }
+
+    this.heartbeatIntervalTimeout = this.services.timerRegistry.add({
       duration: this.options.heartbeatInterval,
       callback: this.checkHeartBeat,
       context: this
@@ -545,17 +544,6 @@ export class Connection {
    * a connection to the url supplied in the message.
    */
   private handleConnectionResponse (message: Message): void {
-    if (message.action === CONNECTION_ACTION.PING) {
-      this.lastHeartBeat = Date.now()
-      if (
-        this.getConnectionState() !== CONNECTION_STATE.CLOSING &&
-        this.getConnectionState() !== CONNECTION_STATE.PAUSING
-      ) {
-        this.sendMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PONG })
-      }
-      return
-    }
-
     if (message.action === CONNECTION_ACTION.ACCEPT) {
       this.stateMachine.transition(TRANSITIONS.CHALLENGE_ACCEPTED)
       return

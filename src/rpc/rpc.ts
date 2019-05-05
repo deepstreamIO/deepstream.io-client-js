@@ -12,21 +12,10 @@ export type RPCMakeCallback = (error: string | null, result?: RPCResult) => void
  * incoming response data
  */
 export class RPC {
-    private services: Services
-    private options: Options
-    private name: string
-    private correlationId: string
-    private response: RPCMakeCallback
-    private acceptTimeout: TimeoutId
+    private readonly acceptTimeout: TimeoutId
+    private readonly responseTimeout: TimeoutId
 
-    private responseTimeout: TimeoutId
-
-    constructor (name: string, correlationId: string, data: any, response: RPCMakeCallback, options: Options, services: Services) {
-      this.options = options
-      this.services = services
-      this.name = name
-      this.correlationId = correlationId
-      this.response = response
+    constructor (private name: string, private correlationId: string, data: any, private response: RPCMakeCallback, private options: Options, private services: Services) {
       this.onTimeout = this.onTimeout.bind(this)
 
       const message = {
@@ -46,7 +35,7 @@ export class RPC {
         },
         event: RPC_ACTION.ACCEPT_TIMEOUT,
         duration: this.options.rpcAcceptTimeout,
-        callback: this.onTimeout.bind(this)
+        callback: this.onTimeout
       })
 
       this.responseTimeout = this.services.timeoutRegistry.add({
@@ -60,6 +49,7 @@ export class RPC {
         duration: this.options.rpcResponseTimeout,
         callback: this.onTimeout
       })
+
       this.services.connection.sendMessage(message)
     }
 

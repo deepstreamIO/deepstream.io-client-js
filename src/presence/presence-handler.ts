@@ -35,34 +35,21 @@ function validateQueryArguments (rest: Array<any>): { users: Array<string> | nul
 }
 
 export class PresenceHandler {
-  private services: Services
-  private globalSubscriptionEmitter: Emitter
-  private subscriptionEmitter: Emitter
-  private queryEmitter: Emitter
-  private queryAllEmitter: Emitter
-  private counter: number
-  private pendingSubscribes: Set<string>
-  private pendingUnsubscribes: Set<string>
-  private limboQueue: Array<Message>
-  private flushTimeout: number | null
+  private globalSubscriptionEmitter = new Emitter()
+  private subscriptionEmitter = new Emitter()
+  private queryEmitter = new Emitter()
+  private queryAllEmitter = new Emitter()
+  private counter: number = 0
+  private pendingSubscribes = new Set<string>()
+  private pendingUnsubscribes = new Set<string>()
+  private limboQueue: Array<Message> = []
+  private flushTimeout: number | null = null
 
-  constructor (services: Services, options: Options) {
-    this.services = services
-    this.subscriptionEmitter = new Emitter()
-    this.globalSubscriptionEmitter = new Emitter()
-    this.queryEmitter = new Emitter()
-    this.queryAllEmitter = new Emitter()
-
+  constructor (private services: Services, options: Options) {
     this.services.connection.registerHandler(TOPIC.PRESENCE, this.handle.bind(this))
     this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
     this.services.connection.onLost(this.onExitLimbo.bind(this))
     this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
-
-    this.counter = 0
-    this.pendingSubscribes = new Set()
-    this.pendingUnsubscribes = new Set()
-    this.limboQueue = []
-    this.flushTimeout = null
   }
 
   public subscribe (callback: SubscribeCallback): void
@@ -299,7 +286,7 @@ export class PresenceHandler {
   private registerFlushTimeout () {
     if (!this.flushTimeout) {
       this.flushTimeout = this.services.timerRegistry.add({
-        duration: 0,
+        duration: 5,
         context: this,
         callback: this.flush
       })

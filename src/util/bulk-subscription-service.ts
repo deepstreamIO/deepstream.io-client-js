@@ -1,23 +1,31 @@
 import {TOPIC, ALL_ACTIONS} from '../../binary-protocol/dist/src/message-constants'
 import {Services} from "../client"
-import {Options} from "../client-options"
 
 export class BulkSubscriptionService<ACTION> {
     private subscribeNames = new Set<string>()
     private timerRef: number = -1
 
-    constructor (public services: Services, public options: Options, private topic: TOPIC, private action: ACTION) {
+    constructor (public services: Services, private subscriptionInterval: number, private topic: TOPIC, private action: ACTION, private originalAction: ACTION) {
     }
 
-    subscribe (name: string) {
+    public subscribe (name: string) {
+        if (this.subscriptionInterval === 0) {
+            this.services.connection.sendMessage({
+                topic: this.topic,
+                action: this.originalAction as unknown as ALL_ACTIONS,
+                name
+            })
+            return
+        }
+
         if (!this.services.timerRegistry.has(this.timerRef)) {
+            this.subscribeNames.add(name)
             this.timerRef = this.services.timerRegistry.add({
                 callback: this.sendMessages,
                 context: this,
-                duration: this.options.subscriptionInterval
+                duration: this.subscriptionInterval
             })
         }
-        this.subscribeNames.add(name)
     }
 
     private sendMessages () {
