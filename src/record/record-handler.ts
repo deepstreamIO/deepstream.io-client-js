@@ -9,6 +9,7 @@ import {
   RecordData,
   RecordPathData,
   RECORD_ACTIONS as RA,
+  Message,
 } from '../../binary-protocol/src/message-constants'
 import { isWriteAck } from '../../binary-protocol/src/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
@@ -66,6 +67,7 @@ export class RecordHandler {
     this.onMergeCompleted = this.onMergeCompleted.bind(this)
     this.getRecordCore = this.getRecordCore.bind(this)
     this.removeRecord = this.removeRecord.bind(this)
+    this.onBulkSubscriptionSent = this.onBulkSubscriptionSent.bind(this)
     this.services.connection.registerHandler(TOPIC.RECORD, this.handle.bind(this))
     this.services.connection.onReestablished(this.syncDirtyRecords.bind(this))
 
@@ -351,6 +353,11 @@ export class RecordHandler {
    * @param   {Object} message parsed and validated deepstream message
    */
   private handle (message: RecordMessage) {
+    if (message.isAck) {
+      this.services.timeoutRegistry.remove(message)
+      return
+    }
+
     if (
       message.action === RA.SUBSCRIPTION_FOR_PATTERN_FOUND ||
       message.action === RA.SUBSCRIPTION_FOR_PATTERN_REMOVED ||
@@ -482,7 +489,14 @@ export class RecordHandler {
   }
 
   private getBulkSubscriptionService (bulkSubscribe: RA, subscribe: RA) {
-    return new BulkSubscriptionService<RA>(this.services, this.options.subscriptionInterval, TOPIC.RECORD, bulkSubscribe, subscribe, RA.UNSUBSCRIBE_BULK, RA.UNSUBSCRIBE)
+    return new BulkSubscriptionService<RA>(this.services, this.options.subscriptionInterval, TOPIC.RECORD,
+        bulkSubscribe, subscribe, RA.UNSUBSCRIBE_BULK, RA.UNSUBSCRIBE, this.onBulkSubscriptionSent)
+  }
+
+  private onBulkSubscriptionSent (message: Message) {
+    if (!message.names) {
+      this.services.timeoutRegistry.add({ message })
+    }
   }
 
 }

@@ -386,13 +386,6 @@ export class RecordCore<Context = null> extends Emitter {
 
   public onSubscribing (): void {
     this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
-    this.services.timeoutRegistry.add({
-      message: {
-        topic: TOPIC.RECORD,
-        action: RA.SUBSCRIBE,
-        name: this.name,
-      }
-    })
     this.responseTimeout = this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -407,13 +400,6 @@ export class RecordCore<Context = null> extends Emitter {
     this.services.timerRegistry.remove(this.readyTimer!)
 
     this.recordServices.headRegistry.register(this.name, this, this.handleHeadResponse)
-    this.services.timeoutRegistry.add({
-      message: {
-        topic: TOPIC.RECORD,
-        action: RA.SUBSCRIBE,
-        name: this.name,
-      }
-    })
     this.responseTimeout = this.services.timeoutRegistry.add({
       message: {
         topic: TOPIC.RECORD,
@@ -514,11 +500,6 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public handle (message: RecordMessage): void {
-    if (message.isAck) {
-      this.services.timeoutRegistry.remove(message)
-      return
-    }
-
     if (message.action === RA.PATCH || message.action === RA.UPDATE || message.action === RA.ERASE) {
       if (this.stateMachine.state === RECORD_STATE.MERGING) {
         // The scenario this covers is when a read is requested because the head doesn't match
