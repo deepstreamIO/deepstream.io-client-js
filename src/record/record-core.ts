@@ -515,7 +515,7 @@ export class RecordCore<Context = null> extends Emitter {
 
     if (message.action === RA.DELETE_SUCCESS) {
       this.services.timeoutRegistry.clear(this.deletedTimeout!)
-      this.stateMachine.transition(message.action)
+      this.stateMachine.transition(RA.DELETE_SUCCESS)
       if (this.deleteResponse!.callback) {
         this.deleteResponse!.callback(null)
       } else if (this.deleteResponse!.resolve) {
@@ -525,7 +525,7 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     if (message.action === RA.DELETED) {
-      this.stateMachine.transition(message.action)
+      this.stateMachine.transition(RA.DELETED)
       return
     }
 
@@ -544,13 +544,12 @@ export class RecordCore<Context = null> extends Emitter {
         message.originalAction === RA.SUBSCRIBEANDHEAD ||
         message.originalAction === RA.SUBSCRIBEANDREAD
       ) {
-        const subscribeMsg = Object.assign({}, message, { originalAction: RA.SUBSCRIBE })
-        const actionMsg = Object.assign(
-          {},
-          message,
-          { originalAction: message.originalAction === RA.SUBSCRIBECREATEANDREAD ? RA.READ_RESPONSE : RA.HEAD_RESPONSE }
-      )
-        this.services.timeoutRegistry.remove(subscribeMsg)
+        const subscribeMsg = { ...message, originalAction: RA.SUBSCRIBE }
+        const actionMsg = {
+          ...message,
+          originalAction: message.originalAction === RA.SUBSCRIBECREATEANDREAD ? RA.READ_RESPONSE : RA.HEAD_RESPONSE
+        }
+        this.services.timeoutRegistry.remove(subscribeMsg) // TODO: This doesn't contain correlationIds
         this.services.timeoutRegistry.remove(actionMsg)
       }
 
