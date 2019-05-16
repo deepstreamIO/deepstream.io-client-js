@@ -6,9 +6,11 @@ export class DirtyService {
   private dirtyRecords: DirtyRecordsIndex = new Map()
   private loaded: boolean
   private loadedCallback: Array<{ callback: Function, context: any }> = []
+  private flushTimeout: NodeJS.Timeout | null = null
 
   constructor (private storage: RecordOfflineStore, private readonly dirtyStorageName: string) {
     this.loaded = false
+    this.save = this.save.bind(this)
     this.load()
   }
 
@@ -22,7 +24,17 @@ export class DirtyService {
     } else {
       this.dirtyRecords.delete(recordName)
     }
+    if (!this.flushTimeout) {
+      this.flushTimeout = setTimeout(this.save, 1000)
+    }
+  }
+
+  public save () {
     this.storage.set(this.dirtyStorageName, 1, [...this.dirtyRecords] as any, () => {})
+    if (this.flushTimeout) {
+      clearTimeout(this.flushTimeout)
+    }
+    this.flushTimeout = null
   }
 
   public whenLoaded (context: any, callback: () => void): void {

@@ -3,6 +3,7 @@ import { Options } from '../client-options'
 import {RecordData} from '../../binary-protocol/src/message-constants'
 
 export class Storage implements RecordOfflineStore {
+  public isReady = true
   private storage: any
 
   constructor (options: Options) {

@@ -99,7 +99,7 @@ export class RecordCore<Context = null> extends Emitter {
         }
     )
 
-    this.recordServices.dirtyService.whenLoaded(this, this.onRecordLoadedFromStorage)
+    this.recordServices.dirtyService.whenLoaded(this, this.onDirtyServiceLoaded)
   }
 
   get recordState (): RECORD_STATE {
@@ -119,17 +119,20 @@ export class RecordCore<Context = null> extends Emitter {
     return this.references
   }
 
-  private onRecordLoadedFromStorage () {
+  private onDirtyServiceLoaded () {
       if (this.services.connection.isConnected) {
-        if (!this.recordServices.dirtyService.isDirty(this.name)) {
-          this.stateMachine.transition(RA.SUBSCRIBE)
-        } else {
-          this.services.storage.get(this.name, (recordName, version, data) => {
+        this.services.storage.get(this.name, (recordName, version, data) => {
+          if (version === -1 && !this.recordServices.dirtyService.isDirty(this.name)) {
+            /**
+             * Record has never been created before
+             */
+            this.stateMachine.transition(RA.SUBSCRIBE)
+          } else {
             this.version = version
             this.data = data
             this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
-          })
-        }
+          }
+        })
       } else {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
       }
@@ -139,6 +142,7 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public onStateChanged (newState: string, oldState: string) {
+    console.log(newState, oldState)
     this.emitter.emit(EVENT.RECORD_STATE_CHANGED, newState)
   }
 
@@ -421,7 +425,6 @@ export class RecordCore<Context = null> extends Emitter {
         }
         this.data = {}
         this.version = 1
-        this.recordServices.dirtyService.setDirty(this.name, true)
         this.services.storage.set(this.name, this.version, this.data, error => {
           this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
         })
@@ -610,13 +613,14 @@ export class RecordCore<Context = null> extends Emitter {
         this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
       }
     } else {
-      if (remoteVersion < (this.version as number)) {
-        /**
-         *  deleted and created again remotely
-        */
-      } else if (this.version === remoteVersion) {
+       if (this.version === remoteVersion) {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
       } else {
+        if (remoteVersion < (this.version as number)) {
+         /**
+          *  deleted and created again remotely, up to merge conflict I guess
+          */
+        }
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
         this.sendRead()
         this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
@@ -803,6 +807,7 @@ export class RecordCore<Context = null> extends Emitter {
     const oldValue = this.data
 
     if (utils.deepEquals(oldValue, remoteData)) {
+      this.stateMachine.transition('MERGED' /* MERGED */)
       return
     }
 

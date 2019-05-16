@@ -8,22 +8,27 @@ import { socketFactory, SocketFactory} from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler} from './record/record-handler'
-import { Storage } from './record/storage-service'
+import { Storage } from './storage/indexdb-storage-service'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 import {RecordData, JSONObject, Message} from '../binary-protocol/src/message-constants'
-import {NoopStorage} from './record/noop-storage-service'
+import {NoopStorage} from './storage/noop-storage-service'
 
 export type offlineStoreWriteResponse = ((error: string | null) => void)
 
 export interface RecordOfflineStore {
+  isReady: boolean,
   get: (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) => void
   set: (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) => void
   delete: (recordName: string, callback: offlineStoreWriteResponse) => void
 }
 
-export interface Socket extends WebSocket {
+export interface Socket {
+  close: () => void
   onparsedmessages: (messages: Array<Message>) => void
+  onclosed: () => void
+  onopened: () => void
+  onerror: (error: any) => void
   sendParsedMessage: (message: Message) => void
   getTimeSinceLastMessage: () => number
 }

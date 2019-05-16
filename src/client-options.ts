@@ -98,6 +98,10 @@ export interface  Options {
      */
     nodeStoragePath: string,
     /**
+     * storageDatabaseName database name
+     */
+    storageDatabaseName: string,
+    /**
      * nodeStorageSize specifies maximum database size in megabytes
      * Default: 5
      */
@@ -131,6 +135,7 @@ export const DefaultOptions: Options = {
     socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './local-storage',
+    storageDatabaseName: 'deepstream',
     nodeStorageSize: 5,
     lazyConnect: false
 }

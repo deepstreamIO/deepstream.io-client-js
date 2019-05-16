@@ -27,5 +27,6 @@ This repository comes with the Typescript typings bundled. No need to download t
 ```typescript
 import * as deepstream from 'deepstream.io-client-js';
 
-const client = deepstream('http://localhost').login();
+const client = deepstream('http://localhost')
+client.login();
 ```

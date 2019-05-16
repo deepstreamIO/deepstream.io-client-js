@@ -93,6 +93,7 @@ export class Connection {
           if (newState === CONNECTION_STATE.RECONNECTING) {
             this.isInLimbo = true
             isReconnecting = true
+
             if (oldState !== CONNECTION_STATE.CLOSED) {
               this.internalEmitter.emit(EVENT.CONNECTION_LOST)
               this.limboTimeout = this.services.timerRegistry.add({
@@ -293,9 +294,9 @@ export class Connection {
   private createEndpoint (): void {
     this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions, this.options.heartbeatInterval)
 
-    this.endpoint.onopen = this.onOpen.bind(this)
+    this.endpoint.onopened = this.onOpen.bind(this)
     this.endpoint.onerror = this.onError.bind(this)
-    this.endpoint.onclose = this.onClose.bind(this)
+    this.endpoint.onclosed = this.onClose.bind(this)
     this.endpoint.onparsedmessages = this.onMessages.bind(this)
   }
 
