@@ -1,3 +1,7 @@
+# [4.0.0-rc.3] - 2019-05-16
+
+This release adds indexDB. However its not in a stable state.
+
 # [4.0.0-rc.3] - 2019-05-05
 
 This release includes bulk subscriptions, which allow thousands of records to be subscribed to with a single message,
