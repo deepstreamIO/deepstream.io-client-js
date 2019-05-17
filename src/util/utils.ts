@@ -1,8 +1,9 @@
-let URL: any
-try {
-  URL = require('url').URL
-} catch (e) {
-  URL = window && window.URL
+let UniformResourceLocator : any
+
+if (typeof URL === 'undefined') {
+  UniformResourceLocator = require('url').URL
+} else {
+  UniformResourceLocator = window.URL
 }
 
 /**
@@ -97,7 +98,7 @@ export const parseUrl = (initialURl: string, defaultPath: string): string => {
   } else if (url.indexOf('//') === 0) {
     url = `ws:${url}`
   }
-  const serverUrl = new URL(url)
+  const serverUrl = new UniformResourceLocator(url)
   if (!serverUrl.host) {
     throw new Error('invalid url, missing host')
   }
