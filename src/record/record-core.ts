@@ -588,8 +588,8 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
     this.version = message.version as number
-    this.applyChange(setPath(this.data, null, message.parsedData))
     this.stateMachine.transition(RA.READ_RESPONSE)
+    this.applyChange(setPath(this.data, null, message.parsedData))
   }
 
   public handleHeadResponse (message: RecordMessage): void {
@@ -605,8 +605,8 @@ export class RecordCore<Context = null> extends Emitter {
         /**
          * record updated by client while offline
         */
-        this.sendUpdate(null, this.data)
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+       this.sendUpdate(null, this.data)
       } else {
         /**
          * record updated by server when offline, get latest data
@@ -810,11 +810,13 @@ export class RecordCore<Context = null> extends Emitter {
     const oldValue = this.data
 
     if (utils.deepEquals(oldValue, remoteData)) {
-      this.stateMachine.transition('MERGED' /* MERGED */)
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
       return
     }
 
     const newValue = setPath(oldValue, null, mergedData)
+
+    this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
 
     if (utils.deepEquals(mergedData, remoteData)) {
       this.applyChange(mergedData)
@@ -828,7 +830,6 @@ export class RecordCore<Context = null> extends Emitter {
         this.applyChange(newValue)
         // this.sendUpdate(null, data, message.isWriteAck)
     }
-    this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
   }
 
   /**
