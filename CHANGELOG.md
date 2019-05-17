@@ -1,4 +1,4 @@
-# [4.0.0-rc.11] - 2019-05-17
+# [4.0.0-rc.12] - 2019-05-17
 
 - Firing the change event on records before transitioning results in the state machine not
 working as expected when doing something like our initial API usage in 2.0 days
