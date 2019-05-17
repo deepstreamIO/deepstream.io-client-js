@@ -8,11 +8,11 @@ import { socketFactory, SocketFactory} from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler} from './record/record-handler'
-import { Storage } from './storage/indexdb-storage-service'
 import { PresenceHandler } from './presence/presence-handler'
 import * as EventEmitter from 'component-emitter2'
 import {RecordData, JSONObject, Message} from '../binary-protocol/src/message-constants'
-import {NoopStorage} from './storage/noop-storage-service'
+import { Storage } from './storage/indexdb-storage-service'
+import { NoopStorage } from './storage/noop-storage-service'
 
 export type offlineStoreWriteResponse = ((error: string | null) => void)
 

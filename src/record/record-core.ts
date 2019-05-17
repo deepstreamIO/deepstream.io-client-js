@@ -142,7 +142,6 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public onStateChanged (newState: string, oldState: string) {
-    console.log(newState, oldState)
     this.emitter.emit(EVENT.RECORD_STATE_CHANGED, newState)
   }
 

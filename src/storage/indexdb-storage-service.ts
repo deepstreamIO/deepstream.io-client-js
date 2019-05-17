@@ -22,15 +22,13 @@ export class Storage implements RecordOfflineStore {
   private queuedRequests: Array<Request> = []
   private flushTimeout: NodeJS.Timeout | null = null
 
-  private indexedDB = window.indexedDB
-
   constructor (options: Options) {
-    if (typeof this.indexedDB === 'undefined' || this.indexedDB === null) {
+    if (typeof indexedDB === 'undefined' || indexedDB === null) {
       throw new Error('IndexDB currently not supported when deepstream in node')
     }
     this.flush = this.flush.bind(this)
 
-    const request = window.indexedDB.open(options.storageDatabaseName, 1)
+    const request = indexedDB.open(options.storageDatabaseName, 1)
     request.onerror = event => {
         // TODO: Workflow for lack of permissions to use indexDB
     }
@@ -77,7 +75,6 @@ export class Storage implements RecordOfflineStore {
                   const request = objectStore.get(recordName)
                   // The api doesn't support get errors yet!
                   request.onerror = (event: any) => {
-                      console.log(event)
                       throw new Error(`Requesting record ${recordName} failed`)
                   }
                   request.onsuccess = () => {

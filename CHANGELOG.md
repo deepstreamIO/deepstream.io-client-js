@@ -1,3 +1,7 @@
+# [4.0.0-rc.6] - 2019-05-17
+  
+Removing node-localstorage as a dependency, as its node only and doesn't play well with angular
+
 # [4.0.0-rc.3] - 2019-05-16
 
 This release adds indexDB. However its not in a stable state.
