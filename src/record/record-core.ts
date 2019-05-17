@@ -424,9 +424,13 @@ export class RecordCore<Context = null> extends Emitter {
         }
         this.data = {}
         this.version = 1
-        this.services.storage.set(this.name, this.version, this.data, error => {
-          this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-        })
+        // We do this sync in order to avoid the possibility of a race condition
+        // where connection is established while we are saving. We could introduce
+        // another transition but its probably overkill since we only set this
+        // in order to allow the possibility of this record being retrieved in the
+        // future to know its been created
+        this.services.storage.set(this.name, this.version, this.data, error => {})
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
       } else {
         this.data = data
         this.version = version

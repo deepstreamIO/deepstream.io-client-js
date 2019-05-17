@@ -1,4 +1,4 @@
-let UniformResourceLocator : any
+let UniformResourceLocator: any
 
 if (typeof URL === 'undefined') {
   UniformResourceLocator = require('url').URL
