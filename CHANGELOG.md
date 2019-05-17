@@ -1,10 +1,8 @@
-# [4.0.0-rc.8] - 2019-05-17
+# [4.0.0-rc.9] - 2019-05-17
 
+Seems like URL gets injected into node somehow, which means we don't want to reference window.URL
 Removing an async state transition to avoid issues when CPU intensive apps are started
-Removing an invalid error message  
-
-# [4.0.0-rc.7] - 2019-05-17
-  
+Removing an invalid error message in merge conflicts 
 Removing node-localstorage as a dependency, as its node only and doesn't play well with angular
 
 # [4.0.0-rc.3] - 2019-05-16

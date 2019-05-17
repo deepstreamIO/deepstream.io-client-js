@@ -3,7 +3,7 @@ let UniformResourceLocator: any
 if (typeof URL === 'undefined') {
   UniformResourceLocator = require('url').URL
 } else {
-  UniformResourceLocator = window.URL
+  UniformResourceLocator = URL
 }
 
 /**
