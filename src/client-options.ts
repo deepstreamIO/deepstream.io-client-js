@@ -97,10 +97,7 @@ export interface  Options {
      * Default: ./local-storage
      */
     nodeStoragePath: string,
-    /**
-     * storageDatabaseName database name
-     */
-    storageDatabaseName: string,
+
     /**
      * nodeStorageSize specifies maximum database size in megabytes
      * Default: 5
@@ -108,9 +105,29 @@ export interface  Options {
     nodeStorageSize: number
 
     /**
-     * blbalbla
+     * lazyConnect
      */
-    lazyConnect: boolean
+    lazyConnect: boolean,
+
+    indexdb: {
+        dbVersion: number,
+        /**
+         * storageDatabaseName database name
+         */
+        storageDatabaseName: string,
+        /**
+         * defaultObjectStoreName: string,
+         */
+        defaultObjectStoreName: string,
+        /**
+         * objectStoreNames
+         */
+        objectStoreNames: Array<string>,
+        /**
+         * flushTimeout
+         */
+        flushTimeout: number
+    }
 }
 
 export const DefaultOptions: Options = {
@@ -135,7 +152,13 @@ export const DefaultOptions: Options = {
     socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './local-storage',
-    storageDatabaseName: 'deepstream',
+    indexdb: {
+        dbVersion: 2,
+        storageDatabaseName: 'deepstream',
+        defaultObjectStoreName: 'records',
+        objectStoreNames: ['one', 'two', 'three'],
+        flushTimeout: 50
+    },
     nodeStorageSize: 5,
-    lazyConnect: false
+    lazyConnect: false,
 }
