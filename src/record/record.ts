@@ -116,7 +116,7 @@ export class Record extends Emitter  {
         for (let i = 0; i < this.subscriptions.length; i++) {
             this.record.unsubscribe(this.subscriptions[i])
         }
-        return this.record.removeReference(this)
+        this.record.removeReference(this)
     }
 
     public delete (callback?: (error: string | null) => void): void | Promise<void> {
