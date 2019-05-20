@@ -78,17 +78,17 @@ export const getServicesMock = () => {
     }
     public sendParsedMessage (message: Message): void {}
     public onparsedmessages (message: Array<Message>): void {}
-    public onopen (): void {}
+    public onopened (): void {}
     public onerror (): void {}
-    public onclose (): void {}
+    public onclosed (): void {}
     public close (): void {
-      process.nextTick(this.onclose)
+      process.nextTick(this.onclosed)
     }
     public simulateRemoteClose (): void {
       this.close()
     }
     public simulateOpen (): void {
-      process.nextTick(this.onopen)
+      process.nextTick(this.onopened)
     }
     public simulateError (): void {
       process.nextTick(this.onerror.bind(null, { code: 1234 }))

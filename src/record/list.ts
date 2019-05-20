@@ -13,6 +13,7 @@ export class List extends Emitter {
     private hasAddListener: boolean
     private hasRemoveListener: boolean
     private hasMoveListener: boolean
+    private subscriptions: Array<utils.RecordSubscribeArguments>
 
     constructor (record: RecordCore<List>) {
         super()
@@ -24,6 +25,8 @@ export class List extends Emitter {
         this.hasAddListener = false
         this.hasRemoveListener = false
         this.hasMoveListener = false
+
+        this.subscriptions = []
     }
 
     get name (): string {
@@ -48,6 +51,18 @@ export class List extends Emitter {
         }
     }
 
+    public discard (): void {
+      this.destroy()
+      this.record.discard()
+    }
+
+    public delete (callback: (error: string | null) => void): void
+    public delete (): Promise<void>
+    public delete (callback?: (error: string | null) => void): void | Promise<void> {
+      this.destroy()
+      return this.record.delete(callback)
+    }
+
     /**
      * Returns the array of list entries or an
      * empty array if the list hasn't been populated yet.
@@ -69,7 +84,7 @@ export class List extends Emitter {
         return this.getEntries().length === 0
     }
 
-        /**
+    /**
     * Updates the list with a new set of entries
     */
     public setEntriesWithAck (entries: Array<string>): Promise<void>
@@ -198,6 +213,8 @@ export class List extends Emitter {
         **/
         this.wrappedFunctions.set(parameters.callback, listCallback)
         parameters.callback = listCallback
+
+        this.subscriptions.push(parameters)
         this.record.subscribe(parameters)
     }
 
@@ -338,6 +355,13 @@ private applyUpdate  (message: RecordMessage) {
     }
 
     return structure
+  }
+
+  private destroy () {
+    for (let i = 0; i < this.subscriptions.length; i++) {
+      this.record.unsubscribe(this.subscriptions[i])
+    }
+    this.wrappedFunctions.clear()
   }
 
 }

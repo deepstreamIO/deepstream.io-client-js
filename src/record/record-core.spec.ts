@@ -11,30 +11,19 @@ import { spy, assert, match } from 'sinon'
 import { EVENT } from '../constants'
 
 describe('record core', () => {
-describe('online', () => {
+
+describe('online scenario, not individual tests', () => {
     let whenCompleted: sinon.SinonSpy
     let recordCore: RecordCore
     let options: Options
     let services: any
     let recordServices: any
+    const context = {} as any
 
     beforeEach(() => {
         whenCompleted = spy()
         services = getServicesMock()
         recordServices = getRecordServices(services)
-        options = { ...DefaultOptions, discardTimeout: 20, recordReadTimeout: 20 }
-
-        services.connection.isConnected = true
-        recordCore = new RecordCore(name, services, options, recordServices, whenCompleted)
-        services.connectionMock.restore()
-    })
-
-    afterEach(() => {
-        services.verify()
-    })
-
-    it('sends a subscribe create and read message if online when created', () => {
-        services.connection.isConnected = true
 
         services.connectionMock
             .expects('sendMessage')
@@ -45,7 +34,19 @@ describe('online', () => {
                 name
             })
 
+        services.storageMock
+            .expects('get')
+            .once()
+            .callsArgWith(1, name, -1, null)
+
+        options = { ...DefaultOptions, discardTimeout: 20, recordReadTimeout: 20, subscriptionInterval: -1 }
+
+        services.connection.isConnected = true
         recordCore = new RecordCore(name, services, options, recordServices, whenCompleted)
+    })
+
+    afterEach(() => {
+        services.verify()
     })
 
     it('doesn`t send updates before ready', () => {
@@ -65,7 +66,6 @@ describe('online', () => {
     })
 
     it('triggers ready callback on read response', () => {
-        const context = {} as any
         const readySpy = spy()
         recordCore.whenReady(context, readySpy)
         recordServices.readRegistry.recieve(READ_RESPONSE)
@@ -75,7 +75,6 @@ describe('online', () => {
     })
 
     it('triggers ready promise on read response', async () => {
-        const context = {} as any
         let readyContext = null
         const promise = recordCore.whenReady(context)
         promise.then(result => readyContext = result)

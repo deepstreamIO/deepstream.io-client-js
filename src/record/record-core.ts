@@ -126,7 +126,7 @@ export class RecordCore<Context = null> extends Emitter {
             /**
              * Record has never been created before
              */
-            this.stateMachine.transition(RA.SUBSCRIBE)
+            this.stateMachine.transition(RA.SUBSCRIBECREATEANDREAD)
           } else {
             this.version = version
             this.data = data
@@ -876,7 +876,7 @@ export class RecordCore<Context = null> extends Emitter {
 }
 
 const recordStateTransitions = [
-    { name: RA.SUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: RecordCore.prototype.onSubscribing },
+    { name: RA.SUBSCRIBECREATEANDREAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: RecordCore.prototype.onSubscribing },
     { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: RecordCore.prototype.onOfflineLoading },
     { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.abortOfflineLoading },
