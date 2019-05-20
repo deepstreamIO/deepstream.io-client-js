@@ -434,8 +434,6 @@ export class RecordHandler {
     if (!recordCore) {
       recordCore = new RecordCore(recordName, this.services, this.options, this.recordServices, this.removeRecord)
       this.recordCores.set(recordName, recordCore)
-    } else {
-      recordCore.usages++
     }
     return recordCore
   }
@@ -444,11 +442,13 @@ export class RecordHandler {
     this.dirtyService.whenLoaded(this, this._syncDirtyRecords)
   }
 
+  // TODO: Expose issues here, as there isn't a reason why a record core needs to exist in
+  // order to sync up
   private _syncDirtyRecords () {
     const dirtyRecords = this.dirtyService.getAll()
     for (const recordName in dirtyRecords) {
       const recordCore = this.recordCores.get(recordName)
-      if (recordCore && recordCore.usages > 0) {
+      if (recordCore && recordCore.references.size > 0) {
         // if it isn't zero.. problem.
         continue
       }

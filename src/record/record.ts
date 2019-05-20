@@ -15,6 +15,8 @@ export class Record extends Emitter  {
         this.record.on(EVENT.RECORD_DISCARDED, this.emit.bind(this, EVENT.RECORD_DISCARDED))
         this.record.on(EVENT.RECORD_DELETED, this.emit.bind(this, EVENT.RECORD_DELETED))
         this.record.on(EVENT.RECORD_ERROR, this.emit.bind(this, EVENT.RECORD_ERROR))
+
+        this.record.addReference(this)
     }
 
     get name (): string {
@@ -114,7 +116,7 @@ export class Record extends Emitter  {
         for (let i = 0; i < this.subscriptions.length; i++) {
             this.record.unsubscribe(this.subscriptions[i])
         }
-        return this.record.discard()
+        return this.record.removeReference(this)
     }
 
     public delete (callback?: (error: string | null) => void): void | Promise<void> {

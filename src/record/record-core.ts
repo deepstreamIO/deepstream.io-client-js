@@ -47,7 +47,7 @@ export class RecordCore<Context = null> extends Emitter {
   public hasProvider: boolean
   public version: number | null
 
-  public references: number
+  public references: Set<any> = new Set()
   public emitter: Emitter
   public data: RecordData
   public stateMachine: StateMachine
@@ -69,7 +69,6 @@ export class RecordCore<Context = null> extends Emitter {
     super()
     this.emitter = new Emitter()
     this.data = Object.create(null)
-    this.references = 1
     this.hasProvider = false
     this.pendingWrites = []
     this.isReady = false
@@ -106,18 +105,36 @@ export class RecordCore<Context = null> extends Emitter {
     return this.stateMachine.state
   }
 
-  set usages (usages: number) {
-    this.references = usages
-    if (this.references === 1) {
+  public addReference (ref: any) {
+    if (this.references.size === 0 && this.isReady) {
       this.services.timeoutRegistry.clear(this.discardTimeout!)
       this.services.timerRegistry.remove(this.readyTimer!)
       this.stateMachine.transition(RA.SUBSCRIBE)
     }
+    this.references.add(ref)
   }
 
-  get usages (): number {
-    return this.references
+  /**
+  * Removes all change listeners and notifies the server that the client is
+  * no longer interested in updates for this record
+  */
+ public removeReference (ref: any): void {
+  if (this.checkDestroyed('discard')) {
+    return
   }
+  this.whenReadyInternal(null, () => {
+    this.references.delete(ref)
+    if (this.references.size === 0) {
+      this.readyTimer = this.services.timerRegistry.add({
+        duration: this.options.recordReadTimeout,
+        callback: this.stateMachine.transition,
+        context: this.stateMachine,
+        data: RA.UNSUBSCRIBE_ACK
+      })
+    }
+  })
+  this.stateMachine.transition(RA.UNSUBSCRIBE)
+}
 
   private onDirtyServiceLoaded () {
       if (this.services.connection.isConnected) {
@@ -313,28 +330,6 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     this.emitter.off(args.path || '', args.callback)
-  }
-
-  /**
-  * Removes all change listeners and notifies the server that the client is
-  * no longer interested in updates for this record
-  */
-  public discard (): void {
-    if (this.checkDestroyed('discard')) {
-      return
-    }
-    this.whenReadyInternal(null, () => {
-      this.references--
-      if (this.references <= 0) {
-        this.readyTimer = this.services.timerRegistry.add({
-          duration: this.options.recordReadTimeout,
-          callback: this.stateMachine.transition,
-          context: this.stateMachine,
-          data: RA.UNSUBSCRIBE_ACK
-        })
-      }
-    })
-    this.stateMachine.transition(RA.UNSUBSCRIBE)
   }
 
   /**

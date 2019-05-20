@@ -20,7 +20,7 @@ describe('online scenario, not individual tests', () => {
     let recordServices: any
     const context = {} as any
 
-    beforeEach(() => {
+    beforeEach(function () {
         whenCompleted = spy()
         services = getServicesMock()
         recordServices = getRecordServices(services)
@@ -43,6 +43,7 @@ describe('online scenario, not individual tests', () => {
 
         services.connection.isConnected = true
         recordCore = new RecordCore(name, services, options, recordServices, whenCompleted)
+        recordCore.addReference(this)
     })
 
     afterEach(() => {
@@ -192,19 +193,19 @@ describe('online scenario, not individual tests', () => {
         recordCore.set({ path: 'firstname', callback: () => {} })
     })
 
-    it('queues discarding record when no longer needed', () => {
+    it('queues discarding record when no longer needed', function () {
         recordServices.readRegistry.recieve(READ_RESPONSE)
-        recordCore.discard()
+        recordCore.removeReference(this)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
 
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('removes pending discard when usages increases', async () => {
+    it('removes pending discard when usages increases', async function () {
         recordServices.readRegistry.recieve(READ_RESPONSE)
-        recordCore.discard()
-        recordCore.usages = 1
+        recordCore.removeReference(this)
+        recordCore.addReference({})
 
         await BBPromise.delay(30)
 
@@ -213,9 +214,9 @@ describe('online scenario, not individual tests', () => {
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('sends discard when unsubscribe timeout completed', async () => {
+    it('sends discard when unsubscribe timeout completed', async function () {
         recordServices.readRegistry.recieve(READ_RESPONSE)
-        recordCore.discard()
+        recordCore.removeReference(this)
 
         services.connectionMock
         .expects('sendMessage')
@@ -415,17 +416,17 @@ describe('record core offline', () => {
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE, name)
     })
 
-    it('queues discarding record when no longer needed', () => {
-        recordCore.discard()
+    it('queues discarding record when no longer needed', function () {
+        recordCore.removeReference(this)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
 
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('removes pending discard when usages increases', async () => {
-        recordCore.discard()
-        recordCore.usages++
+    it('removes pending discard when usages increases', async function () {
+        recordCore.removeReference(this)
+        recordCore.addReference({})
 
         await BBPromise.delay(30)
 
@@ -434,8 +435,8 @@ describe('record core offline', () => {
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('removes record when completed', async () => {
-        recordCore.discard()
+    it('removes record when completed', async function () {
+        recordCore.removeReference(this)
 
         await BBPromise.delay(40)
 

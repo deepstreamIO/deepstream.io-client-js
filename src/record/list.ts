@@ -27,6 +27,7 @@ export class List extends Emitter {
         this.hasMoveListener = false
 
         this.subscriptions = []
+        this.record.addReference(this)
     }
 
     get name (): string {
@@ -53,7 +54,7 @@ export class List extends Emitter {
 
     public discard (): void {
       this.destroy()
-      this.record.discard()
+      this.record.removeReference(this)
     }
 
     public delete (callback: (error: string | null) => void): void
