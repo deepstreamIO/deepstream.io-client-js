@@ -71,7 +71,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run tsc && npm t && npm run build"
+      "pre-commit": "npm t && npm run build"
     }
   },
   "nyc": {

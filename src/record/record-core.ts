@@ -43,43 +43,30 @@ export const enum RECORD_STATE {
 }
 
 export class RecordCore<Context = null> extends Emitter {
-  public isReady: boolean
-  public hasProvider: boolean
-  public version: number | null
+  public isReady: boolean = false
+  public hasProvider: boolean = false
+  public version: number | null = null
 
   public references: Set<any> = new Set()
-  public emitter: Emitter
-  public data: RecordData
+  public emitter: Emitter = new Emitter()
+  public data: RecordData = Object.create(null)
   public stateMachine: StateMachine
-  public responseTimeout: TimeoutId | null
-  public discardTimeout: TimeoutId | null
-  public deletedTimeout: TimeoutId | null
+  public responseTimeout: TimeoutId | null = null
+  public discardTimeout: TimeoutId | null = null
+  public deletedTimeout: TimeoutId | null = null
   public deleteResponse: {
     callback?: (error: string | null) => void,
     reject?: (error: string) => void,
     resolve?: () => void
-  } | null
-  public pendingWrites: Array<utils.RecordSetArguments>
-  public offlineLoadingAborted: boolean
-  public readyTimer: number
+  } | null = null
+  public pendingWrites: Array<utils.RecordSetArguments> = []
+  public offlineLoadingAborted: boolean = false
+  private readyTimer: number = -1
 
   public readyCallbacks: Array<{ context: any, callback: Function }> = []
 
   constructor (public name: string, public services: Services, public options: Options, public recordServices: RecordServices, public whenComplete: (recordName: string) => void) {
     super()
-    this.emitter = new Emitter()
-    this.data = Object.create(null)
-    this.hasProvider = false
-    this.pendingWrites = []
-    this.isReady = false
-
-    this.offlineLoadingAborted = false
-    this.version = null
-    this.responseTimeout = null
-    this.discardTimeout = null
-    this.deletedTimeout = null
-    this.readyTimer = -1
-    this.deleteResponse = null
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
@@ -122,17 +109,18 @@ export class RecordCore<Context = null> extends Emitter {
   if (this.checkDestroyed('discard')) {
     return
   }
-  this.whenReadyInternal(null, () => {
+
+  this.whenReadyInternal(ref, () => {
     this.references.delete(ref)
-    if (this.references.size === 0) {
+    if (this.references.size === 0 && this.readyTimer === -1) {
       this.readyTimer = this.services.timerRegistry.add({
         duration: this.options.recordReadTimeout,
         callback: this.stateMachine.transition,
         context: this.stateMachine,
         data: RA.UNSUBSCRIBE_ACK
       })
-      this.stateMachine.transition(RA.UNSUBSCRIBE)
     }
+    this.stateMachine.transition(RA.UNSUBSCRIBE)
   })
 }
 
@@ -410,7 +398,7 @@ export class RecordCore<Context = null> extends Emitter {
 
   public onOfflineLoading () {
     this.services.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
-      if (version === -1) {
+      if (version !== -1) {
         if (this.offlineLoadingAborted) {
             // This occurred since we got a connection to the server
             // meaning we no longer care about current state currently
@@ -424,11 +412,18 @@ export class RecordCore<Context = null> extends Emitter {
         // another transition but its probably overkill since we only set this
         // in order to allow the possibility of this record being retrieved in the
         // future to know its been created
-        this.services.storage.set(this.name, this.version, this.data, error => {})
+        // this.services.storage.set(this.name, this.version, this.data, error => {})
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
       } else {
         this.data = data
         this.version = version
+
+        if (this.offlineLoadingAborted) {
+            // This occurred since we got a connection to the server
+            // meaning we no longer care
+            this.offlineLoadingAborted = false
+            return
+        }
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
       }
     })
@@ -742,30 +737,26 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   /**
-   * If connected sends the delete message to server, otherwise
-   * we delete in local storage and transition to delete success.
    */
   private sendDelete (): void {
     this.whenReadyInternal(null, () => {
-      if (this.services.connection.isConnected) {
-        const message = {
-          topic: TOPIC.RECORD,
-          action: RA.DELETE,
-          name: this.name
-        }
-        this.deletedTimeout = this.services.timeoutRegistry.add({
-          message,
-          event: EVENT.RECORD_DELETE_TIMEOUT,
-          duration: this.options.recordDeleteTimeout
-        })
-        this.services.connection.sendMessage(message)
-      } else {
-        this.services.storage.delete(this.name, () => {
-          this.services.timerRegistry.requestIdleCallback(() => {
-            this.stateMachine.transition(RA.DELETE_SUCCESS)
+      this.services.storage.delete(this.name, () => {
+        if (this.services.connection.isConnected) {
+          const message = {
+            topic: TOPIC.RECORD,
+            action: RA.DELETE,
+            name: this.name
+          }
+          this.deletedTimeout = this.services.timeoutRegistry.add({
+            message,
+            event: EVENT.RECORD_DELETE_TIMEOUT,
+            duration: this.options.recordDeleteTimeout
           })
-        })
-      }
+          this.services.connection.sendMessage(message)
+        } else {
+          this.stateMachine.transition(RA.DELETE_SUCCESS)
+        }
+      })
     })
   }
 

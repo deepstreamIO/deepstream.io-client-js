@@ -198,7 +198,6 @@ describe('online scenario, not individual tests', () => {
         recordCore.removeReference(this)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
-
         expect(recordCore.isReady).to.equal(true)
     })
 
@@ -240,6 +239,11 @@ describe('online scenario, not individual tests', () => {
     it('sends delete when ready', async () => {
         recordServices.readRegistry.recieve(READ_RESPONSE)
 
+        services.storageMock
+        .expects('delete')
+        .once()
+        .callsArgWith(1)
+
         services.connectionMock
         .expects('sendMessage')
         .once()
@@ -260,6 +264,11 @@ describe('online scenario, not individual tests', () => {
 
     it('calls delete when delete is confirmed', async () => {
         recordServices.readRegistry.recieve(READ_RESPONSE)
+
+        services.storageMock
+        .expects('delete')
+        .once()
+        .callsArgWith(1)
 
         services.connectionMock
         .expects('sendMessage')

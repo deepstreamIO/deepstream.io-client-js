@@ -305,6 +305,10 @@ export class RecordHandler {
     this.sendSetData(recordName, -1, args)
   }
 
+  public delete (recordName: string, callback?: (error: string | null) => void): void | Promise<void> {
+    // TODO: Use a delete service to make the logic in record core and here common
+  }
+
   private sendSetData (recordName: string, version: number, args: utils.RecordSetArguments): void {
     const { path, data, callback } = args
     if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
