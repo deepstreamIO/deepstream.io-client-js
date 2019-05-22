@@ -45,7 +45,7 @@ export class Storage implements RecordOfflineStore {
 
         options.indexdb.objectStoreNames.forEach(objectStoreName => {
             if (!db.objectStoreNames.contains(objectStoreName)) {
-                db.createObjectStore(objectStoreName, { keyPath: 'name' })
+                db.createObjectStore(objectStoreName, { keyPath: this.options.indexdb.primaryKey })
             }
         })
     }
@@ -98,7 +98,7 @@ export class Storage implements RecordOfflineStore {
                     break
                 }
                 case Operation.SET: {
-                    const request = objectStore.put({ name: recordName, version, data })
+                    const request = objectStore.put({ [this.options.indexdb.primaryKey]: recordName, version, data })
                     request.onsuccess = () => callback(null)
                     request.onerror = (event: any) => callback(event.errorCode)
                     break

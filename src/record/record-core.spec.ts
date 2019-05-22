@@ -39,7 +39,7 @@ describe('online scenario, not individual tests', () => {
             .once()
             .callsArgWith(1, name, -1, null)
 
-        options = { ...DefaultOptions, discardTimeout: 20, recordReadTimeout: 20, subscriptionInterval: -1 }
+        options = { ...DefaultOptions, recordDiscardTimeout: 20, recordReadTimeout: 20, subscriptionInterval: -1 }
 
         services.connection.isConnected = true
         recordCore = new RecordCore(name, services, options, recordServices, whenCompleted)
@@ -321,7 +321,7 @@ describe('record core offline', () => {
         whenCompleted = spy()
         services = getServicesMock()
         recordServices = getRecordServices(services)
-        options = Object.assign({}, DefaultOptions, { discardTimeout: 20, recordReadTimeout: 20 })
+        options = Object.assign({}, DefaultOptions, { recordDiscardTimeout: 20, recordReadTimeout: 20 })
 
         services.connectionMock
             .expects('sendMessage')

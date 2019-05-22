@@ -96,6 +96,7 @@ export class RecordCore<Context = null> extends Emitter {
     if (this.references.size === 0 && this.isReady) {
       this.services.timeoutRegistry.clear(this.discardTimeout!)
       this.services.timerRegistry.remove(this.readyTimer!)
+      this.readyTimer = -1
       this.stateMachine.transition(RA.SUBSCRIBE)
     }
     this.references.add(ref)
@@ -114,7 +115,7 @@ export class RecordCore<Context = null> extends Emitter {
     this.references.delete(ref)
     if (this.references.size === 0 && this.readyTimer === -1) {
       this.readyTimer = this.services.timerRegistry.add({
-        duration: this.options.recordReadTimeout,
+        duration: this.options.recordDiscardTimeout,
         callback: this.stateMachine.transition,
         context: this.stateMachine,
         data: RA.UNSUBSCRIBE_ACK
