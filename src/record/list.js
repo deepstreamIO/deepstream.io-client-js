@@ -78,10 +78,13 @@ List.prototype.isEmpty = function () {
 /**
  * Updates the list with a new set of entries
  *
- * @public
  * @param {Array} entries
+ * @param {Function} [callback]
+ *
+ * @public
+ * @returns {void}
  */
-List.prototype.setEntries = function (entries) {
+List.prototype.setEntries = function (entries, callback) {
   const errorMsg = 'entries must be an array of record names'
   let i
 
@@ -96,26 +99,60 @@ List.prototype.setEntries = function (entries) {
   }
 
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.setEntries.bind(this, entries))
+    this._queuedMethods.push(this.setEntries.bind(this, entries, callback))
   } else {
     this._beforeChange()
-    this._record.set(entries)
+    if (callback) {
+      this._record.set(entries, callback)
+    } else {
+      this._record.set(entries)
+    }
     this._afterChange()
   }
+}
+
+/**
+ * Wrapper function around the list.setEntries that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {Array} entries
+ * @param {Function} callback
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.setEntriesWithAck = function (entries, callback) {
+  if (callback) {
+    return this.setEntries(entries, callback)
+  }
+  return new Promise((resolve, reject) => {
+    this.setEntries(entries, error => (
+      error === null ? resolve() : reject(error)
+    ))
+  })
 }
 
 /**
  * Removes an entry from the list
  *
  * @param {String} entry
- * @param {Number} [index]
+ * @param {Number} [indexOrCallback]
+ * @param {Function} [callback]
  *
  * @public
  * @returns {void}
  */
-List.prototype.removeEntry = function (entry, index) {
+List.prototype.removeEntry = function (entry, indexOrCallback, callback) {
+  let index = indexOrCallback
+  let cb = callback
+  if (typeof indexOrCallback === 'function') {
+    cb = indexOrCallback
+    index = undefined
+  }
+
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.removeEntry.bind(this, entry, index))
+    this._queuedMethods.push(this.removeEntry.bind(this, entry, index, cb))
     return
   }
 
@@ -129,27 +166,66 @@ List.prototype.removeEntry = function (entry, index) {
       entries.push(currentEntries[i])
     }
   }
+
   this._beforeChange()
-  this._record.set(entries)
+  if (cb) {
+    this._record.set(entries, cb)
+  } else {
+    this._record.set(entries)
+  }
   this._afterChange()
+}
+
+/**
+ * Wrapper function around the list.removeEntry that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String} entry
+ * @param {Number|Function} [indexOrCallback]
+ * @param {Function} [callback]
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.removeEntryWithAck = function (entry, indexOrCallback, callback) {
+  if (typeof indexOrCallback === 'number' && callback) {
+    return this.removeEntry(entry, indexOrCallback, callback)
+  }
+  if (typeof indexOrCallback === 'function') {
+    return this.removeEntry(entry, indexOrCallback)
+  }
+  return new Promise((resolve, reject) => {
+    this.removeEntry(entry, indexOrCallback, error => (
+      error === null ? resolve() : reject(error)
+    ))
+  })
 }
 
 /**
  * Adds an entry to the list
  *
  * @param {String} entry
- * @param {Number} [index]
+ * @param {Number|Function} [indexOrCallback]
+ * @param {Function} [callback]
  *
  * @public
  * @returns {void}
  */
-List.prototype.addEntry = function (entry, index) {
+List.prototype.addEntry = function (entry, indexOrCallback, callback) {
   if (typeof entry !== 'string') {
     throw new Error('Entry must be a recordName')
   }
 
+  let index = indexOrCallback
+  let cb = callback
+  if (typeof indexOrCallback === 'function') {
+    cb = indexOrCallback
+    index = undefined
+  }
+
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.addEntry.bind(this, entry, index))
+    this._queuedMethods.push(this.addEntry.bind(this, entry, index, cb))
     return
   }
 
@@ -160,9 +236,40 @@ List.prototype.addEntry = function (entry, index) {
   } else {
     entries.push(entry)
   }
+
   this._beforeChange()
-  this._record.set(entries)
+  if (cb) {
+    this._record.set(entries, cb)
+  } else {
+    this._record.set(entries)
+  }
   this._afterChange()
+}
+
+/**
+ * Wrapper function around the list.addEntry that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String} entry
+ * @param {Number|Function} [index]
+ * @param {Function} callback
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.addEntryWithAck = function (entry, indexOrCallback, callback) {
+  if (typeof indexOrCallback === 'number' && callback) {
+    return this.addEntry(entry, indexOrCallback, callback)
+  }
+  if (typeof indexOrCallback === 'function') {
+    return this.addEntry(entry, indexOrCallback)
+  }
+  return new Promise((resolve, reject) => {
+    this.addEntry(entry, indexOrCallback, error => (
+      error === null ? resolve() : reject(error)
+    ))
+  })
 }
 
 /**

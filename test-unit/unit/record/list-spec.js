@@ -6,13 +6,14 @@ let List = require('../../../src/record/list'),
   ClientMock = require('../../mocks/client-mock'),
   ConnectionMock = require('../../mocks/message/connection-mock'),
   msg = require('../../test-helper/test-helper').msg,
-  options = {}
+  options = { recordReadAckTimeout: 100, recordReadTimeout: 200 }
 
 describe('lists contain arrays of record names', () => {
   let list,
     recordHandler = new RecordHandler(options, new ConnectionMock(), new ClientMock()),
     readyCallback = jasmine.createSpy('ready'),
-    changeCallback = jasmine.createSpy('change')
+    changeCallback = jasmine.createSpy('change'),
+    setCallback = jasmine.createSpy('set')
 
   it('creates the list', () => {
     list = new List(recordHandler, 'someList', {})
@@ -126,5 +127,60 @@ describe('lists contain arrays of record names', () => {
     list._record.isReady = true
     list._onReady()
     expect(list.getEntries()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('sets the entire list with callback', () => {
+    expect(list.setEntriesWithAck(['u', 'v'], setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|18|["u","v"]|{"writeSuccess":true}+'))
+  })
+
+  it('sets the entire list with promise', () => {
+    const promise = list.setEntriesWithAck(['v', 'w'])
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|19|["v","w"]|{"writeSuccess":true}+'))
+  })
+
+  it('adds an entry to the end of list with a callback', () => {
+    expect(list.addEntryWithAck('x', setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|20|["v","w","x"]|{"writeSuccess":true}+'))
+  })
+
+  it('adds an entry to the end of list with a promise', () => {
+    const promise = list.addEntryWithAck('y')
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|21|["v","w","x","y"]|{"writeSuccess":true}+'))
+  })
+
+  it('adds an entry to the list on an explicit index with a callback', () => {
+    expect(list.addEntryWithAck('u', 0, setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|22|["u","v","w","x","y"]|{"writeSuccess":true}+'))
+  })
+
+  it('adds an entry to the list at an explicit index with promise', () => {
+    const promise = list.addEntryWithAck('t', 0)
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|23|["t","u","v","w","x","y"]|{"writeSuccess":true}+'))
+  })
+
+  it('removes an entry from the list with a callback', () => {
+    expect(list.removeEntryWithAck('x', setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|24|["t","u","v","w","y"]|{"writeSuccess":true}+'))
+  })
+
+  it('removes an entry from the list with a promise', () => {
+    const promise = list.removeEntryWithAck('y')
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|25|["t","u","v","w"]|{"writeSuccess":true}+'))
+  })
+
+  it('removes an entry from the list on an explicit index with a callback', () => {
+    expect(list.removeEntryWithAck('t', 0, setCallback)).toBeUndefined()
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|26|["u","v","w"]|{"writeSuccess":true}+'))
+  })
+
+  it('removes an entry from the list on an explicit index with a promise', () => {
+    const promise = list.removeEntryWithAck('w', 2)
+    expect(promise instanceof Promise).toBe(true)
+    expect(recordHandler._connection.lastSendMessage).toBe(msg('R|U|someList|27|["u","v"]|{"writeSuccess":true}+'))
   })
 })
