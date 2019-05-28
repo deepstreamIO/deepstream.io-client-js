@@ -1,3 +1,7 @@
+# [4.0.0-rc.18] - 2019-05-28
+  
+- Adding `excludeRecordOfflineStorage` to ignore certain records from being saved into storage
+
 # [4.0.0-rc.17] - 2019-05-28
 
 - Adding the ability to save each update as it comes from the server.
