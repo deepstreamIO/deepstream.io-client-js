@@ -54,13 +54,12 @@ export class Client extends EventEmitter {
   constructor (url: string, options: Partial<Options> = {}) {
     super()
     this.options = { ...DefaultOptions, ...options } as Options
-    // @ts-ignore
-    const services: Services = {}
+    const services: Partial<Services> = {}
     services.logger = new Logger(this)
     services.timerRegistry = new TimerRegistry(this.options.timerResolution)
-    services.timeoutRegistry = new TimeoutRegistry(services, this.options)
+    services.timeoutRegistry = new TimeoutRegistry(services as Services, this.options)
     services.socketFactory = this.options.socketFactory || socketFactory
-    services.connection = new Connection(services, this.options, url, this)
+    services.connection = new Connection(services as Services, this.options, url, this)
     if (this.options.offlineEnabled) {
       services.storage = this.options.storage || new Storage(this.options)
     } else {
