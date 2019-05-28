@@ -19,12 +19,13 @@ export class DirtyService {
   }
 
   public setDirty (recordName: string, isDirty: boolean): void {
+    let changed = true
     if (isDirty) {
       this.dirtyRecords.set(recordName, true)
     } else {
-      this.dirtyRecords.delete(recordName)
+      changed = this.dirtyRecords.delete(recordName)
     }
-    if (!this.flushTimeout) {
+    if (!this.flushTimeout && changed) {
       this.flushTimeout = setTimeout(this.save, 1000)
     }
   }

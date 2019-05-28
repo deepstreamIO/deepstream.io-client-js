@@ -64,6 +64,7 @@ export class RecordCore<Context = null> extends Emitter {
   private readyTimer: number = -1
 
   public readyCallbacks: Array<{ context: any, callback: Function }> = []
+  private excludeRecordOfflineStorage: boolean = false
 
   constructor (public name: string, public services: Services, public options: Options, public recordServices: RecordServices, public whenComplete: (recordName: string) => void) {
     super()
@@ -71,6 +72,8 @@ export class RecordCore<Context = null> extends Emitter {
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
     }
+
+    this.excludeRecordOfflineStorage = this.options.ignoreOfflineRecordPrefixes.some(prefix => this.name.startsWith(prefix))
 
     this.onConnectionLost = this.onConnectionLost.bind(this)
     this.onConnectionReestablished = this.onConnectionReestablished.bind(this)
@@ -364,7 +367,9 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public saveRecordToOffline (callback: offlineStoreWriteResponse = () => {}): void  {
-    this.services.storage.set(this.name, this.version as number, this.data, callback)
+    if (!this.excludeRecordOfflineStorage) {
+      this.services.storage.set(this.name, this.version as number, this.data, callback)
+    }
   }
 
   /**
@@ -637,6 +642,9 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public saveUpdate (): void {
+    if (this.excludeRecordOfflineStorage) {
+      return
+    }
     if (!this.recordServices.dirtyService.isDirty(this.name)) {
       (this.version as number)++
       this.recordServices.dirtyService.setDirty(this.name, true)
