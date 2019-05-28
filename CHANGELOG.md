@@ -1,3 +1,7 @@
+# [4.0.0-rc.16] - 2019-05-28
+
+- Changing npm to use deepstream org
+
 # [4.0.0-rc.12] - 2019-05-17
 
 - Firing the change event on records before transitioning results in the state machine not
