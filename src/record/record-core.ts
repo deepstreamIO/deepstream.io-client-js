@@ -579,7 +579,13 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
     this.version = message.version as number
+    this.data = message.parsedData
+
     this.stateMachine.transition(RA.READ_RESPONSE)
+
+    // We temporarily reset the data in order to allow the change callback
+    // to trigger all the subscriptions on the first response.
+    this.data = null
     this.applyChange(setPath(this.data, null, message.parsedData))
   }
 

@@ -1,5 +1,6 @@
-# [4.0.0-rc.20] - 2019-05-28
+# [4.0.0-rc.21] - 2019-05-28
 
+- Fixing a race condition where ready is triggered without setting the data first
 - Adding ability to ignore saving records in indexdb  
 - Adding the ability to save each update as it comes from the server.
 - Save records to storage before they are discarded
