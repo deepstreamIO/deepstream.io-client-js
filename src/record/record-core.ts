@@ -585,7 +585,7 @@ export class RecordCore<Context = null> extends Emitter {
 
     // We temporarily reset the data in order to allow the change callback
     // to trigger all the subscriptions on the first response.
-    this.data = null
+    this.data = {}
     this.applyChange(setPath(this.data, null, message.parsedData))
   }
 

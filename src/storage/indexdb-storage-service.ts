@@ -48,6 +48,12 @@ export class Storage implements RecordOfflineStore {
                 db.createObjectStore(objectStoreName, { keyPath: this.options.indexdb.primaryKey })
             }
         })
+
+        for (let i = 0; i < db.objectStoreNames.length; i++) {
+            if (options.indexdb.objectStoreNames.includes(db.objectStoreNames[i]) === false) {
+                db.deleteObjectStore(db.objectStoreNames[i])
+            }
+        }
     }
   }
 

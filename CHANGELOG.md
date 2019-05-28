@@ -1,5 +1,6 @@
-# [4.0.0-rc.21] - 2019-05-28
+# [4.0.0-rc.22] - 2019-05-28
 
+- Delete collections from indexdb if no longer in objectStoreList
 - Fixing a race condition where ready is triggered without setting the data first
 - Adding ability to ignore saving records in indexdb  
 - Adding the ability to save each update as it comes from the server.
