@@ -6,7 +6,6 @@ export interface  Options {
     subscriptionInterval: number,
     offlineEnabled: boolean,
     saveUpdatesOffline: boolean,
-    ignoreOfflineRecordPrefixes: Array<string>,
     storage?: RecordOfflineStore,
 
     socketFactory?: (url: string, options: any) => Socket
@@ -127,10 +126,11 @@ export interface  Options {
          * objectStoreNames
          */
         objectStoreNames: Array<string>,
+        ignorePrefixes: Array<string>,
         /**
          * flushTimeout
          */
-        flushTimeout: number
+        flushTimeout: number,
     }
 }
 
@@ -139,7 +139,6 @@ export const DefaultOptions: Options = {
     subscriptionInterval: 100,
     offlineEnabled: false,
     saveUpdatesOffline: false,
-    ignoreOfflineRecordPrefixes: [],
     heartbeatInterval: 30000,
     reconnectIntervalIncrement: 4000,
     maxReconnectInterval: 180000,
@@ -164,6 +163,7 @@ export const DefaultOptions: Options = {
         storageDatabaseName: 'deepstream',
         defaultObjectStoreName: 'records',
         objectStoreNames: [],
+        ignorePrefixes: [],
         flushTimeout: 50
     },
     nodeStorageSize: 5,

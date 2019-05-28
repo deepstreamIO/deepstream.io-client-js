@@ -52,14 +52,32 @@ export class Storage implements RecordOfflineStore {
   }
 
   public get (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) {
+    const ignore = this.options.indexdb.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    if (ignore) {
+        callback(recordName, -1, null)
+        return
+    }
+
     this.insertRequest({ recordName, callback, operation: Operation.GET })
   }
 
   public set (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) {
+    const ignore = this.options.indexdb.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    if (ignore) {
+        callback(null, recordName)
+        return
+    }
+
     this.insertRequest({ recordName, version, callback, data, operation: Operation.SET })
   }
 
   public delete (recordName: string, callback: offlineStoreWriteResponse) {
+    const ignore = this.options.indexdb.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    if (ignore) {
+        callback(null, recordName)
+        return
+    }
+
     this.insertRequest({ recordName, callback, operation: Operation.DELETE })
   }
 

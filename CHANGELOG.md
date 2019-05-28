@@ -1,14 +1,8 @@
-# [4.0.0-rc.18] - 2019-05-28
-  
-- Adding `excludeRecordOfflineStorage` to ignore certain records from being saved into storage
+# [4.0.0-rc.20] - 2019-05-28
 
-# [4.0.0-rc.17] - 2019-05-28
-
+- Adding ability to ignore saving records in indexdb  
 - Adding the ability to save each update as it comes from the server.
 - Save records to storage before they are discarded
-
-# [4.0.0-rc.16] - 2019-05-28
-
 - Changing npm to use deepstream org
 
 # [4.0.0-rc.12] - 2019-05-17

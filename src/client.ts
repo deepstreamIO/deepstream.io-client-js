@@ -14,7 +14,7 @@ import {RecordData, JSONObject, Message} from '../binary-protocol/src/message-co
 import { Storage } from './storage/indexdb-storage-service'
 import { NoopStorage } from './storage/noop-storage-service'
 
-export type offlineStoreWriteResponse = ((error: string | null) => void)
+export type offlineStoreWriteResponse = ((error: string | null, recordName: string) => void)
 
 export interface RecordOfflineStore {
   isReady: boolean,
