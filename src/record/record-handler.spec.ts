@@ -350,7 +350,6 @@ describe('Record handler', () => {
       it('throws error for invalid arguments', () => {
         expect(recordHandler.setData.bind(recordHandler)).to.throw()
         expect(recordHandler.setData.bind(recordHandler, name)).to.throw()
-
         // @ts-ignore
         expect(recordHandler.setData.bind(recordHandler, name, undefined)).to.throw()
         // @ts-ignore

@@ -226,6 +226,11 @@ describe('online scenario, not individual tests', () => {
             name
         })
 
+        services.storageMock
+        .expects('set')
+        .once()
+        .callsArgWith(3, null)
+
         await BBPromise.delay(30)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBED)
@@ -444,7 +449,12 @@ describe('record core offline', () => {
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('removes record when completed', async function () {
+    it('removes record when discarded and timeout passed', async function () {
+        services.storageMock
+            .expects('set')
+            .once()
+            .callsArgWith(3, null)
+
         recordCore.removeReference(this)
 
         await BBPromise.delay(40)

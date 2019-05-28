@@ -1,4 +1,4 @@
-import { Services } from '../client'
+import { Services, offlineStoreWriteResponse } from '../client'
 import { Options } from '../client-options'
 import { EVENT } from '../constants'
 import { MergeStrategy } from './merge-strategy'
@@ -182,16 +182,16 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   /**
- * Sets the value of either the entire dataset
- * or of a specific path within the record
- * and submits the changes to the server
- *
- * If the new data is equal to the current data, nothing will happen
- *
- * @param {[String|Object]} pathOrData Either a JSON path when called with
- *                                     two arguments or the data itself
- * @param {Object} data     The data that should be stored in the record
- */
+   * Sets the value of either the entire dataset
+   * or of a specific path within the record
+   * and submits the changes to the server
+   *
+   * If the new data is equal to the current data, nothing will happen
+   *
+   * @param {[String|Object]} pathOrData Either a JSON path when called with
+   *                                     two arguments or the data itself
+   * @param {Object} data     The data that should be stored in the record
+   */
   public set ({ path, data, callback }: utils.RecordSetArguments): void {
     if (!path && (data === null || typeof data !== 'object')) {
       throw new Error('invalid arguments, scalar values cannot be set without path')
@@ -363,8 +363,8 @@ export class RecordCore<Context = null> extends Emitter {
     this.recordServices.mergeStrategy.setMergeStrategyByName(this.name, mergeStrategy)
   }
 
-  public saveRecordToOffline (): void  {
-    this.services.storage.set(this.name, this.version as number, this.data, () => {})
+  public saveRecordToOffline (callback: offlineStoreWriteResponse = () => {}): void  {
+    this.services.storage.set(this.name, this.version as number, this.data, callback)
   }
 
   /**
@@ -431,8 +431,8 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public abortOfflineLoading (): void {
-      this.offlineLoadingAborted = true
-      this.onResubscribing()
+    this.offlineLoadingAborted = true
+    this.onResubscribing()
   }
 
   public onReady (): void {
@@ -488,7 +488,13 @@ export class RecordCore<Context = null> extends Emitter {
       this.services.connection.sendMessage(message)
     }
     this.emit(EVENT.RECORD_DISCARDED)
-    this.destroy()
+    try {
+      this.saveRecordToOffline(() => {
+        this.destroy()
+      })
+    } catch (e) {
+      console.log('huh', e)
+    }
   }
 
   public onDeleted (): void {
@@ -725,6 +731,10 @@ export class RecordCore<Context = null> extends Emitter {
 
     const oldData = this.data
     this.data = newData
+
+    if (this.options.saveUpdatesOffline) {
+      this.saveRecordToOffline()
+    }
 
     const paths = this.emitter.eventNames()
     for (let i = 0; i < paths.length; i++) {

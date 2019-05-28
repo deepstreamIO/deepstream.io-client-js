@@ -351,6 +351,10 @@ export class RecordHandler {
     }
   }
 
+  public saveToOfflineStorage () {
+    this.recordCores.forEach(recordCore => recordCore.saveRecordToOffline())
+  }
+
   /**
    * Will be called by the client for incoming messages on the RECORD topic
    *

@@ -5,6 +5,7 @@ export interface  Options {
     timerResolution: number,
     subscriptionInterval: number,
     offlineEnabled: boolean,
+    saveUpdatesOffline: boolean,
     storage?: RecordOfflineStore,
 
     socketFactory?: (url: string, options: any) => Socket
@@ -92,6 +93,7 @@ export interface  Options {
      * Default: __ds__dirty_records
      */
     dirtyStorageName: string,
+
     /**
      * nodeStoragePath specifies the disk location to save records
      * Default: ./local-storage
@@ -135,6 +137,7 @@ export const DefaultOptions: Options = {
     timerResolution: 50,
     subscriptionInterval: 100,
     offlineEnabled: false,
+    saveUpdatesOffline: false,
     heartbeatInterval: 30000,
     reconnectIntervalIncrement: 4000,
     maxReconnectInterval: 180000,
