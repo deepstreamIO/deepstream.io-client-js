@@ -3,14 +3,19 @@ import { Options } from '../client-options'
 import {RecordData} from '../../binary-protocol/src/message-constants'
 
 export class Storage implements RecordOfflineStore {
+  public isReady = true
   private storage: any
 
   constructor (options: Options) {
     if (typeof localStorage === 'undefined' || localStorage === null) {
-      const LocalStorage = require('node-localstorage').LocalStorage
-      this.storage = new LocalStorage(options.nodeStoragePath, options.nodeStorageSize * 1024 * 1024)
+      try {
+        const LocalStorage = require('node-localstorage').LocalStorage
+        this.storage = new LocalStorage(options.nodeStoragePath, options.nodeStorageSize * 1024 * 1024)
+      } catch (e) {
+        throw new Error('Attempting to use localStorage outside of browser without node-localstorage polyfill')
+      }
     } else {
-      this.storage = window.localStorage
+      this.storage = localStorage
     }
   }
 

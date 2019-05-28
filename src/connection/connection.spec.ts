@@ -595,7 +595,7 @@ describe('connection', () => {
 
   async function reconnectToInitialServer () {
     socketMock
-      .expects('onopen')
+      .expects('onopened')
       .once()
 
     socketMock

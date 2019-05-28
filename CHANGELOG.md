@@ -1,3 +1,30 @@
+# [4.0.0-rc.16] - 2019-05-28
+
+- Changing npm to use deepstream org
+
+# [4.0.0-rc.12] - 2019-05-17
+
+- Firing the change event on records before transitioning results in the state machine not
+working as expected when doing something like our initial API usage in 2.0 days
+
+```
+const record = ds.record.get(name)
+record.subscribe(() => {
+  // do something
+  record.discard()
+  // oh no! we never entered the ready state =(
+})
+```
+
+- Seems like URL gets injected into node somehow, which means we don't want to reference window.URL
+- Removing an async state transition to avoid issues when CPU intensive apps are started
+- Removing an invalid error message in merge conflicts 
+- Removing node-localstorage as a dependency, as its node only and doesn't play well with angular
+
+# [4.0.0-rc.3] - 2019-05-16
+
+This release adds indexDB. However its not in a stable state.
+
 # [4.0.0-rc.3] - 2019-05-05
 
 This release includes bulk subscriptions, which allow thousands of records to be subscribed to with a single message,

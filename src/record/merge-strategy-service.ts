@@ -51,6 +51,7 @@ export class MergeStrategyService {
       this.defaultStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
         callback.call(context, error, recordName, data, remoteVersion, remoteData, localVersion, localData)
       })
+      return
     }
 
     this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, recordName })

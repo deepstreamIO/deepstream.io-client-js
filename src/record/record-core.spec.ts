@@ -11,30 +11,19 @@ import { spy, assert, match } from 'sinon'
 import { EVENT } from '../constants'
 
 describe('record core', () => {
-describe('online', () => {
+
+describe('online scenario, not individual tests', () => {
     let whenCompleted: sinon.SinonSpy
     let recordCore: RecordCore
     let options: Options
     let services: any
     let recordServices: any
+    const context = {} as any
 
-    beforeEach(() => {
+    beforeEach(function () {
         whenCompleted = spy()
         services = getServicesMock()
         recordServices = getRecordServices(services)
-        options = { ...DefaultOptions, discardTimeout: 20, recordReadTimeout: 20 }
-
-        services.connection.isConnected = true
-        recordCore = new RecordCore(name, services, options, recordServices, whenCompleted)
-        services.connectionMock.restore()
-    })
-
-    afterEach(() => {
-        services.verify()
-    })
-
-    it('sends a subscribe create and read message if online when created', () => {
-        services.connection.isConnected = true
 
         services.connectionMock
             .expects('sendMessage')
@@ -45,7 +34,20 @@ describe('online', () => {
                 name
             })
 
+        services.storageMock
+            .expects('get')
+            .once()
+            .callsArgWith(1, name, -1, null)
+
+        options = { ...DefaultOptions, recordDiscardTimeout: 20, recordReadTimeout: 20, subscriptionInterval: -1 }
+
+        services.connection.isConnected = true
         recordCore = new RecordCore(name, services, options, recordServices, whenCompleted)
+        recordCore.addReference(this)
+    })
+
+    afterEach(() => {
+        services.verify()
     })
 
     it('doesn`t send updates before ready', () => {
@@ -65,7 +67,6 @@ describe('online', () => {
     })
 
     it('triggers ready callback on read response', () => {
-        const context = {} as any
         const readySpy = spy()
         recordCore.whenReady(context, readySpy)
         recordServices.readRegistry.recieve(READ_RESPONSE)
@@ -75,7 +76,6 @@ describe('online', () => {
     })
 
     it('triggers ready promise on read response', async () => {
-        const context = {} as any
         let readyContext = null
         const promise = recordCore.whenReady(context)
         promise.then(result => readyContext = result)
@@ -193,19 +193,18 @@ describe('online', () => {
         recordCore.set({ path: 'firstname', callback: () => {} })
     })
 
-    it('queues discarding record when no longer needed', () => {
+    it('queues discarding record when no longer needed', function () {
         recordServices.readRegistry.recieve(READ_RESPONSE)
-        recordCore.discard()
+        recordCore.removeReference(this)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
-
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('removes pending discard when usages increases', async () => {
+    it('removes pending discard when usages increases', async function () {
         recordServices.readRegistry.recieve(READ_RESPONSE)
-        recordCore.discard()
-        recordCore.usages = 1
+        recordCore.removeReference(this)
+        recordCore.addReference({})
 
         await BBPromise.delay(30)
 
@@ -214,9 +213,9 @@ describe('online', () => {
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('sends discard when unsubscribe timeout completed', async () => {
+    it('sends discard when unsubscribe timeout completed', async function () {
         recordServices.readRegistry.recieve(READ_RESPONSE)
-        recordCore.discard()
+        recordCore.removeReference(this)
 
         services.connectionMock
         .expects('sendMessage')
@@ -240,6 +239,11 @@ describe('online', () => {
     it('sends delete when ready', async () => {
         recordServices.readRegistry.recieve(READ_RESPONSE)
 
+        services.storageMock
+        .expects('delete')
+        .once()
+        .callsArgWith(1)
+
         services.connectionMock
         .expects('sendMessage')
         .once()
@@ -260,6 +264,11 @@ describe('online', () => {
 
     it('calls delete when delete is confirmed', async () => {
         recordServices.readRegistry.recieve(READ_RESPONSE)
+
+        services.storageMock
+        .expects('delete')
+        .once()
+        .callsArgWith(1)
 
         services.connectionMock
         .expects('sendMessage')
@@ -312,7 +321,7 @@ describe('record core offline', () => {
         whenCompleted = spy()
         services = getServicesMock()
         recordServices = getRecordServices(services)
-        options = Object.assign({}, DefaultOptions, { discardTimeout: 20, recordReadTimeout: 20 })
+        options = Object.assign({}, DefaultOptions, { recordDiscardTimeout: 20, recordReadTimeout: 20 })
 
         services.connectionMock
             .expects('sendMessage')
@@ -416,17 +425,17 @@ describe('record core offline', () => {
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE, name)
     })
 
-    it('queues discarding record when no longer needed', () => {
-        recordCore.discard()
+    it('queues discarding record when no longer needed', function () {
+        recordCore.removeReference(this)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBING)
 
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('removes pending discard when usages increases', async () => {
-        recordCore.discard()
-        recordCore.usages++
+    it('removes pending discard when usages increases', async function () {
+        recordCore.removeReference(this)
+        recordCore.addReference({})
 
         await BBPromise.delay(30)
 
@@ -435,8 +444,8 @@ describe('record core offline', () => {
         expect(recordCore.isReady).to.equal(true)
     })
 
-    it('removes record when completed', async () => {
-        recordCore.discard()
+    it('removes record when completed', async function () {
+        recordCore.removeReference(this)
 
         await BBPromise.delay(40)
 

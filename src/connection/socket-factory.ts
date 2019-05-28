@@ -16,6 +16,8 @@ export const socketFactory: SocketFactory = (url, options, heartBeatInterval) =>
         socket.binaryType = 'arraybuffer'
     }
 
+    const pingMessage = getMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTIONS.PING }, false)
+    let pingInterval: NodeJS.Timeout | null = null
     let lastRecievedMessageTimestamp = -1
 
     // tslint:disable-next-line:no-empty
@@ -42,16 +44,25 @@ export const socketFactory: SocketFactory = (url, options, heartBeatInterval) =>
         socket.send(getMessage(message, false))
     }
 
-    const pingMessage = getMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTIONS.PING }, false)
-    const pingInterval = setInterval(() => {
-        if (Date.now() - lastRecievedMessageTimestamp > heartBeatInterval) {
-            try {
-                socket.send(pingMessage)
-            } catch (e) {
-                clearTimeout(pingInterval)
+    socket.onclosed = null
+    socket.onclose = () => {
+        clearInterval(pingInterval!)
+        socket.onclosed()
+    }
+
+    socket.onopened = null
+    socket.onopen = () => {
+        pingInterval = setInterval(() => {
+            if (Date.now() - lastRecievedMessageTimestamp > heartBeatInterval) {
+                try {
+                    socket.send(pingMessage)
+                } catch (e) {
+                    clearTimeout(pingInterval!)
+                }
             }
-        }
-    }, heartBeatInterval)
+        }, heartBeatInterval)
+        socket.onopened()
+    }
 
     return socket
 }

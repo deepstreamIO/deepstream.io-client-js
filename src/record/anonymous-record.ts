@@ -58,6 +58,7 @@ export class AnonymousRecord extends Emitter  {
         this.discard()
 
         this.record = this.getRecordCore(recordName)
+        this.record.addReference(this)
 
         for (let i = 0; i < this.subscriptions.length; i++) {
           this.record.subscribe(this.subscriptions[i])
@@ -132,7 +133,7 @@ export class AnonymousRecord extends Emitter  {
             for (let i = 0; i < this.subscriptions.length; i++) {
                 this.record.unsubscribe(this.subscriptions[i])
             }
-            return this.record.discard()
+            return this.record.removeReference(this)
         }
     }
 

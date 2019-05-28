@@ -43,44 +43,30 @@ export const enum RECORD_STATE {
 }
 
 export class RecordCore<Context = null> extends Emitter {
-  public isReady: boolean
-  public hasProvider: boolean
-  public version: number | null
+  public isReady: boolean = false
+  public hasProvider: boolean = false
+  public version: number | null = null
 
-  public references: number
-  public emitter: Emitter
-  public data: RecordData
+  public references: Set<any> = new Set()
+  public emitter: Emitter = new Emitter()
+  public data: RecordData = Object.create(null)
   public stateMachine: StateMachine
-  public responseTimeout: TimeoutId | null
-  public discardTimeout: TimeoutId | null
-  public deletedTimeout: TimeoutId | null
+  public responseTimeout: TimeoutId | null = null
+  public discardTimeout: TimeoutId | null = null
+  public deletedTimeout: TimeoutId | null = null
   public deleteResponse: {
     callback?: (error: string | null) => void,
     reject?: (error: string) => void,
     resolve?: () => void
-  } | null
-  public pendingWrites: Array<utils.RecordSetArguments>
-  public offlineLoadingAborted: boolean
-  public readyTimer: number
+  } | null = null
+  public pendingWrites: Array<utils.RecordSetArguments> = []
+  public offlineLoadingAborted: boolean = false
+  private readyTimer: number = -1
 
   public readyCallbacks: Array<{ context: any, callback: Function }> = []
 
   constructor (public name: string, public services: Services, public options: Options, public recordServices: RecordServices, public whenComplete: (recordName: string) => void) {
     super()
-    this.emitter = new Emitter()
-    this.data = Object.create(null)
-    this.references = 1
-    this.hasProvider = false
-    this.pendingWrites = []
-    this.isReady = false
-
-    this.offlineLoadingAborted = false
-    this.version = null
-    this.responseTimeout = null
-    this.discardTimeout = null
-    this.deletedTimeout = null
-    this.readyTimer = -1
-    this.deleteResponse = null
 
     if (typeof name !== 'string' || name.length === 0) {
       throw new Error('invalid argument name')
@@ -99,37 +85,60 @@ export class RecordCore<Context = null> extends Emitter {
         }
     )
 
-    this.recordServices.dirtyService.whenLoaded(this, this.onRecordLoadedFromStorage)
+    this.recordServices.dirtyService.whenLoaded(this, this.onDirtyServiceLoaded)
   }
 
   get recordState (): RECORD_STATE {
     return this.stateMachine.state
   }
 
-  set usages (usages: number) {
-    this.references = usages
-    if (this.references === 1) {
+  public addReference (ref: any) {
+    if (this.references.size === 0 && this.isReady) {
       this.services.timeoutRegistry.clear(this.discardTimeout!)
       this.services.timerRegistry.remove(this.readyTimer!)
+      this.readyTimer = -1
       this.stateMachine.transition(RA.SUBSCRIBE)
     }
+    this.references.add(ref)
   }
 
-  get usages (): number {
-    return this.references
+  /**
+  * Removes all change listeners and notifies the server that the client is
+  * no longer interested in updates for this record
+  */
+ public removeReference (ref: any): void {
+  if (this.checkDestroyed('discard')) {
+    return
   }
 
-  private onRecordLoadedFromStorage () {
+  this.whenReadyInternal(ref, () => {
+    this.references.delete(ref)
+    if (this.references.size === 0 && this.readyTimer === -1) {
+      this.readyTimer = this.services.timerRegistry.add({
+        duration: this.options.recordDiscardTimeout,
+        callback: this.stateMachine.transition,
+        context: this.stateMachine,
+        data: RA.UNSUBSCRIBE_ACK
+      })
+    }
+    this.stateMachine.transition(RA.UNSUBSCRIBE)
+  })
+}
+
+  private onDirtyServiceLoaded () {
       if (this.services.connection.isConnected) {
-        if (!this.recordServices.dirtyService.isDirty(this.name)) {
-          this.stateMachine.transition(RA.SUBSCRIBE)
-        } else {
-          this.services.storage.get(this.name, (recordName, version, data) => {
+        this.services.storage.get(this.name, (recordName, version, data) => {
+          if (version === -1 && !this.recordServices.dirtyService.isDirty(this.name)) {
+            /**
+             * Record has never been created before
+             */
+            this.stateMachine.transition(RA.SUBSCRIBECREATEANDREAD)
+          } else {
             this.version = version
             this.data = data
             this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
-          })
-        }
+          }
+        })
       } else {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
       }
@@ -313,28 +322,6 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   /**
-  * Removes all change listeners and notifies the server that the client is
-  * no longer interested in updates for this record
-  */
-  public discard (): void {
-    if (this.checkDestroyed('discard')) {
-      return
-    }
-    this.whenReadyInternal(null, () => {
-      this.references--
-      if (this.references <= 0) {
-        this.readyTimer = this.services.timerRegistry.add({
-          duration: this.options.recordReadTimeout,
-          callback: this.stateMachine.transition,
-          context: this.stateMachine,
-          data: RA.UNSUBSCRIBE_ACK
-        })
-      }
-    })
-    this.stateMachine.transition(RA.UNSUBSCRIBE)
-  }
-
-  /**
    * Deletes the record on the server.
    */
   public delete (callback?: (error: string | null) => void): Promise<void> | void {
@@ -412,7 +399,7 @@ export class RecordCore<Context = null> extends Emitter {
 
   public onOfflineLoading () {
     this.services.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
-      if (version === -1) {
+      if (version !== -1) {
         if (this.offlineLoadingAborted) {
             // This occurred since we got a connection to the server
             // meaning we no longer care about current state currently
@@ -421,13 +408,23 @@ export class RecordCore<Context = null> extends Emitter {
         }
         this.data = {}
         this.version = 1
-        this.recordServices.dirtyService.setDirty(this.name, true)
-        this.services.storage.set(this.name, this.version, this.data, error => {
-          this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-        })
+        // We do this sync in order to avoid the possibility of a race condition
+        // where connection is established while we are saving. We could introduce
+        // another transition but its probably overkill since we only set this
+        // in order to allow the possibility of this record being retrieved in the
+        // future to know its been created
+        // this.services.storage.set(this.name, this.version, this.data, error => {})
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
       } else {
         this.data = data
         this.version = version
+
+        if (this.offlineLoadingAborted) {
+            // This occurred since we got a connection to the server
+            // meaning we no longer care
+            this.offlineLoadingAborted = false
+            return
+        }
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
       }
     })
@@ -515,7 +512,7 @@ export class RecordCore<Context = null> extends Emitter {
 
     if (message.action === RA.DELETE_SUCCESS) {
       this.services.timeoutRegistry.clear(this.deletedTimeout!)
-      this.stateMachine.transition(message.action)
+      this.stateMachine.transition(RA.DELETE_SUCCESS)
       if (this.deleteResponse!.callback) {
         this.deleteResponse!.callback(null)
       } else if (this.deleteResponse!.resolve) {
@@ -525,7 +522,7 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     if (message.action === RA.DELETED) {
-      this.stateMachine.transition(message.action)
+      this.stateMachine.transition(RA.DELETED)
       return
     }
 
@@ -544,13 +541,12 @@ export class RecordCore<Context = null> extends Emitter {
         message.originalAction === RA.SUBSCRIBEANDHEAD ||
         message.originalAction === RA.SUBSCRIBEANDREAD
       ) {
-        const subscribeMsg = Object.assign({}, message, { originalAction: RA.SUBSCRIBE })
-        const actionMsg = Object.assign(
-          {},
-          message,
-          { originalAction: message.originalAction === RA.SUBSCRIBECREATEANDREAD ? RA.READ_RESPONSE : RA.HEAD_RESPONSE }
-      )
-        this.services.timeoutRegistry.remove(subscribeMsg)
+        const subscribeMsg = { ...message, originalAction: RA.SUBSCRIBE }
+        const actionMsg = {
+          ...message,
+          originalAction: message.originalAction === RA.SUBSCRIBECREATEANDREAD ? RA.READ_RESPONSE : RA.HEAD_RESPONSE
+        }
+        this.services.timeoutRegistry.remove(subscribeMsg) // TODO: This doesn't contain correlationIds
         this.services.timeoutRegistry.remove(actionMsg)
       }
 
@@ -583,8 +579,8 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
     this.version = message.version as number
-    this.applyChange(setPath(this.data, null, message.parsedData))
     this.stateMachine.transition(RA.READ_RESPONSE)
+    this.applyChange(setPath(this.data, null, message.parsedData))
   }
 
   public handleHeadResponse (message: RecordMessage): void {
@@ -600,8 +596,8 @@ export class RecordCore<Context = null> extends Emitter {
         /**
          * record updated by client while offline
         */
-        this.sendUpdate(null, this.data)
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
+       this.sendUpdate(null, this.data)
       } else {
         /**
          * record updated by server when offline, get latest data
@@ -611,13 +607,14 @@ export class RecordCore<Context = null> extends Emitter {
         this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
       }
     } else {
-      if (remoteVersion < (this.version as number)) {
-        /**
-         *  deleted and created again remotely
-        */
-      } else if (this.version === remoteVersion) {
+       if (this.version === remoteVersion) {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
       } else {
+        if (remoteVersion < (this.version as number)) {
+         /**
+          *  deleted and created again remotely, up to merge conflict I guess
+          */
+        }
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
         this.sendRead()
         this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
@@ -741,30 +738,26 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   /**
-   * If connected sends the delete message to server, otherwise
-   * we delete in local storage and transition to delete success.
    */
   private sendDelete (): void {
     this.whenReadyInternal(null, () => {
-      if (this.services.connection.isConnected) {
-        const message = {
-          topic: TOPIC.RECORD,
-          action: RA.DELETE,
-          name: this.name
-        }
-        this.deletedTimeout = this.services.timeoutRegistry.add({
-          message,
-          event: EVENT.RECORD_DELETE_TIMEOUT,
-          duration: this.options.recordDeleteTimeout
-        })
-        this.services.connection.sendMessage(message)
-      } else {
-        this.services.storage.delete(this.name, () => {
-          this.services.timerRegistry.requestIdleCallback(() => {
-            this.stateMachine.transition(RA.DELETE_SUCCESS)
+      this.services.storage.delete(this.name, () => {
+        if (this.services.connection.isConnected) {
+          const message = {
+            topic: TOPIC.RECORD,
+            action: RA.DELETE,
+            name: this.name
+          }
+          this.deletedTimeout = this.services.timeoutRegistry.add({
+            message,
+            event: EVENT.RECORD_DELETE_TIMEOUT,
+            duration: this.options.recordDeleteTimeout
           })
-        })
-      }
+          this.services.connection.sendMessage(message)
+        } else {
+          this.stateMachine.transition(RA.DELETE_SUCCESS)
+        }
+      })
     })
   }
 
@@ -804,10 +797,13 @@ export class RecordCore<Context = null> extends Emitter {
     const oldValue = this.data
 
     if (utils.deepEquals(oldValue, remoteData)) {
+      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
       return
     }
 
     const newValue = setPath(oldValue, null, mergedData)
+
+    this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
 
     if (utils.deepEquals(mergedData, remoteData)) {
       this.applyChange(mergedData)
@@ -821,7 +817,6 @@ export class RecordCore<Context = null> extends Emitter {
         this.applyChange(newValue)
         // this.sendUpdate(null, data, message.isWriteAck)
     }
-    this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
   }
 
   /**
@@ -868,7 +863,7 @@ export class RecordCore<Context = null> extends Emitter {
 }
 
 const recordStateTransitions = [
-    { name: RA.SUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: RecordCore.prototype.onSubscribing },
+    { name: RA.SUBSCRIBECREATEANDREAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: RecordCore.prototype.onSubscribing },
     { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: RecordCore.prototype.onOfflineLoading },
     { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.abortOfflineLoading },

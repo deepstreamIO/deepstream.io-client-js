@@ -81,7 +81,7 @@ export interface  Options {
     maxReconnectInterval: number,
 
     recordDeepCopy: boolean,
-    discardTimeout: number,
+    recordDiscardTimeout: number,
 
     /**
      * Options for the provided socket factory
@@ -97,6 +97,7 @@ export interface  Options {
      * Default: ./local-storage
      */
     nodeStoragePath: string,
+
     /**
      * nodeStorageSize specifies maximum database size in megabytes
      * Default: 5
@@ -104,15 +105,36 @@ export interface  Options {
     nodeStorageSize: number
 
     /**
-     * blbalbla
+     * lazyConnect
      */
-    lazyConnect: boolean
+    lazyConnect: boolean,
+
+    indexdb: {
+        dbVersion: number,
+        primaryKey: string,
+        /**
+         * storageDatabaseName database name
+         */
+        storageDatabaseName: string,
+        /**
+         * defaultObjectStoreName: string,
+         */
+        defaultObjectStoreName: string,
+        /**
+         * objectStoreNames
+         */
+        objectStoreNames: Array<string>,
+        /**
+         * flushTimeout
+         */
+        flushTimeout: number
+    }
 }
 
 export const DefaultOptions: Options = {
     timerResolution: 50,
     subscriptionInterval: 100,
-    offlineEnabled: true,
+    offlineEnabled: false,
     heartbeatInterval: 30000,
     reconnectIntervalIncrement: 4000,
     maxReconnectInterval: 180000,
@@ -124,13 +146,21 @@ export const DefaultOptions: Options = {
     recordReadTimeout: 15000,
     recordDeleteTimeout: 15000,
     offlineBufferTimeout: 2000,
-    discardTimeout: 5000,
+    recordDiscardTimeout: 5000,
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
     socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './local-storage',
+    indexdb: {
+        dbVersion: 1,
+        primaryKey: 'id',
+        storageDatabaseName: 'deepstream',
+        defaultObjectStoreName: 'records',
+        objectStoreNames: [],
+        flushTimeout: 50
+    },
     nodeStorageSize: 5,
-    lazyConnect: false
+    lazyConnect: false,
 }

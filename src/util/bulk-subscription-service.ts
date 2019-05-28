@@ -22,9 +22,12 @@ export class BulkSubscriptionService<ACTION> {
 
     public subscribe (name: string) {
         if (this.subscriptionInterval > 0 || !this.subscribeOriginalAction) {
-            this.unsubscribeNames.delete(name)
-            this.subscribeNames.add(name)
-            this.registerFlush()
+            if (this.unsubscribeNames.has(name)) {
+                this.unsubscribeNames.delete(name)
+            } else {
+                this.subscribeNames.add(name)
+                this.registerFlush()
+            }
             return
         }
 
@@ -43,9 +46,12 @@ export class BulkSubscriptionService<ACTION> {
 
     public unsubscribe (name: string) {
         if (this.subscriptionInterval > 0 || !this.unsubscribeOriginalAction) {
-            this.unsubscribeNames.add(name)
-            this.subscribeNames.delete(name)
-            this.registerFlush()
+            if (this.subscribeNames.has(name)) {
+                this.subscribeNames.delete(name)
+            } else {
+                this.unsubscribeNames.add(name)
+                this.registerFlush()
+            }
             return
         }
 
