@@ -1,3 +1,8 @@
+# [4.0.0-rc.17] - 2019-05-28
+
+- Adding the ability to save each update as it comes from the server.
+- Save records to storage before they are discarded
+
 # [4.0.0-rc.16] - 2019-05-28
 
 - Changing npm to use deepstream org
