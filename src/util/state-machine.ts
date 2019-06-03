@@ -39,7 +39,7 @@ export class StateMachine {
     const debugHistory = this.history.reduce((result, entry) =>
       result += `\n\tFrom ${entry.oldState} to ${entry.newState} via ${entry.transitionName}`
     , '')
-    throw new Error(`Invalid state transition.\nDetails: ${details} \nHistory: ${debugHistory}`)
+    console.error(`Invalid state transition.\nDetails: ${details} \nHistory: ${debugHistory}`)
   }
 
 }

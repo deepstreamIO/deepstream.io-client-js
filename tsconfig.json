@@ -12,7 +12,7 @@
     "allowJs": false,
     "strictNullChecks": true,
     "strict": true,
-//    "declaration": true,
+   "declaration": true,
     //"noUnusedParameters": true,    
     "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true,

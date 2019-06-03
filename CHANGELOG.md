@@ -1,3 +1,8 @@
+# [4.0.0-rc.23] - 2019-06-03
+
+- Changing state machine to log an error instead of throwing one to stop things breaking too badly
+- Decleration files for typescript enabled
+
 # [4.0.0-rc.22] - 2019-05-28
 
 - Delete collections from indexdb if no longer in objectStoreList
