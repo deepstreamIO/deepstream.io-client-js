@@ -1,12 +1,7 @@
-# [4.0.0-rc.24] - 2019-06-03
-
-- Disabling declerlation files again due to Emitter typscript issues =(  
+# [4.0.0-rc.25] - 2019-06-03
+  
 - Merging should transition a record to ready when first initialized
-
-# [4.0.0-rc.23] - 2019-06-03
-
 - Changing state machine to log an error instead of throwing one to stop things breaking too badly
-- Decleration files for typescript enabled
 
 # [4.0.0-rc.22] - 2019-05-28
 
