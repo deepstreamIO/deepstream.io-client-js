@@ -1,3 +1,8 @@
+# [4.0.0-rc.24] - 2019-06-03
+
+- Disabling declerlation files again due to Emitter typscript issues =(  
+- Merging should transition a record to ready when first initialized
+
 # [4.0.0-rc.23] - 2019-06-03
 
 - Changing state machine to log an error instead of throwing one to stop things breaking too badly

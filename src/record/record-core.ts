@@ -442,6 +442,7 @@ export class RecordCore<Context = null> extends Emitter {
     this.readyCallbacks.forEach(({ context, callback }) => {
       callback.call(context, context)
     })
+    this.readyCallbacks = []
   }
 
   public applyPendingWrites (): void {
@@ -884,7 +885,7 @@ const recordStateTransitions = [
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.onResubscribing },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY },
     { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
-    { name: RECORD_OFFLINE_ACTIONS.MERGED, from: RECORD_STATE.MERGING, to: RECORD_STATE.READY },
+    { name: RECORD_OFFLINE_ACTIONS.MERGED, from: RECORD_STATE.MERGING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
     { name: RA.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
     { name: RA.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted  },
     { name: RA.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
