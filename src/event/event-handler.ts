@@ -33,6 +33,13 @@ export class EventHandler {
   }
 
   /**
+   * Returns all the events that are subscribed to locally
+   */
+  public eventNames (): Array<string> {
+    return this.emitter.eventNames()
+  }
+
+  /**
   * Subscribe to an event. This will receive both locally emitted events
   * as well as events emitted by other connected clients.
   */

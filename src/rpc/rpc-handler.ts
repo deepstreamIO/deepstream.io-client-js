@@ -21,6 +21,13 @@ export class RPCHandler {
   }
 
   /**
+   * Returns the names of all the RPCs provided
+   */
+  public providerNames (): Array<string> {
+    return [...this.providers.keys()]
+  }
+
+  /**
    * Registers a callback function as a RPC provider. If another connected client calls
    * client.rpc.make() the request will be routed to this method
    *

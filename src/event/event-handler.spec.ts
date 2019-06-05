@@ -29,6 +29,17 @@ describe('event handler', () => {
     listener.listenerMock.verify()
   })
 
+  it('gets events names', () => {
+    eventHandler.subscribe('event1', spy)
+    eventHandler.subscribe('event2', spy)
+
+    expect(eventHandler.eventNames()).to.deep.equal(['event1', 'event2'])
+
+    eventHandler.unsubscribe('event2', spy)
+
+    expect(eventHandler.eventNames()).to.deep.equal(['event1'])
+  })
+
   it('validates parameters on subscribe, unsubscribe and emit', () => {
     expect(eventHandler.subscribe.bind(eventHandler, '', () => {})).to.throw()
     expect(eventHandler.unsubscribe.bind(eventHandler, '', () => {})).to.throw()

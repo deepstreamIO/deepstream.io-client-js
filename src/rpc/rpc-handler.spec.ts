@@ -67,6 +67,17 @@ describe('RPC handler', () => {
     sinon.assert.notCalled(rpcProviderSpy)
   })
 
+  it('gets provider names', () => {
+    rpcHandler.provide('rpc1', rpcProviderSpy as RPCProvider)
+    rpcHandler.provide('rpc2', rpcProviderSpy as RPCProvider)
+
+    expect(rpcHandler.providerNames()).to.deep.equal(['rpc1', 'rpc2'])
+
+    rpcHandler.unprovide('rpc2')
+
+    expect(rpcHandler.providerNames()).to.deep.equal(['rpc1'])
+  })
+
   it('reregisters a provider after a connection reconnection', () => {
     const message = {
       topic: TOPIC.RPC,
