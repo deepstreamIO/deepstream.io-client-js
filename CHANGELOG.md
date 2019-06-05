@@ -1,3 +1,17 @@
+## [2.3.1] - 2019-06-05
+
+### Features
+
+- Ability to check the subscriptions available client side (#453)
+
+### Fix
+
+- Fixing URL parsing issue introduced by node 12 (#486)
+
+### Misc
+
+- Adding deepstream.io V3 deprecation warning
+
 ## [2.3.0] - 2017-09-25
 
 ### Features

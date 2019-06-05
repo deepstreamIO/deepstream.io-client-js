@@ -144,6 +144,7 @@ Connection.prototype.close = function () {
   clearInterval(this._heartbeatInterval);
   this._deliberateClose = true;
   this._endpoint.close();
+  this._setState(C.CONNECTION_STATE.CLOSED);
 };
 
 /**

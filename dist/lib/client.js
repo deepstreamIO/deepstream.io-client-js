@@ -45,6 +45,10 @@ var Client = function Client(url, options) {
   this._messageCallbacks[C.TOPIC.RECORD] = this.record._$handle.bind(this.record);
   this._messageCallbacks[C.TOPIC.PRESENCE] = this.presence._$handle.bind(this.presence);
   this._messageCallbacks[C.TOPIC.ERROR] = this._onErrorMessage.bind(this);
+
+  if (!options || !options.silentDeprecation) {
+    console.log('deepstream V3 is in maintenance mode\n  It\'s heavily recommended you try out V4 (@deepstream/client)\n  You can see the changlogs here https://deepstream.io/releases/client-js/v4-0-0/\n  It\'s currently in RC due to work required on website and binaries, however as far as\n  functionality goes its on par + some with V3 and resolves many of the issues in V3.\n  To silence this warning just pass in a silentDeprecation flag in options.\n  Example: deepstream(url, { silentDeprecation: true })');
+  }
 };
 
 Emitter(Client.prototype); // eslint-disable-line

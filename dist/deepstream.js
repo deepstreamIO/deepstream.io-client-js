@@ -1889,6 +1889,10 @@ var Client = function Client(url, options) {
   this._messageCallbacks[C.TOPIC.RECORD] = this.record._$handle.bind(this.record);
   this._messageCallbacks[C.TOPIC.PRESENCE] = this.presence._$handle.bind(this.presence);
   this._messageCallbacks[C.TOPIC.ERROR] = this._onErrorMessage.bind(this);
+
+  if (!options || !options.silentDeprecation) {
+    console.log('deepstream V3 is in maintenance mode\n  It\'s heavily recommended you try out V4 (@deepstream/client)\n  You can see the changlogs here https://deepstream.io/releases/client-js/v4-0-0/\n  It\'s currently in RC due to work required on website and binaries, however as far as\n  functionality goes its on par + some with V3 and resolves many of the issues in V3.\n  To silence this warning just pass in a silentDeprecation flag in options.\n  Example: deepstream(url, { silentDeprecation: true })');
+  }
 };
 
 Emitter(Client.prototype); // eslint-disable-line
@@ -2432,6 +2436,10 @@ var EventHandler = function EventHandler(options, connection, client) {
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resubscribe.bind(this));
 };
 
+EventHandler.prototype.eventNames = function () {
+  return this._emitter.eventNames();
+};
+
 /**
  * Subscribe to an event. This will receive both locally emitted events
  * as well as events emitted by other connected clients.
@@ -2796,6 +2804,7 @@ Connection.prototype.close = function () {
   clearInterval(this._heartbeatInterval);
   this._deliberateClose = true;
   this._endpoint.close();
+  this._setState(C.CONNECTION_STATE.CLOSED);
 };
 
 /**
@@ -4089,10 +4098,13 @@ List.prototype.isEmpty = function () {
 /**
  * Updates the list with a new set of entries
  *
- * @public
  * @param {Array} entries
+ * @param {Function} [callback]
+ *
+ * @public
+ * @returns {void}
  */
-List.prototype.setEntries = function (entries) {
+List.prototype.setEntries = function (entries, callback) {
   var errorMsg = 'entries must be an array of record names';
   var i = void 0;
 
@@ -4107,26 +4119,62 @@ List.prototype.setEntries = function (entries) {
   }
 
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.setEntries.bind(this, entries));
+    this._queuedMethods.push(this.setEntries.bind(this, entries, callback));
   } else {
     this._beforeChange();
-    this._record.set(entries);
+    if (callback) {
+      this._record.set(entries, callback);
+    } else {
+      this._record.set(entries);
+    }
     this._afterChange();
   }
+};
+
+/**
+ * Wrapper function around the list.setEntries that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {Array} entries
+ * @param {Function} callback
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.setEntriesWithAck = function (entries, callback) {
+  var _this = this;
+
+  if (callback) {
+    return this.setEntries(entries, callback);
+  }
+  return new Promise(function (resolve, reject) {
+    _this.setEntries(entries, function (error) {
+      return error === null ? resolve() : reject(error);
+    });
+  });
 };
 
 /**
  * Removes an entry from the list
  *
  * @param {String} entry
- * @param {Number} [index]
+ * @param {Number} [indexOrCallback]
+ * @param {Function} [callback]
  *
  * @public
  * @returns {void}
  */
-List.prototype.removeEntry = function (entry, index) {
+List.prototype.removeEntry = function (entry, indexOrCallback, callback) {
+  var index = indexOrCallback;
+  var cb = callback;
+  if (typeof indexOrCallback === 'function') {
+    cb = indexOrCallback;
+    index = undefined;
+  }
+
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.removeEntry.bind(this, entry, index));
+    this._queuedMethods.push(this.removeEntry.bind(this, entry, index, cb));
     return;
   }
 
@@ -4140,27 +4188,68 @@ List.prototype.removeEntry = function (entry, index) {
       entries.push(currentEntries[i]);
     }
   }
+
   this._beforeChange();
-  this._record.set(entries);
+  if (cb) {
+    this._record.set(entries, cb);
+  } else {
+    this._record.set(entries);
+  }
   this._afterChange();
+};
+
+/**
+ * Wrapper function around the list.removeEntry that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String} entry
+ * @param {Number|Function} [indexOrCallback]
+ * @param {Function} [callback]
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.removeEntryWithAck = function (entry, indexOrCallback, callback) {
+  var _this2 = this;
+
+  if (typeof indexOrCallback === 'number' && callback) {
+    return this.removeEntry(entry, indexOrCallback, callback);
+  }
+  if (typeof indexOrCallback === 'function') {
+    return this.removeEntry(entry, indexOrCallback);
+  }
+  return new Promise(function (resolve, reject) {
+    _this2.removeEntry(entry, indexOrCallback, function (error) {
+      return error === null ? resolve() : reject(error);
+    });
+  });
 };
 
 /**
  * Adds an entry to the list
  *
  * @param {String} entry
- * @param {Number} [index]
+ * @param {Number|Function} [indexOrCallback]
+ * @param {Function} [callback]
  *
  * @public
  * @returns {void}
  */
-List.prototype.addEntry = function (entry, index) {
+List.prototype.addEntry = function (entry, indexOrCallback, callback) {
   if (typeof entry !== 'string') {
     throw new Error('Entry must be a recordName');
   }
 
+  var index = indexOrCallback;
+  var cb = callback;
+  if (typeof indexOrCallback === 'function') {
+    cb = indexOrCallback;
+    index = undefined;
+  }
+
   if (this._record.isReady === false) {
-    this._queuedMethods.push(this.addEntry.bind(this, entry, index));
+    this._queuedMethods.push(this.addEntry.bind(this, entry, index, cb));
     return;
   }
 
@@ -4171,9 +4260,42 @@ List.prototype.addEntry = function (entry, index) {
   } else {
     entries.push(entry);
   }
+
   this._beforeChange();
-  this._record.set(entries);
+  if (cb) {
+    this._record.set(entries, cb);
+  } else {
+    this._record.set(entries);
+  }
   this._afterChange();
+};
+
+/**
+ * Wrapper function around the list.addEntry that returns a promise
+ * if no callback is supplied.
+ *
+ * @param {String} entry
+ * @param {Number|Function} [index]
+ * @param {Function} callback
+ *
+ * @public
+ * @returns {Promise|void} if a callback is omitted a Promise is returned
+ *                         with the result of the write
+ */
+List.prototype.addEntryWithAck = function (entry, indexOrCallback, callback) {
+  var _this3 = this;
+
+  if (typeof indexOrCallback === 'number' && callback) {
+    return this.addEntry(entry, indexOrCallback, callback);
+  }
+  if (typeof indexOrCallback === 'function') {
+    return this.addEntry(entry, indexOrCallback);
+  }
+  return new Promise(function (resolve, reject) {
+    _this3.addEntry(entry, indexOrCallback, function (error) {
+      return error === null ? resolve() : reject(error);
+    });
+  });
 };
 
 /**
@@ -4443,6 +4565,10 @@ var RecordHandler = function RecordHandler(options, connection, client) {
   this._hasRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.HAS, this._options.recordReadTimeout);
   this._snapshotRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.SNAPSHOT, this._options.recordReadTimeout);
   this._headRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.HEAD, this._options.recordReadTimeout);
+};
+
+RecordHandler.prototype.recordNames = function () {
+  return Object.keys(this._records);
 };
 
 /**
@@ -5692,6 +5818,10 @@ var RpcHandler = function RpcHandler(options, connection, client) {
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._reprovide.bind(this));
 };
 
+RpcHandler.prototype.providerNames = function () {
+  return Object.keys(this._providers);
+};
+
 /**
  * Registers a callback function as a RPC provider. If another connected client calls
  * client.rpc.make() the request will be routed to this method
@@ -6859,6 +6989,9 @@ exports.parseUrl = function (initialURl, defaultPath) {
     throw new Error('invalid url, missing host');
   }
   serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:';
+  if (serverUrl.pathname === '/' && initialURl.charAt(initialURl.length - 1) !== '/') {
+    serverUrl.pathname = defaultPath;
+  }
   serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath;
   return URL.format(serverUrl);
 };

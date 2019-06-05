@@ -36,6 +36,10 @@ var RecordHandler = function RecordHandler(options, connection, client) {
   this._headRegistry = new SingleNotifier(client, connection, C.TOPIC.RECORD, C.ACTIONS.HEAD, this._options.recordReadTimeout);
 };
 
+RecordHandler.prototype.recordNames = function () {
+  return Object.keys(this._records);
+};
+
 /**
  * Returns an existing record or creates a new one.
  *
