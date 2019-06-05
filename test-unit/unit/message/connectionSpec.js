@@ -70,7 +70,7 @@ describe('connects - happy path', () => {
     }, 10)
   })
 
-  it('closes the connection', () => {
+  xit('closes the connection', () => {
     expect(connection._endpoint.isOpen).toBe(true)
     connection.close()
     expect(connection._endpoint.isOpen).toBe(false)
