@@ -241,6 +241,9 @@ exports.parseUrl = function (initialURl, defaultPath) {
     throw new Error('invalid url, missing host')
   }
   serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:'
+  if (serverUrl.pathname === '/' && initialURl.charAt(initialURl.length - 1) !== '/') {
+    serverUrl.pathname = defaultPath
+  }
   serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath
   return URL.format(serverUrl)
 }
