@@ -53,7 +53,11 @@ const Client = function (url, options) {
   It's currently in RC due to work required on website and binaries, however as far as
   functionality goes its on par + some with V3 and resolves many of the issues in V3.
   To silence this warning just pass in a silentDeprecation flag in options.
-  Example: deepstream(url, { silentDeprecation: true })`)
+  Example: deepstream(url, { silentDeprecation: true })
+
+  IF YOU ARE INSTALLING VIA GITHUB AND NOT NPM PLEASE USE THE V3 BRANCH AS MASTER WILL 
+  SWITCH TO V4 END OF MONTH!
+`)
   }
 }
 

@@ -1,3 +1,12 @@
+## [2.3.2] - 2019-06-05
+
+### Misc
+
+MORE WARNING SHOUTING!
+
+Seriously though, this release is just to inform everyone to switch to using a V3
+branch is using deepstream drectly from git  as master will switch to V4 end of June 2019.
+
 ## [2.3.1] - 2019-06-05
 
 ### Features
