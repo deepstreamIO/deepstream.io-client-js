@@ -30,6 +30,10 @@ const RpcHandler = function (options, connection, client) {
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._reprovide.bind(this))
 }
 
+RpcHandler.prototype.providerNames = function () {
+  return Object.keys(this._providers)
+}
+
 /**
  * Registers a callback function as a RPC provider. If another connected client calls
  * client.rpc.make() the request will be routed to this method

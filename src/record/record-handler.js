@@ -52,6 +52,10 @@ const RecordHandler = function (options, connection, client) {
   )
 }
 
+RecordHandler.prototype.recordNames = function () {
+  return Object.keys(this._records)
+}
+
 /**
  * Returns an existing record or creates a new one.
  *

@@ -28,6 +28,10 @@ const EventHandler = function (options, connection, client) {
   this._resubscribeNotifier = new ResubscribeNotifier(this._client, this._resubscribe.bind(this))
 }
 
+EventHandler.prototype.eventNames = function () {
+  return this._emitter.eventNames()
+}
+
 /**
  * Subscribe to an event. This will receive both locally emitted events
  * as well as events emitted by other connected clients.
