@@ -7,6 +7,7 @@ import { RecordHandler } from './record-handler'
 import { DefaultOptions } from '../client-options'
 import { WriteAckCallback } from './record-core'
 import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage, RecordData } from '../../binary-protocol/src/message-constants'
+import { fail } from 'assert'
 
 describe('Record handler', () => {
   const name = 'recordA'
@@ -477,6 +478,57 @@ describe('Record handler', () => {
           expect(promise).is.a('promise')
         })
 
+      })
+
+      describe ('clearing storage', () => {
+        it ('calls callback with nothing when successful', done => {
+          services.storageMock
+            .expects('reset')
+            .once()
+            .callsArgWith(0, null)
+
+          recordHandler.clearOfflineStorage(error => {
+            expect(error).to.equal(null)
+            done()
+          })
+        })
+
+        it ('calls callback with error when unsuccessful', done => {
+          services.storageMock
+            .expects('reset')
+            .once()
+            .callsArgWith(0, 'failed')
+
+          recordHandler.clearOfflineStorage(error => {
+            expect(error).to.equal('failed')
+            done()
+          })
+        })
+
+        it ('returns promise that resolves when successful', async () => {
+          services.storageMock
+            .expects('reset')
+            .once()
+            .callsArgWith(0, null)
+
+          await recordHandler.clearOfflineStorage()
+        })
+
+        it ('returns promise that rejects with error when unsuccessful', async () => {
+          services.storageMock
+            .expects('reset')
+            .once()
+            .callsArgWith(0, 'failed')
+
+          try {
+            await recordHandler.clearOfflineStorage()
+          } catch (e) {
+            expect(e).to.equal('failed')
+            return
+          }
+
+          fail('The promise should have failed')
+        })
       })
 
       describe('handling acknowledgements', () => {

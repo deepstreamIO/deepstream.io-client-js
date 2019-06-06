@@ -78,13 +78,13 @@ export class RecordHandler {
 
   /**
    * Returns all the available data-sync names.
-   * 
+   *
    * Please note: Lists, AnonymousRecords and Records are all essentially
    * the same thing within the SDK, so this array will contain a list of
    * everything.
-   * 
-   * Due to how records work as well even after a discard this list will 
-   * take a while to update. This is intentional as their is an option for 
+   *
+   * Due to how records work as well even after a discard this list will
+   * take a while to update. This is intentional as their is an option for
    * how long a record will survive before being discarded! You can change that
    * via the `recordDiscardTimeout: milliseconds` option.
    */
@@ -369,6 +369,18 @@ export class RecordHandler {
 
   public saveToOfflineStorage () {
     this.recordCores.forEach(recordCore => recordCore.saveRecordToOffline())
+  }
+
+  public clearOfflineStorage (): Promise<void>
+  public clearOfflineStorage (callback: (error: string | null) => void): void
+  public clearOfflineStorage (callback?: (error: string | null) => void): Promise<void> | void {
+    if (callback) {
+      this.services.storage.reset(callback)
+    } else {
+      return new Promise((resolve, reject) => {
+        this.services.storage.reset(error => error ? reject(error) : resolve())
+      })
+    }
   }
 
   /**
