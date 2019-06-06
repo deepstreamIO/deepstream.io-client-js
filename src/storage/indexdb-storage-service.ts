@@ -87,6 +87,16 @@ export class Storage implements RecordOfflineStore {
     this.insertRequest({ recordName, callback, operation: Operation.DELETE })
   }
 
+  public reset (callback: (error: string | null) => void) {
+    const deleteDBReqeust = indexedDB.deleteDatabase(this.options.indexdb.storageDatabaseName)
+    deleteDBReqeust.onsuccess = () => callback(null)
+    deleteDBReqeust.onerror = event => {
+        const errorMessage = `Error deleting database ${this.options.indexdb.storageDatabaseName}`
+        console.error(errorMessage, event)
+        callback(errorMessage)
+    }
+  }
+
   private registerFlush () {
       if (this.isReady && !this.flushTimeout) {
         this.flushTimeout = setTimeout(this.flush, this.options.indexdb.flushTimeout)

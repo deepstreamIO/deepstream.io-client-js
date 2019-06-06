@@ -38,4 +38,8 @@ export class Storage implements RecordOfflineStore {
     this.storage.removeItem(recordName)
     setTimeout(callback, 0)
   }
+
+  public reset (callback: (error: string | null) => void) {
+    callback("We don't keep an index of all entries in LocalStorage, please use indexdb or delete manually")
+  }
 }

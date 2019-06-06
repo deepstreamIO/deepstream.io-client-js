@@ -15,4 +15,8 @@ export class NoopStorage implements RecordOfflineStore {
   public delete (recordName: string, callback: offlineStoreWriteResponse) {
     setTimeout(callback, 0)
   }
+
+  public reset (callback: (error: string | null) => void) {
+    callback(null)
+  }
 }
