@@ -1,3 +1,8 @@
+# [4.0.0-rc.26] - 2019-06-06
+  
+- Users can now delete the offline store via the record handler. This is useful for situations such
+as ensuring nothing is on disk on logout.
+
 # [4.0.0-rc.25] - 2019-06-03
   
 - Merging should transition a record to ready when first initialized
