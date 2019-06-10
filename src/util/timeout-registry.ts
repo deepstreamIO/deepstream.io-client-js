@@ -8,7 +8,7 @@ import {
 } from '../../binary-protocol/src/message-constants'
 import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
 
-import * as EventEmitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 
 export type TimeoutId = string | null
 export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION
@@ -32,7 +32,7 @@ interface InternalTimeout {
  * to centralise the functionality necessary to keep track of subscriptions and
  * their respective timeouts.
  */
-export class TimeoutRegistry extends EventEmitter {
+export class TimeoutRegistry extends Emitter {
   private register: Map<string, InternalTimeout> = new Map()
 
   constructor (private services: Services, private options: Options) {

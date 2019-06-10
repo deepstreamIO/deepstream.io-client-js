@@ -344,10 +344,6 @@ describe('Record handler', () => {
         recordHandler.setData(name, path, undefined)
       })
 
-      it.skip('updates existent local record', () => {
-
-      })
-
       it('throws error for invalid arguments', () => {
         expect(recordHandler.setData.bind(recordHandler)).to.throw()
         expect(recordHandler.setData.bind(recordHandler, name)).to.throw()

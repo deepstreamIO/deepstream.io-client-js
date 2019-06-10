@@ -1,7 +1,7 @@
 import * as utils from '../util/utils'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { MergeStrategy } from './merge-strategy'
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 
 export class AnonymousRecord extends Emitter  {
     private record: RecordCore<AnonymousRecord> | null

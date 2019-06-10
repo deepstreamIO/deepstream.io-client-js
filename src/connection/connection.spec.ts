@@ -13,7 +13,7 @@ import {
   EVENT_ACTIONS as EVENT_ACTION
 } from '../../binary-protocol/src/message-constants'
 
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 
 describe('connection', () => {
   let connection: Connection

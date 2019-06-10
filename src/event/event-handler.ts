@@ -10,7 +10,7 @@ import {
 } from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
 export class EventHandler {

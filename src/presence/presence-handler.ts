@@ -6,7 +6,7 @@ import {
   PRESENCE_ACTIONS as PA,
   Message,
 } from '../../binary-protocol/src/message-constants'
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
 export type QueryResult = Array<string>

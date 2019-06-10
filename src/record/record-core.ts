@@ -11,7 +11,7 @@ import {
 } from '../../binary-protocol/src/message-constants'
 import { RecordServices } from './record-handler'
 import { get as getPath, setValue as setPath } from './json-path'
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 import * as utils from '../util/utils'
 import { StateMachine } from '../util/state-machine'
 import {TimeoutId} from '../util/timeout-registry'

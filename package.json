@@ -29,7 +29,6 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
-    "component-emitter2": "^1.3.5",
     "ws": "^7.0.0"
   },
   "browser": {

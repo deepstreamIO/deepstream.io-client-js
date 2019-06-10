@@ -2,7 +2,7 @@ import * as utils from '../util/utils'
 import { EVENT } from '../constants'
 import { RecordMessage } from '../../binary-protocol/src/message-constants'
 import { RecordCore, WriteAckCallback } from './record-core'
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 
 export class List extends Emitter {
     private record: RecordCore<List>

@@ -16,7 +16,7 @@ import { StateMachine } from '../util/state-machine'
 import {Services, Socket} from '../client'
 import { Options } from '../client-options'
 import * as utils from '../util/utils'
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 
 export type AuthenticationCallback = (success: boolean, clientData: JSONObject | null) => void
 export type ResumeCallback = (error?: JSONObject) => void

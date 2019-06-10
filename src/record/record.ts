@@ -2,7 +2,7 @@ import * as utils from '../util/utils'
 import { EVENT } from '../constants'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { MergeStrategy } from './merge-strategy'
-import * as Emitter from 'component-emitter2'
+import { Emitter } from '../util/emitter'
 import {JSONObject, RecordData} from '../../binary-protocol/src/message-constants'
 
 export class Record extends Emitter  {

@@ -9,7 +9,7 @@ import { EventHandler } from './event/event-handler'
 import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler} from './record/record-handler'
 import { PresenceHandler } from './presence/presence-handler'
-import * as EventEmitter from 'component-emitter2'
+import { Emitter } from './util/emitter'
 import {RecordData, JSONObject, Message} from '../binary-protocol/src/message-constants'
 import { Storage } from './storage/indexdb-storage-service'
 import { NoopStorage } from './storage/noop-storage-service'
@@ -43,7 +43,7 @@ export interface Services {
   storage: RecordOfflineStore
 }
 
-export class Client extends EventEmitter {
+export class Client extends Emitter {
   public event: EventHandler
   public rpc: RPCHandler
   public record: RecordHandler

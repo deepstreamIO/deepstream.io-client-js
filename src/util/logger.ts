@@ -1,3 +1,4 @@
+import { Emitter } from '../util/emitter'
 import { EVENT } from '../constants'
 import {
   TOPIC,
