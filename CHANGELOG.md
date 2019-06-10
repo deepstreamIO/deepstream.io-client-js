@@ -1,3 +1,7 @@
+# [4.0.0-rc.26] - 2019-06-10
+  
+- Emitter is no longer a dependency and instead is owned by us, which makes typescript happier
+
 # [4.0.0-rc.26] - 2019-06-06
   
 - Users can now delete the offline store via the record handler. This is useful for situations such
