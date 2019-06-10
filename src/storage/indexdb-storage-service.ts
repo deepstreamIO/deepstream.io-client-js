@@ -88,7 +88,13 @@ export class Storage implements RecordOfflineStore {
   }
 
   public reset (callback: (error: string | null) => void) {
+    if (this.db) {
+        this.db.close()
+        this.db = null
+    }
+
     const deleteDBReqeust = indexedDB.deleteDatabase(this.options.indexdb.storageDatabaseName)
+    deleteDBReqeust.onblocked = () => setTimeout(() => this.reset(callback), 1000)
     deleteDBReqeust.onsuccess = () => callback(null)
     deleteDBReqeust.onerror = event => {
         const errorMessage = `Error deleting database ${this.options.indexdb.storageDatabaseName}`
