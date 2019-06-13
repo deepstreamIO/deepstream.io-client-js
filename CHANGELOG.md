@@ -1,3 +1,7 @@
+# [4.0.0-rc.30] - 2019-06-13
+  
+- Only transition the state to unsubscribing if its the last reference being removed
+
 # [4.0.0-rc.29] - 2019-06-13
   
 - Adding the concept of context to emitter, used to fixed a bug in record where discard doesn't

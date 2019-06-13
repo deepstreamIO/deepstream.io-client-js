@@ -120,8 +120,8 @@ export class RecordCore<Context = null> extends Emitter {
         context: this.stateMachine,
         data: RA.UNSUBSCRIBE_ACK
       })
+      this.stateMachine.transition(RA.UNSUBSCRIBE)
     }
-    this.stateMachine.transition(RA.UNSUBSCRIBE)
   })
 }
 
