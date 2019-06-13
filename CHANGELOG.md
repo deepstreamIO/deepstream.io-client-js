@@ -1,8 +1,13 @@
-# [4.0.0-rc.26] - 2019-06-10
+# [4.0.0-rc.29] - 2019-06-13
+  
+- Adding the concept of context to emitter, used to fixed a bug in record where discard doesn't
+delete the local emitter bindings, but can hopefully be extended elsewhere
+
+# [4.0.0-rc.28] - 2019-06-10
   
 - Emitter is no longer a dependency and instead is owned by us, which makes typescript happier
 
-# [4.0.0-rc.26] - 2019-06-06
+# [4.0.0-rc.27] - 2019-06-06
   
 - Users can now delete the offline store via the record handler. This is useful for situations such
 as ensuring nothing is on disk on logout.

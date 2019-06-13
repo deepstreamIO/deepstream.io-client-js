@@ -276,9 +276,9 @@ private applyUpdate  (message: RecordMessage) {
    * by an incoming message from the server or by the client
    */
   private beforeChange (): void {
-    this.hasAddListener = this.listeners(EVENT.ENTRY_ADDED_EVENT).length > 0
-    this.hasRemoveListener = this.listeners(EVENT.ENTRY_REMOVED_EVENT).length > 0
-    this.hasMoveListener = this.listeners(EVENT.ENTRY_MOVED_EVENT).length > 0
+    this.hasAddListener = this.hasListeners(EVENT.ENTRY_ADDED_EVENT)
+    this.hasRemoveListener = this.hasListeners(EVENT.ENTRY_REMOVED_EVENT)
+    this.hasMoveListener = this.hasListeners(EVENT.ENTRY_MOVED_EVENT)
 
     if (this.hasAddListener || this.hasRemoveListener || this.hasMoveListener) {
       this.beforeStructure = this.getStructure()

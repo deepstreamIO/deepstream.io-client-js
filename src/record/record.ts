@@ -11,10 +11,10 @@ export class Record extends Emitter  {
     constructor (private record: RecordCore<Record>) {
         super()
         this.subscriptions = []
-        this.record.on(EVENT.RECORD_READY, this.emit.bind(this, EVENT.RECORD_READY, this))
-        this.record.on(EVENT.RECORD_DISCARDED, this.emit.bind(this, EVENT.RECORD_DISCARDED))
-        this.record.on(EVENT.RECORD_DELETED, this.emit.bind(this, EVENT.RECORD_DELETED))
-        this.record.on(EVENT.RECORD_ERROR, this.emit.bind(this, EVENT.RECORD_ERROR))
+        this.record.on(EVENT.RECORD_READY, this.emit.bind(this, EVENT.RECORD_READY, this), this)
+        this.record.on(EVENT.RECORD_DISCARDED, this.emit.bind(this, EVENT.RECORD_DISCARDED), this)
+        this.record.on(EVENT.RECORD_DELETED, this.emit.bind(this, EVENT.RECORD_DELETED), this)
+        this.record.on(EVENT.RECORD_ERROR, this.emit.bind(this, EVENT.RECORD_ERROR), this)
 
         this.record.addReference(this)
     }
@@ -117,6 +117,7 @@ export class Record extends Emitter  {
             this.record.unsubscribe(this.subscriptions[i])
         }
         this.record.removeReference(this)
+        this.record.removeContext(this)
     }
 
     public delete (callback?: (error: string | null) => void): void | Promise<void> {
