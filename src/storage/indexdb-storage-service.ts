@@ -28,7 +28,12 @@ export class Storage implements RecordOfflineStore {
     }
     this.flush = this.flush.bind(this)
 
-    const { objectStoreNames, storageDatabaseName } = options.indexdb
+    const { objectStoreNames, storageDatabaseName, defaultObjectStoreName, primaryKey } = options.indexdb
+
+    if (!objectStoreNames.includes(defaultObjectStoreName)) {
+        objectStoreNames.push(defaultObjectStoreName)
+    }
+
     let dbVersion = options.indexdb.dbVersion
     if (options.indexdb.autoVersion) {
         const previousDBStructureSerialized = localStorage.getItem(`deepstream-db/${storageDatabaseName}`)
@@ -48,9 +53,9 @@ export class Storage implements RecordOfflineStore {
         }
     }
 
-    const request = indexedDB.open(options.indexdb.storageDatabaseName, dbVersion)
+    const request = indexedDB.open(storageDatabaseName, dbVersion)
     request.onerror = event => {
-        console.error(`Error opening index ${options.indexdb.storageDatabaseName}`, event)
+        console.error(`Error opening index ${storageDatabaseName}`, event)
         // TODO: Workflow for lack of permissions to use indexDB
     }
     request.onsuccess = (event: any) => {
@@ -60,18 +65,14 @@ export class Storage implements RecordOfflineStore {
     request.onupgradeneeded = () => {
         const db = request.result
 
-        if (options.indexdb.objectStoreNames.indexOf(options.indexdb.defaultObjectStoreName) === -1) {
-            options.indexdb.objectStoreNames.push(options.indexdb.defaultObjectStoreName)
-        }
-
-        options.indexdb.objectStoreNames.forEach(objectStoreName => {
+        objectStoreNames.forEach(objectStoreName => {
             if (!db.objectStoreNames.contains(objectStoreName)) {
-                db.createObjectStore(objectStoreName, { keyPath: this.options.indexdb.primaryKey })
+                db.createObjectStore(objectStoreName, { keyPath: primaryKey })
             }
         })
 
         for (let i = 0; i < db.objectStoreNames.length; i++) {
-            if (options.indexdb.objectStoreNames.includes(db.objectStoreNames[i]) === false) {
+            if (objectStoreNames.includes(db.objectStoreNames[i]) === false) {
                 db.deleteObjectStore(db.objectStoreNames[i])
             }
         }
