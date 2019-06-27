@@ -1,3 +1,8 @@
+# [4.0.0-rc.31] - 2019-06-27
+  
+- Adding an autoVersion option for indexdb
+- Fixing a reconnect issue when starting client when server is down
+
 # [4.0.0-rc.30] - 2019-06-13
   
 - Only transition the state to unsubscribing if its the last reference being removed
