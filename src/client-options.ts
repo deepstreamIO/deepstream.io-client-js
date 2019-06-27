@@ -111,6 +111,11 @@ export interface  Options {
      */
     lazyConnect: boolean,
 
+    /**
+     * Enable debug tooling
+     */
+    debug: boolean,
+
     indexdb: {
         autoVersion: boolean,
         dbVersion: number,
@@ -170,4 +175,5 @@ export const DefaultOptions: Options = {
     },
     nodeStorageSize: 5,
     lazyConnect: false,
+    debug: false,
 }

@@ -871,6 +871,13 @@ export class RecordCore<Context = null> extends Emitter {
   public onConnectionLost (): void {
     this.saveRecordToOffline()
   }
+
+  public getDebugId (): string | null {
+    if (this.options.debug) {
+      return utils.getUid()
+    }
+    return null
+  }
 }
 
 const recordStateTransitions = [

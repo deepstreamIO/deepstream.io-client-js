@@ -5,28 +5,20 @@ import { RecordCore, WriteAckCallback } from './record-core'
 import { Emitter } from '../util/emitter'
 
 export class List extends Emitter {
-    private record: RecordCore<List>
-    private wrappedFunctions: Map<Function, Function>
+    public  debugId = this.record.getDebugId()
+    private wrappedFunctions: Map<Function, Function> = new Map()
     private originalApplyUpdate: Function
     private beforeStructure: any
 
-    private hasAddListener: boolean
-    private hasRemoveListener: boolean
-    private hasMoveListener: boolean
-    private subscriptions: Array<utils.RecordSubscribeArguments>
+    private hasAddListener: boolean = false
+    private hasRemoveListener: boolean = false
+    private hasMoveListener: boolean = false
+    private subscriptions: Array<utils.RecordSubscribeArguments> = []
 
-    constructor (record: RecordCore<List>) {
+    constructor (private record: RecordCore<List>) {
         super()
-        this.record = record
         this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
         this.record.applyUpdate = this.applyUpdate.bind(this)
-        this.wrappedFunctions = new Map()
-
-        this.hasAddListener = false
-        this.hasRemoveListener = false
-        this.hasMoveListener = false
-
-        this.subscriptions = []
         this.record.addReference(this)
     }
 

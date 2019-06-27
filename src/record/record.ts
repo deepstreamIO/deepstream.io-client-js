@@ -6,11 +6,11 @@ import { Emitter } from '../util/emitter'
 import {JSONObject, RecordData} from '../../binary-protocol/src/message-constants'
 
 export class Record extends Emitter  {
-    private subscriptions: Array<utils.RecordSubscribeArguments>
+    public  debugId = this.record.getDebugId()
+    private subscriptions: Array<utils.RecordSubscribeArguments> = []
 
     constructor (private record: RecordCore<Record>) {
         super()
-        this.subscriptions = []
         this.record.on(EVENT.RECORD_READY, this.emit.bind(this, EVENT.RECORD_READY, this), this)
         this.record.on(EVENT.RECORD_DISCARDED, this.emit.bind(this, EVENT.RECORD_DISCARDED), this)
         this.record.on(EVENT.RECORD_DELETED, this.emit.bind(this, EVENT.RECORD_DELETED), this)
