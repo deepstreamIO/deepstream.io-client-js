@@ -99,7 +99,6 @@ export class Emitter {
     return this
   }
 
-  
   /**
    * Check if this emitter has `event` handlers.
    */

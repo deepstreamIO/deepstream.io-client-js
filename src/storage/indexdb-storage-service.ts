@@ -31,8 +31,9 @@ export class Storage implements RecordOfflineStore {
     const { objectStoreNames, storageDatabaseName } = options.indexdb
     let dbVersion = options.indexdb.dbVersion
     if (options.indexdb.autoVersion) {
-        const previousDBStructure = localStorage.get(`deepstream-db/${storageDatabaseName}`)
-        if (previousDBStructure) {
+        const previousDBStructureSerialized = localStorage.getItem(`deepstream-db/${storageDatabaseName}`)
+        if (previousDBStructureSerialized) {
+            const previousDBStructure = JSON.parse(previousDBStructureSerialized)
             const objectStoreChanged = (
                 previousDBStructure.objectStoreNames.length !== objectStoreNames.length ||
                 previousDBStructure.objectStoreNames.some((name: string) => !objectStoreNames.includes(name))
@@ -76,7 +77,7 @@ export class Storage implements RecordOfflineStore {
         }
 
         if (options.indexdb.autoVersion) {
-            localStorage.set(`deepstream-db/${storageDatabaseName}`, { dbVersion, objectStoreNames })
+            localStorage.setItem(`deepstream-db/${storageDatabaseName}`, JSON.stringify({ dbVersion, objectStoreNames }))
         }
     }
   }
