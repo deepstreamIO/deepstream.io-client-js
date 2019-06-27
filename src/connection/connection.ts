@@ -60,7 +60,7 @@ export class Connection {
   private endpoint: Socket | null
   private handlers: Map<TOPIC, Function>
 
-  private reconnectTimeout: number | null = -1
+  private reconnectTimeout: number | null = null
   private reconnectionAttempt: number
   private limboTimeout: number | null
 
