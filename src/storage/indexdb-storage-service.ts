@@ -28,8 +28,28 @@ export class Storage implements RecordOfflineStore {
     }
     this.flush = this.flush.bind(this)
 
-    const request = indexedDB.open(options.indexdb.storageDatabaseName, options.indexdb.dbVersion)
+    const { objectStoreNames, storageDatabaseName } = options.indexdb
+    let dbVersion = options.indexdb.dbVersion
+    if (options.indexdb.autoVersion) {
+        const previousDBStructure = localStorage.get(`deepstream-db/${storageDatabaseName}`)
+        if (previousDBStructure) {
+            const objectStoreChanged = (
+                previousDBStructure.objectStoreNames.length !== objectStoreNames.length ||
+                previousDBStructure.objectStoreNames.some((name: string) => !objectStoreNames.includes(name))
+            )
+            if (objectStoreChanged) {
+                dbVersion = previousDBStructure.dbVersion + 1
+            } else {
+                dbVersion = previousDBStructure.dbVersion
+            }
+        } else {
+            dbVersion = 1
+        }
+    }
+
+    const request = indexedDB.open(options.indexdb.storageDatabaseName, dbVersion)
     request.onerror = event => {
+        console.error(`Error opening index ${options.indexdb.storageDatabaseName}`, event)
         // TODO: Workflow for lack of permissions to use indexDB
     }
     request.onsuccess = (event: any) => {
@@ -53,6 +73,10 @@ export class Storage implements RecordOfflineStore {
             if (options.indexdb.objectStoreNames.includes(db.objectStoreNames[i]) === false) {
                 db.deleteObjectStore(db.objectStoreNames[i])
             }
+        }
+
+        if (options.indexdb.autoVersion) {
+            localStorage.set(`deepstream-db/${storageDatabaseName}`, { dbVersion, objectStoreNames })
         }
     }
   }

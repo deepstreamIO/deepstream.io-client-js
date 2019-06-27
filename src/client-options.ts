@@ -112,6 +112,7 @@ export interface  Options {
     lazyConnect: boolean,
 
     indexdb: {
+        autoVersion: boolean,
         dbVersion: number,
         primaryKey: string,
         /**
@@ -158,13 +159,14 @@ export const DefaultOptions: Options = {
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './local-storage',
     indexdb: {
+        autoVersion: false,
         dbVersion: 1,
         primaryKey: 'id',
         storageDatabaseName: 'deepstream',
         defaultObjectStoreName: 'records',
         objectStoreNames: [],
         ignorePrefixes: [],
-        flushTimeout: 50
+        flushTimeout: 50,
     },
     nodeStorageSize: 5,
     lazyConnect: false,
