@@ -1,3 +1,7 @@
+# [4.0.0-rc.35] - 2019-07-01
+  
+- Don't resubscribe records that are unsubscribing on a reconnect
+
 # [4.0.0-rc.31] - 2019-06-27
   
 - Adding an autoVersion option for indexdb
