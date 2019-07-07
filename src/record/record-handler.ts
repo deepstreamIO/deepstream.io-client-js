@@ -40,7 +40,6 @@ export class RecordHandler {
   private recordCores: Map<string, RecordCore>
   private recordServices: RecordServices
   private dirtyService: DirtyService
-
   constructor (services: Services, options: Options, recordServices?: RecordServices, listener?: Listener) {
     this.services = services
     this.options = options
@@ -419,6 +418,20 @@ export class RecordHandler {
     }
 
     if (
+      message.action === RA.HEAD_RESPONSE_BULK
+    ) {
+      Object.keys(message.versions!).forEach(name => {
+        this.recordServices.headRegistry.recieve({
+          topic: TOPIC.RECORD,
+          action: RA.HEAD_RESPONSE,
+          originalAction: RA.HEAD,
+          name,
+          version: message.versions![name]
+        }, null, message.versions![name])
+      })
+    }
+
+    if (
       message.action === RA.HEAD_RESPONSE ||
       message.originalAction === RA.HEAD
     ) {
@@ -534,5 +547,4 @@ export class RecordHandler {
       this.services.timeoutRegistry.add({ message })
     }
   }
-
 }

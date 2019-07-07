@@ -157,7 +157,7 @@ describe('listener', () => {
         .once()
         .withExactArgs(message, EVENT.UNSOLICITED_MESSAGE)
 
-      listener.handle(message)
+      listener.handle(message as any)
     })
 
     describe('gets a subscription for pattern found', () => {

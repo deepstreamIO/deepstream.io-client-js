@@ -107,7 +107,7 @@ public unsubscribe (name: string, callback: (data: EventData) => void): void {
     if (this.services.connection.isConnected) {
       this.services.connection.sendMessage(message)
     } else if (this.services.connection.isInLimbo) {
-      this.limboQueue.push(message)
+      this.limboQueue.push(message as EventMessage)
     }
 
     this.emitter.emit(name, data)
