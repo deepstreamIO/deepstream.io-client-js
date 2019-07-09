@@ -4,12 +4,13 @@ sudo: false
 language: node_js
 
 node_js:
+  - "12"
   - "10"
   - "8"
   - "6"
 
 script:
-  - if [[ "$TRAVIS_NODE_VERSION" == 8 ]]; then
+  - if [[ "$TRAVIS_NODE_VERSION" == 10 ]]; then
       npm run lint;
     fi
   - npm run test:coverage

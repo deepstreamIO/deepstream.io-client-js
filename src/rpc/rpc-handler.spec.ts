@@ -20,7 +20,7 @@ describe('RPC handler', () => {
   const name = 'myRpc'
   const rpcAcceptTimeout = 10
   const rpcResponseTimeout = 30
-  const options = { ...DefaultOptions, rpcAcceptTimeout, rpcResponseTimeout }
+  const options = { ...DefaultOptions, rpcAcceptTimeout, rpcResponseTimeout, subscriptionInterval: 0  }
 
   beforeEach(() => {
     services = getServicesMock()
@@ -51,12 +51,14 @@ describe('RPC handler', () => {
     const message = {
       topic: TOPIC.RPC,
       action: RPC_ACTIONS.PROVIDE,
-      name
+      names: [name],
+      correlationId: '0'
     }
     services.connectionMock
       .expects('sendMessage')
       .once()
       .withExactArgs(message)
+
     services.timeoutRegistryMock
       .expects('add')
       .once()
@@ -82,12 +84,15 @@ describe('RPC handler', () => {
     const message = {
       topic: TOPIC.RPC,
       action: RPC_ACTIONS.PROVIDE,
-      name
+      names: [name],
+      correlationId: '0'
     }
+
     services.connectionMock
       .expects('sendMessage')
       .twice()
       .withExactArgs(message)
+
     services.timeoutRegistryMock
       .expects('add')
       .twice()
@@ -95,6 +100,7 @@ describe('RPC handler', () => {
 
     rpcHandler.provide(name, rpcProviderSpy as RPCProvider)
 
+    services.simulateConnectionLost()
     services.simulateConnectionReestablished()
     sinon.assert.notCalled(rpcProviderSpy)
   })
@@ -282,12 +288,15 @@ describe('RPC handler', () => {
       const message = {
         topic: TOPIC.RPC,
         action: RPC_ACTIONS.UNPROVIDE,
-        name
+        names: [name],
+        correlationId: '1'
       }
+
       services.connectionMock
         .expects('sendMessage')
         .once()
         .withExactArgs(message)
+
       services.timeoutRegistryMock
         .expects('add')
         .once()

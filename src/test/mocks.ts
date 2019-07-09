@@ -13,15 +13,14 @@ import { WriteAcknowledgementService } from '../record/write-ack-service'
 import { DirtyService } from '../record/dirty-service'
 import { Listener } from '../util/listener'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
+import { EventEmitter } from 'events'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
 
 export const getServicesMock = () => {
   let handle: Function | null = null
-  let onReestablished: Function
-  let onLost: Function
-  let onExitLimbo: Function
+  const emitter = new EventEmitter()
 
   const connection = {
       sendMessage: (message: Message) => { lastMessageSent = message },
@@ -32,13 +31,13 @@ export const getServicesMock = () => {
         handle = callback
       },
       onReestablished: (callback: Function): void => {
-        onReestablished = callback
+        emitter.on('onReestablished', callback as any)
       },
       onLost: (callback: Function): void => {
-        onLost = callback
+        emitter.on('onLost', callback as any)
       },
       onExitLimbo: (callback: Function): void => {
-        onExitLimbo = callback
+        emitter.on('onExitLimbo', callback as any)
       },
       removeOnReestablished: () => {},
       removeOnLost: () => {}
@@ -127,9 +126,9 @@ export const getServicesMock = () => {
     getLogger: (): any => ({ logger, loggerMock}),
     timerRegistry,
     getHandle: (): Function | null => handle,
-    simulateConnectionLost: (): void => onLost(),
-    simulateConnectionReestablished: (): void => onReestablished(),
-    simulateExitLimbo: (): void => onExitLimbo(),
+    simulateConnectionLost: (): void => { emitter.emit('onLost') },
+    simulateConnectionReestablished: (): void =>  { emitter.emit('onReestablished') },
+    simulateExitLimbo: (): void => { emitter.emit('onExitLimbo') },
     storage,
     storageMock,
     verify: () => {
@@ -150,9 +149,9 @@ export const getRecordServices = (services: any) => {
   const writeAckService = new WriteAcknowledgementService(services)
 
   const bulkSubscriptionService = {
-    [RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBECREATEANDREAD_BULK, RECORD_ACTION.SUBSCRIBECREATEANDREAD, RECORD_ACTION.UNSUBSCRIBE_BULK, RECORD_ACTION.UNSUBSCRIBE),
-    [RECORD_ACTION.SUBSCRIBEANDHEAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDHEAD_BULK, RECORD_ACTION.SUBSCRIBEANDHEAD, RECORD_ACTION.UNSUBSCRIBE_BULK, RECORD_ACTION.UNSUBSCRIBE),
-    [RECORD_ACTION.SUBSCRIBEANDREAD_BULK]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDREAD_BULK,  RECORD_ACTION.SUBSCRIBEANDREAD, RECORD_ACTION.UNSUBSCRIBE_BULK, RECORD_ACTION.UNSUBSCRIBE)
+    [RECORD_ACTION.SUBSCRIBECREATEANDREAD]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBECREATEANDREAD, RECORD_ACTION.UNSUBSCRIBE),
+    [RECORD_ACTION.SUBSCRIBEANDHEAD]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDHEAD, RECORD_ACTION.UNSUBSCRIBE),
+    [RECORD_ACTION.SUBSCRIBEANDREAD]: new BulkSubscriptionService<RECORD_ACTION>(services, 0, TOPIC.RECORD, RECORD_ACTION.SUBSCRIBEANDREAD, RECORD_ACTION.UNSUBSCRIBE)
   }
 
   const dirtyServiceMock = mock(dirtyService)

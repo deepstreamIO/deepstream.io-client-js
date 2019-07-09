@@ -24,8 +24,10 @@ import { MergeStrategyService } from './merge-strategy-service'
 import { MergeStrategy } from './merge-strategy'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
+type SubscribeActions = RA.SUBSCRIBEANDHEAD | RA.SUBSCRIBECREATEANDREAD
+
 export interface RecordServices {
-  bulkSubscriptionService: { [index in RA]: BulkSubscriptionService<RA> }
+  bulkSubscriptionService: { [index in SubscribeActions]: BulkSubscriptionService<RA> }
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier<RecordMessage>,
   headRegistry: SingleNotifier<RecordMessage>,
@@ -49,9 +51,8 @@ export class RecordHandler {
 
     this.recordServices = recordServices || {
       bulkSubscriptionService: {
-        [RA.SUBSCRIBECREATEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBECREATEANDREAD_BULK, RA.SUBSCRIBECREATEANDREAD),
-        [RA.SUBSCRIBEANDHEAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDHEAD_BULK, RA.SUBSCRIBEANDHEAD),
-        [RA.SUBSCRIBEANDREAD_BULK]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDREAD_BULK, RA.SUBSCRIBEANDREAD),
+        [RA.SUBSCRIBECREATEANDREAD]: this.getBulkSubscriptionService(RA.SUBSCRIBECREATEANDREAD),
+        [RA.SUBSCRIBEANDHEAD]: this.getBulkSubscriptionService(RA.SUBSCRIBEANDHEAD)
       },
       writeAckService: new WriteAcknowledgementService(services),
       readRegistry: new SingleNotifier(services, RA.READ, options.recordReadTimeout),
@@ -537,9 +538,12 @@ export class RecordHandler {
     this.sendSetData(recordName, remoteVersion + 1, { data: mergeData })
   }
 
-  private getBulkSubscriptionService (bulkSubscribe: RA, subscribe: RA) {
-    return new BulkSubscriptionService<RA>(this.services, this.options.subscriptionInterval, TOPIC.RECORD,
-        bulkSubscribe, subscribe, RA.UNSUBSCRIBE_BULK, RA.UNSUBSCRIBE, this.onBulkSubscriptionSent)
+  private getBulkSubscriptionService (bulkSubscribe: RA) {
+    return new BulkSubscriptionService<RA>(
+        this.services, this.options.subscriptionInterval, TOPIC.RECORD,
+        bulkSubscribe, RA.UNSUBSCRIBE,
+        this.onBulkSubscriptionSent
+      )
   }
 
   private onBulkSubscriptionSent (message: Message) {

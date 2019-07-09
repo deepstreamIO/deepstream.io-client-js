@@ -31,7 +31,8 @@ describe('online scenario, not individual tests', () => {
             .withExactArgs({
                 topic: TOPIC.RECORD,
                 action: RECORD_ACTION.SUBSCRIBECREATEANDREAD,
-                name
+                names: [name],
+                correlationId: '0'
             })
 
         services.storageMock
@@ -223,7 +224,8 @@ describe('online scenario, not individual tests', () => {
         .withExactArgs({
             topic: TOPIC.RECORD,
             action: RECORD_ACTION.UNSUBSCRIBE,
-            name
+            names: [name],
+            correlationId: name
         })
 
         services.storageMock

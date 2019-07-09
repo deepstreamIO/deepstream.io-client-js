@@ -380,7 +380,7 @@ export class RecordCore<Context = null> extends Emitter {
         name: this.name
       }
     })
-    this.recordServices.bulkSubscriptionService[RA.SUBSCRIBECREATEANDREAD_BULK].subscribe(this.name)
+    this.recordServices.bulkSubscriptionService[RA.SUBSCRIBECREATEANDREAD].subscribe(this.name)
   }
 
   public onResubscribing (): void {
@@ -394,7 +394,7 @@ export class RecordCore<Context = null> extends Emitter {
         name: this.name
       }
     })
-    this.recordServices.bulkSubscriptionService[RA.SUBSCRIBEANDHEAD_BULK].subscribe(this.name)
+    this.recordServices.bulkSubscriptionService[RA.SUBSCRIBEANDHEAD].subscribe(this.name)
   }
 
   public onOfflineLoading () {
@@ -480,10 +480,14 @@ export class RecordCore<Context = null> extends Emitter {
 
   public onUnsubscribed (): void {
     if (this.services.connection.isConnected) {
+      // TODO: Remove the discard concept from an individual record into bulk
+      // this.recordServices.bulkSubscriptionService[RA.SUBSCRIBEANDHEAD].unsubscribe(this.name)
+
       const message = {
         topic: TOPIC.RECORD,
         action: RA.UNSUBSCRIBE,
-        name: this.name
+        names: [this.name],
+        correlationId: this.name
       }
       this.discardTimeout = this.services.timeoutRegistry.add({ message })
       this.services.connection.sendMessage(message)

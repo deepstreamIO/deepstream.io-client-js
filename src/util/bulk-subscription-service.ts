@@ -12,16 +12,14 @@ export class BulkSubscriptionService<ACTION> {
         private subscriptionInterval: number,
         private topic: TOPIC,
         private subscribeBulkAction: ACTION,
-        private subscribeOriginalAction: ACTION | null,
         private unsubscribeBulkAction: ACTION,
-        private unsubscribeOriginalAction: ACTION | null,
         private onSubscriptionSent: (message: Message) => void = (() => {})
         ) {
         this.services.connection.onLost(this.onLost.bind(this))
     }
 
     public subscribe (name: string) {
-        if (this.subscriptionInterval > 0 || !this.subscribeOriginalAction) {
+        if (this.subscriptionInterval > 0) {
             if (this.unsubscribeNames.has(name)) {
                 this.unsubscribeNames.delete(name)
             } else {
@@ -33,8 +31,9 @@ export class BulkSubscriptionService<ACTION> {
 
         const message = {
             topic: this.topic,
-            action: this.subscribeOriginalAction as any,
-            name
+            action: this.subscribeBulkAction as any,
+            names: [name],
+            correlationId: (this.correlationId++).toString()
         }
         this.services.connection.sendMessage(message)
         this.onSubscriptionSent(message)
@@ -45,7 +44,7 @@ export class BulkSubscriptionService<ACTION> {
     }
 
     public unsubscribe (name: string) {
-        if (this.subscriptionInterval > 0 || !this.unsubscribeOriginalAction) {
+        if (this.subscriptionInterval > 0) {
             if (this.subscribeNames.has(name)) {
                 this.subscribeNames.delete(name)
             } else {
@@ -57,8 +56,9 @@ export class BulkSubscriptionService<ACTION> {
 
         const message = {
             topic: this.topic,
-            action: this.unsubscribeOriginalAction as any,
-            name
+            action: this.unsubscribeBulkAction as any,
+            names: [name],
+            correlationId: (this.correlationId++).toString()
         }
         this.services.connection.sendMessage(message)
         this.onSubscriptionSent(message)
@@ -110,6 +110,7 @@ export class BulkSubscriptionService<ACTION> {
     }
 
     public onLost () {
+        this.correlationId = 0
         this.services.timerRegistry.remove(this.timerRef)
         this.subscribeNames.clear()
         this.unsubscribeNames.clear()

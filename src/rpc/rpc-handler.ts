@@ -1,10 +1,11 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import {TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage, RPCResult} from '../../binary-protocol/src/message-constants'
+import {TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage, RPCResult, Message} from '../../binary-protocol/src/message-constants'
 import { EVENT } from '../constants'
 import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
 import { getUid } from '../util/utils'
+import { BulkSubscriptionService } from '../util/bulk-subscription-service'
 
 export type RPCProvider = (rpcData: any, response: RPCResponse) => void
 
@@ -12,8 +13,15 @@ export class RPCHandler {
   private rpcs = new Map<string, RPC>()
   private providers = new Map<string, RPCProvider>()
   private limboQueue: Array<{ name: string, data: any, correlationId: string, callback: RPCMakeCallback }> = []
+  private bulkSubscription: BulkSubscriptionService<RPC_ACTION>
 
   constructor (private services: Services, private options: Options) {
+    this.bulkSubscription = new BulkSubscriptionService<RPC_ACTION>(
+      this.services, options.subscriptionInterval, TOPIC.RPC,
+      RPC_ACTION.PROVIDE, RPC_ACTION.UNPROVIDE,
+      this.onBulkSubscriptionSent.bind(this)
+    )
+
     this.services.connection.registerHandler(TOPIC.RPC, this.handle.bind(this))
     this.services.connection.onReestablished(this.onConnectionReestablished.bind(this))
     this.services.connection.onExitLimbo(this.onExitLimbo.bind(this))
@@ -56,7 +64,7 @@ export class RPCHandler {
 
     this.providers.set(name, callback)
     if (this.services.connection.isConnected) {
-      this.sendProvide(name)
+      this.bulkSubscription.subscribe(name)
     }
   }
 
@@ -79,10 +87,7 @@ export class RPCHandler {
 
     this.providers.delete(name)
     if (this.services.connection.isConnected) {
-      const message = { topic: TOPIC.RPC, action: RPC_ACTION.UNPROVIDE, name }
-      this.services.timeoutRegistry.add({ message })
-      this.services.connection.sendMessage(message)
-      return
+      this.bulkSubscription.unsubscribe(name)
     }
   }
 
@@ -227,20 +232,8 @@ export class RPCHandler {
     return rpc
   }
 
-  private sendProvide (name: string) {
-    const message = {
-      topic: TOPIC.RPC,
-      action: RPC_ACTION.PROVIDE,
-      name
-    }
-    this.services.timeoutRegistry.add({ message })
-    this.services.connection.sendMessage(message)
-  }
-
   private onConnectionReestablished (): void {
-    for (const [name] of this.providers) {
-      this.sendProvide(name)
-    }
+    this.bulkSubscription.subscribeList([...this.providers.keys()])
     for (let i = 0; i < this.limboQueue.length; i++) {
       const { correlationId, name, data, callback } = this.limboQueue[i]
       this.rpcs.set(correlationId, new RPC(name, correlationId, data, callback, this.options, this.services))
@@ -262,4 +255,7 @@ export class RPCHandler {
     this.rpcs.clear()
   }
 
+  private onBulkSubscriptionSent (message: Message): void {
+    this.services.timeoutRegistry.add({ message })
+  }
 }

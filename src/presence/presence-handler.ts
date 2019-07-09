@@ -51,7 +51,7 @@ export class PresenceHandler {
   constructor (private services: Services, options: Options) {
     this.bulkSubscription = new BulkSubscriptionService<PA>(
         this.services, options.subscriptionInterval, TOPIC.PRESENCE,
-        PA.SUBSCRIBE_BULK, null, PA.UNSUBSCRIBE_BULK, null,
+        PA.SUBSCRIBE, PA.UNSUBSCRIBE,
         this.onBulkSubscriptionSent.bind(this)
     )
 

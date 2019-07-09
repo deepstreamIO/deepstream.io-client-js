@@ -22,7 +22,7 @@ export class EventHandler {
     constructor (private services: Services, options: Options, listeners?: Listener) {
       this.bulkSubscription = new BulkSubscriptionService<EA>(
           this.services, options.subscriptionInterval, TOPIC.EVENT,
-          EA.SUBSCRIBE_BULK, EA.SUBSCRIBE, EA.UNSUBSCRIBE_BULK, EA.UNSUBSCRIBE,
+          EA.SUBSCRIBE, EA.UNSUBSCRIBE,
           this.onBulkSubscriptionSent.bind(this)
       )
 
@@ -156,22 +156,11 @@ private handle (message: EventMessage): void {
       return
     }
 
-    if (message.action === EA.MULTIPLE_SUBSCRIPTIONS) {
-      this.services.timeoutRegistry.remove(
-        Object.assign({}, message, {
+    if (message.action === EA.MULTIPLE_SUBSCRIPTIONS || message.action === EA.NOT_SUBSCRIBED) {
+      this.services.timeoutRegistry.remove({
+        ...message,
           action: EA.SUBSCRIBE
-        })
-      )
-      this.services.logger.warn(message)
-      return
-    }
-
-    if (message.action === EA.NOT_SUBSCRIBED) {
-      this.services.timeoutRegistry.remove(
-        Object.assign({}, message, {
-          action: EA.SUBSCRIBE
-        })
-      )
+      })
       this.services.logger.warn(message)
       return
     }
@@ -209,8 +198,6 @@ private handle (message: EventMessage): void {
   }
 
   private onBulkSubscriptionSent (message: Message) {
-    if (!message.names) {
-      this.services.timeoutRegistry.add({ message })
-    }
+    this.services.timeoutRegistry.add({ message })
   }
 }

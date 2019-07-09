@@ -61,51 +61,46 @@ describe('event handler', () => {
   })
 
   it('subscribes to an event', () => {
+    const message = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.SUBSCRIBE,
+      names: [name],
+      correlationId: '0'
+    }
+
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs({
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.SUBSCRIBE,
-        name
-      })
+      .withExactArgs(message)
 
     services.timeoutRegistryMock
       .expects('add')
       .once()
-      .withExactArgs({
-        message: {
-          topic: TOPIC.EVENT,
-          action: EVENT_ACTION.SUBSCRIBE,
-          name
-        }
-      })
+      .withExactArgs({ message })
 
     eventHandler.subscribe(name, spy)
   })
 
   it('resubscribes to an event when connection reestablished', () => {
+    const message = {
+        topic: TOPIC.EVENT,
+        action: EVENT_ACTION.SUBSCRIBE,
+        names: [name],
+        correlationId: '0'
+    }
     services.connectionMock
       .expects('sendMessage')
       .twice()
-      .withExactArgs({
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.SUBSCRIBE,
-        name
-      })
+      .withExactArgs(message)
 
     services.timeoutRegistryMock
       .expects('add')
       .twice()
-      .withExactArgs({
-        message: {
-          topic: TOPIC.EVENT,
-          action: EVENT_ACTION.SUBSCRIBE,
-          name
-        }
-      })
+      .withExactArgs({ message })
 
     eventHandler.subscribe(name, spy)
+
+    services.simulateConnectionLost()
     services.simulateConnectionReestablished()
   })
 
@@ -123,6 +118,13 @@ describe('event handler', () => {
   })
 
   it('unsubscribes to an event after subscribing', () => {
+    const message = {
+      topic: TOPIC.EVENT,
+      action: EVENT_ACTION.UNSUBSCRIBE,
+      names: [name],
+      correlationId: '1'
+    }
+
     services.connectionMock
       .expects('sendMessage')
       .once()
@@ -130,11 +132,7 @@ describe('event handler', () => {
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs({
-        topic: TOPIC.EVENT,
-        action: EVENT_ACTION.UNSUBSCRIBE,
-        name
-      })
+      .withExactArgs(message)
 
     services.timeoutRegistryMock
       .expects('add')
@@ -143,31 +141,28 @@ describe('event handler', () => {
     services.timeoutRegistryMock
       .expects('add')
       .once()
-      .withExactArgs({
-        message: {
-          topic: TOPIC.EVENT,
-          action: EVENT_ACTION.UNSUBSCRIBE,
-          name
-        }
-      })
+      .withExactArgs({ message })
 
     eventHandler.subscribe(name, spy)
     eventHandler.unsubscribe(name, spy)
   })
 
   it('unsubscribes to an event after unsubscribing already', () => {
-    services.connectionMock
-      .expects('sendMessage')
-      .once()
-
-    services.connectionMock
-      .expects('sendMessage')
-      .once()
-      .withExactArgs({
+    const message = {
         topic: TOPIC.EVENT,
         action: EVENT_ACTION.UNSUBSCRIBE,
-        name
-      })
+        names: [name],
+        correlationId: '1'
+    }
+
+    services.connectionMock
+      .expects('sendMessage')
+      .once()
+
+    services.connectionMock
+      .expects('sendMessage')
+      .once()
+      .withExactArgs(message)
 
     services.timeoutRegistryMock
       .expects('add')
@@ -176,13 +171,7 @@ describe('event handler', () => {
     services.timeoutRegistryMock
       .expects('add')
       .once()
-      .withExactArgs({
-        message: {
-          topic: TOPIC.EVENT,
-          action: EVENT_ACTION.UNSUBSCRIBE,
-          name
-        }
-      })
+      .withExactArgs({ message })
 
     services.loggerMock
       .expects('warn')
@@ -199,6 +188,10 @@ describe('event handler', () => {
   })
 
   it('notifies local listeners for local events', () => {
+    services.connectionMock
+      .expects('sendMessage')
+      .twice()
+
     eventHandler.subscribe(name, spy)
     eventHandler.emit(name, 8)
     sinon.assert.calledOnce(spy)

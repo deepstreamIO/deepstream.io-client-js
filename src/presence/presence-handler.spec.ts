@@ -96,7 +96,7 @@ describe('Presence handler', () => {
   it('subscribes to presence with user a', async () => {
     const subscribeMessage = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE_BULK,
+      action: PRESENCE_ACTIONS.SUBSCRIBE,
       names: [userA],
       correlationId: '0'
     }
@@ -170,8 +170,8 @@ describe('Presence handler', () => {
 
   it('sends unsubscribe for specific user presence', async () => {
     const user = 'user'
-    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE_BULK, names: [ user ], correlationId: '0' }
-    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE_BULK, names: [ user ], correlationId: '1' }
+    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE, names: [ user ], correlationId: '0' }
+    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE, names: [ user ], correlationId: '1' }
 
     services.connectionMock
       .expects('sendMessage')
@@ -230,7 +230,7 @@ describe('Presence handler', () => {
   it('handles acks messages', () => {
     const messageAck: Message = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE_BULK_ACK,
+      action: PRESENCE_ACTIONS.SUBSCRIBE_ACK,
       isAck: true
     }
     services.timeoutRegistryMock
@@ -252,7 +252,7 @@ describe('Presence handler', () => {
     const messageSubscribeAll = message(PRESENCE_ACTIONS.SUBSCRIBE_ALL)
     const messageSubscribe = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE_BULK,
+      action: PRESENCE_ACTIONS.SUBSCRIBE,
       names: users,
       correlationId: '1'
     }
