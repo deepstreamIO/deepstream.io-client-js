@@ -5,7 +5,7 @@ module.exports = {
   entry: ['./src/deepstream.ts'],
   output: {
     path: __dirname,
-    filename: './dist/deepstream.js',
+    filename: './dist/ds.js',
     library: 'deepstream',
     libraryTarget: 'umd',
     umdNamedDefine: true,
