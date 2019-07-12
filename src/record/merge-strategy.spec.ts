@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { spy } from 'sinon'
 import * as MERGE_STRATEGIES from './merge-strategy'
-import {JSONObject} from '../../binary-protocol/src/message-constants'
+import { JSONObject } from '../constants'
 
 describe('merge strategies @unit', () => {
   let localData: JSONObject

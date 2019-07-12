@@ -1,10 +1,10 @@
 import { expect } from 'chai'
 import { getServicesMock } from '../test/mocks'
-import { TOPIC, RPC_ACTIONS } from '../../binary-protocol/src/message-constants'
 
 import { DefaultOptions } from '../client-options'
 import { RPCResponse } from './rpc-response'
 import { Promise as BBPromise } from 'bluebird'
+import { TOPIC, RPC_ACTION } from '../constants'
 
 describe('RPC response', () => {
   let services: any
@@ -16,7 +16,7 @@ describe('RPC response', () => {
     services = getServicesMock()
     rpcResponse = new RPCResponse({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REQUEST,
+        action: RPC_ACTION.REQUEST,
         name,
         correlationId
       },
@@ -44,7 +44,7 @@ describe('RPC response', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.ACCEPT,
+        action: RPC_ACTION.ACCEPT,
         name,
         correlationId
       })
@@ -60,7 +60,7 @@ describe('RPC response', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.ACCEPT,
+        action: RPC_ACTION.ACCEPT,
         name,
         correlationId
       })
@@ -75,7 +75,7 @@ describe('RPC response', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.ACCEPT,
+        action: RPC_ACTION.ACCEPT,
         name,
         correlationId
       })
@@ -84,7 +84,7 @@ describe('RPC response', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.RESPONSE,
+        action: RPC_ACTION.RESPONSE,
         name,
         correlationId,
         parsedData: data
@@ -122,7 +122,7 @@ describe('RPC response', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REJECT,
+        action: RPC_ACTION.REJECT,
         name,
         correlationId
       })
@@ -146,7 +146,7 @@ describe('RPC response', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REQUEST_ERROR,
+        action: RPC_ACTION.REQUEST_ERROR,
         name,
         correlationId,
         parsedData: error

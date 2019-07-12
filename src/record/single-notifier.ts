@@ -1,6 +1,5 @@
-import { TOPIC, Message, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
 
-import { EVENT } from '../constants'
+import { EVENT, Message, RECORD_ACTION, TOPIC } from '../constants'
 import { Services } from '../client'
 
 /**

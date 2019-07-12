@@ -1,14 +1,10 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { EVENT } from '../constants'
-import {
-  RECORD_ACTIONS as RECORD_ACTION,
-  RPC_ACTIONS as RPC_ACTION,
-  Message
-} from '../../binary-protocol/src/message-constants'
-import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
+import { EVENT, RESPONSE_TO_REQUEST } from '../constants'
 
 import { Emitter } from '../util/emitter'
+import { RECORD_ACTION, RPC_ACTION } from '@deepstream/protobuf/dist/types/all'
+import { Message } from '@deepstream/protobuf/dist/types/messages'
 
 export type TimeoutId = string | null
 export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION

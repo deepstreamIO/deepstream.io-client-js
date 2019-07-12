@@ -1,16 +1,7 @@
-import { CONNECTION_STATE, EVENT } from '../constants'
-import {
-  TOPIC,
-  CONNECTION_ACTIONS as CONNECTION_ACTION,
-  AUTH_ACTIONS as AUTH_ACTION,
-  PARSER_ACTIONS as PARSER_ACTION,
-  Message,
-  ParseResult,
-  JSONObject
-} from '../../binary-protocol/src/message-constants'
+import { CONNECTION_STATE, EVENT, JSONObject, TOPIC, Message, CONNECTION_ACTION, ParseResult, PARSER_ACTION, AUTH_ACTION } from '../constants'
 import {
   parseData
-} from '../../binary-protocol/src/message-parser'
+} from '@deepstream/protobuf/dist/src/message-parser'
 
 import { StateMachine } from '../util/state-machine'
 import {Services, Socket} from '../client'

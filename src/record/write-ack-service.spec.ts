@@ -1,15 +1,13 @@
 import { Promise as BBPromise } from 'bluebird'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../test/mocks'
-import { EVENT } from '../constants'
-import { TOPIC, RECORD_ACTIONS as RA, RecordMessage } from '../../binary-protocol/src/message-constants'
+import { EVENT, TOPIC, RECORD_ACTION, RecordMessage } from '../constants'
 
 import { WriteAcknowledgementService } from './write-ack-service'
 
 describe('Write Ack Notifier', () => {
   const topic = TOPIC.RECORD
-  const action = RA.CREATEANDPATCH
-  const ackAction = RA.CREATEANDPATCH_WITH_WRITE_ACK
+  const action = RECORD_ACTION.CREATEANDPATCH
   const name = 'record'
 
   let services: any
@@ -68,11 +66,11 @@ describe('Write Ack Notifier', () => {
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '1' }))
+      .withExactArgs(Object.assign({}, messageBody, { action, correlationId: '1', isWriteAck: true }))
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '2' }))
+      .withExactArgs(Object.assign({}, messageBody, { action, correlationId: '2', isWriteAck: true  }))
 
     writeAckService.send(messageBody, () => {})
     writeAckService.send(messageBody, () => {})
@@ -109,9 +107,10 @@ describe('Write Ack Notifier', () => {
     it('calls ack callback when server sends ack message', async () => {
       writeAckService.recieve({
         topic,
-        action: RA.WRITE_ACKNOWLEDGEMENT,
+        action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
         correlationId,
-        originalAction: RA.CREATEANDUPDATE_WITH_WRITE_ACK
+        originalAction: RECORD_ACTION.CREATEANDUPDATE,
+        isWriteAck: true
       })
       await BBPromise.delay(1)
 
@@ -122,9 +121,10 @@ describe('Write Ack Notifier', () => {
     it('doesn\'t call callback twice', async () => {
       const msg = {
         topic,
-        action: RA.WRITE_ACKNOWLEDGEMENT,
+        action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
         correlationId,
-        originalAction: RA.CREATEANDUPDATE_WITH_WRITE_ACK
+        originalAction: RECORD_ACTION.CREATEANDUPDATE,
+        isWriteAck: true
       }
       writeAckService.recieve(msg)
       writeAckService.recieve(msg)
@@ -135,18 +135,19 @@ describe('Write Ack Notifier', () => {
     })
 
     it('calls ack callback with error when server sends error message', async () => {
-      const errorAction = RA.MESSAGE_DENIED
+      const errorAction = RECORD_ACTION.MESSAGE_DENIED
       writeAckService.recieve({
         topic,
         action: errorAction,
         correlationId,
-        originalAction: RA.CREATEANDUPDATE_WITH_WRITE_ACK,
+        originalAction: RECORD_ACTION.CREATEANDUPDATE,
+        isAck: true,
         isError: true
       })
       await BBPromise.delay(1)
 
       assert.calledOnce(callbackSpy)
-      assert.calledWith(callbackSpy, RA[errorAction])
+      assert.calledWith(callbackSpy, RECORD_ACTION[errorAction])
     })
 
   })

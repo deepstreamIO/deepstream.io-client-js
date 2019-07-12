@@ -7,7 +7,6 @@ node_js:
   - "12"
   - "10"
   - "8"
-  - "6"
 
 script:
   - if [[ "$TRAVIS_NODE_VERSION" == 10 ]]; then

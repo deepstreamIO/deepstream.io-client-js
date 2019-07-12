@@ -1,4 +1,4 @@
-import { RecordData } from '../../binary-protocol/src/message-constants'
+import { RecordData } from '../constants'
 
 export type MergeCompleteCallback = (error: string | null, mergedData: RecordData) => void
 export type MergeStrategy = (localValue: RecordData, localVersion: number, remoteValue: RecordData, remoteVersion: number, callback: MergeCompleteCallback) => void

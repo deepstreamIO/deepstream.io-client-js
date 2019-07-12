@@ -2,8 +2,7 @@ import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { assert, spy } from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../test/mocks'
-import { EVENT } from '../constants'
-import { TOPIC, PRESENCE_ACTIONS, PresenceMessage, Message } from '../../binary-protocol/src/message-constants'
+import { EVENT, TOPIC, Message, PresenceMessage, PRESENCE_ACTION } from '../constants'
 
 import { DefaultOptions } from '../client-options'
 import { PresenceHandler, IndividualQueryResult } from './presence-handler'
@@ -96,7 +95,7 @@ describe('Presence handler', () => {
   it('subscribes to presence with user a', async () => {
     const subscribeMessage = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE,
+      action: PRESENCE_ACTION.SUBSCRIBE,
       names: [userA],
       correlationId: '0'
     }
@@ -116,7 +115,7 @@ describe('Presence handler', () => {
   it('subscribes to presence for all users', async () => {
     const subscribeAllMessage = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE_ALL
+      action: PRESENCE_ACTION.SUBSCRIBE_ALL
     }
     services.connectionMock
       .expects('sendMessage')
@@ -135,7 +134,7 @@ describe('Presence handler', () => {
     const users = ['userA', 'userB']
     const queryMessage = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.QUERY,
+      action: PRESENCE_ACTION.QUERY,
       correlationId: counter.toString(),
       names: users
     }
@@ -154,7 +153,7 @@ describe('Presence handler', () => {
   it('queries for all users presence', () => {
     const queryAllMessage = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.QUERY_ALL
+      action: PRESENCE_ACTION.QUERY_ALL
     }
     services.connectionMock
       .expects('sendMessage')
@@ -170,8 +169,8 @@ describe('Presence handler', () => {
 
   it('sends unsubscribe for specific user presence', async () => {
     const user = 'user'
-    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE, names: [ user ], correlationId: '0' }
-    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE, names: [ user ], correlationId: '1' }
+    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE, names: [ user ], correlationId: '0' }
+    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.UNSUBSCRIBE, names: [ user ], correlationId: '1' }
 
     services.connectionMock
       .expects('sendMessage')
@@ -199,8 +198,8 @@ describe('Presence handler', () => {
   })
 
   it('sends unsubscribe for all users presence', async () => {
-    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.SUBSCRIBE_ALL }
-    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTIONS.UNSUBSCRIBE_ALL }
+    const subMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.SUBSCRIBE_ALL }
+    const unsubMsg = { topic: TOPIC.PRESENCE, action: PRESENCE_ACTION.UNSUBSCRIBE_ALL }
 
     services.connectionMock
       .expects('sendMessage')
@@ -230,7 +229,7 @@ describe('Presence handler', () => {
   it('handles acks messages', () => {
     const messageAck: Message = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE_ACK,
+      action: PRESENCE_ACTION.SUBSCRIBE,
       isAck: true
     }
     services.timeoutRegistryMock
@@ -249,10 +248,10 @@ describe('Presence handler', () => {
     await BBPromise.delay(options.subscriptionInterval * 2)
 
     counter = parseInt(getLastMessageSent().correlationId as string, 10) + 1
-    const messageSubscribeAll = message(PRESENCE_ACTIONS.SUBSCRIBE_ALL)
+    const messageSubscribeAll = message(PRESENCE_ACTION.SUBSCRIBE_ALL)
     const messageSubscribe = {
       topic: TOPIC.PRESENCE,
-      action: PRESENCE_ACTIONS.SUBSCRIBE,
+      action: PRESENCE_ACTION.SUBSCRIBE,
       names: users,
       correlationId: '1'
     }
@@ -298,11 +297,11 @@ describe('Presence handler', () => {
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE }))
+        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTION.QUERY_ALL_RESPONSE }))
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE }))
+        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTION.QUERY_ALL_RESPONSE }))
 
       handle(messageForCallback)
       handle(messageForPromise)
@@ -317,7 +316,7 @@ describe('Presence handler', () => {
     })
 
     it('recieves error message for query all users', async () => {
-      const error = PRESENCE_ACTIONS.MESSAGE_DENIED
+      const error = PRESENCE_ACTION.MESSAGE_DENIED
       const messageForCallback = errorMessageResponseQueryAll(counter, error)
       const messageForPromise = errorMessageResponseQueryAll(counter + 1, error)
       services.timeoutRegistryMock
@@ -334,10 +333,10 @@ describe('Presence handler', () => {
 
       await BBPromise.delay(1)
       assert.calledOnce(callback)
-      assert.calledWithExactly(callback, PRESENCE_ACTIONS[error])
+      assert.calledWithExactly(callback, PRESENCE_ACTION[error])
 
       assert.calledOnce(promiseError)
-      assert.calledWithExactly(promiseError, PRESENCE_ACTIONS[error])
+      assert.calledWithExactly(promiseError, PRESENCE_ACTION[error])
 
       assert.notCalled(promiseSuccess)
     })
@@ -363,11 +362,11 @@ describe('Presence handler', () => {
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTIONS.QUERY_RESPONSE }))
+        .withExactArgs(Object.assign({}, messageForCallback, { action: PRESENCE_ACTION.QUERY_RESPONSE }))
       services.timeoutRegistryMock
         .expects('remove')
         .once()
-        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTIONS.QUERY_RESPONSE }))
+        .withExactArgs(Object.assign({}, messageForPromise, { action: PRESENCE_ACTION.QUERY_RESPONSE }))
 
       handle(messageForCallback)
       handle(messageForPromise)
@@ -383,7 +382,7 @@ describe('Presence handler', () => {
     })
 
     it('recieves error message for query users', async () => {
-      const error = PRESENCE_ACTIONS.MESSAGE_DENIED
+      const error = PRESENCE_ACTION.MESSAGE_DENIED
       const messageForCallback = errorMessageResponseQuery(counter, error)
       const messageForPromise = errorMessageResponseQuery(counter + 1, error)
       services.timeoutRegistryMock
@@ -400,10 +399,10 @@ describe('Presence handler', () => {
 
       await BBPromise.delay(1)
       assert.calledOnce(callback)
-      assert.calledWithExactly(callback, PRESENCE_ACTIONS[error])
+      assert.calledWithExactly(callback, PRESENCE_ACTION[error])
 
       assert.calledOnce(promiseError)
-      assert.calledWithExactly(promiseError, PRESENCE_ACTIONS[error])
+      assert.calledWithExactly(promiseError, PRESENCE_ACTION[error])
 
       assert.notCalled(promiseSuccess)
     })
@@ -426,8 +425,8 @@ describe('Presence handler', () => {
     })
 
     it('notifies when userA logs in', () => {
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN_ALL, userA))
 
       assert.calledOnce(userACallback)
       assert.calledWithExactly(userACallback, userA, true)
@@ -439,8 +438,8 @@ describe('Presence handler', () => {
     })
 
     it('notifies when userB logs out', () => {
-      handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE, userB))
-      handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userB))
+      handle(message(PRESENCE_ACTION.PRESENCE_LEAVE, userB))
+      handle(message(PRESENCE_ACTION.PRESENCE_LEAVE_ALL, userB))
 
       assert.notCalled(userACallback)
 
@@ -452,7 +451,7 @@ describe('Presence handler', () => {
     })
 
     it('notifies only the all users callback when userC logs in', () => {
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userC))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN_ALL, userC))
 
       assert.notCalled(userACallback)
 
@@ -463,7 +462,7 @@ describe('Presence handler', () => {
     })
 
     it('notifies only the all users callback when userC logs out', () => {
-      handle(message(PRESENCE_ACTIONS.PRESENCE_LEAVE_ALL, userC))
+      handle(message(PRESENCE_ACTION.PRESENCE_LEAVE_ALL, userC))
 
       assert.notCalled(userACallback)
 
@@ -477,7 +476,7 @@ describe('Presence handler', () => {
       presenceHandler.unsubscribe(userA)
       await BBPromise.delay(options.subscriptionInterval * 2)
 
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN, userA))
 
       assert.notCalled(userACallback)
 
@@ -490,8 +489,8 @@ describe('Presence handler', () => {
       presenceHandler.unsubscribe(userA, userACallback)
       await BBPromise.delay(options.subscriptionInterval * 2)
 
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN_ALL, userA))
 
       assert.notCalled(userACallback)
 
@@ -505,8 +504,8 @@ describe('Presence handler', () => {
       presenceHandler.unsubscribe(allUsersCallback)
       await BBPromise.delay(options.subscriptionInterval * 2)
 
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, userA))
-      handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, userA))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN, userA))
+      handle(message(PRESENCE_ACTION.PRESENCE_JOIN_ALL, userA))
 
       assert.calledOnce(userACallback)
       assert.calledWithExactly(userACallback, userA, true)
@@ -522,8 +521,8 @@ describe('Presence handler', () => {
       const users = [userA, userB]
 
       users.forEach( user => {
-        handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN, user))
-        handle(message(PRESENCE_ACTIONS.PRESENCE_JOIN_ALL, user))
+        handle(message(PRESENCE_ACTION.PRESENCE_JOIN, user))
+        handle(message(PRESENCE_ACTION.PRESENCE_JOIN_ALL, user))
       })
 
       assert.notCalled(userACallback)
@@ -565,7 +564,7 @@ describe('Presence handler', () => {
 
 })
 
-function message (action: PRESENCE_ACTIONS, user?: string): Message {
+function message (action: PRESENCE_ACTION, user?: string): Message {
   if (user) {
     return {
       name: user,
@@ -583,7 +582,7 @@ function message (action: PRESENCE_ACTIONS, user?: string): Message {
 function messageResponseQueryAll (id: number, users: Array<string>): PresenceMessage {
   return {
     topic: TOPIC.PRESENCE,
-    action: PRESENCE_ACTIONS.QUERY_ALL_RESPONSE,
+    action: PRESENCE_ACTION.QUERY_ALL_RESPONSE,
     names: users,
     correlationId: id.toString()
   }
@@ -592,27 +591,27 @@ function messageResponseQueryAll (id: number, users: Array<string>): PresenceMes
 function messageResponseQuery (id: number, usersPresence: IndividualQueryResult): PresenceMessage {
   return {
     topic: TOPIC.PRESENCE,
-    action: PRESENCE_ACTIONS.QUERY_RESPONSE,
+    action: PRESENCE_ACTION.QUERY_RESPONSE,
     parsedData: usersPresence,
     correlationId: id.toString()
   }
 }
 
-function errorMessageResponseQueryAll (id: number, error: PRESENCE_ACTIONS): PresenceMessage {
+function errorMessageResponseQueryAll (id: number, error: PRESENCE_ACTION): PresenceMessage {
   return {
     topic: TOPIC.PRESENCE,
     action: error,
-    originalAction: PRESENCE_ACTIONS.QUERY_ALL,
+    originalAction: PRESENCE_ACTION.QUERY_ALL,
     correlationId: id.toString(),
     isError: true
   }
 }
 
-function errorMessageResponseQuery (id: number, error: PRESENCE_ACTIONS): PresenceMessage {
+function errorMessageResponseQuery (id: number, error: PRESENCE_ACTION): PresenceMessage {
   return {
     topic: TOPIC.PRESENCE,
     action: error,
-    originalAction: PRESENCE_ACTIONS.QUERY,
+    originalAction: PRESENCE_ACTION.QUERY,
     correlationId: id.toString(),
     isError: true
   }

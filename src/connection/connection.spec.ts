@@ -5,13 +5,7 @@ import { mock, spy, assert } from 'sinon'
 import { Connection } from './connection'
 import { getServicesMock } from '../test/mocks'
 import { DefaultOptions } from '../client-options'
-import { EVENT, CONNECTION_STATE } from '../constants'
-import {
-  TOPIC,
-  CONNECTION_ACTIONS as CONNECTION_ACTION,
-  AUTH_ACTIONS as AUTH_ACTION,
-  EVENT_ACTIONS as EVENT_ACTION
-} from '../../binary-protocol/src/message-constants'
+import { EVENT, CONNECTION_STATE, TOPIC, CONNECTION_ACTION, AUTH_ACTION, EVENT_ACTION } from '../constants'
 
 import { Emitter } from '../util/emitter'
 

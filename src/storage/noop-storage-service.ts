@@ -1,5 +1,5 @@
 import { RecordOfflineStore, offlineStoreWriteResponse } from '../client'
-import {RecordData} from '../../binary-protocol/src/message-constants'
+import { RecordData } from '../constants'
 
 export class NoopStorage implements RecordOfflineStore {
   public isReady = true

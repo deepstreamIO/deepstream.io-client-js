@@ -1,7 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import {TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage, RPCResult, Message} from '../../binary-protocol/src/message-constants'
-import { EVENT } from '../constants'
+import { EVENT, RPC_ACTION, TOPIC, RPCResult, RPCMessage, Message } from '../constants'
 import { RPC, RPCMakeCallback } from '../rpc/rpc'
 import { RPCResponse } from '../rpc/rpc-response'
 import { getUid } from '../util/utils'

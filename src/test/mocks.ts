@@ -1,13 +1,7 @@
 // tslint:disable:no-empty
 import { mock, stub, SinonStub, SinonMock, match } from 'sinon'
-import { CONNECTION_STATE } from '../constants'
+import { CONNECTION_STATE, Message, JSONObject, RECORD_ACTION, TOPIC } from '../constants'
 import { TimerRegistry } from '../util/timer-registry'
-import {
-  Message,
-  RECORD_ACTIONS,
-  JSONObject,
-  RECORD_ACTIONS as RECORD_ACTION, TOPIC
-} from '../../binary-protocol/src/message-constants'
 import { SingleNotifier } from '../record/single-notifier'
 import { WriteAcknowledgementService } from '../record/write-ack-service'
 import { DirtyService } from '../record/dirty-service'
@@ -144,8 +138,8 @@ export const getRecordServices = (services: any) => {
   services.storageMock.expects('get').withArgs('__ds__dirty_records', match.func).atLeast(0).callsArgWith(1, '__ds__dirty_records', 1, [])
   services.storageMock.expects('set').withArgs('__ds__dirty_records', 1, match.any, match.func).atLeast(0)
   const dirtyService = new DirtyService(services.storage, '__ds__dirty_records')
-  const headRegistry = new SingleNotifier(services, RECORD_ACTIONS.HEAD, 50)
-  const readRegistry = new SingleNotifier(services, RECORD_ACTIONS.READ, 50)
+  const headRegistry = new SingleNotifier(services, RECORD_ACTION.HEAD, 50)
+  const readRegistry = new SingleNotifier(services, RECORD_ACTION.READ, 50)
   const writeAckService = new WriteAcknowledgementService(services)
 
   const bulkSubscriptionService = {

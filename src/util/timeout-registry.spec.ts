@@ -3,7 +3,8 @@ import * as sinon from 'sinon'
 import { getServicesMock } from '../test/mocks'
 import { DefaultOptions, Options } from '../client-options'
 import { EVENT, CONNECTION_STATE } from '../constants'
-import { TOPIC, EVENT_ACTIONS as EVENT_ACTION, RPC_ACTIONS as RPC_ACTION } from '../../binary-protocol/src/message-constants'
+import { TOPIC, EVENT_ACTION } from '@deepstream/protobuf/dist/types/all'
+import { RPC_ACTION } from '@deepstream/protobuf/dist/types/rpc'
 
 describe('timeout registry', () => {
     let timeoutRegistry: TimeoutRegistry

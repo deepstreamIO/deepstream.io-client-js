@@ -1,6 +1,5 @@
 import { Services } from '../client'
-import { EVENT } from '../constants'
-import { TOPIC, RecordData } from '../../binary-protocol/src/message-constants'
+import { EVENT, RecordData, TOPIC } from '../constants'
 
 import { MergeStrategy } from './merge-strategy'
 

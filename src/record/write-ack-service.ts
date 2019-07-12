@@ -1,7 +1,5 @@
-import { RECORD_ACTIONS, Message } from '../../binary-protocol/src/message-constants'
-import { ACTION_TO_WRITE_ACK } from '../../binary-protocol/src/utils'
 
-import { EVENT } from '../constants'
+import { EVENT, Message, RECORD_ACTION } from '../constants'
 import { Services } from '../client'
 import { WriteAckCallback } from './record-core'
 
@@ -29,7 +27,7 @@ export class WriteAcknowledgementService {
     }
     const correlationId = this.count.toString()
     this.responses.set(correlationId, callback)
-    this.services.connection.sendMessage(Object.assign({}, message, { correlationId, action: ACTION_TO_WRITE_ACK[message.action] } ))
+    this.services.connection.sendMessage(Object.assign({}, message, { correlationId, isWriteAck: true } ))
     this.count++
   }
 
@@ -38,13 +36,13 @@ export class WriteAcknowledgementService {
     const response = this.responses.get(id)
     if (
       !response ||
-      (message.action !== RECORD_ACTIONS.WRITE_ACKNOWLEDGEMENT && !message.isError)
+      (message.action !== RECORD_ACTION.WRITE_ACKNOWLEDGEMENT && !message.isError)
     ) {
       return
     }
 
     message.isError
-      ? response(RECORD_ACTIONS[message.action as RECORD_ACTIONS])
+      ? response(RECORD_ACTION[message.action as RECORD_ACTION])
       : response(null)
 
     this.responses.delete(id)

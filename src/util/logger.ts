@@ -1,12 +1,7 @@
-import { Emitter } from '../util/emitter'
 import { EVENT } from '../constants'
-import {
-  TOPIC,
-  ALL_ACTIONS,
-  ACTIONS,
-  Message,
-  JSONObject
-} from '../../binary-protocol/src/message-constants'
+import { ALL_ACTIONS, ACTIONS, Message } from '@deepstream/protobuf/dist/types/messages'
+import { TOPIC, JSONObject } from '@deepstream/protobuf/dist/types/all'
+import { Emitter } from './emitter'
 
 function isEvent (action: EVENT | ALL_ACTIONS | undefined): boolean {
   // @ts-ignore
@@ -14,11 +9,7 @@ function isEvent (action: EVENT | ALL_ACTIONS | undefined): boolean {
 }
 
 export class Logger {
-
-  private emitter: Emitter
-
-  constructor (emitter: Emitter) {
-    this.emitter = emitter
+  constructor (private emitter: Emitter) {
   }
 
   public warn (message: { topic: TOPIC } | Message, event?: EVENT | ALL_ACTIONS, meta?: any): void {

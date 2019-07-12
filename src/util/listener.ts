@@ -1,10 +1,4 @@
-import {
-  TOPIC,
-  EVENT_ACTIONS,
-  RECORD_ACTIONS,
-  ListenMessage
-} from '../../binary-protocol/src/message-constants'
-import { EVENT } from '../../src/constants'
+import { EVENT, TOPIC, ListenMessage, RECORD_ACTION, EVENT_ACTION } from '../../src/constants'
 import { Services } from '../client'
 
 export interface ListenResponse {
@@ -29,9 +23,9 @@ export class Listener {
     this.stopCallbacks = new Map<string, Function>()
 
     if (topic === TOPIC.RECORD) {
-      this.actions = RECORD_ACTIONS
+      this.actions = RECORD_ACTION
     } else if (topic === TOPIC.EVENT) {
-      this.actions = EVENT_ACTIONS
+      this.actions = EVENT_ACTION
     }
 
     this.services.connection.onLost(this.onConnectionLost.bind(this))
