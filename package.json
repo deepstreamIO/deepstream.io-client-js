@@ -1,6 +1,6 @@
 {
   "name": "@deepstream/client",
-  "version": "4.0.0-rc.39",
+  "version": "4.0.0-rc.40",
   "description": "the javascript client for deepstream.io",
   "keywords": [
     "deepstream",
@@ -31,7 +31,7 @@
   "dependencies": {
     "@deepstream/protobuf": "^1.0.0-rc.4",
     "protobufjs": "^6.8.8",
-    "ws": "^7.0.0"
+    "ws": "^7.1.0"
   },
   "browser": {
     "net": false,

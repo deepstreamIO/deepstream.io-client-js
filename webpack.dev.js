@@ -8,7 +8,8 @@ module.exports = {
     filename: './dist/deepstream.js',
     library: 'deepstream',
     libraryTarget: 'umd',
-    umdNamedDefine: true
+    umdNamedDefine: true,
+    globalObject: 'this'
   },
   resolve: {
     extensions: ['.ts', '.js'],
