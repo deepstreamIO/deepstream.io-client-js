@@ -1,4 +1,4 @@
-import { EVENT, TOPIC, ListenMessage, RECORD_ACTION, EVENT_ACTION } from '../../src/constants'
+import { EVENT, TOPIC, ListenMessage, RECORD_ACTION, EVENT_ACTION } from '../constants'
 import { Services } from '../client'
 
 export interface ListenResponse {
