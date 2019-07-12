@@ -1,14 +1,13 @@
 import { Promise as BBPromise } from 'bluebird'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../test/mocks'
-import { EVENT } from '../constants'
-import { RECORD_ACTIONS, TOPIC, Message } from '../../binary-protocol/src/message-constants'
+import { EVENT, RECORD_ACTION, TOPIC, Message } from '../constants'
 
 import { SingleNotifier } from './single-notifier'
 
 describe('Single Notifier', () => {
   const timeout = 10
-  const action =  RECORD_ACTIONS.READ
+  const action =  RECORD_ACTION.READ
   const name = 'name'
   const topic = TOPIC.RECORD
   let services: any
@@ -81,11 +80,11 @@ describe('Single Notifier', () => {
     it('doesn\'t respond unknown requests', async () => {
       const message = {
         topic,
-        action: RECORD_ACTIONS.MESSAGE_DENIED,
+        action: RECORD_ACTION.MESSAGE_DENIED,
         name: 'something',
         isError: true
       }
-      singleNotifier.recieve(message, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
+      singleNotifier.recieve(message, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], undefined)
 
       assert.notCalled(callbackSpy)
 
@@ -111,13 +110,13 @@ describe('Single Notifier', () => {
     it('responds callback and promise requests with error response', async () => {
       singleNotifier.recieve({
         topic,
-        action: RECORD_ACTIONS.MESSAGE_DENIED,
+        action: RECORD_ACTION.MESSAGE_DENIED,
         name,
         isError: true
-      }, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
+      }, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], undefined)
 
       assert.calledOnce(callbackSpy)
-      assert.calledWithExactly(callbackSpy, RECORD_ACTIONS[RECORD_ACTIONS.MESSAGE_DENIED], undefined)
+      assert.calledWithExactly(callbackSpy, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], undefined)
 
       await BBPromise.delay(1)
     })

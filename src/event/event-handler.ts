@@ -1,14 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import {
-  TOPIC,
-  EVENT_ACTIONS as EA,
-  EventMessage,
-  ListenMessage,
-  EventData,
-  Message
-} from '../../binary-protocol/src/message-constants'
-import { EVENT } from '../constants'
+import { EVENT, EventMessage, TOPIC, EventData, ListenMessage, Message, EVENT_ACTION } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'
 import { Emitter } from '../util/emitter'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
@@ -17,12 +9,12 @@ export class EventHandler {
   private emitter = new Emitter()
   private listeners: Listener
   private limboQueue: Array<EventMessage> = []
-  private bulkSubscription: BulkSubscriptionService<EA>
+  private bulkSubscription: BulkSubscriptionService<EVENT_ACTION>
 
     constructor (private services: Services, options: Options, listeners?: Listener) {
-      this.bulkSubscription = new BulkSubscriptionService<EA>(
+      this.bulkSubscription = new BulkSubscriptionService<EVENT_ACTION>(
           this.services, options.subscriptionInterval, TOPIC.EVENT,
-          EA.SUBSCRIBE, EA.UNSUBSCRIBE,
+          EVENT_ACTION.SUBSCRIBE, EVENT_ACTION.UNSUBSCRIBE,
           this.onBulkSubscriptionSent.bind(this)
       )
 
@@ -75,7 +67,7 @@ public unsubscribe (name: string, callback: (data: EventData) => void): void {
     if (!this.emitter.hasListeners(name)) {
       this.services.logger.warn({
         topic: TOPIC.EVENT,
-        action: EA.NOT_SUBSCRIBED,
+        action: EVENT_ACTION.NOT_SUBSCRIBED,
         name
       })
       return
@@ -99,7 +91,7 @@ public unsubscribe (name: string, callback: (data: EventData) => void): void {
 
     const message = {
       topic: TOPIC.EVENT,
-      action: EA.EMIT,
+      action: EVENT_ACTION.EMIT,
       name,
       parsedData: data
     }
@@ -138,7 +130,7 @@ private handle (message: EventMessage): void {
       return
     }
 
-    if (message.action === EA.EMIT) {
+    if (message.action === EVENT_ACTION.EMIT) {
       if (message.parsedData !== undefined) {
         this.emitter.emit(message.name as string, message.parsedData)
       } else {
@@ -147,33 +139,33 @@ private handle (message: EventMessage): void {
       return
     }
 
-    if (message.action === EA.MESSAGE_DENIED) {
-      this.services.logger.error({ topic: TOPIC.EVENT }, EA.MESSAGE_DENIED)
+    if (message.action === EVENT_ACTION.MESSAGE_DENIED) {
+      this.services.logger.error({ topic: TOPIC.EVENT }, EVENT_ACTION.MESSAGE_DENIED)
       this.services.timeoutRegistry.remove(message)
-      if (message.originalAction === EA.SUBSCRIBE) {
+      if (message.originalAction === EVENT_ACTION.SUBSCRIBE) {
         this.emitter.off(message.name)
       }
       return
     }
 
-    if (message.action === EA.MULTIPLE_SUBSCRIPTIONS || message.action === EA.NOT_SUBSCRIBED) {
+    if (message.action === EVENT_ACTION.MULTIPLE_SUBSCRIPTIONS || message.action === EVENT_ACTION.NOT_SUBSCRIBED) {
       this.services.timeoutRegistry.remove({
         ...message,
-          action: EA.SUBSCRIBE
+          action: EVENT_ACTION.SUBSCRIBE
       })
       this.services.logger.warn(message)
       return
     }
 
     if (
-      message.action === EA.SUBSCRIPTION_FOR_PATTERN_FOUND ||
-      message.action === EA.SUBSCRIPTION_FOR_PATTERN_REMOVED
+      message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_FOUND ||
+      message.action === EVENT_ACTION.SUBSCRIPTION_FOR_PATTERN_REMOVED
     ) {
       this.listeners.handle(message as ListenMessage)
       return
     }
 
-    if (message.action === EA.INVALID_LISTEN_REGEX) {
+    if (message.action === EVENT_ACTION.INVALID_LISTEN_REGEX) {
       this.services.logger.error(message)
       return
     }

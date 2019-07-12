@@ -2,13 +2,12 @@
 import * as BBPromise from 'bluebird'
 import { expect } from 'chai'
 import { getServicesMock, getRecordServices } from '../test/mocks'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
 
 import { DefaultOptions, Options } from '../client-options'
 import { RecordCore, RECORD_STATE } from './record-core'
 
 import { spy, assert, match } from 'sinon'
-import { EVENT } from '../constants'
+import { EVENT, TOPIC, RECORD_ACTION } from '../constants'
 
 describe('record core', () => {
 
@@ -130,7 +129,8 @@ describe('online scenario, not individual tests', () => {
             .once()
             .withExactArgs({
                 topic: TOPIC.RECORD,
-                action: RECORD_ACTION.UPDATE_WITH_WRITE_ACK,
+                action: RECORD_ACTION.UPDATE,
+                isWriteAck: true,
                 name,
                 parsedData: { firstname: 'Bob' },
                 correlationId: '1',
@@ -148,12 +148,13 @@ describe('online scenario, not individual tests', () => {
             .once()
             .withExactArgs({
                 topic: TOPIC.RECORD,
-                action: RECORD_ACTION.PATCH_WITH_WRITE_ACK,
+                action: RECORD_ACTION.PATCH,
                 name,
                 path: 'firstname',
                 parsedData: 'Bob',
                 correlationId: '1',
-                version: 2
+                version: 2,
+                isWriteAck: true
             })
 
         recordCore.set({ path: 'firstname', data: 'Bob', callback: () => {} })
@@ -184,11 +185,12 @@ describe('online scenario, not individual tests', () => {
             .once()
             .withExactArgs({
                 topic: TOPIC.RECORD,
-                action: RECORD_ACTION.ERASE_WITH_WRITE_ACK,
+                action: RECORD_ACTION.ERASE,
                 name,
                 path: 'firstname',
                 correlationId: '1',
-                version: 2
+                version: 2,
+                isWriteAck: true
             })
 
         recordCore.set({ path: 'firstname', callback: () => {} })

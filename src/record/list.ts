@@ -1,6 +1,5 @@
 import * as utils from '../util/utils'
-import { EVENT } from '../constants'
-import { RecordMessage } from '../../binary-protocol/src/message-constants'
+import { EVENT, RecordMessage } from '../constants'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Emitter } from '../util/emitter'
 

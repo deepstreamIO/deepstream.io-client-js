@@ -1,9 +1,8 @@
 import * as utils from '../util/utils'
-import { EVENT } from '../constants'
+import { EVENT, JSONObject, RecordData } from '../constants'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { MergeStrategy } from './merge-strategy'
 import { Emitter } from '../util/emitter'
-import {JSONObject, RecordData} from '../../binary-protocol/src/message-constants'
 
 export class Record extends Emitter  {
     public  debugId = this.record.getDebugId()

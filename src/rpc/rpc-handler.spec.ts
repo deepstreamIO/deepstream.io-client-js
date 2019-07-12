@@ -2,8 +2,7 @@ import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../test/mocks'
-import { EVENT } from '../constants'
-import { TOPIC, RPC_ACTIONS, RPCMessage, Message } from '../../binary-protocol/src/message-constants'
+import { EVENT, TOPIC, RPC_ACTION, Message, RPCMessage } from '../constants'
 
 import { DefaultOptions } from '../client-options'
 import { RPCHandler, RPCProvider } from './rpc-handler'
@@ -50,7 +49,7 @@ describe('RPC handler', () => {
   it('registers a provider', () => {
     const message = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.PROVIDE,
+      action: RPC_ACTION.PROVIDE,
       names: [name],
       correlationId: '0'
     }
@@ -83,7 +82,7 @@ describe('RPC handler', () => {
   it('reregisters a provider after a connection reconnection', () => {
     const message = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.PROVIDE,
+      action: RPC_ACTION.PROVIDE,
       names: [name],
       correlationId: '0'
     }
@@ -111,7 +110,7 @@ describe('RPC handler', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REQUEST,
+        action: RPC_ACTION.REQUEST,
         name,
         parsedData: data,
         correlationId: sinon.match.any
@@ -157,7 +156,7 @@ describe('RPC handler', () => {
       .once()
       .withExactArgs({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REJECT,
+        action: RPC_ACTION.REJECT,
         name,
         correlationId: '123'
     })
@@ -167,7 +166,7 @@ describe('RPC handler', () => {
 
     handle({
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.REQUEST,
+      action: RPC_ACTION.REQUEST,
       name,
       parsedData: data,
       correlationId: '123'
@@ -177,7 +176,7 @@ describe('RPC handler', () => {
   it('handles ack messages', () => {
     const message = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.PROVIDE_ACK,
+      action: RPC_ACTION.PROVIDE,
       name,
       isAck: true
     }
@@ -202,27 +201,27 @@ describe('RPC handler', () => {
     }
     const permissionErrProvidingMsg = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.MESSAGE_PERMISSION_ERROR,
+      action: RPC_ACTION.MESSAGE_PERMISSION_ERROR,
       name,
-      originalAction: RPC_ACTIONS.PROVIDE
+      originalAction: RPC_ACTION.PROVIDE
     }
     const permissionErrUnprovidingMsg = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.MESSAGE_PERMISSION_ERROR,
+      action: RPC_ACTION.MESSAGE_PERMISSION_ERROR,
       name,
-      originalAction: RPC_ACTIONS.UNPROVIDE
+      originalAction: RPC_ACTION.UNPROVIDE
     }
     const msgDeniedProving = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.MESSAGE_DENIED,
+      action: RPC_ACTION.MESSAGE_DENIED,
       name,
-      originalAction: RPC_ACTIONS.PROVIDE
+      originalAction: RPC_ACTION.PROVIDE
     }
     const msgDeniedUnproving = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.MESSAGE_DENIED,
+      action: RPC_ACTION.MESSAGE_DENIED,
       name,
-      originalAction: RPC_ACTIONS.UNPROVIDE
+      originalAction: RPC_ACTION.UNPROVIDE
     }
 
     expectations(permissionErrProvidingMsg)
@@ -239,7 +238,7 @@ describe('RPC handler', () => {
   it('logs unknown correlation error when handling unknown rpc response', () => {
     const message = {
       topic: TOPIC.RPC,
-      action: RPC_ACTIONS.ACCEPT,
+      action: RPC_ACTION.ACCEPT,
       name,
       correlationId: '123abc'
     }
@@ -271,7 +270,7 @@ describe('RPC handler', () => {
     it('triggers rpc provider callback in a new request', () => {
       const message: RPCMessage = {
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REQUEST,
+        action: RPC_ACTION.REQUEST,
         name,
         parsedData: data,
         correlationId: '123'
@@ -287,7 +286,7 @@ describe('RPC handler', () => {
     it('deregisters providers', () => {
       const message = {
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.UNPROVIDE,
+        action: RPC_ACTION.UNPROVIDE,
         names: [name],
         correlationId: '1'
       }
@@ -347,12 +346,12 @@ describe('RPC handler', () => {
     })
 
     it('handles permission errors', async () => {
-      const action = RPC_ACTIONS.MESSAGE_PERMISSION_ERROR
+      const action = RPC_ACTION.MESSAGE_PERMISSION_ERROR
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action,
         name,
-        originalAction: RPC_ACTIONS.REQUEST,
+        originalAction: RPC_ACTION.REQUEST,
         correlationId
       })
       handleMessage(correlationIdCallbackRpc)
@@ -360,20 +359,20 @@ describe('RPC handler', () => {
       await BBPromise.delay(rpcAcceptTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
-      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[action])
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[action])
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
-      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[action])
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTION[action])
     })
 
     it('handles message denied errors', async () => {
-      const action = RPC_ACTIONS.MESSAGE_DENIED
+      const action = RPC_ACTION.MESSAGE_DENIED
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
         action,
         name,
-        originalAction: RPC_ACTIONS.REQUEST,
+        originalAction: RPC_ACTION.REQUEST,
         correlationId
       })
       handleMessage(correlationIdCallbackRpc)
@@ -381,28 +380,28 @@ describe('RPC handler', () => {
       await BBPromise.delay(rpcAcceptTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
-      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[action])
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[action])
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
-      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[action])
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTION[action])
     })
 
     it('responds rpc with error when request is not accepted in time', async () => {
       await BBPromise.delay(rpcAcceptTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
-      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT])
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.ACCEPT_TIMEOUT])
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
-      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[RPC_ACTIONS.ACCEPT_TIMEOUT])
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTION[RPC_ACTION.ACCEPT_TIMEOUT])
     })
 
     it('handles the rpc response accepted message', async () => {
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.ACCEPT,
+        action: RPC_ACTION.ACCEPT,
         name,
         correlationId
       })
@@ -419,7 +418,7 @@ describe('RPC handler', () => {
     it('calls rpcResponse with error when response is not sent in time', async () => {
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.ACCEPT,
+        action: RPC_ACTION.ACCEPT,
         name,
         correlationId
       })
@@ -428,17 +427,17 @@ describe('RPC handler', () => {
       await BBPromise.delay(rpcResponseTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
-      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT])
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.RESPONSE_TIMEOUT])
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
-      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[RPC_ACTIONS.RESPONSE_TIMEOUT])
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTION[RPC_ACTION.RESPONSE_TIMEOUT])
     })
 
     it('calls rpcResponse with error when no rpc provider is returned', async () => {
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.ACCEPT,
+        action: RPC_ACTION.ACCEPT,
         name,
         correlationId
       })
@@ -447,32 +446,32 @@ describe('RPC handler', () => {
 
       handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.NO_RPC_PROVIDER,
+        action: RPC_ACTION.NO_RPC_PROVIDER,
         name,
         correlationId: correlationIdCallbackRpc
       })
 
       handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.NO_RPC_PROVIDER,
+        action: RPC_ACTION.NO_RPC_PROVIDER,
         name,
         correlationId: correlationIdPromiseRpc
       })
 
       sinon.assert.calledOnce(rpcResponseCallback)
-      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTIONS[RPC_ACTIONS.NO_RPC_PROVIDER])
+      sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.NO_RPC_PROVIDER])
 
       await BBPromise.delay(0)
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
-      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTIONS[RPC_ACTIONS.NO_RPC_PROVIDER])
+      sinon.assert.calledWithExactly(rpcPromiseResponseFail, RPC_ACTION[RPC_ACTION.NO_RPC_PROVIDER])
     })
 
     it('handles the rpc response RESPONSE message', async () => {
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.RESPONSE,
+        action: RPC_ACTION.RESPONSE,
         name,
         correlationId,
         parsedData: data
@@ -493,7 +492,7 @@ describe('RPC handler', () => {
     it('doesn\'t call rpc response callback twice when handling response message', async () => {
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.RESPONSE,
+        action: RPC_ACTION.RESPONSE,
         name,
         correlationId,
         parsedData: data
@@ -514,7 +513,7 @@ describe('RPC handler', () => {
       const error = 'ERROR'
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REQUEST_ERROR,
+        action: RPC_ACTION.REQUEST_ERROR,
         name,
         correlationId,
         parsedData: error
@@ -535,7 +534,7 @@ describe('RPC handler', () => {
       const error = 'ERROR'
       const handleMessage = (correlationId: string) => handle({
         topic: TOPIC.RPC,
-        action: RPC_ACTIONS.REQUEST_ERROR,
+        action: RPC_ACTION.REQUEST_ERROR,
         name,
         correlationId,
         parsedData: error

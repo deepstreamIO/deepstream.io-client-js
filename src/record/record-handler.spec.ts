@@ -6,8 +6,8 @@ import { RecordHandler } from './record-handler'
 
 import { DefaultOptions } from '../client-options'
 import { WriteAckCallback } from './record-core'
-import { TOPIC, RECORD_ACTIONS as RECORD_ACTION, RecordMessage, RecordData } from '../../binary-protocol/src/message-constants'
 import { fail } from 'assert'
+import { TOPIC, RECORD_ACTION, RecordData, RecordMessage } from '../constants'
 
 describe('Record handler', () => {
   const name = 'recordA'
@@ -544,7 +544,7 @@ describe('Record handler', () => {
         const errorMsg: RecordMessage = {
           topic,
           action: RECORD_ACTION.MESSAGE_DENIED,
-          originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
+          originalAction: RECORD_ACTION.CREATEANDUPDATE,
           name,
           correlationId: '1',
           isError: true,
@@ -577,7 +577,7 @@ describe('Record handler', () => {
         const createUpdateAckMsg: RecordMessage = {
           topic,
           action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
-          originalAction: RECORD_ACTION.CREATEANDUPDATE_WITH_WRITE_ACK,
+          originalAction: RECORD_ACTION.CREATEANDUPDATE,
           name,
           correlationId: '1',
           isWriteAck: true
@@ -607,7 +607,7 @@ describe('Record handler', () => {
         const createPatchAckMsg: RecordMessage = {
           topic,
           action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
-          originalAction: RECORD_ACTION.CREATEANDPATCH_WITH_WRITE_ACK,
+          originalAction: RECORD_ACTION.CREATEANDPATCH,
           name,
           correlationId: '1',
           isWriteAck: true
@@ -637,7 +637,7 @@ describe('Record handler', () => {
         const eraseAckMsg: RecordMessage = {
           topic,
           action: RECORD_ACTION.WRITE_ACKNOWLEDGEMENT,
-          originalAction: RECORD_ACTION.ERASE_WITH_WRITE_ACK,
+          originalAction: RECORD_ACTION.ERASE,
           name,
           correlationId: '1',
           isWriteAck: true

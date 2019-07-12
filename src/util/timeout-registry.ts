@@ -1,14 +1,11 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { EVENT } from '../constants'
-import {
-  RECORD_ACTIONS as RECORD_ACTION,
-  RPC_ACTIONS as RPC_ACTION,
-  Message
-} from '../../binary-protocol/src/message-constants'
-import { RESPONSE_TO_REQUEST } from '../../binary-protocol/src/utils'
+import { EVENT, RESPONSE_TO_REQUEST } from '../constants'
 
 import { Emitter } from '../util/emitter'
+import { RPC_ACTION } from '../../binary-protocol/types/rpc'
+import { RECORD_ACTION } from '../../binary-protocol/types/all'
+import { Message } from '../../binary-protocol/types/messages'
 
 export type TimeoutId = string | null
 export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION

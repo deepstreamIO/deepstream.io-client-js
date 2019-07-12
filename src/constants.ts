@@ -1,3 +1,26 @@
+import { TOPIC, RECORD_ACTION, PRESENCE_ACTION, RPC_ACTION } from '../binary-protocol/types/all'
+
+export * from '../binary-protocol/types/all'
+export * from '../binary-protocol/types/messages'
+
+export const RESPONSE_TO_REQUEST: { [topic: number]: { [action: number]: RECORD_ACTION | PRESENCE_ACTION | RPC_ACTION } } = {
+    [TOPIC.RECORD]: {
+      [RECORD_ACTION.HEAD_RESPONSE]: RECORD_ACTION.HEAD,
+      [RECORD_ACTION.READ_RESPONSE]: RECORD_ACTION.READ,
+      [RECORD_ACTION.DELETE_SUCCESS]: RECORD_ACTION.DELETE,
+    },
+    [TOPIC.PRESENCE]: {
+      [PRESENCE_ACTION.QUERY_RESPONSE]: PRESENCE_ACTION.QUERY,
+      [PRESENCE_ACTION.QUERY_ALL_RESPONSE]: PRESENCE_ACTION.QUERY_ALL
+    },
+    [TOPIC.RPC]: {
+      [RPC_ACTION.ACCEPT]: RPC_ACTION.REQUEST,
+      [RPC_ACTION.ERROR]: RPC_ACTION.REQUEST
+    },
+    [TOPIC.EVENT]: {
+    }
+  }
+  
 export enum EVENT {
     UNSOLICITED_MESSAGE,
     IS_CLOSED,

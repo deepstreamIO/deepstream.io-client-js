@@ -29,6 +29,7 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
+    "protobufjs": "^6.8.8",
     "ws": "^7.0.0"
   },
   "browser": {

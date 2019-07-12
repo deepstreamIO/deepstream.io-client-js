@@ -1,6 +1,6 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
-import { TOPIC, RPC_ACTIONS as RPC_ACTION, RPCMessage, RPCResult } from '../../binary-protocol/src/message-constants'
+import { RPCMessage, TOPIC, RPC_ACTION, RPCResult } from '../constants';
 
 /**
  * This class represents a single remote procedure
