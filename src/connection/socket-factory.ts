@@ -1,7 +1,7 @@
-import { parse } from '../../binary-protocol/src/message-parser'
-import { getMessage } from '../../binary-protocol/src/message-builder'
+import { parse } from '@deepstream/protobuf/dist/src/message-parser'
+import { getMessage } from '@deepstream/protobuf/dist/src/message-builder'
 import {Socket} from '../client'
-import { JSONObject, TOPIC, Message, CONNECTION_ACTION } from '../constants';
+import { JSONObject, TOPIC, Message, CONNECTION_ACTION } from '../constants'
 
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
 
@@ -38,7 +38,7 @@ export const socketFactory: SocketFactory = (url, options, heartBeatInterval) =>
             return
         }
         if (message.parsedData) {
-            message.data = JSON.stringify(message.parsedData);
+            message.data = JSON.stringify(message.parsedData)
         }
         // if (message.action !== CONNECTION_ACTIONS.PONG && message.action !== CONNECTION_ACTIONS.PING) {
         //     console.log('>>>', TOPIC[message.topic], (ACTIONS as any)[message.topic][message.action], message.parsedData, message.data, message.name)

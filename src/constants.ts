@@ -1,7 +1,7 @@
-import { TOPIC, RECORD_ACTION, PRESENCE_ACTION, RPC_ACTION } from '../binary-protocol/types/all'
+import { TOPIC, RECORD_ACTION, PRESENCE_ACTION, RPC_ACTION } from '@deepstream/protobuf/dist/types/all'
 
-export * from '../binary-protocol/types/all'
-export * from '../binary-protocol/types/messages'
+export * from '@deepstream/protobuf/dist/types/all'
+export * from '@deepstream/protobuf/dist/types/messages'
 
 export const RESPONSE_TO_REQUEST: { [topic: number]: { [action: number]: RECORD_ACTION | PRESENCE_ACTION | RPC_ACTION } } = {
     [TOPIC.RECORD]: {
@@ -20,7 +20,7 @@ export const RESPONSE_TO_REQUEST: { [topic: number]: { [action: number]: RECORD_
     [TOPIC.EVENT]: {
     }
   }
-  
+
 export enum EVENT {
     UNSOLICITED_MESSAGE,
     IS_CLOSED,

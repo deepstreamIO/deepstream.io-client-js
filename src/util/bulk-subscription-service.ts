@@ -1,5 +1,5 @@
 import {Services} from '../client'
-import { TOPIC, Message } from '../constants';
+import { TOPIC, Message } from '../constants'
 
 export class BulkSubscriptionService<ACTION> {
     private subscribeNames = new Set<string>()

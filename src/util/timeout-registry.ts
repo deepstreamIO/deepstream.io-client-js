@@ -3,9 +3,8 @@ import { Options } from '../client-options'
 import { EVENT, RESPONSE_TO_REQUEST } from '../constants'
 
 import { Emitter } from '../util/emitter'
-import { RPC_ACTION } from '../../binary-protocol/types/rpc'
-import { RECORD_ACTION } from '../../binary-protocol/types/all'
-import { Message } from '../../binary-protocol/types/messages'
+import { RECORD_ACTION, RPC_ACTION } from '@deepstream/protobuf/dist/types/all'
+import { Message } from '@deepstream/protobuf/dist/types/messages'
 
 export type TimeoutId = string | null
 export type TimeoutAction = EVENT | RPC_ACTION | RECORD_ACTION

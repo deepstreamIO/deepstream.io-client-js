@@ -4,7 +4,7 @@
 // import { spy, assert } from 'sinon'
 // import { getServicesMock, getLastMessageSent } from '../mocks'
 // import { EVENT } from '../../src/constants'
-// import { TOPIC, RECORD_ACTION as RECORD_ACTION } from '../../binary-protocol/src/message-constants'
+// import { TOPIC, RECORD_ACTION as RECORD_ACTION } from '@deepstream/protobuf/dist/src/message-constants'
 
 // import { DefaultOptions, Options } from '../../src/client-options'
 // import { RecordCore } from '../../src/record/record-core'

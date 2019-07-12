@@ -1,6 +1,6 @@
 import { EVENT } from '../constants'
-import { ALL_ACTIONS, ACTIONS, Message } from '../../binary-protocol/types/messages'
-import { TOPIC, JSONObject } from '../../binary-protocol/types/all';
+import { ALL_ACTIONS, ACTIONS, Message } from '@deepstream/protobuf/dist/types/messages'
+import { TOPIC, JSONObject } from '@deepstream/protobuf/dist/types/all'
 import { Emitter } from './emitter'
 
 function isEvent (action: EVENT | ALL_ACTIONS | undefined): boolean {

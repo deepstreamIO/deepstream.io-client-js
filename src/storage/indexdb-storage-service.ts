@@ -1,6 +1,6 @@
 import { RecordOfflineStore, offlineStoreWriteResponse } from '../client'
 import { Options } from '../client-options'
-import { RecordData } from '../constants';
+import { RecordData } from '../constants'
 
 enum Operation {
     GET,

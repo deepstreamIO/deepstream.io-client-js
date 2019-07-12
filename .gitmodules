@@ -1,3 +1,0 @@
-[submodule "binary-protocol"]
-	path = binary-protocol
-	url = https://github.com/deepstreamIO/urp-js.git

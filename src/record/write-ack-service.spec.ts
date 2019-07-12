@@ -8,7 +8,6 @@ import { WriteAcknowledgementService } from './write-ack-service'
 describe('Write Ack Notifier', () => {
   const topic = TOPIC.RECORD
   const action = RECORD_ACTION.CREATEANDPATCH
-  const ackAction = RECORD_ACTION.CREATEANDPATCH
   const name = 'record'
 
   let services: any
@@ -67,11 +66,11 @@ describe('Write Ack Notifier', () => {
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '1' }))
+      .withExactArgs(Object.assign({}, messageBody, { action, correlationId: '1', isWriteAck: true }))
     services.connectionMock
       .expects('sendMessage')
       .once()
-      .withExactArgs(Object.assign({}, messageBody, { action: ackAction, correlationId: '2' }))
+      .withExactArgs(Object.assign({}, messageBody, { action, correlationId: '2', isWriteAck: true  }))
 
     writeAckService.send(messageBody, () => {})
     writeAckService.send(messageBody, () => {})

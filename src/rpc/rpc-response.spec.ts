@@ -4,7 +4,7 @@ import { getServicesMock } from '../test/mocks'
 import { DefaultOptions } from '../client-options'
 import { RPCResponse } from './rpc-response'
 import { Promise as BBPromise } from 'bluebird'
-import { TOPIC, RPC_ACTION } from '../constants';
+import { TOPIC, RPC_ACTION } from '../constants'
 
 describe('RPC response', () => {
   let services: any

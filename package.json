@@ -8,8 +8,8 @@
     "realtime",
     "client"
   ],
-  "main": "dist/src/deepstream.js",
-  "types": "dist/src/client.d.ts",
+  "main": "dist/deepstream.js",
+  "types": "dist/client.d.ts",
   "directories": {
     "test": "src/test"
   },
@@ -29,6 +29,7 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
+    "@deepstream/protobuf": "^1.0.0-rc.4",
     "protobufjs": "^6.8.8",
     "ws": "^7.0.0"
   },

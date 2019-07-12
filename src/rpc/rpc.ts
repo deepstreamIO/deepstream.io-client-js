@@ -1,7 +1,7 @@
 import { Services } from '../client'
 import { Options } from '../client-options'
 import {TimeoutAction, TimeoutId} from '../util/timeout-registry'
-import { RPCResult, TOPIC, RPC_ACTION, Message } from '../constants';
+import { RPCResult, TOPIC, RPC_ACTION, Message } from '../constants'
 
 export type RPCMakeCallback = (error: string | null, result?: RPCResult) => void
 

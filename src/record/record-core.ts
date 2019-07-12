@@ -19,6 +19,7 @@ const enum RECORD_OFFLINE_ACTIONS {
   RESUBSCRIBED = 'RESUBSCRIBED',
   INVALID_VERSION = 'INVALID_VERSION',
   MERGED = 'MERGED',
+  UNSUBSCRIBE_FOR_REAL = 'UNSUBSCRIBE_FOR_REAL'
 }
 
 export const enum RECORD_STATE {
@@ -111,7 +112,7 @@ export class RecordCore<Context = null> extends Emitter {
         duration: this.options.recordDiscardTimeout,
         callback: this.stateMachine.transition,
         context: this.stateMachine,
-        data: RECORD_ACTION.UNSUBSCRIBE
+        data: RECORD_OFFLINE_ACTIONS.UNSUBSCRIBE_FOR_REAL
       })
       this.stateMachine.transition(RECORD_ACTION.UNSUBSCRIBE)
     }
@@ -895,6 +896,6 @@ const recordStateTransitions = [
     { name: RECORD_ACTION.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
     { name: RECORD_ACTION.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
     { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },
-    // { name: RECORD_ACTION.UNSUBSCRIBE_ACK, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: RecordCore.prototype.onUnsubscribed },
+    { name: RECORD_OFFLINE_ACTIONS.UNSUBSCRIBE_FOR_REAL, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: RecordCore.prototype.onUnsubscribed },
     { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.READY, to: RECORD_STATE.MERGING },
 ]
