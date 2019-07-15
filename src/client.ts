@@ -110,7 +110,11 @@ export class Client extends Emitter {
   }
 
   public close (): void {
-    this.services.connection.close()
+    Object.keys(this.services).forEach(serviceName => {
+      if ((this.services as any)[serviceName].close) {
+        (this.services as any)[serviceName].close()
+      }
+    })
   }
 
   public pause (): void {
