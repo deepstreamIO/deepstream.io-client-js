@@ -5,7 +5,7 @@ export class StateMachine {
 
   private transitions: any
   private context: any
-  private history: Array<any>
+  private history: any[]
 
   constructor (logger: any, private stateMachine: any) {
     this.inEndState = false

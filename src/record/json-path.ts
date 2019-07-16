@@ -42,7 +42,7 @@ export function setValue (root: any, path: string | null, value: any): any {
     if (node[token] !== undefined && node[token] !== null && typeof node[token] === 'object') {
       node = node[token]
     } else if (typeof tokens[i + 1] === 'number') {
-      const array: Array<any> = new Array(tokens[i + 1])
+      const array: any[] = new Array(tokens[i + 1])
       array.fill(null)
       node = node[token] = array
     } else {
@@ -78,7 +78,7 @@ function tokenize (path: string | null): Array<string | number> {
       continue
     }
 
-    const arrayIndexes: Array<string> = part.split(SPLIT_REG_EXP)
+    const arrayIndexes: string[] = part.split(SPLIT_REG_EXP)
 
     if (arrayIndexes.length === 0) {
       // TODO

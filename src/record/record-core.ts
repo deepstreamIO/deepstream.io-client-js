@@ -51,7 +51,7 @@ export class RecordCore<Context = null> extends Emitter {
     reject?: (error: string) => void,
     resolve?: () => void
   } | null = null
-  public pendingWrites: Array<utils.RecordSetArguments> = []
+  public pendingWrites: utils.RecordSetArguments[] = []
   private readyTimer: number = -1
 
   public readyCallbacks: Array<{ context: any, callback: Function }> = []
@@ -413,7 +413,7 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public applyPendingWrites (): void {
-    const writeCallbacks: Array<WriteAckCallback> = []
+    const writeCallbacks: WriteAckCallback[] = []
     const oldData = this.data
     let newData = oldData
     for (let i = 0; i < this.pendingWrites.length; i++) {

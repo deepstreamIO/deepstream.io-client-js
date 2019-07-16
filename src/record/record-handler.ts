@@ -78,7 +78,7 @@ export class RecordHandler {
    * how long a record will survive before being discarded! You can change that
    * via the `recordDiscardTimeout: milliseconds` option.
    */
-  public names (): Array<string> {
+  public names (): string[] {
     return [...this.recordCores.keys()]
   }
 
@@ -277,7 +277,7 @@ export class RecordHandler {
    */
   public setDataWithAck (recordName: string, data: RecordData | undefined, callback?: WriteAckCallback): Promise<string | void> | void
   public setDataWithAck (recordName: string, path: string, data: RecordData | undefined, callback?: WriteAckCallback): Promise<string | void> | void
-  public setDataWithAck (recordName: string, ...rest: Array<any>): Promise<string | void> | void {
+  public setDataWithAck (recordName: string, ...rest: any[]): Promise<string | void> | void {
     const args = utils.normalizeSetArguments(arguments, 1)
     if (!args.callback) {
       return new Promise((resolve, reject) => {

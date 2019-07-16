@@ -19,7 +19,7 @@ interface Request {
 export class Storage implements RecordOfflineStore {
   public isReady: boolean = false
   private db: any
-  private queuedRequests: Map<string, Array<Request>> = new Map()
+  private queuedRequests: Map<string, Request[]> = new Map()
   private flushTimeout: NodeJS.Timeout | null = null
 
   constructor (private options: Options) {

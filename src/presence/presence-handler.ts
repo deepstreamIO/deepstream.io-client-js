@@ -4,15 +4,15 @@ import { Options } from '../client-options'
 import { Emitter } from '../util/emitter'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
-export type QueryResult = Array<string>
+export type QueryResult = string[]
 export interface IndividualQueryResult { [key: string]: boolean }
 export type SubscribeCallback = (user: string, online: boolean) => void
 
 const ONLY_EVENT = 'OE'
 type QueryCallback = (error: EVENT, data?: QueryResult | IndividualQueryResult) => void
 
-function validateQueryArguments (rest: Array<any>): { users: Array<string> | null, callback: null | QueryCallback } {
-  let users: Array<string> | null = null
+function validateQueryArguments (rest: any[]): { users: string[] | null, callback: null | QueryCallback } {
+  let users: string[] | null = null
   let callback: QueryCallback | null = null
 
   if (rest.length === 1) {
@@ -40,7 +40,7 @@ export class PresenceHandler {
   private queryEmitter = new Emitter()
   private queryAllEmitter = new Emitter()
   private counter: number = 0
-  private limboQueue: Array<Message> = []
+  private limboQueue: Message[] = []
   private readonly bulkSubscription: BulkSubscriptionService<PA>
 
   constructor (private services: Services, options: Options) {
@@ -121,10 +121,10 @@ export class PresenceHandler {
   }
 
   public getAll (): Promise<QueryResult>
-  public getAll (users: Array<string>): Promise<IndividualQueryResult>
+  public getAll (users: string[]): Promise<IndividualQueryResult>
   public getAll (callback: (error: { reason: EVENT }, result?: QueryResult) => void): void
-  public getAll (users: Array<string>, callback: (error: { reason: EVENT }, result?: IndividualQueryResult) => void): void
-  public getAll (...rest: Array<any>): Promise<QueryResult | IndividualQueryResult> | void {
+  public getAll (users: string[], callback: (error: { reason: EVENT }, result?: IndividualQueryResult) => void): void
+  public getAll (...rest: any[]): Promise<QueryResult | IndividualQueryResult> | void {
     const { callback, users } = validateQueryArguments(rest)
 
     let message: Message

@@ -12,7 +12,7 @@ export class List extends Emitter {
     private hasAddListener: boolean = false
     private hasRemoveListener: boolean = false
     private hasMoveListener: boolean = false
-    private subscriptions: Array<utils.RecordSubscribeArguments> = []
+    private subscriptions: utils.RecordSubscribeArguments[] = []
 
     constructor (private record: RecordCore<List>) {
         super()
@@ -59,14 +59,14 @@ export class List extends Emitter {
      * Returns the array of list entries or an
      * empty array if the list hasn't been populated yet.
      */
-    public getEntries (): Array<string> {
+    public getEntries (): string[] {
         const entries = this.record.get()
 
         if (!(entries instanceof Array)) {
             return []
         }
 
-        return entries as Array<string>
+        return entries as string[]
     }
 
     /**
@@ -79,9 +79,9 @@ export class List extends Emitter {
     /**
     * Updates the list with a new set of entries
     */
-    public setEntriesWithAck (entries: Array<string>): Promise<void>
-    public setEntriesWithAck (entries: Array<string>, callback: WriteAckCallback): void
-    public setEntriesWithAck (entries: Array<string>, callback?: WriteAckCallback): Promise<void> | void {
+    public setEntriesWithAck (entries: string[]): Promise<void>
+    public setEntriesWithAck (entries: string[], callback: WriteAckCallback): void
+    public setEntriesWithAck (entries: string[], callback?: WriteAckCallback): Promise<void> | void {
         if (!callback) {
             return new Promise(( resolve, reject ) => {
                 this.setEntries(entries, (error: string | null) => {
@@ -99,7 +99,7 @@ export class List extends Emitter {
     /**
     * Updates the list with a new set of entries
     */
-    public setEntries (entries: Array<string>, callback?: WriteAckCallback) {
+    public setEntries (entries: string[], callback?: WriteAckCallback) {
         const errorMsg = 'entries must be an array of record names'
         let i
 
@@ -135,9 +135,9 @@ export class List extends Emitter {
         }
 
         // @ts-ignore
-        const currentEntries: Array<string> = this.record.get()
+        const currentEntries: string[] = this.record.get()
         const hasIndex = this.hasIndex(index)
-        const entries: Array<string> = []
+        const entries: string[] = []
         let i
 
         for (i = 0; i < currentEntries.length; i++) {
@@ -182,7 +182,7 @@ export class List extends Emitter {
    * Proxies the underlying Record's subscribe method. Makes sure
    * that no path is provided
    */
-    public subscribe (callback: (entries: Array<string>) => void) {
+    public subscribe (callback: (entries: string[]) => void) {
         const parameters = utils.normalizeArguments(arguments)
 
         if (parameters.path) {
@@ -214,7 +214,7 @@ export class List extends Emitter {
    * Proxies the underlying Record's unsubscribe method. Makes sure
    * that no path is provided
    */
-    public unsubscribe (callback: (entries: Array<string>) => void) {
+    public unsubscribe (callback: (entries: string[]) => void) {
         const parameters = utils.normalizeArguments(arguments)
 
         if (parameters.path) {

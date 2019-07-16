@@ -25,7 +25,7 @@ export interface RecordOfflineStore {
 
 export interface Socket {
   close: () => void
-  onparsedmessages: (messages: Array<Message>) => void
+  onparsedmessages: (messages: Message[]) => void
   onclosed: () => void
   onopened: () => void
   onerror: (error: any) => void

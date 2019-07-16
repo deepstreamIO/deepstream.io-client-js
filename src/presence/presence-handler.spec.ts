@@ -280,7 +280,7 @@ describe('Presence handler', () => {
 
   describe('when server responds for getAll for all users ', () => {
     let callback: sinon.SinonSpy
-    let users: Array<string>
+    let users: string[]
 
     beforeEach(() => {
       callback = spy()
@@ -344,7 +344,7 @@ describe('Presence handler', () => {
 
   describe('when server responds for getAll for specific users ', () => {
     let callback: sinon.SinonSpy
-    let users: Array<string>
+    let users: string[]
     let usersPresence: IndividualQueryResult
 
     beforeEach(() => {
@@ -579,7 +579,7 @@ function message (action: PRESENCE_ACTION, user?: string): Message {
   }
 }
 
-function messageResponseQueryAll (id: number, users: Array<string>): PresenceMessage {
+function messageResponseQueryAll (id: number, users: string[]): PresenceMessage {
   return {
     topic: TOPIC.PRESENCE,
     action: PRESENCE_ACTION.QUERY_ALL_RESPONSE,

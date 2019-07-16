@@ -16,7 +16,7 @@ import { Services } from '../client'
 export class SingleNotifier<MessageType extends Message> {
   private requests = new Map<string, Array<(error?: any, result?: any) => void>>()
   private internalRequests = new Map<string, Array<{ context: any, callback: (message: MessageType) => void }>>()
-  private limboQueue: Array<Message> = []
+  private limboQueue: Message[] = []
 
   constructor (private services: Services, private action: RECORD_ACTION.READ | RECORD_ACTION.HEAD, timeoutDuration: number) {
     this.services.connection.onLost(this.onConnectionLost.bind(this))

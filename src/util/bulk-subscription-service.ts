@@ -39,7 +39,7 @@ export class BulkSubscriptionService<ACTION> {
         this.onSubscriptionSent(message)
     }
 
-    public subscribeList (users: Array<string>) {
+    public subscribeList (users: string[]) {
         users.forEach(this.subscribe.bind(this))
     }
 
@@ -64,7 +64,7 @@ export class BulkSubscriptionService<ACTION> {
         this.onSubscriptionSent(message)
     }
 
-    public unsubscribeList (users: Array<string>) {
+    public unsubscribeList (users: string[]) {
         users.forEach(this.unsubscribe.bind(this))
     }
 

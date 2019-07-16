@@ -17,7 +17,7 @@ export class Emitter {
   }
 
   public once (event: string, fn: Function, scope: any = this) {
-    const on = (...args: Array<any>) => {
+    const on = (...args: any[]) => {
       this.off(event, on, this)
       fn.apply(this, args)
     }
@@ -81,7 +81,7 @@ export class Emitter {
     }
   }
 
-  public emit (event: string, ...args: Array<any>) {
+  public emit (event: string, ...args: any[]) {
     if (this.callbacks === null) {
         return this
     }

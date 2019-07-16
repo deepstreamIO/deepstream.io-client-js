@@ -8,7 +8,7 @@
         "arrow-parens": [true, "ban-single-arg-parens"],
         "ordered-imports": false,
         "trailing-comma": false,
-        "array-type": [true, "generic"],
+        "array-type": [true, "array-simple"],
         "prefer-const": true,
         "new-parens": true,
         "no-consecutive-blank-lines": true,

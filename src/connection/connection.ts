@@ -385,7 +385,7 @@ export class Connection {
   /**
    * Callback for messages received on the connection.
    */
-  private onMessages (parseResults: Array<ParseResult>): void {
+  private onMessages (parseResults: ParseResult[]): void {
     parseResults.forEach(parseResult => {
       if (parseResult.parseError) {
         this.services.logger.error(

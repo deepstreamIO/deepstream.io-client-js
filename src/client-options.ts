@@ -131,8 +131,8 @@ export interface  Options {
         /**
          * objectStoreNames
          */
-        objectStoreNames: Array<string>,
-        ignorePrefixes: Array<string>,
+        objectStoreNames: string[],
+        ignorePrefixes: string[],
         /**
          * flushTimeout
          */

@@ -70,7 +70,7 @@ export const getServicesMock = () => {
       this.url = url
     }
     public sendParsedMessage (message: Message): void {}
-    public onparsedmessages (message: Array<Message>): void {}
+    public onparsedmessages (message: Message[]): void {}
     public onopened (): void {}
     public onerror (): void {}
     public onclosed (): void {}
@@ -86,7 +86,7 @@ export const getServicesMock = () => {
     public simulateError (): void {
       process.nextTick(this.onerror.bind(null, { code: 1234 }))
     }
-    public simulateMessages (messages: Array<Message>): void {
+    public simulateMessages (messages: Message[]): void {
       process.nextTick(this.onparsedmessages.bind(this, messages))
     }
     public getTimeSinceLastMessage () {

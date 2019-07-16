@@ -8,7 +8,7 @@ import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 export class EventHandler {
   private emitter = new Emitter()
   private listeners: Listener
-  private limboQueue: Array<EventMessage> = []
+  private limboQueue: EventMessage[] = []
   private bulkSubscription: BulkSubscriptionService<EVENT_ACTION>
 
     constructor (private services: Services, options: Options, listeners?: Listener) {
@@ -27,7 +27,7 @@ export class EventHandler {
   /**
    * Returns all the events that are subscribed to locally
    */
-  public eventNames (): Array<string> {
+  public eventNames (): string[] {
     return this.emitter.eventNames()
   }
 

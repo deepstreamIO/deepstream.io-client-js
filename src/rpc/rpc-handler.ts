@@ -30,7 +30,7 @@ export class RPCHandler {
   /**
    * Returns the names of all the RPCs provided
    */
-  public providerNames (): Array<string> {
+  public providerNames (): string[] {
     return [...this.providers.keys()]
   }
 

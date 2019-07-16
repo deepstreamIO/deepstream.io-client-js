@@ -5,7 +5,7 @@ import { Emitter } from '../util/emitter'
 
 export class AnonymousRecord extends Emitter  {
     private record: RecordCore<AnonymousRecord> | null
-    private subscriptions: Array<utils.RecordSubscribeArguments>
+    private subscriptions: utils.RecordSubscribeArguments[]
     private getRecordCore: (recordName: string) => RecordCore<AnonymousRecord>
 
     constructor (getRecordCore: (recordName: string) => RecordCore<AnonymousRecord>) {

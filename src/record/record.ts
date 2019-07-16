@@ -6,7 +6,7 @@ import { Emitter } from '../util/emitter'
 
 export class Record extends Emitter  {
     public  debugId = this.record.getDebugId()
-    private subscriptions: Array<utils.RecordSubscribeArguments> = []
+    private subscriptions: utils.RecordSubscribeArguments[] = []
 
     constructor (private record: RecordCore<Record>) {
         super()
