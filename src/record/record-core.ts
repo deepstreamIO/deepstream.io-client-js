@@ -12,7 +12,6 @@ import {TimeoutId} from '../util/timeout-registry'
 export type WriteAckCallback = (error: string | null, recordName: string) => void
 
 const enum RECORD_OFFLINE_ACTIONS {
-  LOAD = 'LOAD',
   LOADED = 'LOADED',
   SUBSCRIBED = 'SUBSCRIBED',
   RESUBSCRIBE = 'RESUBSCRIBE',
@@ -23,7 +22,6 @@ const enum RECORD_OFFLINE_ACTIONS {
 }
 
 export const enum RECORD_STATE {
-  INITIAL = 'INITIAL',
   SUBSCRIBING = 'SUBSCRIBING',
   RESUBSCRIBING = 'RESUBSCRIBING',
   LOADING_OFFLINE = 'LOADING_OFFLINE',
@@ -54,7 +52,6 @@ export class RecordCore<Context = null> extends Emitter {
     resolve?: () => void
   } | null = null
   public pendingWrites: Array<utils.RecordSetArguments> = []
-  public offlineLoadingAborted: boolean = false
   private readyTimer: number = -1
 
   public readyCallbacks: Array<{ context: any, callback: Function }> = []
@@ -72,7 +69,7 @@ export class RecordCore<Context = null> extends Emitter {
     this.stateMachine = new StateMachine(
         this.services.logger,
         {
-          init: RECORD_STATE.INITIAL,
+          init: RECORD_STATE.LOADING_OFFLINE,
           context: this,
           onStateChanged: this.onStateChanged,
           transitions: recordStateTransitions
@@ -120,25 +117,39 @@ export class RecordCore<Context = null> extends Emitter {
 }
 
   private onDirtyServiceLoaded () {
-      if (this.services.connection.isConnected) {
-        this.services.storage.get(this.name, (recordName, version, data) => {
-          if (version === -1 && !this.recordServices.dirtyService.isDirty(this.name)) {
-            /**
-             * Record has never been created before
-             */
-            this.stateMachine.transition(RECORD_ACTION.SUBSCRIBECREATEANDREAD)
-          } else {
-            this.version = version
-            this.data = data
-            this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
-          }
-        })
-      } else {
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOAD)
-      }
-
+    this.services.storage.get(this.name, (recordName, version, data) => {
       this.services.connection.onReestablished(this.onConnectionReestablished)
       this.services.connection.onLost(this.onConnectionLost)
+
+      if (!this.services.connection.isConnected) {
+        if (version === -1) {
+          this.version = 1
+          this.data = {}
+          // We do this sync in order to avoid the possibility of a race condition
+          // where connection is established while we are saving. We could introduce
+          // another transition but its probably overkill since we only set this
+          // in order to allow the possibility of this record being retrieved in the
+          // future to know its been created
+          this.services.storage.set(this.name, this.version, this.data, error => {})
+        } else {
+          this.version = version
+          this.data = data
+        }
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
+        return
+      }
+
+      if (version === -1 && !this.recordServices.dirtyService.isDirty(this.name)) {
+        /**
+         * Record has never been created before
+         */
+        this.stateMachine.transition(RECORD_ACTION.SUBSCRIBECREATEANDREAD)
+      } else {
+        this.version = version
+        this.data = data
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBE)
+      }
+    })
   }
 
   public onStateChanged (newState: string, oldState: string) {
@@ -389,44 +400,6 @@ export class RecordCore<Context = null> extends Emitter {
       }
     })
     this.recordServices.bulkSubscriptionService[RECORD_ACTION.SUBSCRIBEANDHEAD].subscribe(this.name)
-  }
-
-  public onOfflineLoading () {
-    this.services.storage.get(this.name, (recordName: string, version: number, data: RecordData) => {
-      if (version !== -1) {
-        if (this.offlineLoadingAborted) {
-            // This occurred since we got a connection to the server
-            // meaning we no longer care about current state currently
-            this.offlineLoadingAborted = false
-            return
-        }
-        this.data = {}
-        this.version = 1
-        // We do this sync in order to avoid the possibility of a race condition
-        // where connection is established while we are saving. We could introduce
-        // another transition but its probably overkill since we only set this
-        // in order to allow the possibility of this record being retrieved in the
-        // future to know its been created
-        // this.services.storage.set(this.name, this.version, this.data, error => {})
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-      } else {
-        this.data = data
-        this.version = version
-
-        if (this.offlineLoadingAborted) {
-            // This occurred since we got a connection to the server
-            // meaning we no longer care
-            this.offlineLoadingAborted = false
-            return
-        }
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.LOADED)
-      }
-    })
-  }
-
-  public abortOfflineLoading (): void {
-    this.offlineLoadingAborted = true
-    this.onResubscribing()
   }
 
   public onReady (): void {
@@ -879,13 +852,11 @@ export class RecordCore<Context = null> extends Emitter {
 }
 
 const recordStateTransitions = [
-    { name: RECORD_ACTION.SUBSCRIBECREATEANDREAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.SUBSCRIBING, handler: RecordCore.prototype.onSubscribing },
-    { name: RECORD_OFFLINE_ACTIONS.LOAD, from: RECORD_STATE.INITIAL, to: RECORD_STATE.LOADING_OFFLINE, handler: RecordCore.prototype.onOfflineLoading },
+    { name: RECORD_ACTION.SUBSCRIBECREATEANDREAD, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.SUBSCRIBING, handler: RecordCore.prototype.onSubscribing },
     { name: RECORD_OFFLINE_ACTIONS.LOADED, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
-    { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.abortOfflineLoading },
     { name: RECORD_ACTION.READ_RESPONSE, from: RECORD_STATE.SUBSCRIBING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
     { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
-    { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.INITIAL, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.onResubscribing },
+    { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.LOADING_OFFLINE },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.onResubscribing },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBING },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady},
