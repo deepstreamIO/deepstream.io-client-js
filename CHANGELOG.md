@@ -1,3 +1,7 @@
+# [4.0.0-rc.43] - 2019-07-23
+  
+- Fixing an async issue when loading info from offline storage
+
 # [4.0.0-rc.35] - 2019-07-01
   
 - Don't resubscribe records that are unsubscribing on a reconnect

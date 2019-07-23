@@ -150,7 +150,7 @@ export class Storage implements RecordOfflineStore {
                     }
                     request.onsuccess = () => {
                         if (request.result) {
-                            callback(request.result.name, request.result.version, request.result.data)
+                            callback(recordName, request.result.version, request.result.data)
                         } else {
                             callback(recordName, -1, null)
                         }
