@@ -16,7 +16,6 @@ import { NoopStorage } from './storage/noop-storage-service'
 export type offlineStoreWriteResponse = ((error: string | null, recordName: string) => void)
 
 export interface RecordOfflineStore {
-  isReady: boolean,
   get: (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) => void
   set: (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) => void
   delete: (recordName: string, callback: offlineStoreWriteResponse) => void
