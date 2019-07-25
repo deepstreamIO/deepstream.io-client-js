@@ -113,13 +113,9 @@ export class List extends Emitter {
             }
         }
 
-        if (this.record.isReady === false) {
-            // ...
-        } else {
-            this.beforeChange()
-            this.record.set({ data: entries, callback })
-            this.afterChange()
-        }
+        this.beforeChange()
+        this.record.set({ data: entries, callback })
+        this.afterChange()
     }
 
     /**
@@ -129,11 +125,6 @@ export class List extends Emitter {
      * @param {Number} [index]
      */
     public removeEntry (entry: string, index?: number, callback?: WriteAckCallback) {
-        if (this.record.isReady === false) {
-            // ...
-            return
-        }
-
         // @ts-ignore
         const currentEntries: string[] = this.record.get()
         const hasIndex = this.hasIndex(index)
@@ -159,11 +150,6 @@ export class List extends Emitter {
     public addEntry (entry: string, index?: number, callback?: WriteAckCallback) {
         if (typeof entry !== 'string') {
             throw new Error('Entry must be a recordName')
-        }
-
-        if (this.record.isReady === false) {
-            // ..
-            return
         }
 
         const hasIndex = this.hasIndex(index)
