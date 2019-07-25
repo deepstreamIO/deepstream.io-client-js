@@ -22,12 +22,12 @@ export class WriteAcknowledgementService {
    */
   public send (message: Message, callback: WriteAckCallback): void {
     if (this.services.connection.isConnected === false) {
-      this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE))
+      this.services.timerRegistry.requestIdleCallback(callback.bind(this, EVENT.CLIENT_OFFLINE, message.name!))
       return
     }
     const correlationId = this.count.toString()
     this.responses.set(correlationId, callback)
-    this.services.connection.sendMessage(Object.assign({}, message, { correlationId, isWriteAck: true } ))
+    this.services.connection.sendMessage({ ...message, correlationId, isWriteAck: true })
     this.count++
   }
 
@@ -42,8 +42,8 @@ export class WriteAcknowledgementService {
     }
 
     message.isError
-      ? response(RECORD_ACTION[message.action as RECORD_ACTION])
-      : response(null)
+      ? response(RECORD_ACTION[message.action as RECORD_ACTION], message.name!)
+      : response(null, message.name!)
 
     this.responses.delete(id)
   }

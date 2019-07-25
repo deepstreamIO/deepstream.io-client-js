@@ -558,7 +558,7 @@ describe('Record handler', () => {
           await BBPromise.delay(1)
 
           assert.calledOnce(ackCallback)
-          assert.calledWithExactly(ackCallback, RECORD_ACTION[errorMsg.action])
+          assert.calledWithExactly(ackCallback, RECORD_ACTION[errorMsg.action], name)
         })
 
         it('rejects promise with error', async () => {
@@ -590,7 +590,7 @@ describe('Record handler', () => {
           await BBPromise.delay(1)
 
           assert.calledOnce(ackCallback)
-          assert.calledWithExactly(ackCallback, null)
+          assert.calledWithExactly(ackCallback, null, name)
         })
 
         it('resolves promise for setData without path', async () => {
@@ -620,7 +620,7 @@ describe('Record handler', () => {
           await BBPromise.delay(1)
 
           assert.calledOnce(ackCallback)
-          assert.calledWithExactly(ackCallback, null)
+          assert.calledWithExactly(ackCallback, null, name)
         })
 
         it('resolves promise for setData with path', async () => {
@@ -650,7 +650,7 @@ describe('Record handler', () => {
           await BBPromise.delay(1)
 
           assert.calledOnce(ackCallback)
-          assert.calledWithExactly(ackCallback, null)
+          assert.calledWithExactly(ackCallback, null, name)
         })
 
         it('resolves promise for setData deleting values', async () => {

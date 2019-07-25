@@ -9,7 +9,7 @@ import * as utils from '../util/utils'
 import { StateMachine } from '../util/state-machine'
 import {TimeoutId} from '../util/timeout-registry'
 
-export type WriteAckCallback = (error: string | null, recordName: string) => void
+export type WriteAckCallback = (error: null | string, recordName: string) => void
 
 const enum RECORD_OFFLINE_ACTIONS {
   LOADED = 'LOADED',
@@ -412,7 +412,7 @@ export class RecordCore<Context = null> extends Emitter {
     this.readyCallbacks = []
   }
 
-  public applyPendingWrites (): void {
+  private applyPendingWrites (): void {
     const writeCallbacks: WriteAckCallback[] = []
     const oldData = this.data
     let newData = oldData
@@ -426,21 +426,29 @@ export class RecordCore<Context = null> extends Emitter {
     this.pendingWrites = []
     this.applyChange(newData)
 
-    const runFns = (err: any) => {
-      for (let i = 0; i < writeCallbacks.length; i++) {
-        writeCallbacks[i](err, this.name)
+    let runFns
+
+    if (writeCallbacks.length !== 0) {
+      runFns = (err: any) => {
+        for (let i = 0; i < writeCallbacks.length; i++) {
+          writeCallbacks[i](err, this.name)
+        }
       }
     }
 
     if (utils.deepEquals(oldData, newData)) {
-      runFns(null)
+      if (runFns) {
+        runFns(null)
+      }
       return
     }
 
     if (this.services.connection.isConnected) {
       this.sendUpdate(null, newData, runFns)
     } else {
-      runFns(EVENT.CLIENT_OFFLINE)
+      if (runFns) {
+        runFns(EVENT.CLIENT_OFFLINE)
+      }
       this.saveUpdate()
     }
   }
@@ -472,7 +480,7 @@ export class RecordCore<Context = null> extends Emitter {
     if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
       if (this.stateMachine.state === RECORD_STATE.MERGING) {
         // The scenario this covers is when a read is requested because the head doesn't match
-        // but an updated comes in because we subscribed. In that scenario we just ignore the update
+        // but an update comes in because we subscribed. In that scenario we just ignore the update
         // and wait for the read response. Hopefully the messages don't cross on the wire in which case
         // it might result in another merge conflict.
         return
@@ -550,15 +558,14 @@ export class RecordCore<Context = null> extends Emitter {
       this.recordServices.dirtyService.setDirty(this.name, false)
       return
     }
-    this.version = message.version as number
+    this.version = message.version
     this.data = message.parsedData
 
     this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
 
     // We temporarily reset the data in order to allow the change callback
     // to trigger all the subscriptions on the first response.
-    this.data = {}
-    this.applyChange(setPath(this.data, null, message.parsedData))
+    this.applyChange(setPath({}, null, this.data))
   }
 
   public handleHeadResponse (message: RecordMessage): void {
@@ -775,7 +782,6 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     this.version = remoteVersion
-
     const oldValue = this.data
 
     if (utils.deepEquals(oldValue, remoteData)) {
@@ -784,20 +790,27 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     const newValue = setPath(oldValue, null, mergedData)
-
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
+
+    let runFns
+    const writeCallbacks: WriteAckCallback[] = this.pendingWrites
+      .map(({ callback }) => callback!)
+      .filter(callback => callback !== undefined)
+    if (writeCallbacks.length !== 0) {
+      runFns = (err: any) => {
+        writeCallbacks.forEach(callback => callback!(err, this.name))
+      }
+    }
+    this.pendingWrites = []
 
     if (utils.deepEquals(mergedData, remoteData)) {
       this.applyChange(mergedData)
-
-      // const callback = this.writeCallbacks.get(remoteVersion)
-      // if (callback !== undefined) {
-      //   callback(null)
-      //   this.writeCallbacks.delete(remoteVersion)
-      // }
+      if (runFns) {
+        runFns(null)
+      }
     } else {
         this.applyChange(newValue)
-        // this.sendUpdate(null, data, message.isWriteAck)
+        this.sendUpdate(null, this.data, runFns)
     }
   }
 

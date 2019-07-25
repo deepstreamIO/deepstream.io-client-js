@@ -38,7 +38,7 @@ describe('Write Ack Notifier', () => {
     await BBPromise.delay(1)
 
     assert.calledOnce(callbackSpy)
-    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
+    assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE, name)
   })
 
   it('calls callbacks with error message when connection is lost', async () => {
