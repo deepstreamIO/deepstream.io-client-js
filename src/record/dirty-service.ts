@@ -6,7 +6,7 @@ export class DirtyService {
   private dirtyRecords: DirtyRecordsIndex = new Map()
   private loaded: boolean
   private loadedCallback: Array<{ callback: Function, context: any }> = []
-  private flushTimeout: NodeJS.Timeout | null = null
+  private flushTimeout: any | null = null
 
   constructor (private storage: RecordOfflineStore, private readonly dirtyStorageName: string) {
     this.loaded = false

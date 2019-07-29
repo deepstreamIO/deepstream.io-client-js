@@ -14,7 +14,7 @@ export type TimerRef = number
 export class TimerRegistry {
     private registry = new Map<number, InternalTimeout>()
     private timerIdCounter = 0
-    private timerId: NodeJS.Timer
+    private timerId: any
 
     constructor (timerResolution: number) {
         this.timerId = setInterval(this.triggerTimeouts.bind(this), timerResolution)
