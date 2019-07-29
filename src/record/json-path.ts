@@ -5,7 +5,7 @@ const SPLIT_REG_EXP = /[[\]]/g
 * Returns the value of the path or
 * undefined if the path can't be resolved
 */
-export function get (data: any, path: string | null, deepCopy: boolean): any {
+export function get (data: any, path: string | null, deepCopy: boolean = false): any {
  const tokens = tokenize(path)
  let value = data
  for (let i = 0; i < tokens.length; i++) {

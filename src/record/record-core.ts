@@ -407,6 +407,11 @@ export class RecordCore<Context = null> extends Emitter {
     this.services.timeoutRegistry.clear(this.responseTimeout!)
     this.applyPendingWrites()
     this.isReady = true
+
+    // We temporarily reset the data in order to allow the change callback
+    // to trigger all the subscriptions on the first response.
+    this.applyChange(this.data, true, false)
+
     this.readyCallbacks.forEach(({ context, callback }) => {
       callback.call(context, context)
     })
@@ -555,7 +560,7 @@ export class RecordCore<Context = null> extends Emitter {
 
   public handleReadResponse (message: any): void {
     if (this.stateMachine.state === RECORD_STATE.MERGING) {
-      this.recoverRecord(message.version!, message.parsedData, message)
+      this.recoverRecord(message.version!, message.parsedData)
       this.recordServices.dirtyService.setDirty(this.name, false)
       return
     }
@@ -563,10 +568,6 @@ export class RecordCore<Context = null> extends Emitter {
     this.data = message.parsedData
 
     this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
-
-    // We temporarily reset the data in order to allow the change callback
-    // to trigger all the subscriptions on the first response.
-    this.applyChange(setPath({}, null, this.data))
   }
 
   public handleHeadResponse (message: RecordMessage): void {
@@ -589,21 +590,30 @@ export class RecordCore<Context = null> extends Emitter {
          * record updated by server when offline, get latest data
          */
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
-        this.sendRead()
-        this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
+        if (remoteVersion !== -1) {
+          /**
+           * A read with version -1 would result in a read error
+           */
+          this.sendRead()
+          this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
+        } else {
+          this.recoverRecord(-1, null)
+        }
       }
     } else {
        if (this.version === remoteVersion) {
         this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.RESUBSCRIBED)
       } else {
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
         if (remoteVersion < (this.version as number)) {
          /**
           *  deleted and created again remotely, up to merge conflict I guess
           */
+         this.recoverRecord(-1, null)
+        } else {
+          this.sendRead()
+          this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
         }
-        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
-        this.sendRead()
-        this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
       }
     }
   }
@@ -669,7 +679,7 @@ export class RecordCore<Context = null> extends Emitter {
    */
   public applyUpdate (message: RecordWriteMessage) {
     const version = message.version
-    const data = message.parsedData
+    const data = message.parsedData as RecordData
 
     if (this.version === null) {
       this.version = version
@@ -682,8 +692,7 @@ export class RecordCore<Context = null> extends Emitter {
         **/
         this.sendRead()
       } else {
-        // @ts-ignore
-        this.recoverRecord(message.version, data, message)
+        this.recoverRecord(message.version, data)
       }
       return
     }
@@ -695,7 +704,7 @@ export class RecordCore<Context = null> extends Emitter {
     } else if (message.action === RECORD_ACTION.ERASE) {
       newData = setPath(this.data, message.path as string, undefined)
     } else {
-      newData = setPath(this.data, null, data)
+      newData = data
     }
     this.applyChange(newData)
   }
@@ -704,7 +713,7 @@ export class RecordCore<Context = null> extends Emitter {
    * Compares the new values for every path with the previously stored ones and
    * updates the subscribers if the value has changed
    */
-  public applyChange (newData: RecordData) {
+  public applyChange (newData: RecordData, force: boolean = false, save: boolean = true) {
     if (this.stateMachine.inEndState) {
       return
     }
@@ -712,7 +721,7 @@ export class RecordCore<Context = null> extends Emitter {
     const oldData = this.data
     this.data = newData
 
-    if (this.options.saveUpdatesOffline) {
+    if (this.options.saveUpdatesOffline && save) {
       this.saveRecordToOffline()
     }
 
@@ -721,7 +730,7 @@ export class RecordCore<Context = null> extends Emitter {
       const newValue = getPath(newData, paths[i], false)
       const oldValue = getPath(oldData, paths[i], false)
 
-      if (newValue !== oldValue) {
+      if (newValue !== oldValue || (force && newValue)) {
         this.emitter.emit(paths[i], this.get(paths[i]))
       }
     }
@@ -760,7 +769,7 @@ export class RecordCore<Context = null> extends Emitter {
    * @param   {Object} remoteData The remote object data
    * @param   {Object} message parsed and validated deepstream message
    */
-  public recoverRecord (remoteVersion: number, remoteData: RecordData, message: RecordMessage) {
+  public recoverRecord (remoteVersion: number, remoteData: RecordData) {
     this.recordServices.mergeStrategy.merge(
       this.name,
       (this.version as number),
@@ -782,6 +791,16 @@ export class RecordCore<Context = null> extends Emitter {
       this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS)
     }
 
+    if (mergedData === null) {
+      if (remoteVersion === -1) {
+        this.services.storage.delete(this.name, () => {})
+        this.stateMachine.transition(RECORD_ACTION.DELETED)
+      } else {
+        this.stateMachine.transition(RECORD_ACTION.DELETE)
+      }
+      return
+    }
+
     this.version = remoteVersion
     const oldValue = this.data
 
@@ -790,7 +809,7 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
 
-    const newValue = setPath(oldValue, null, mergedData)
+    const newValue = mergedData
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
 
     let runFns
@@ -876,6 +895,8 @@ const recordStateTransitions = [
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady},
     { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
     { name: RECORD_OFFLINE_ACTIONS.MERGED, from: RECORD_STATE.MERGING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
+    { name: RECORD_ACTION.DELETED, from: RECORD_STATE.MERGING, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
+    { name: RECORD_ACTION.DELETE, from: RECORD_STATE.MERGING, to: RECORD_STATE.DELETING },
     { name: RECORD_ACTION.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
     { name: RECORD_ACTION.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
     { name: RECORD_ACTION.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
