@@ -13,6 +13,24 @@ script:
       npm run lint;
     fi
   - npm run test:coverage
+  - npm run build
+
+deploy:
+- provider: s3
+  access_key_id: ${ACCESS_KEY_ID}
+  secret_access_key: ${SECRET_ACCESS_KEY}
+  bucket: cdn.deepstream.io
+  skip_cleanup: true
+  acl: public_read
+  local_dir: dist/bundle
+  upload-dir: js/client/latest
+  on:
+    tags: false
+- provider: npm
+  email: "info@deepstream.io"
+  api_key: ${NPM_TOKEN}
+  on:
+    tags: true
 
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
 

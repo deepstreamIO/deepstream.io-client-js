@@ -15,8 +15,9 @@
   },
   "scripts": {
     "tsc": "rm -rf dist && tsc",
-    "build": "npm run tsc && webpack --config webpack.dev.js",
-    "build:prod": "npm run tsc && webpack --config webpack.prod.js",
+    "build": "npm run tsc && npm run build:dev && npm run build:prod",
+    "build:dev": "webpack --config webpack.dev.js",
+    "build:prod": "webpack --config webpack.prod.js",
     "rebuild": "rimraf dist && webpack",
     "clean": "rimraf dist",
     "lint": "tslint src/*.ts src/**/*.ts -t verbose",
