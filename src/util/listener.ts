@@ -43,9 +43,9 @@ export class Listener {
     if (this.listeners.has(pattern)) {
       this.services.logger.warn({
         topic: this.topic,
-        action: EVENT.LISTENER_EXISTS,
+        action: this.actions.LISTEN,
         name: pattern
-      })
+      }, EVENT.LISTENER_EXISTS)
       return
     }
 
@@ -61,9 +61,9 @@ export class Listener {
     if (!this.listeners.has(pattern)) {
       this.services.logger.warn({
         topic: this.topic,
-        action: EVENT.NOT_LISTENING,
+        action: this.actions.UNLISTEN,
         name: pattern
-      })
+      }, EVENT.NOT_LISTENING)
       return
     }
 

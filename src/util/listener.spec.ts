@@ -104,9 +104,9 @@ describe('listener', () => {
         .once()
         .withExactArgs({
           topic: TOPIC.EVENT,
-          action: EVENT.LISTENER_EXISTS,
+          action: EVENT_ACTION.LISTEN,
           name: pattern
-        })
+        }, EVENT.LISTENER_EXISTS)
 
       listener.listen(pattern, listenCallback)
     })
@@ -114,7 +114,7 @@ describe('listener', () => {
     it('sends unlisten message when unlistened', () => {
       const message = {
         topic: TOPIC.EVENT,
-        action:  EVENT_ACTION.UNLISTEN,
+        action: EVENT_ACTION.UNLISTEN,
         name: pattern
       }
       services.connectionMock
@@ -136,9 +136,9 @@ describe('listener', () => {
         .once()
         .withExactArgs({
           topic: TOPIC.EVENT,
-          action: EVENT.NOT_LISTENING,
+          action: EVENT_ACTION.UNLISTEN,
           name: pattern
-        })
+        }, EVENT.NOT_LISTENING)
 
       listener.unlisten(pattern)
       listener.unlisten(pattern)
