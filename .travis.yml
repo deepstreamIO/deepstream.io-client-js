@@ -24,9 +24,9 @@ deploy:
   acl: public_read
   local_dir: dist/bundle
   upload-dir: js/client/latest
+  region: eu-central-1
   on:
-    tags: false
-    branch: v4
+    tags: true
     node_js: '10'
 - provider: npm
   email: "info@deepstream.io"
