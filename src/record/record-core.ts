@@ -130,6 +130,7 @@ export class RecordCore<Context = null> extends Emitter {
           // another transition but its probably overkill since we only set this
           // in order to allow the possibility of this record being retrieved in the
           // future to know its been created
+          this.recordServices.dirtyService.setDirty(this.name, true)
           this.services.storage.set(this.name, this.version, this.data, error => {})
         } else {
           this.version = version
