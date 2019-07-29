@@ -26,11 +26,14 @@ deploy:
   upload-dir: js/client/latest
   on:
     tags: false
+    branch: v4
+    node_js: '10'
 - provider: npm
   email: "info@deepstream.io"
   api_key: ${NPM_TOKEN}
   on:
     tags: true
+    node_js: '10'
 
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
 
