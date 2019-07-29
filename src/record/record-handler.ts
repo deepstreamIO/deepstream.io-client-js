@@ -53,7 +53,6 @@ export class RecordHandler {
     this.dirtyService = this.recordServices.dirtyService
 
     this.sendUpdatedData = this.sendUpdatedData.bind(this)
-    this.onRecordUpdated = this.onRecordUpdated.bind(this)
     this.onMergeCompleted = this.onMergeCompleted.bind(this)
     this.getRecordCore = this.getRecordCore.bind(this)
     this.removeRecord = this.removeRecord.bind(this)
@@ -313,6 +312,7 @@ export class RecordHandler {
 
   public delete (recordName: string, callback?: (error: string | null) => void): void | Promise<void> {
     // TODO: Use a delete service to make the logic in record core and here common
+    throw Error('Delete is not yet supported without use of a Record')
   }
 
   private sendSetData (recordName: string, version: number, args: utils.RecordSetArguments): void {
@@ -486,10 +486,10 @@ export class RecordHandler {
   // order to sync up
   private _syncDirtyRecords () {
     const dirtyRecords = this.dirtyService.getAll()
-    for (const recordName in dirtyRecords) {
+    for (const [recordName] of dirtyRecords) {
       const recordCore = this.recordCores.get(recordName)
       if (recordCore && recordCore.references.size > 0) {
-        // if it isn't zero.. problem.
+        // if it isn't zero the record core takes care of it
         continue
       }
       this.services.storage.get(recordName, this.sendUpdatedData)
@@ -497,32 +497,30 @@ export class RecordHandler {
   }
 
   private sendUpdatedData (recordName: string, version: number, data: RecordData) {
-    this.sendSetData(recordName, version, { data, callback: this.onRecordUpdated })
-  }
-
-  private onRecordUpdated (error: string | null, recordName: string) {
-    if (!error) {
-      this.dirtyService.setDirty(recordName, false)
+    if (version === -1) {
+      // deleted locally, how to merge?
+      this.services.logger.warn({ topic: TOPIC.RECORD }, RECORD_ACTION.DELETE, "Deleted record while offline, can't resolve")
+    } else {
+      const callback = (error: string | null, name: string) => {
+        if (!error) {
+          this.dirtyService.setDirty(name, false)
+        } else {
+          this.recordServices.readRegistry.register(name, this, message => {
+            this.recordServices.mergeStrategy.merge(
+              message.name,
+              version,
+              data,
+              message.version as number,
+              message.parsedData as RecordData,
+              this.onMergeCompleted,
+              this
+            )
+          })
+        }
+      }
+      this.sendSetData(recordName, version, { data, callback })
     }
   }
-
-  /**
-  * Callback once the record merge has completed. If successful it will set the
-  * record state, else emit and error and the record will remain in an
-  * inconsistent state until the next update.
-  */
-  // private onMergeConflict (message: RecordWriteMessage): void {
-  //   this.services.storage.get(message.name, (recordName: string, version: number, data: RecordData) => {
-  //     this.recordServices.mergeStrategy.merge(
-  //       message.name,
-  //       version,
-  //       data,
-  //       message.version,
-  //       message.parsedData,
-  //       this.onMergeCompleted
-  //     )
-  //   })
-  // }
 
   private onMergeCompleted (error: string | null, recordName: string, mergeData: RecordData, remoteVersion: number, remoteData: RecordData) {
     this.sendSetData(recordName, remoteVersion + 1, { data: mergeData })
