@@ -1,6 +1,6 @@
 {
   "name": "@deepstream/client",
-  "version": "4.0.0-rc.50",
+  "version": "4.0.0",
   "description": "the javascript client for deepstream.io",
   "keywords": [
     "deepstream",
@@ -30,7 +30,7 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
-    "@deepstream/protobuf": "^1.0.0-rc.7",
+    "@deepstream/protobuf": "^1.0.0",
     "protobufjs": "^6.8.8",
     "ws": "^7.1.1"
   },
@@ -48,7 +48,7 @@
     "bluebird": "^3.5.5",
     "chai": "^4.2.0",
     "coveralls": "^3.0.5",
-    "husky": "^3.0.1",
+    "husky": "^3.0.2",
     "mocha": "^6.2.0",
     "nyc": "^14.1.1",
     "rimraf": "^2.6.3",

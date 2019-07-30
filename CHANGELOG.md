@@ -1,244 +1,117 @@
-# [4.0.0-rc.43] - 2019-07-23
-  
-- Fixing an async issue when loading info from offline storage
+# [4.0.0] - 2019-07-30
 
-# [4.0.0-rc.35] - 2019-07-01
-  
-- Don't resubscribe records that are unsubscribing on a reconnect
+### Features:
 
-# [4.0.0-rc.31] - 2019-06-27
-  
-- Adding an autoVersion option for indexdb
-- Fixing a reconnect issue when starting client when server is down
+- New binary protocol support (under the hood)
+- Bulk actions support (under the hood)
+- Full typescript declaration files
+- Promises everywhere! Long live async/await!
+- Offline record support
 
-# [4.0.0-rc.30] - 2019-06-13
-  
-- Only transition the state to unsubscribing if its the last reference being removed
-
-# [4.0.0-rc.29] - 2019-06-13
-  
-- Adding the concept of context to emitter, used to fixed a bug in record where discard doesn't
-delete the local emitter bindings, but can hopefully be extended elsewhere
-
-# [4.0.0-rc.28] - 2019-06-10
-  
-- Emitter is no longer a dependency and instead is owned by us, which makes typescript happier
-
-# [4.0.0-rc.27] - 2019-06-06
-  
-- Users can now delete the offline store via the record handler. This is useful for situations such
-as ensuring nothing is on disk on logout.
-
-# [4.0.0-rc.25] - 2019-06-03
-  
-- Merging should transition a record to ready when first initialized
-- Changing state machine to log an error instead of throwing one to stop things breaking too badly
-
-# [4.0.0-rc.22] - 2019-05-28
-
-- Delete collections from indexdb if no longer in objectStoreList
-- Fixing a race condition where ready is triggered without setting the data first
-- Adding ability to ignore saving records in indexdb  
-- Adding the ability to save each update as it comes from the server.
-- Save records to storage before they are discarded
-- Changing npm to use deepstream org
-
-# [4.0.0-rc.12] - 2019-05-17
-
-- Firing the change event on records before transitioning results in the state machine not
-working as expected when doing something like our initial API usage in 2.0 days
-
-```
-const record = ds.record.get(name)
-record.subscribe(() => {
-  // do something
-  record.discard()
-  // oh no! we never entered the ready state =(
-})
-```
-
-- Seems like URL gets injected into node somehow, which means we don't want to reference window.URL
-- Removing an async state transition to avoid issues when CPU intensive apps are started
-- Removing an invalid error message in merge conflicts 
-- Removing node-localstorage as a dependency, as its node only and doesn't play well with angular
-
-# [4.0.0-rc.3] - 2019-05-16
-
-This release adds indexDB. However its not in a stable state.
-
-# [4.0.0-rc.3] - 2019-05-05
-
-This release includes bulk subscriptions, which allow thousands of records to be subscribed to with a single message,
-providing a huge performance boost for application startup time and data on the wire
-
-# [4.0.0-rc.1] - 2019-04-20
-
-This release of the client includes a full rewrite in TypeScript and a move away from the old text-based protocol to the Universal Realtime Protocol (URP). This means the client is not compatible with [deepstream.io](https://github.com/deepstreamio/deepstream.io) prior to version v4.0.0.
-
-## Features
-
-### Additional events
-
-- **clientDataChanged**: emitted every time the server sends new the client new data after authenticating
-
-```javascript
-client.on('clientDataChanged', clientData => { ... })
-```
-
-- **reauthenticationFailure**: emitted when a client is unable to authenticate with the server after a reconnection. This will only be called for automatic reconnection attempts during connection loss or similar, if calling the `login` function authentication is as normal
-
-```javascript
-client.on('reAuthenticationFailure', reason => { ... })
-```
-
-## Improvements
-
-### Promisified API's
-
-- Presence
-```javascript
-client.presence.getAll()
-  .then(users => {})
-  .catch(error => {})
-
-client.presence.getAll(users)
-  .then(users => {})
-  .catch(error => {})
-```
-
-- RPC
-```javascript
-client.rpc.make(name, data)
-  .then(data => {})
-  .catch(error => {})
-```
-
-- Record Factory
-
-```javascript
-client.record.snapshot(recordName)
-  .then(data => {})
-  .catch(error => {})
-
-client.record.has(recordName)
-  .then(exists => {})
-  .catch(error => {})
-
-client.record.head(recordName)
-  .then(version => {})
-  .catch(error => {})
-```
-
-- Record
-
-```javascript
-record.whenReady()
-  .then(() => {})
-record.delete()
-  .then(() => {})
-  .catch(error => {})
-```
-
-### Improved record error handling
-
-Permission errors of any kind are now routed to the record instance that had the error. Consider the following snippet
-
-```javascript
-client.on('error', (description, event, topic) => { ... })
-const record = client.record.getRecord('permission-error')
-record.set('firstname', 'Homer')
-```
-
-In this instance all errors are passed to the global client error handler. When dealing with multiple records, it is difficult to correlate errors to different records. We now support the following
-
-```javascript
-const record = client.record.getRecord('permission-error')
-record.on('error', (description, event, topic) => { ... })
-record.set('firstname', 'Homer')
-```
-
-### TypeScript
-
-This release includes a full rewrite of the client in TypeScript, fixing many bugs and improving the client quality.
-
-### Client-server binary protocol
-
-A full implementation of the Universal Realtime Protocol (URP) to match deepstream v4.
-
-## Breaking changes
-
-### Chaining
-
-Many functions are no longer chainable (returning an instance of the client or a record) due to supporting promises. This means calls like `client.login` and will return a promise if no callback is provided.
-
-### Module exports
-
-Previously a function was exported that allowed creating an instance of the client as follows
-
-```javascript
-const deepstream = require('deepstream.io-client-js')
-const client = deepstream('DEEPSTREAM_URL')
-// constants also accessible via deepstream.C
-```
-
-We now support the following
-
-```javascript
-const { deepstream, C, EVENT, CONNECTION_STATE } = require('deepstream.io-client-js')
-```
-
-### Login
-
-As mentioned higher up, the callback passed to the login function now is called just once. In order to handle client reconnections the `clientDataChanged` and `reAuthenticationFailure` events should be used instead.
-
-### Listening
-
-The `isSubscribed` flag in the listener callback was removed and now the response object
-has an `onStop` function which will be called when there are no more subscribers on the topic.
-
-With this change the same context is kept when a subscription is found or removed
-and the listen callback now is called just once.
-
-For those familiar with listening, this
-
-```javascript
-client.record.listen('^news/.*', (match, isSubscribed, response) => {
-  if (isSubscribed) {
-    if (/* able to provide for this match */) {
-      response.accept()
-      // start providing data
-    } else {
-      response.reject()
+```JavaScript
+{
+    // Use indexdb to store data client side
+    offlineEnabled: false,
+    // Save each update as it comes in from the server
+    saveUpdatesOffline: false,
+    indexdb: {
+        // The db version, incrementing this triggers a db upgrade
+        dbVersion: 1,
+        // This auto updates the indexdb version if the objectStore names change
+        autoVersion: false,
+        // The key to index records by
+        primaryKey: 'id',
+        // The indexdb databae name
+        storageDatabaseName: 'deepstream',
+        // The default store name if not using a '/' to indicate the object store (example person/uuid)
+        defaultObjectStoreName: 'records',
+        // The object store names, required in advance due to how indexdb works
+        objectStoreNames: [],
+        // Things to not save, such search results
+        ignorePrefixes: [],
+        // The amount of time to buffer together actions before making a request
+        flushTimeout: 50
     }
-    return
-  }
-  // stop providing data
+}
+```
+
+- Customizable offline storage support
+
+```typescript
+export type offlineStoreWriteResponse = ((error: string | null, recordName: string) => void)
+
+export interface RecordOfflineStore {
+  get: (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) => void
+  set: (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) => void
+  delete: (recordName: string, callback: offlineStoreWriteResponse) => void
+}
+```
+
+### Improvements
+
+- Separation of errors and warnings for clarity. Non critical failures (such as an ack timeout) can now be treated separated or fully muted.
+- Enhanced services to reduce timeout overhead
+
+### Backwards compatibility
+
+- Only works with V4 server
+- All single response APIs now return promises when not providing a callback. This means most APIs that could have been chained would now break.
+
+```JavaScript
+const client = deepstream()
+try {
+    await client.login()
+
+    const record = client.record.getRecord(name)
+    await record.whenReady()
+
+    const data = await client.record.snapshot(name)
+    const version = await client.record.head(name)
+    const exists = await client.record.has(name)
+    const result = await client.rpc.make(name, data)
+    const users = await client.presence.getAll()
+} catch (e) {
+    console.log('Error occurred', e)
+}
+```
+
+- Listening
+
+The listening API has been ever so slightly tweaked in order to simplify removing an active subscription.
+
+Before when an active provider was started you would usually need to store it in a higher scope, for example:
+
+```typescript
+const listeners = new Map()
+
+client.record.listen('users/.*', (name, isSubscribed, ({ accept, reject }) => {
+    if (isSubscribed) {
+        const updateInterval = setInterval(updateRecord.bind(this, name), 1000)
+        listeners.set(name, updateInterval)
+        accept()
+    } else {
+        clearTimeout(listeners.get(name))
+        listeners.delete(name)
+    }
 })
 ```
 
-turns into this:
+Where now we instead do:
 
-```javascript
-client.record.listen('^news/.*', (match, response) => {
-  if (/* unable to provide for this match */) {
-    response.reject()
-    return
-  }
-  response.accept()
-  response.onStop((match) => {
-    // stop providing data
-  })
-  // start providing data
+```typescript
+const listeners = new Map()
+
+client.record.listen('users/.*', (name, ({ accept, reject, onStop }) => {
+    const updateInterval = setInterval(updateRecord.bind(this, name), 1000)
+    accept()
+
+    onStop(() => clearTimeout(updateInterval))
 })
 ```
-- Presence
 
-The callback for `client.presence.getAll` is now called with an error parameter in standard JavaScript convention
+### TLDR;
 
-```javascript
-client.presence.getAll((error, userList) => { ... })
-client.presence.getAll(users, (error, userMap) => { ... })
-```
+You can see the in depth side explanation of the changes [here](https://deepstream.io/releases/client-js/v4-0-0/)
 
 ## [2.3.0] - 2017-09-25
 
