@@ -215,7 +215,7 @@ export class RecordCore<Context = null> extends Emitter {
     const oldValue = this.data
     const newValue = setPath(oldValue, path || null, data)
 
-    if (oldValue === newValue) {
+    if (utils.deepEquals(oldValue, newValue)) {
       if (callback) {
         this.services.timerRegistry.requestIdleCallback(() => callback(null, this.name))
       }
@@ -430,6 +430,7 @@ export class RecordCore<Context = null> extends Emitter {
       newData = setPath(newData, path || null, data)
     }
     this.pendingWrites = []
+
     this.applyChange(newData)
 
     let runFns

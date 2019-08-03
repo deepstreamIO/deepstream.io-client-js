@@ -161,7 +161,7 @@ describe('online scenario, not individual tests', () => {
     })
 
     it('sends erase messages for erase after when ready', () => {
-        recordServices.readRegistry.recieve(READ_RESPONSE)
+        recordServices.readRegistry.recieve({ ...READ_RESPONSE, parsedData: { firstname: 'John' }})
 
         services.connectionMock
             .expects('sendMessage')
@@ -178,7 +178,7 @@ describe('online scenario, not individual tests', () => {
     })
 
     it('sends erase write ack messages for erase after when ready', () => {
-        recordServices.readRegistry.recieve(READ_RESPONSE)
+        recordServices.readRegistry.recieve({ ...READ_RESPONSE, parsedData: { firstname: 'John' }})
 
         services.connectionMock
             .expects('sendMessage')
