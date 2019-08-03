@@ -1,3 +1,9 @@
+# [4.0.1] - 2019-08-03
+
+### Fix:
+
+- Do a deep compare when setting data to avoid processing unchanged values
+
 # [4.0.0] - 2019-07-30
 
 ### Features:
