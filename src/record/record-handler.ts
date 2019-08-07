@@ -14,10 +14,10 @@ import { MergeStrategyService } from './merge-strategy-service'
 import { MergeStrategy } from './merge-strategy'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 
-type SubscribeActions = RECORD_ACTION.SUBSCRIBEANDHEAD | RECORD_ACTION.SUBSCRIBECREATEANDREAD
+// type SubscribeActions = RECORD_ACTION.SUBSCRIBEANDHEAD | RECORD_ACTION.SUBSCRIBECREATEANDREAD
 
 export interface RecordServices {
-  bulkSubscriptionService: { [index in SubscribeActions]: BulkSubscriptionService<RECORD_ACTION> }
+  bulkSubscriptionService: { [index: number]: BulkSubscriptionService<RECORD_ACTION> }
   writeAckService: WriteAcknowledgementService
   readRegistry: SingleNotifier<RecordMessage>,
   headRegistry: SingleNotifier<RecordMessage>,

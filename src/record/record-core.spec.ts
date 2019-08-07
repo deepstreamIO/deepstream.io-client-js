@@ -283,6 +283,11 @@ describe('online scenario, not individual tests', () => {
         .expects('sendMessage')
         .once()
 
+        services.storageMock
+        .expects('delete')
+        .once()
+        .callsArgWith(1)
+
         recordCore.delete()
 
         recordCore.handle({

@@ -53,6 +53,7 @@ export class RecordCore<Context = null> extends Emitter {
   } | null = null
   public pendingWrites: utils.RecordSetArguments[] = []
   private readyTimer: number = -1
+  private recordReadOnlyMode = this.options.recordReadOnlyMode && this.options.recordPrefixWriteWhitelist.every(prefix => !this.name.startsWith(prefix))
 
   public readyCallbacks: Array<{ context: any, callback: Function }> = []
 
@@ -123,8 +124,11 @@ export class RecordCore<Context = null> extends Emitter {
 
       if (!this.services.connection.isConnected) {
         if (version === -1) {
+          if (this.recordReadOnlyMode) {
+            return
+          }
           this.version = 1
-          this.data = {}
+          this.data = Object.create(null)
           // We do this sync in order to avoid the possibility of a race condition
           // where connection is established while we are saving. We could introduce
           // another transition but its probably overkill since we only set this
@@ -204,6 +208,13 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     if (this.checkDestroyed('set')) {
+      return
+    }
+
+    if (this.recordReadOnlyMode) {
+      this.services.logger.error(
+        { topic: TOPIC.RECORD }, EVENT.RECORD_READ_ONLY_MODE, 'Attempting to set data when in readonly mode, ignoring'
+      )
       return
     }
 
@@ -479,6 +490,7 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public onDeleted (): void {
+    this.services.storage.delete(this.name, () => {})
     this.emit(EVENT.RECORD_DELETED)
     this.destroy()
   }
@@ -636,6 +648,13 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public sendUpdate (path: string | null = null, data: RecordData, callback?: WriteAckCallback) {
+    if (this.recordReadOnlyMode) {
+      this.services.logger.error(
+        { topic: TOPIC.RECORD }, EVENT.RECORD_READ_ONLY_MODE, 'Attempting to send updated data, ignoring'
+      )
+      return
+    }
+
     if (this.recordServices.dirtyService.isDirty(this.name)) {
       this.recordServices.dirtyService.setDirty(this.name, false)
     } else {
@@ -829,10 +848,18 @@ export class RecordCore<Context = null> extends Emitter {
       if (runFns) {
         runFns(null)
       }
-    } else {
-        this.applyChange(newValue)
-        this.sendUpdate(null, this.data, runFns)
+      return
     }
+
+    if (this.recordReadOnlyMode) {
+      this.services.logger.error(
+        { topic: TOPIC.RECORD }, EVENT.RECORD_READ_ONLY_MODE, 'Attempting to set data after merge when in readonly mode, ignoring'
+      )
+      return
+    }
+
+    this.applyChange(newValue)
+    this.sendUpdate(null, this.data, runFns)
   }
 
   /**
@@ -892,6 +919,7 @@ const recordStateTransitions = [
     { name: RECORD_OFFLINE_ACTIONS.SUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.LOADING_OFFLINE, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.onResubscribing },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.onResubscribing },
+    { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.RESUBSCRIBING, handler: RecordCore.prototype.onResubscribing },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBING },
     { name: RECORD_OFFLINE_ACTIONS.RESUBSCRIBED, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.READY, handler: RecordCore.prototype.onReady},
     { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.RESUBSCRIBING, to: RECORD_STATE.MERGING },
@@ -900,6 +928,8 @@ const recordStateTransitions = [
     { name: RECORD_ACTION.DELETE, from: RECORD_STATE.MERGING, to: RECORD_STATE.DELETING },
     { name: RECORD_ACTION.DELETE, from: RECORD_STATE.READY, to: RECORD_STATE.DELETING },
     { name: RECORD_ACTION.DELETED, from: RECORD_STATE.READY, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
+    { name: RECORD_ACTION.DELETED, from: RECORD_OFFLINE_ACTIONS.UNSUBSCRIBE_FOR_REAL, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
+    { name: RECORD_ACTION.DELETED, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
     { name: RECORD_ACTION.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
     { name: RECORD_ACTION.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
     { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },

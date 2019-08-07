@@ -55,6 +55,10 @@ export interface  Options {
      * Default: 3000
      */
     recordDeleteTimeout: number
+
+    recordReadOnlyMode: boolean
+    recordPrefixWriteWhitelist: string[]
+
     /**
      * The number of milliseconds operations will wait for the connection to become stable before returning with `CLIENT_OFFLINE`
      * Default: 2000
@@ -143,8 +147,6 @@ export interface  Options {
 export const DefaultOptions: Options = {
     timerResolution: 50,
     subscriptionInterval: 100,
-    offlineEnabled: false,
-    saveUpdatesOffline: false,
     heartbeatInterval: 30000,
     reconnectIntervalIncrement: 4000,
     maxReconnectInterval: 180000,
@@ -157,6 +159,10 @@ export const DefaultOptions: Options = {
     recordDeleteTimeout: 15000,
     offlineBufferTimeout: 2000,
     recordDiscardTimeout: 5000,
+    offlineEnabled: false,
+    saveUpdatesOffline: false,
+    recordReadOnlyMode: false,
+    recordPrefixWriteWhitelist: [],
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
