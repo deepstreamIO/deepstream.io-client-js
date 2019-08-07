@@ -2,6 +2,16 @@
 
 ### Fix:
 
+- Adding a readOnlyFlag
+
+This is an issue where when not doing offline first requesting a record that doesn't exist would result in a new empty record being created (locally) with no data. This would break bindings for some people. Instead what we do now is use a recordReadOnlyMode flag which indicates that we expected most records to be only ever read from server, and hence will only be ready on data load. You can explicitly mention the things you do want to write to via a recordPrefixWriteWhitelist.
+
+- Also added a transition from unsubscribing to deleted, because so many transitions.
+
+# [4.0.1] - 2019-08-03
+
+### Fix:
+
 - Do a deep compare when setting data to avoid processing unchanged values
 
 # [4.0.0] - 2019-07-30
