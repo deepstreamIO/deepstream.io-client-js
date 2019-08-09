@@ -26,19 +26,12 @@ export interface RecordServices {
 }
 
 export class RecordHandler {
-  private services: Services
-  private options: Options
-  private listener: Listener
-  private recordCores: Map<string, RecordCore>
+  private recordCores = new Map<string, RecordCore>()
+  private notifyCallbacks = new Map<string, Function>()
   private recordServices: RecordServices
   private dirtyService: DirtyService
-  constructor (services: Services, options: Options, recordServices?: RecordServices, listener?: Listener) {
-    this.services = services
-    this.options = options
-    this.listener = listener || new Listener(TOPIC.RECORD, this.services)
 
-    this.recordCores = new Map()
-
+  constructor (private services: Services, private options: Options, recordServices?: RecordServices, private listener: Listener = new Listener(TOPIC.RECORD, services)) {
     this.recordServices = recordServices || {
       bulkSubscriptionService: {
         [RECORD_ACTION.SUBSCRIBECREATEANDREAD]: this.getBulkSubscriptionService(RECORD_ACTION.SUBSCRIBECREATEANDREAD),
@@ -100,7 +93,7 @@ export class RecordHandler {
   /**
  * Returns an existing record or creates a new one.
  *
- * @param   {String} name              the unique name of the record
+ * @param   {String} name the unique name of the record
  */
   public getRecord (name: string): Record {
     return new Record(this.getRecordCore(name))
@@ -315,6 +308,33 @@ export class RecordHandler {
     throw Error('Delete is not yet supported without use of a Record')
   }
 
+  public notify (recordNames: string[], callback?: (error: string) => void): void | Promise<void> {
+    if (!this.services.connection.isConnected) {
+      if (callback) {
+        callback(EVENT.CLIENT_OFFLINE)
+        return
+      }
+      return new Promise((resolve, reject) => reject(EVENT.CLIENT_OFFLINE))
+    }
+
+    const correlationId = utils.getUid()
+
+    this.services.connection.sendMessage({
+      topic: TOPIC.RECORD,
+      action: RECORD_ACTION.NOTIFY,
+      names: recordNames,
+      correlationId
+    })
+
+    if (callback) {
+      this.notifyCallbacks.set(correlationId, callback)
+    } else {
+      return new Promise((resolve, reject) => {
+        this.notifyCallbacks.set(correlationId, (error: string) => error ? reject(error) : resolve())
+      })
+    }
+  }
+
   private sendSetData (recordName: string, version: number, args: utils.RecordSetArguments): void {
     const { path, data, callback } = args
     if (!recordName || typeof recordName !== 'string' || recordName.length === 0) {
@@ -379,6 +399,20 @@ export class RecordHandler {
    * @param   {Object} message parsed and validated deepstream message
    */
   private handle (message: RecordMessage) {
+    if (
+      (message.action === RECORD_ACTION.NOTIFY && message.isAck) ||
+      (message.isError && message.action === RECORD_ACTION.RECORD_NOTIFY_ERROR)
+     ) {
+      const callback = this.notifyCallbacks.get(message.correlationId!)
+      if (callback) {
+        callback(message.data || null)
+        this.notifyCallbacks.delete(message.correlationId!)
+      } else {
+        this.services.logger.error(message, RECORD_ACTION.NOTIFY)
+      }
+      return
+    }
+
     if (message.isAck) {
       this.services.timeoutRegistry.remove(message)
       return
