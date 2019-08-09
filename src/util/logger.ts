@@ -30,16 +30,14 @@ export class Logger {
 
   public error (message: { topic: TOPIC } | Message, event?: EVENT | ALL_ACTIONS, meta?: string | JSONObject | Error): void {
     if (isEvent(event)) {
-      if (event === EVENT.IS_CLOSED) {
-        this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION])
-      } else if (event === EVENT.CONNECTION_ERROR) {
+      if (event === EVENT.IS_CLOSED || event === EVENT.CONNECTION_ERROR) {
         this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION])
       }
     } else {
       const action = event ? event : (message as Message).action
       this.emitter.emit(
         'error',
-        meta,
+        meta || message,
         (ACTIONS as any)[message.topic][action],
         TOPIC[message.topic]
       )

@@ -1,3 +1,20 @@
+# [4.0.2] - 2019-08-09
+
+### Feature
+
+Adding notify on record handler to notify if the db was changed without using deepstream APIs
+
+### Fix
+
+Change error message on connection to pass through error 
+
+### Breaking Change
+
+This shouldn't be a breaking change for those with offline disabled, which noone is using yet
+hence the patch release. This just changes the initial version 1 to 0
+
+### Fix:
+
 # [4.0.1] - 2019-08-03
 
 ### Fix:

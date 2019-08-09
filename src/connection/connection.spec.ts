@@ -525,10 +525,9 @@ describe('connection', () => {
     loggerMock
       .expects('error')
       .once()
-      .withExactArgs(
+      .withArgs(
         { topic: TOPIC.CONNECTION },
-        EVENT.CONNECTION_ERROR,
-        JSON.stringify({ code: 1234 })
+        EVENT.CONNECTION_ERROR
       )
 
     socket.simulateError()

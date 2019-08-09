@@ -330,11 +330,7 @@ export class Connection {
       if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
         msg = `Can't connect! Deepstream server unreachable on ${this.originalUrl}`
       } else {
-        try {
-          msg = JSON.stringify(error)
-        } catch (e) {
-          msg = error.toString()
-        }
+        msg = error
       }
       this.services.logger.error({ topic: TOPIC.CONNECTION }, EVENT.CONNECTION_ERROR, msg)
     }, 1)
