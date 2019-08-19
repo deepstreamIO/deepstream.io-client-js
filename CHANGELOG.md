@@ -1,4 +1,10 @@
-# [4.0.2] - 2019-08-09
+# [4.0.4] - 2019-08-19
+
+### Feature
+
+If record is in readonly mode, only subscribe and read, don't try to upsert / create
+
+# [4.0.3] - 2019-08-09
 
 ### Feature
 
@@ -15,7 +21,7 @@ hence the patch release. This just changes the initial version 1 to 0
 
 ### Fix:
 
-# [4.0.1] - 2019-08-03
+# [4.0.2] - 2019-08-03
 
 ### Fix:
 
