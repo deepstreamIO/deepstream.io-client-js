@@ -35,6 +35,7 @@ export class RecordHandler {
     this.recordServices = recordServices || {
       bulkSubscriptionService: {
         [RECORD_ACTION.SUBSCRIBECREATEANDREAD]: this.getBulkSubscriptionService(RECORD_ACTION.SUBSCRIBECREATEANDREAD),
+        [RECORD_ACTION.SUBSCRIBEANDREAD]: this.getBulkSubscriptionService(RECORD_ACTION.SUBSCRIBEANDREAD),
         [RECORD_ACTION.SUBSCRIBEANDHEAD]: this.getBulkSubscriptionService(RECORD_ACTION.SUBSCRIBEANDHEAD)
       },
       writeAckService: new WriteAcknowledgementService(services),
