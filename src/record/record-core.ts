@@ -397,7 +397,11 @@ export class RecordCore<Context = null> extends Emitter {
         name: this.name
       }
     })
-    this.recordServices.bulkSubscriptionService[RECORD_ACTION.SUBSCRIBECREATEANDREAD].subscribe(this.name)
+    if (this.recordReadOnlyMode) {
+      this.recordServices.bulkSubscriptionService[RECORD_ACTION.SUBSCRIBEANDREAD].subscribe(this.name)
+    } else {
+      this.recordServices.bulkSubscriptionService[RECORD_ACTION.SUBSCRIBECREATEANDREAD].subscribe(this.name)
+    }
   }
 
   public onResubscribing (): void {
@@ -726,6 +730,7 @@ export class RecordCore<Context = null> extends Emitter {
     } else {
       newData = data
     }
+
     this.applyChange(newData)
   }
 
