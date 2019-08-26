@@ -14,6 +14,8 @@ function validateArguments(userId, callback, defaultAction) {
   if (typeof userId === 'function' && callback === undefined) {
     callback = userId; // eslint-disable-line
     userId = defaultAction; // eslint-disable-line
+  } else if (userId === undefined && callback === undefined) {
+    userId = defaultAction; // eslint-disable-line
   } else {
     userId = [userId]; // eslint-disable-line
   }

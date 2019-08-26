@@ -1891,7 +1891,7 @@ var Client = function Client(url, options) {
   this._messageCallbacks[C.TOPIC.ERROR] = this._onErrorMessage.bind(this);
 
   if (!options || !options.silentDeprecation) {
-    console.log('deepstream V3 is in maintenance mode\n  It\'s heavily recommended you try out V4 (@deepstream/client)\n  You can see the changlogs here https://deepstream.io/releases/client-js/v4-0-0/\n  It\'s currently in RC due to work required on website and binaries, however as far as\n  functionality goes its on par + some with V3 and resolves many of the issues in V3.\n  To silence this warning just pass in a silentDeprecation flag in options.\n  Example: deepstream(url, { silentDeprecation: true })\n\n  IF YOU ARE INSTALLING VIA GITHUB AND NOT NPM PLEASE USE THE V3 BRANCH AS MASTER WILL \n  SWITCH TO V4 END OF MONTH!\n');
+    console.log('deepstream V3 is in maintenance mode\n  It\'s heavily recommended you use V4 (@deepstream/client)\n  You can see the changlogs here https://deepstream.io/releases/client-js/v4-0-0/\n  The server V4.1 supports text protocol if your require to use other non official\n  SDKs and resolves many of the issues in V3.\n  To silence this warning just pass in a silentDeprecation flag in options.\n  Example: deepstream(url, { silentDeprecation: true })\n');
   }
 };
 
@@ -3456,6 +3456,8 @@ function validateArguments(userId, callback, defaultAction) {
   if (typeof userId === 'function' && callback === undefined) {
     callback = userId; // eslint-disable-line
     userId = defaultAction; // eslint-disable-line
+  } else if (userId === undefined && callback === undefined) {
+    userId = defaultAction; // eslint-disable-line
   } else {
     userId = [userId]; // eslint-disable-line
   }
@@ -4994,6 +4996,12 @@ RecordHandler.prototype._$handle = function (message) {
   } else if (message.action === C.ACTIONS.SUBSCRIPTION_HAS_PROVIDER) {
     // record can receive a HAS_PROVIDER after discarding the record
     processed = true;
+  }
+
+  if (message.action === C.ACTIONS.ERROR && message.data[0] === C.EVENT.MESSAGE_DENIED) {
+    message.processedError = true;
+    this._client._$onError(C.TOPIC.RECORD, message.data[0], message.data[1]);
+    return;
   }
 
   if (!processed) {

@@ -465,6 +465,12 @@ RecordHandler.prototype._$handle = function (message) {
     processed = true;
   }
 
+  if (message.action === C.ACTIONS.ERROR && message.data[0] === C.EVENT.MESSAGE_DENIED) {
+    message.processedError = true;
+    this._client._$onError(C.TOPIC.RECORD, message.data[0], message.data[1]);
+    return;
+  }
+
   if (!processed) {
     message.processedError = true;
     this._client._$onError(C.TOPIC.RECORD, C.EVENT.UNSOLICITED_MESSAGE, name);

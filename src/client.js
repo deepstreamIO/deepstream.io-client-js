@@ -48,15 +48,12 @@ const Client = function (url, options) {
 
   if (!options || !options.silentDeprecation) {
     console.log(`deepstream V3 is in maintenance mode
-  It's heavily recommended you try out V4 (@deepstream/client)
+  It's heavily recommended you use V4 (@deepstream/client)
   You can see the changlogs here https://deepstream.io/releases/client-js/v4-0-0/
-  It's currently in RC due to work required on website and binaries, however as far as
-  functionality goes its on par + some with V3 and resolves many of the issues in V3.
+  The server V4.1 supports text protocol if your require to use other non official
+  SDKs and resolves many of the issues in V3.
   To silence this warning just pass in a silentDeprecation flag in options.
   Example: deepstream(url, { silentDeprecation: true })
-
-  IF YOU ARE INSTALLING VIA GITHUB AND NOT NPM PLEASE USE THE V3 BRANCH AS MASTER WILL 
-  SWITCH TO V4 END OF MONTH!
 `)
   }
 }
