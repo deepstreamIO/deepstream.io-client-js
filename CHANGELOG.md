@@ -1,3 +1,9 @@
+## [2.3.3] - 2019-08-26
+  
+### Misc
+
+Tiny changes to API to get it forward compatible with V4
+
 ## [2.3.2] - 2019-06-05
 
 ### Misc
