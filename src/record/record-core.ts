@@ -127,7 +127,7 @@ export class RecordCore<Context = null> extends Emitter {
           if (this.recordReadOnlyMode) {
             return
           }
-          this.version = 0
+          this.version = this.options.initialRecordVersion
           this.data = Object.create(null)
           // We do this sync in order to avoid the possibility of a race condition
           // where connection is established while we are saving. We could introduce
@@ -590,7 +590,7 @@ export class RecordCore<Context = null> extends Emitter {
   public handleHeadResponse (message: RecordMessage): void {
     const remoteVersion = message.version!
     if (this.recordServices.dirtyService.isDirty(this.name)) {
-      if (remoteVersion === -1 && this.version === 0) {
+      if (remoteVersion === -1 && this.version === this.options.initialRecordVersion) {
         /**
          * Record created while offline
          */
@@ -692,7 +692,7 @@ export class RecordCore<Context = null> extends Emitter {
       name: this.name,
       topic: TOPIC.RECORD,
       action: RECORD_ACTION.CREATEANDUPDATE,
-      version: 0,
+      version: this.options.initialRecordVersion,
       parsedData: data
     })
     this.recordServices.dirtyService.setDirty(this.name, false)

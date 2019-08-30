@@ -120,6 +120,12 @@ export interface  Options {
      */
     debug: boolean,
 
+    /**
+     * Used in read only mode for custom
+     * versions when retrieving from a database
+     */
+    initialRecordVersion: 1,
+
     indexdb: {
         autoVersion: boolean,
         dbVersion: number,
@@ -182,4 +188,5 @@ export const DefaultOptions: Options = {
     nodeStorageSize: 5,
     lazyConnect: false,
     debug: false,
+    initialRecordVersion: 1
 }
