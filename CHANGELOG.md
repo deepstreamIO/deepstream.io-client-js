@@ -1,3 +1,10 @@
+# [4.0.5] - 2019-08-30
+
+### Improvement
+
+The initial version change seems to have broken some things, so it is now configurable and
+defaults to 1
+
 # [4.0.4] - 2019-08-19
 
 ### Feature
