@@ -1,23 +1,16 @@
-export interface Timeout {
-    callback: Function,
-    duration: number,
-    context: any,
-    data?: any
-}
+import { TimerRegistry, Timeout, TimerRef } from '../client'
 
 interface InternalTimeout extends Timeout {
     created: number,
 }
 
-export type TimerRef = number
-
-export class TimerRegistry {
+export class IntervalTimerRegistry implements TimerRegistry  {
     private registry = new Map<number, InternalTimeout>()
     private timerIdCounter = 0
     private timerId: any
 
-    constructor (timerResolution: number) {
-        this.timerId = setInterval(this.triggerTimeouts.bind(this), timerResolution)
+    constructor (private timerResolution: number) {
+        this.timerId = setTimeout(this.triggerTimeouts.bind(this), this.timerResolution)
     }
 
     public close () {
@@ -32,6 +25,7 @@ export class TimerRegistry {
                 this.registry.delete(timerId)
             }
         }
+        this.timerId = setTimeout(this.triggerTimeouts.bind(this), this.timerResolution)
     }
 
     public has (timerId: TimerRef): boolean {

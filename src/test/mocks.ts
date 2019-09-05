@@ -1,13 +1,13 @@
 // tslint:disable:no-empty
 import { mock, stub, SinonStub, SinonMock, match } from 'sinon'
 import { CONNECTION_STATE, Message, JSONObject, RECORD_ACTION, TOPIC } from '../constants'
-import { TimerRegistry } from '../util/timer-registry'
 import { SingleNotifier } from '../record/single-notifier'
 import { WriteAcknowledgementService } from '../record/write-ack-service'
 import { DirtyService } from '../record/dirty-service'
 import { Listener } from '../util/listener'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'
 import { EventEmitter } from 'events'
+import { NativeTimerRegistry } from '../util/native-timer-registry'
 
 let lastMessageSent: Message
 export const getLastMessageSent = () => lastMessageSent
@@ -46,7 +46,7 @@ export const getServicesMock = () => {
   loggerMock.expects('warn').never()
   // loggerMock.expects('error').never()
 
-  const timerRegistry = new TimerRegistry(1)
+  const timerRegistry = new NativeTimerRegistry()
 
   const timeoutRegistry = {
     add: () => {},

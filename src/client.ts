@@ -2,7 +2,8 @@ import { DefaultOptions, Options } from './client-options'
 import { CONNECTION_STATE, RecordData, Message, JSONObject } from './constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
-import { TimerRegistry } from './util/timer-registry'
+import { IntervalTimerRegistry } from './util/interval-timer-registry'
+import { NativeTimerRegistry } from './util/native-timer-registry'
 import { Connection, AuthenticationCallback, ResumeCallback } from './connection/connection'
 import { socketFactory, SocketFactory} from './connection/socket-factory'
 import { EventHandler } from './event/event-handler'
@@ -20,6 +21,22 @@ export interface RecordOfflineStore {
   set: (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) => void
   delete: (recordName: string, callback: offlineStoreWriteResponse) => void
   reset: (callback: (error: string | null) => void) => void
+}
+
+export type TimerRef = number
+export interface Timeout {
+  callback: Function,
+  duration: number,
+  context: any,
+  data?: any
+}
+
+export interface TimerRegistry {
+  close (): void
+  has (timerId: TimerRef): boolean
+  add (timeout: Timeout): TimerRef
+  remove (timerId: TimerRef): boolean
+  requestIdleCallback (callback: Function): void
 }
 
 export interface Socket {
@@ -55,7 +72,11 @@ export class Client extends Emitter {
     this.options = { ...DefaultOptions, ...options } as Options
     const services: Partial<Services> = {}
     services.logger = new Logger(this)
-    services.timerRegistry = new TimerRegistry(this.options.timerResolution)
+    if (options.nativeTimerRegistry) {
+      services.timerRegistry = new NativeTimerRegistry()
+    } else {
+      services.timerRegistry = new IntervalTimerRegistry(this.options.intervalTimerResolution)
+    }
     services.timeoutRegistry = new TimeoutRegistry(services as Services, this.options)
     services.socketFactory = this.options.socketFactory || socketFactory
     services.connection = new Connection(services as Services, this.options, url, this)
