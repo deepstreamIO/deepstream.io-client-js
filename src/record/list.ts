@@ -19,6 +19,9 @@ export class List extends Emitter {
         this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
         this.record.applyUpdate = this.applyUpdate.bind(this)
         this.record.addReference(this)
+        this.record.on('discard', () => this.emit('discard', this), this)
+        this.record.on('delete', () => this.emit('delete', this), this)
+        this.record.on('error', (...args: any[]) => this.emit('error', ...args), this)
     }
 
     get name (): string {
@@ -340,6 +343,7 @@ private applyUpdate  (message: RecordMessage) {
       this.record.unsubscribe(this.subscriptions[i])
     }
     this.wrappedFunctions.clear()
+    this.record.removeContext(this)
   }
 
 }
