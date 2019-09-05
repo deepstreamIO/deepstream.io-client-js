@@ -1,9 +1,31 @@
+# [4.0.6] - 2019-09-05
+
+### Improvement
+
+Including a default implementation of timeouts using the native setTimeout API. The interval based one was created in order to mitigate the insane amount
+of ack registries we used to have get created, and also because setting timeouts
+isn't cheap (you can verify this by creating a couple thousand records and noticing the cost within the default noop storage registry). However as correctly stated by @Krishna [here](https://github.com/deepstreamIO/deepstream.io-client-js/issues/500) the interval implementation is naive in terms of mobile (looping every 20milliseconds for idle connections is overkill) and the benefits now is no longer as apparent as during the RC release (since bulk messaging now only makes one timeout for N amount amount of subscriptions).
+
+You can toggle them with the following:
+
+```
+# When true uses setTimeout
+nativeTimerRegistry: true,
+# When nativeTimerRegistry is false uses an interval with this timer resolution
+intervalTimerResolution: 50,
+```
+
+Either ways both implementations are expensive in terms of garbage collection since it binds to the context and data as part of the API. This can probably be avoided by providing a null context going forward.
+
+### Fix 
+
+Lists were not propagating the events on record-core. Discard, delete and error is now properly passed, and documentation needs to be updated to indicate the ready event was dropped in V4
+
 # [4.0.5] - 2019-08-30
 
 ### Improvement
 
-The initial version change seems to have broken some things, so it is now configurable and
-defaults to 1
+The initial version change seems to have broken some things, so it is now configurable and defaults to 1
 
 # [4.0.4] - 2019-08-19
 
