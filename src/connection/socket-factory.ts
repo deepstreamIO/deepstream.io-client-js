@@ -12,19 +12,26 @@ export const socketFactory: SocketFactory = (url, options, heartBeatInterval) =>
         ? new BrowserWebsocket(url, [], options)
         : new (require('ws'))(url, options) as any
 
-    if (BrowserWebsocket) {
+    if (BrowserWebsocket && options.jsonTransportMode !== true) {
         socket.binaryType = 'arraybuffer'
     }
 
-    const pingMessage = getMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PING }, false)
+    const buildMessage = options.jsonTransportMode !== true ? getMessage : (message: Message, isAck: boolean) => JSON.stringify({ ...message, isAck })
+
+    const pingMessage = buildMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PING }, false)
     let pingInterval: NodeJS.Timeout | null = null
     let lastRecievedMessageTimestamp = -1
 
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => {}
-    socket.onmessage = (raw: {data: Buffer}) => {
+    socket.onmessage = (raw: {data: Buffer | string }) => {
         lastRecievedMessageTimestamp = Date.now()
-        const parseResults = parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data)) : raw.data)
+        let parseResults
+        if (options.jsonTransportMode !== true) {
+            parseResults = parse(BrowserWebsocket ? new Buffer(new Uint8Array(raw.data as Buffer)) : raw.data as Buffer)
+        } else {
+            parseResults = [JSON.parse(raw.data as string)]
+        }
         socket.onparsedmessages(parseResults)
     }
     socket.getTimeSinceLastMessage = () => {
@@ -46,7 +53,7 @@ export const socketFactory: SocketFactory = (url, options, heartBeatInterval) =>
         if (message.data === undefined) {
             delete message.data
         }
-        socket.send(getMessage(message, false))
+        socket.send(buildMessage(message, false))
     }
 
     socket.onclosed = null

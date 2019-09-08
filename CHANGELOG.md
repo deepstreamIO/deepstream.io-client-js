@@ -1,3 +1,11 @@
+# [4.1.1] - 2019-09-08
+
+### Feature
+
+Adding a `jsonTransportMode` flag that can be passed to `socketOptions` that allows the client
+to talk to the server in JSON. This is mainly done to help people to debug writing new SDKs and
+should not be used in production.
+
 # [4.1.0] - 2019-09-05
 
 ### Improvement
