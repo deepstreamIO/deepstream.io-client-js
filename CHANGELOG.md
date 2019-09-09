@@ -1,3 +1,10 @@
+
+## [4.2.2] - 2019.09.09
+
+### Fix
+
+Defaulting socketOptions in socket wrapper factory.
+
 # [4.1.1] - 2019-09-08
 
 ### Feature
