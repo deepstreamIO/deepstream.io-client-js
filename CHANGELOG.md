@@ -1,4 +1,10 @@
 
+## [4.2.3] - 2019.09.09
+
+### Fix
+
+Another socketOptions defaulting issue
+
 ## [4.2.2] - 2019.09.09
 
 ### Fix

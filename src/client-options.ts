@@ -92,7 +92,7 @@ export interface  Options {
     /**
      * Options for the provided socket factory
      */
-    socketOptions: any,
+    socketOptions?: any,
     /**
      * dirtyStorageName is used as a key to save offline dirty records states
      * Default: __ds__dirty_records
@@ -174,7 +174,6 @@ export const DefaultOptions: Options = {
     path: '/deepstream',
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
-    socketOptions: null,
     dirtyStorageName: '__ds__dirty_records',
     nodeStoragePath: './local-storage',
     indexdb: {
