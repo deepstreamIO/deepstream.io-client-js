@@ -1,6 +1,6 @@
 {
   "name": "@deepstream/client",
-  "version": "4.1.2",
+  "version": "4.1.3",
   "description": "the javascript client for deepstream.io",
   "keywords": [
     "deepstream",
