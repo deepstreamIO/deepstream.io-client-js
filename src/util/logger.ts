@@ -19,7 +19,7 @@ export class Logger {
       warnMessage += ` (${(ACTIONS as any)[message.topic][action]})`
     }
     if (event) {
-      warnMessage += `: ${EVENT[event as number]}`
+      warnMessage += `: ${(EVENT as any)[event]}`
     }
     if (meta) {
       warnMessage += ` – ${typeof meta === 'string' ? meta : JSON.stringify(meta)}`
