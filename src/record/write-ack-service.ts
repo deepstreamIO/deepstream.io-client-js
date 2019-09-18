@@ -1,6 +1,6 @@
 
 import { EVENT, Message, RECORD_ACTION } from '../constants'
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 import { WriteAckCallback } from './record-core'
 
 export class WriteAcknowledgementService {

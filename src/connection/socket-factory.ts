@@ -1,6 +1,6 @@
 import { parse } from '@deepstream/protobuf/dist/src/message-parser'
 import { getMessage } from '@deepstream/protobuf/dist/src/message-builder'
-import {Socket} from '../client'
+import {Socket} from '../deepstream-client'
 import { JSONObject, TOPIC, Message, CONNECTION_ACTION } from '../constants'
 
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any

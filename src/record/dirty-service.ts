@@ -1,4 +1,4 @@
-import { RecordOfflineStore } from '../client'
+import { RecordOfflineStore } from '../deepstream-client'
 
 export type DirtyRecordsIndex = Map<string, boolean>
 

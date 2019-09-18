@@ -1,4 +1,4 @@
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 import { Options } from '../client-options'
 import {TimeoutAction, TimeoutId} from '../util/timeout-registry'
 import { RPCResult, TOPIC, RPC_ACTION, Message } from '../constants'

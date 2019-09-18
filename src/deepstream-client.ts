@@ -1,4 +1,5 @@
 import { DefaultOptions, Options } from './client-options'
+import * as C from './constants'
 import { CONNECTION_STATE, RecordData, Message, JSONObject } from './constants'
 import { Logger } from './util/logger'
 import { TimeoutRegistry } from './util/timeout-registry'
@@ -58,7 +59,13 @@ export interface Services {
   storage: RecordOfflineStore
 }
 
-export class Client extends Emitter {
+export {
+  DeepstreamClient,
+  C,
+  Options
+}
+
+class DeepstreamClient extends Emitter {
   public event: EventHandler
   public rpc: RPCHandler
   public record: RecordHandler

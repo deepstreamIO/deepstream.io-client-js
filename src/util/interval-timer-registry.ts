@@ -1,4 +1,4 @@
-import { TimerRegistry, Timeout, TimerRef } from '../client'
+import { TimerRegistry, Timeout, TimerRef } from '../deepstream-client'
 
 interface InternalTimeout extends Timeout {
     created: number,

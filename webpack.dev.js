@@ -2,7 +2,7 @@ const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
-  entry: ['./src/deepstream.ts'],
+  entry: ['./src/deepstream-client.ts'],
   output: {
     path: __dirname,
     filename: './dist/bundle/ds.js',

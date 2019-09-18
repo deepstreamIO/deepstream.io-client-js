@@ -1,5 +1,5 @@
 import { MergeStrategy, REMOTE_WINS } from './record/merge-strategy'
-import {RecordOfflineStore, Socket } from './client'
+import {RecordOfflineStore, Socket } from './deepstream-client'
 
 export interface  Options {
     nativeTimerRegistry: boolean,

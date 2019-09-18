@@ -1,4 +1,4 @@
-import {Services} from '../client'
+import {Services} from '../deepstream-client'
 import { TOPIC, Message } from '../constants'
 
 export class BulkSubscriptionService<ACTION> {

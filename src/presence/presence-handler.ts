@@ -1,5 +1,5 @@
 import { EVENT, Message, TOPIC, PRESENCE_ACTION as PA } from '../constants'
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 import { Options } from '../client-options'
 import { Emitter } from '../util/emitter'
 import {BulkSubscriptionService} from '../util/bulk-subscription-service'

@@ -4,7 +4,7 @@ import {
 } from '@deepstream/protobuf/dist/src/message-parser'
 
 import { StateMachine } from '../util/state-machine'
-import {Services, Socket} from '../client'
+import {Services, Socket} from '../deepstream-client'
 import { Options } from '../client-options'
 import * as utils from '../util/utils'
 import { Emitter } from '../util/emitter'
