@@ -1,4 +1,4 @@
-import { TimerRegistry, TimerRef, Timeout } from '../client'
+import { TimerRegistry, TimerRef, Timeout } from '../deepstream-client'
 
 export class NativeTimerRegistry implements TimerRegistry {
     private registry = new Set<number>()

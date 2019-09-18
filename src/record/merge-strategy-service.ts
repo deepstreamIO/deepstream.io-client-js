@@ -1,4 +1,4 @@
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 import { EVENT, RecordData, TOPIC } from '../constants'
 
 import { MergeStrategy } from './merge-strategy'

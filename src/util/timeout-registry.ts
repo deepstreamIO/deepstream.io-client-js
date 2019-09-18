@@ -1,4 +1,4 @@
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 import { Options } from '../client-options'
 import { EVENT, RESPONSE_TO_REQUEST } from '../constants'
 

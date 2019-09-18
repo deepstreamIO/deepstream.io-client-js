@@ -1,5 +1,5 @@
 import { EVENT, TOPIC, ListenMessage, RECORD_ACTION, EVENT_ACTION } from '../constants'
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 
 export interface ListenResponse {
   accept: () => void

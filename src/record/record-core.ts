@@ -1,4 +1,4 @@
-import { Services, offlineStoreWriteResponse } from '../client'
+import { Services, offlineStoreWriteResponse } from '../deepstream-client'
 import { Options } from '../client-options'
 import { EVENT, RecordData, TOPIC, RecordMessage, RecordWriteMessage, RECORD_ACTION } from '../constants'
 import { MergeStrategy } from './merge-strategy'

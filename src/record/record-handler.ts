@@ -1,6 +1,6 @@
 import * as utils from '../util/utils'
 import { EVENT, RECORD_ACTION, RecordMessage, TOPIC, RecordData, RecordPathData, ListenMessage, Message } from '../constants'
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 import { Options } from '../client-options'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Record } from './record'

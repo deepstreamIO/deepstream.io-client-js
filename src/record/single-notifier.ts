@@ -1,6 +1,6 @@
 
 import { EVENT, Message, RECORD_ACTION, TOPIC } from '../constants'
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 
 /**
  * Provides a scaffold for subscriptionless requests to deepstream, such as the SNAPSHOT

@@ -1,4 +1,4 @@
-import { Services } from '../client'
+import { Services } from '../deepstream-client'
 import { Options } from '../client-options'
 import { EVENT, EventMessage, TOPIC, EventData, ListenMessage, Message, EVENT_ACTION } from '../constants'
 import { Listener, ListenCallback } from '../util/listener'

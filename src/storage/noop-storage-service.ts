@@ -1,4 +1,4 @@
-import { RecordOfflineStore, offlineStoreWriteResponse } from '../client'
+import { RecordOfflineStore, offlineStoreWriteResponse } from '../deepstream-client'
 import { RecordData } from '../constants'
 
 export class NoopStorage implements RecordOfflineStore {

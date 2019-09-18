@@ -1,4 +1,4 @@
-import { RecordOfflineStore, offlineStoreWriteResponse } from '../client'
+import { RecordOfflineStore, offlineStoreWriteResponse } from '../deepstream-client'
 import { Options } from '../client-options'
 import { RecordData } from '../constants'
 
