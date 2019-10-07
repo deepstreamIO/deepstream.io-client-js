@@ -1,4 +1,24 @@
 
+## [5.0.0] - 2019.09.XX
+
+### Breaking Change
+
+Importing and creating the client has changed in order to be less insane when using typescript.
+
+When creating the client you now do:
+
+```typescript
+import { DeepstreamClient } from '@deepstream/client'
+const dsClient = new DeepstreamClient(url, options)
+```
+
+instead of:
+
+```
+const deepstream = require('@deepstream/client')
+const dsClient = deepstream(url, options)
+```
+
 ## [4.1.3] - 2019.09.09
 
 ### Fix
