@@ -8,8 +8,8 @@
     "realtime",
     "client"
   ],
-  "main": "dist/deepstream.js",
-  "types": "dist/client.d.ts",
+  "main": "dist/deepstream-client.js",
+  "types": "dist/deepstream-client.d.ts",
   "directories": {
     "test": "src/test"
   },
@@ -23,7 +23,8 @@
     "lint": "tslint src/*.ts src/**/*.ts -t verbose",
     "lint:fix": "npm run lint -- --fix",
     "test": "mocha --opts mocha.opts",
-    "test:coverage": "nyc mocha --opts mocha.opts"
+    "test:coverage": "nyc mocha --opts mocha.opts",
+    "bundle:analyse": "webpack --config webpack.prod.js --profile --json > ./dist/stats.json && webpack-bundle-analyzer ./dist/stats.json"
   },
   "repository": {
     "type": "git",
@@ -53,6 +54,7 @@
     "nyc": "^14.1.1",
     "rimraf": "^3.0.0",
     "sinon": "^7.4.2",
+    "terser-webpack-plugin": "^2.1.2",
     "ts-essentials": "^3.0.2",
     "ts-loader": "^6.1.0",
     "ts-node": "^8.4.1",
@@ -60,6 +62,7 @@
     "typescript": "^3.6.3",
     "uglifyjs-webpack-plugin": "^2.2.0",
     "webpack": "^4.40.2",
+    "webpack-bundle-analyzer": "^3.5.2",
     "webpack-cli": "^3.3.9"
   },
   "author": "deepstreamHub GmbH",
