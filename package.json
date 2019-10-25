@@ -66,7 +66,7 @@
     "webpack-cli": "^3.3.9"
   },
   "author": "deepstreamHub GmbH",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js/issues"
   },
