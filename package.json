@@ -1,6 +1,6 @@
 {
   "name": "@deepstream/client",
-  "version": "5.0.0-rc.1",
+  "version": "5.0.0",
   "description": "the javascript client for deepstream.io",
   "keywords": [
     "deepstream",
@@ -33,36 +33,36 @@
   "dependencies": {
     "@deepstream/protobuf": "^1.0.1",
     "protobufjs": "^6.8.8",
-    "ws": "^7.1.2"
+    "ws": "^7.2.0"
   },
   "browser": {
     "net": false,
     "ws": false
   },
   "devDependencies": {
-    "@types/bluebird": "^3.5.27",
-    "@types/chai": "^4.2.3",
+    "@types/bluebird": "^3.5.28",
+    "@types/chai": "^4.2.4",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^12.7.11",
+    "@types/node": "^12.11.7",
     "@types/sinon": "^7.5.0",
     "@types/ws": "^6.0.3",
-    "bluebird": "^3.7.0",
+    "bluebird": "^3.7.1",
     "chai": "^4.2.0",
-    "coveralls": "^3.0.6",
-    "husky": "^3.0.8",
-    "mocha": "^6.2.1",
+    "coveralls": "^3.0.7",
+    "husky": "^3.0.9",
+    "mocha": "^6.2.2",
     "nyc": "^14.1.1",
     "rimraf": "^3.0.0",
     "sinon": "^7.5.0",
-    "terser-webpack-plugin": "^2.1.2",
+    "terser-webpack-plugin": "^2.2.1",
     "ts-essentials": "^3.0.2",
-    "ts-loader": "^6.2.0",
+    "ts-loader": "^6.2.1",
     "ts-node": "^8.4.1",
     "tslint": "^5.20.0",
-    "typescript": "^3.6.3",
+    "typescript": "^3.6.4",
     "uglifyjs-webpack-plugin": "^2.2.0",
-    "webpack": "^4.41.0",
-    "webpack-bundle-analyzer": "^3.5.2",
+    "webpack": "^4.41.2",
+    "webpack-bundle-analyzer": "^3.6.0",
     "webpack-cli": "^3.3.9"
   },
   "author": "deepstreamHub GmbH",

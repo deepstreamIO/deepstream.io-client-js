@@ -1,5 +1,5 @@
 
-## [5.0.0-rc.1] - 2019.09.07
+## [5.0.0] - 2019.10.27
 
 ### Breaking Change
 
@@ -8,13 +8,13 @@ Importing and creating the client has changed in order to be less insane when us
 When creating the client you now do:
 
 ```typescript
-import { DeepstreamClient } from '@deepstream/client'
+const { DeepstreamClient } = require('@deepstream/client')
 const dsClient = new DeepstreamClient(url, options)
 ```
 
 instead of:
 
-```
+```javascript
 const deepstream = require('@deepstream/client')
 const dsClient = deepstream(url, options)
 ```
