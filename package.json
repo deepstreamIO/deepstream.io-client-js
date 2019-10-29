@@ -1,6 +1,6 @@
 {
   "name": "@deepstream/client",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "the javascript client for deepstream.io",
   "keywords": [
     "deepstream",
@@ -55,7 +55,7 @@
     "rimraf": "^3.0.0",
     "sinon": "^7.5.0",
     "terser-webpack-plugin": "^2.2.1",
-    "ts-essentials": "^3.0.2",
+    "ts-essentials": "^3.0.3",
     "ts-loader": "^6.2.1",
     "ts-node": "^8.4.1",
     "tslint": "^5.20.0",
