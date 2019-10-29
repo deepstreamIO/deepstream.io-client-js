@@ -1,4 +1,8 @@
 
+## [5.0.1] - 2019.10.29
+
+Added a missing transition state on resubscription.
+
 ## [5.0.0] - 2019.10.27
 
 ### Breaking Change
