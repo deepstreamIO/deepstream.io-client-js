@@ -1,4 +1,10 @@
 
+## [5.0.2] - 2019.11.03
+
+### Fix
+
+Adding library directly into browser from webpack should expose DeepstreamClient globally
+
 ## [5.0.1] - 2019.10.29
 
 ### Fix
