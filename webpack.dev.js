@@ -2,10 +2,11 @@ const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
-  entry: ['./src/deepstream-browser'],
+  entry: ['./src/deepstream'],
   output: {
     path: __dirname,
     filename: './dist/bundle/ds.js',
+    library: 'DeepstreamClient',
     libraryTarget: 'umd',
     globalObject: 'this'
   },

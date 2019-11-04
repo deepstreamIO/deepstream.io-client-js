@@ -1,4 +1,11 @@
 
+
+## [5.0.3] - 2019.11.03
+
+### Fix
+
+Actual library fix, previous one was a spoof
+
 ## [5.0.2] - 2019.11.03
 
 ### Fix
