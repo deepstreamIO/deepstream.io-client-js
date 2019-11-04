@@ -1,3 +1,3 @@
-import { DeepstreamClient } from "./deepstream-client";
+import { DeepstreamClient } from './deepstream-client'
 
 export = DeepstreamClient

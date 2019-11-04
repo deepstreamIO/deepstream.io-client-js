@@ -1,5 +1,11 @@
 
 
+## [5.0.4] - 2019.11.03
+
+### Fix
+
+Linting issue failed release build
+
 ## [5.0.3] - 2019.11.03
 
 ### Fix
