@@ -105,7 +105,7 @@ class DeepstreamClient extends Emitter {
   }
 
   public login (): Promise<JSONObject>
-  public login (callback: JSONObject): void
+  public login (callback: AuthenticationCallback): void
   public login (details: JSONObject): Promise<JSONObject>
   public login (details: JSONObject, callback: AuthenticationCallback): void
   public login (detailsOrCallback?: JSONObject | AuthenticationCallback, callback?: AuthenticationCallback): void | Promise<JSONObject | null> {
