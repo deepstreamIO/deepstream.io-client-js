@@ -1,4 +1,8 @@
+## [5.0.5] - 2019.11.21
 
+### Fix
+
+Method signature for the `DeepstreamClient.login()` overload that takes only a callback was incorrect
 
 ## [5.0.4] - 2019.11.03
 
