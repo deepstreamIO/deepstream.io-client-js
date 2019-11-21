@@ -186,9 +186,7 @@ export class RecordCore<Context = null> extends Emitter {
       callback(context)
       return
     }
-    if (callback) {
-      this.readyCallbacks.push({ callback, context })
-    }
+    this.readyCallbacks.push({ callback, context })
   }
 
   /**
