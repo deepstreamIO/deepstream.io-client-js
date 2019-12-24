@@ -7,7 +7,7 @@ const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
 
 export type SocketFactory = (url: string, options: JSONObject, heartBeatInterval: number) => Socket
 
-export const socketFactory: SocketFactory = (url, options = { jsonTransportMode: false }, heartBeatInterval) => {
+export const socketFactory: SocketFactory = (url, options = {}, heartBeatInterval) => {
     const socket = BrowserWebsocket
         ? new BrowserWebsocket(url, [], options)
         : new (require('ws'))(url, options) as any
