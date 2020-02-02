@@ -1,10 +1,4 @@
-let UniformResourceLocator: any
-
-if (typeof URL === 'undefined') {
-  UniformResourceLocator = require('url').URL
-} else {
-  UniformResourceLocator = URL
-}
+const URL: any = require('url')
 
 /**
  * Compares two objects for deep (recoursive) equality
@@ -98,13 +92,16 @@ export const parseUrl = (initialURl: string, defaultPath: string): string => {
   } else if (url.indexOf('//') === 0) {
     url = `ws:${url}`
   }
-  const serverUrl = new UniformResourceLocator(url)
-  if (!serverUrl.host) {
-    throw new Error('invalid url, missing host')
+  const serverUrl = URL.parse(url)
+  if (!serverUrl.host && !serverUrl.host.length) {
+    throw new Error('Invalid URL, missing host')
   }
   serverUrl.protocol = serverUrl.protocol ? serverUrl.protocol : 'ws:'
-  serverUrl.pathname = serverUrl.pathname && serverUrl.pathname !== '/' ? serverUrl.pathname : defaultPath
-  return serverUrl.href
+  if (serverUrl.pathname === '/' && initialURl.charAt(initialURl.length - 1) !== '/') {
+    serverUrl.pathname = defaultPath
+  }
+  serverUrl.pathname = serverUrl.pathname ? serverUrl.pathname : defaultPath
+  return URL.format(serverUrl)
 }
 
 /**
