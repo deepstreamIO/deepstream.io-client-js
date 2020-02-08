@@ -1,4 +1,3 @@
-import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { mock, spy, assert } from 'sinon'
 
@@ -8,6 +7,7 @@ import { DefaultOptions } from '../client-options'
 import { EVENT, CONNECTION_STATE, TOPIC, CONNECTION_ACTION, AUTH_ACTION, EVENT_ACTION } from '../constants'
 
 import { Emitter } from '../util/emitter'
+import { PromiseDelay } from '../util/utils'
 
 describe('connection', () => {
   let connection: Connection
@@ -75,7 +75,7 @@ describe('connection', () => {
 
   it('miss heartbeat once', async () => {
     await openConnection()
-    await BBPromise.delay(heartbeatInterval * 1.5)
+    await PromiseDelay(heartbeatInterval * 1.5)
     // verify no errors in afterAll
   })
 
@@ -144,7 +144,7 @@ describe('connection', () => {
 
     assert.callCount(authCallback, 0)
 
-    await BBPromise.delay(10)
+    await PromiseDelay(10)
   })
 
   it('handles successful authentication', async () => {
@@ -245,19 +245,19 @@ describe('connection', () => {
 
     // try to reconnect first time
     await receiveConnectionError()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
 
     // try to reconnect second time
     await receiveConnectionError()
-    await BBPromise.delay(25)
+    await PromiseDelay(25)
 
     // try to reconnect third time (now max is reached)
     await receiveConnectionError()
-    await BBPromise.delay(45)
+    await PromiseDelay(45)
 
     // try to reconnect fourth time (try to surpass the allowed max, fail)
     await receiveConnectionError()
-    await BBPromise.delay(70)
+    await PromiseDelay(70)
   })
 
   it('tries to reconnect if the connection drops unexpectedly', async () => {
@@ -294,14 +294,14 @@ describe('connection', () => {
     await receiveAuthResponse()
 
     await receiveConnectionError()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
 
     await awaitConnectionAck()
     await sendChallenge()
     await receiveChallengeAcceptAndResendAuth()
     await receiveAuthRejectResponse()
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
     assert.calledOnce(authCallback)
   })
 
@@ -314,7 +314,7 @@ describe('connection', () => {
     await loseConnection()
     expect(connection.isInLimbo).to.equal(true)
 
-    await BBPromise.delay(20)
+    await PromiseDelay(20)
 
     assert.calledOnce(limboSpy)
     expect(connection.isInLimbo).to.equal(false)
@@ -322,7 +322,7 @@ describe('connection', () => {
 
   async function openConnection () {
     socket.simulateOpen()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function awaitConnectionAck () {
@@ -335,7 +335,7 @@ describe('connection', () => {
 
     expect(socket.url).to.equal(initialUrl)
     socket.simulateOpen()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function sendChallenge () {
@@ -348,7 +348,7 @@ describe('connection', () => {
         url
       }])
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function receiveChallengeAccept () {
@@ -361,7 +361,7 @@ describe('connection', () => {
       action: CONNECTION_ACTION.ACCEPT
     }])
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function receiveChallengeAcceptAndResendAuth () {
@@ -385,7 +385,7 @@ describe('connection', () => {
       action: CONNECTION_ACTION.ACCEPT
     }])
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function receiveChallengeReject () {
@@ -394,7 +394,7 @@ describe('connection', () => {
       action: CONNECTION_ACTION.REJECT
     }])
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function sendAuth () {
@@ -412,7 +412,7 @@ describe('connection', () => {
       })
 
     connection.authenticate(authData, authCallback)
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function sendBadAuthDataAndReceiveError () {
@@ -423,7 +423,7 @@ describe('connection', () => {
       connection.authenticate({}, 'Bad Auth Data' as any)
     }).to.throw('invalid argument callback')
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   // async function sendInvalidAuth () {
@@ -442,7 +442,7 @@ describe('connection', () => {
 
   //   connection.authenticate({ _username: 'invalid' }, authCallback)
 
-  //   await BBPromise.delay(0)
+  //   await PromiseDelay(0)
   // }
 
   async function receiveAuthResponse (data?: object) {
@@ -461,7 +461,7 @@ describe('connection', () => {
       parsedData: Object.assign({}, receivedClientData)
     }])
 
-    await BBPromise.delay(5)
+    await PromiseDelay(5)
   }
 
   async function sendMessage () {
@@ -470,7 +470,7 @@ describe('connection', () => {
       action: EVENT_ACTION.EMIT,
       name: 'eventA'
     }])
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function closeConnection () {
@@ -487,7 +487,7 @@ describe('connection', () => {
       })
 
     connection.close()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function recieveConnectionClose () {
@@ -501,7 +501,7 @@ describe('connection', () => {
     }])
 
     socket.simulateRemoteClose()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   function receivePing () {
@@ -531,7 +531,7 @@ describe('connection', () => {
       )
 
     socket.simulateError()
-    await BBPromise.delay(1)
+    await PromiseDelay(1)
   }
 
   async function receiveRedirect () {
@@ -546,7 +546,7 @@ describe('connection', () => {
       url: otherUrl
     }])
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function openConnectionToRedirectedServer () {
@@ -562,7 +562,7 @@ describe('connection', () => {
     getSocketMock()
     expect(socket.url).to.equal(otherUrl)
     socket.simulateOpen()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function receiveAuthRejectResponse () {
@@ -572,7 +572,7 @@ describe('connection', () => {
       parsedData: AUTH_ACTION.INVALID_MESSAGE_DATA
     }])
 
-    await BBPromise.delay(10)
+    await PromiseDelay(10)
   }
 
   async function loseConnection () {
@@ -582,7 +582,7 @@ describe('connection', () => {
       .withExactArgs(EVENT.CONNECTION_STATE_CHANGED, CONNECTION_STATE.RECONNECTING)
 
     socket.close()
-    await BBPromise.delay(2)
+    await PromiseDelay(2)
     expect(connection.isConnected).to.equal(false)
   }
 
@@ -601,7 +601,7 @@ describe('connection', () => {
       })
 
     socket.simulateOpen()
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   // async function connectionClosedError () {
@@ -610,7 +610,7 @@ describe('connection', () => {
   //     .once()
   //     .withExactArgs({ topic: TOPIC.CONNECTION }, EVENT.IS_CLOSED)
 
-  //   await BBPromise.delay(0)
+  //   await PromiseDelay(0)
   // }
 
   // async function receiveInvalidParseError () {
@@ -621,12 +621,12 @@ describe('connection', () => {
   //     data: 'invalid authentication message'
   //   }])
 
-  //   await BBPromise.delay(0)
+  //   await PromiseDelay(0)
 
   //   assert.calledOnce(authCallback)
   //   assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
 
-  //   await BBPromise.delay(0)
+  //   await PromiseDelay(0)
   // }
 
   async function receiveTooManyAuthAttempts () {
@@ -635,7 +635,7 @@ describe('connection', () => {
       action: AUTH_ACTION.TOO_MANY_AUTH_ATTEMPTS
     }])
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   async function receiveAuthenticationTimeout () {
@@ -644,7 +644,7 @@ describe('connection', () => {
       action: CONNECTION_ACTION.AUTHENTICATION_TIMEOUT
     }])
 
-    await BBPromise.delay(0)
+    await PromiseDelay(0)
   }
 
   // function losesConnection () {

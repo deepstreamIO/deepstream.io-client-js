@@ -1,5 +1,4 @@
 // // tslint:disable:no-unused-expression
-// import { Promise as BBPromise } from 'bluebird'
 // import { expect } from 'chai'
 // import { spy, assert } from 'sinon'
 // import { getServicesMock, getLastMessageSent } from '../mocks'
@@ -72,7 +71,7 @@
 //       parsedData: data,
 //       version: 1
 //     })
-//     await BBPromise.delay(20)
+//     await PromiseDelay(20)
 
 //     expect(list.getEntries()).deep.equal(data)
 //     expect(list.isEmpty()).equal(false)

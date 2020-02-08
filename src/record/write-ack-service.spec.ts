@@ -1,9 +1,9 @@
-import { Promise as BBPromise } from 'bluebird'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../test/mocks'
 import { EVENT, TOPIC, RECORD_ACTION, RecordMessage } from '../constants'
 
 import { WriteAcknowledgementService } from './write-ack-service'
+import { PromiseDelay } from '../util/utils'
 
 describe('Write Ack Notifier', () => {
   const topic = TOPIC.RECORD
@@ -35,7 +35,7 @@ describe('Write Ack Notifier', () => {
       action,
       name
     }, callbackSpy)
-    await BBPromise.delay(1)
+    await PromiseDelay(1)
 
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE, name)
@@ -51,7 +51,7 @@ describe('Write Ack Notifier', () => {
     writeAckService.send(messageBody, callbackSpy)
 
     services.simulateConnectionLost()
-    await BBPromise.delay(1)
+    await PromiseDelay(1)
 
     assert.calledTwice(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
@@ -99,7 +99,7 @@ describe('Write Ack Notifier', () => {
       }
 
       writeAckService.recieve(msg)
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.notCalled(callbackSpy)
     })
@@ -112,7 +112,7 @@ describe('Write Ack Notifier', () => {
         originalAction: RECORD_ACTION.CREATEANDUPDATE,
         isWriteAck: true
       })
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWith(callbackSpy)
@@ -128,7 +128,7 @@ describe('Write Ack Notifier', () => {
       }
       writeAckService.recieve(msg)
       writeAckService.recieve(msg)
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWith(callbackSpy)
@@ -144,7 +144,7 @@ describe('Write Ack Notifier', () => {
         isAck: true,
         isError: true
       })
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWith(callbackSpy, RECORD_ACTION[errorAction])

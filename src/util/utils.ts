@@ -206,3 +206,7 @@ export const normalizeArguments = (args: IArguments): RecordSubscribeArguments =
   }
   return result
 }
+
+export const PromiseDelay = (time: number): Promise<void> => {
+  return new Promise(done => setTimeout(done, time))
+}

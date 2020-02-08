@@ -2,9 +2,9 @@ import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { getServicesMock, getListenerMock } from '../test/mocks'
 import { EVENT, TOPIC, EVENT_ACTION } from '../constants'
-import { Promise as BBPromise } from 'bluebird'
 import { DefaultOptions } from '../client-options'
 import { EventHandler } from './event-handler'
+import { PromiseDelay } from '../util/utils'
 
 describe('event handler', () => {
   let services: any
@@ -373,7 +373,7 @@ describe('event handler', () => {
         .withExactArgs({ topic: TOPIC.EVENT, action: EVENT_ACTION.EMIT, parsedData: 6, name })
 
       services.simulateConnectionReestablished()
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
     })
 
   })

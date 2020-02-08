@@ -1,4 +1,3 @@
-import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import { assert, spy, match } from 'sinon'
 import { getServicesMock, getRecordServices } from '../test/mocks'
@@ -8,6 +7,7 @@ import { DefaultOptions } from '../client-options'
 import { WriteAckCallback } from './record-core'
 import { fail } from 'assert'
 import { TOPIC, RECORD_ACTION, RecordData, RecordMessage } from '../constants'
+import { PromiseDelay } from '../util/utils'
 
 describe('Record handler', () => {
   const name = 'recordA'
@@ -83,7 +83,7 @@ describe('Record handler', () => {
         parsedData: data
       })
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, null, data)
@@ -103,7 +103,7 @@ describe('Record handler', () => {
         isError: true
       })
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], undefined)
@@ -152,7 +152,7 @@ describe('Record handler', () => {
         version
       })
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, null, version)
@@ -172,7 +172,7 @@ describe('Record handler', () => {
         isError: true
       })
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], undefined)
@@ -220,7 +220,7 @@ describe('Record handler', () => {
         version
       })
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, null, true)
@@ -240,7 +240,7 @@ describe('Record handler', () => {
         name
       })
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, null, false)
@@ -260,7 +260,7 @@ describe('Record handler', () => {
         isError: true
       })
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], null)
@@ -555,7 +555,7 @@ describe('Record handler', () => {
           recordHandler.setDataWithAck(name, data, ackCallback)
 
           handle(errorMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.calledOnce(ackCallback)
           assert.calledWithExactly(ackCallback, RECORD_ACTION[errorMsg.action], name)
@@ -566,7 +566,7 @@ describe('Record handler', () => {
           promise.then(ackResolve).catch(ackReject)
 
           handle(errorMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.notCalled(ackResolve)
 
@@ -587,7 +587,7 @@ describe('Record handler', () => {
           recordHandler.setDataWithAck(name, data, ackCallback)
 
           handle(createUpdateAckMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.calledOnce(ackCallback)
           assert.calledWithExactly(ackCallback, null, name)
@@ -598,7 +598,7 @@ describe('Record handler', () => {
           promise.then(ackResolve).catch(ackReject)
 
           handle(createUpdateAckMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.calledOnce(ackResolve)
           assert.notCalled(ackReject)
@@ -617,7 +617,7 @@ describe('Record handler', () => {
           recordHandler.setDataWithAck(name, path, data, ackCallback)
 
           handle(createPatchAckMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.calledOnce(ackCallback)
           assert.calledWithExactly(ackCallback, null, name)
@@ -628,7 +628,7 @@ describe('Record handler', () => {
           promise.then(ackResolve).catch(ackReject)
 
           handle(createPatchAckMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.calledOnce(ackResolve)
           assert.notCalled(ackReject)
@@ -647,7 +647,7 @@ describe('Record handler', () => {
           recordHandler.setDataWithAck(name, path, undefined, ackCallback)
 
           handle(eraseAckMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.calledOnce(ackCallback)
           assert.calledWithExactly(ackCallback, null, name)
@@ -658,7 +658,7 @@ describe('Record handler', () => {
           promise.then(ackResolve).catch(ackReject)
 
           handle(eraseAckMsg)
-          await BBPromise.delay(1)
+          await PromiseDelay(1)
 
           assert.calledOnce(ackResolve)
           assert.notCalled(ackReject)

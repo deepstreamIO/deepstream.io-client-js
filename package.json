@@ -40,13 +40,11 @@
     "ws": false
   },
   "devDependencies": {
-    "@types/bluebird": "^3.5.28",
     "@types/chai": "^4.2.4",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.11.7",
     "@types/sinon": "^7.5.0",
     "@types/ws": "^6.0.3",
-    "bluebird": "^3.7.1",
     "chai": "^4.2.0",
     "coveralls": "^3.0.7",
     "husky": "^3.0.9",

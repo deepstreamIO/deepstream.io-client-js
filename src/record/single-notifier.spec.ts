@@ -1,9 +1,9 @@
-import { Promise as BBPromise } from 'bluebird'
 import { assert, spy } from 'sinon'
 import { getServicesMock } from '../test/mocks'
 import { EVENT, RECORD_ACTION, TOPIC, Message } from '../constants'
 
 import { SingleNotifier } from './single-notifier'
+import { PromiseDelay } from '../util/utils'
 
 describe('Single Notifier', () => {
   const timeout = 10
@@ -66,7 +66,7 @@ describe('Single Notifier', () => {
 
     singleNotifier.request(name, callbackSpy)
 
-    await BBPromise.delay(1)
+    await PromiseDelay(1)
 
     assert.calledOnce(callbackSpy)
     assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)
@@ -88,7 +88,7 @@ describe('Single Notifier', () => {
 
       assert.notCalled(callbackSpy)
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
     })
 
     it('responds callback and promise requests with success response', async () => {
@@ -104,7 +104,7 @@ describe('Single Notifier', () => {
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, undefined, parsedData)
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
     })
 
     it('responds callback and promise requests with error response', async () => {
@@ -118,12 +118,12 @@ describe('Single Notifier', () => {
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], undefined)
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
     })
 
     it('responds with error on connection lost', async () => {
       services.simulateConnectionLost()
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       assert.calledOnce(callbackSpy)
       assert.calledWithExactly(callbackSpy, EVENT.CLIENT_OFFLINE)

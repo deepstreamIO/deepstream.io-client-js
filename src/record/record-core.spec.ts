@@ -1,5 +1,4 @@
 // tslint:disabke:no-unused-expression
-import * as BBPromise from 'bluebird'
 import { expect } from 'chai'
 import { getServicesMock, getRecordServices } from '../test/mocks'
 
@@ -8,6 +7,7 @@ import { RecordCore, RECORD_STATE } from './record-core'
 
 import { spy, assert, match } from 'sinon'
 import { EVENT, TOPIC, RECORD_ACTION } from '../constants'
+import { PromiseDelay } from '../util/utils'
 
 describe('record core', () => {
 
@@ -82,7 +82,7 @@ describe('online scenario, not individual tests', () => {
 
         recordServices.readRegistry.recieve(READ_RESPONSE)
 
-        await BBPromise.delay(0)
+        await PromiseDelay(0)
         expect(readyContext).to.equal(context)
     })
 
@@ -209,7 +209,7 @@ describe('online scenario, not individual tests', () => {
         recordCore.removeReference(this)
         recordCore.addReference({})
 
-        await BBPromise.delay(30)
+        await PromiseDelay(30)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.READY)
 
@@ -235,7 +235,7 @@ describe('online scenario, not individual tests', () => {
         .once()
         .callsArgWith(3, null)
 
-        await BBPromise.delay(30)
+        await PromiseDelay(30)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBED)
 
@@ -392,7 +392,7 @@ describe('record core offline', () => {
 
         recordCore.set({ data: { firstname: 'Bob' }, callback: ackCallback })
 
-        await BBPromise.delay(0)
+        await PromiseDelay(0)
 
         assert.calledOnce(ackCallback)
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE, name)
@@ -408,7 +408,7 @@ describe('record core offline', () => {
 
         recordCore.set({ path: 'firstname', data: 'Bob', callback: ackCallback })
 
-        await BBPromise.delay(0)
+        await PromiseDelay(0)
 
         assert.calledOnce(ackCallback)
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE, name)
@@ -433,7 +433,7 @@ describe('record core offline', () => {
 
         recordCore.set({ path: 'firstname', callback: ackCallback })
 
-        await BBPromise.delay(0)
+        await PromiseDelay(0)
 
         assert.calledOnce(ackCallback)
         assert.calledWithExactly(ackCallback, EVENT.CLIENT_OFFLINE, name)
@@ -451,7 +451,7 @@ describe('record core offline', () => {
         recordCore.removeReference(this)
         recordCore.addReference({})
 
-        await BBPromise.delay(30)
+        await PromiseDelay(30)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.READY)
 
@@ -466,7 +466,7 @@ describe('record core offline', () => {
 
         recordCore.removeReference(this)
 
-        await BBPromise.delay(40)
+        await PromiseDelay(40)
 
         expect(recordCore.recordState).to.equal(RECORD_STATE.UNSUBSCRIBED)
 
@@ -500,7 +500,7 @@ describe('record core offline', () => {
 
         recordCore.delete()
 
-        await BBPromise.delay(0)
+        await PromiseDelay(0)
 
         // deleted
         expect(recordCore.recordState).to.equal(RECORD_STATE.DELETED)

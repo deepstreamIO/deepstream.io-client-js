@@ -1,4 +1,3 @@
-import { Promise as BBPromise } from 'bluebird'
 import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { getServicesMock, getLastMessageSent } from '../test/mocks'
@@ -8,6 +7,7 @@ import { DefaultOptions } from '../client-options'
 import { RPCHandler, RPCProvider } from './rpc-handler'
 import { RPCResponse } from './rpc-response'
 import { TimeoutRegistry } from '../util/timeout-registry'
+import { PromiseDelay } from '../util/utils'
 
 describe('RPC handler', () => {
   let services: any
@@ -140,7 +140,7 @@ describe('RPC handler', () => {
     const promise = rpcHandler.make(name, data)
     promise.then(promisseSuccess).catch(promisseError)
 
-    await BBPromise.delay(1)
+    await PromiseDelay(1)
 
     sinon.assert.calledOnce(callback)
     sinon.assert.calledWithExactly(callback, EVENT.CLIENT_OFFLINE)
@@ -356,7 +356,7 @@ describe('RPC handler', () => {
       })
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await PromiseDelay(rpcAcceptTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[action])
@@ -377,7 +377,7 @@ describe('RPC handler', () => {
       })
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await PromiseDelay(rpcAcceptTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[action])
@@ -388,7 +388,7 @@ describe('RPC handler', () => {
     })
 
     it('responds rpc with error when request is not accepted in time', async () => {
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await PromiseDelay(rpcAcceptTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.ACCEPT_TIMEOUT])
@@ -407,7 +407,7 @@ describe('RPC handler', () => {
       })
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
-      await BBPromise.delay(rpcAcceptTimeout * 2)
+      await PromiseDelay(rpcAcceptTimeout * 2)
 
       sinon.assert.notCalled(rpcResponseCallback)
 
@@ -424,7 +424,7 @@ describe('RPC handler', () => {
       })
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
-      await BBPromise.delay(rpcResponseTimeout * 2)
+      await PromiseDelay(rpcResponseTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.RESPONSE_TIMEOUT])
@@ -461,7 +461,7 @@ describe('RPC handler', () => {
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.NO_RPC_PROVIDER])
 
-      await BBPromise.delay(0)
+      await PromiseDelay(0)
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
@@ -482,7 +482,7 @@ describe('RPC handler', () => {
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, null, data)
 
-      await BBPromise.delay(0)
+      await PromiseDelay(0)
 
       sinon.assert.notCalled(rpcPromiseResponseFail)
       sinon.assert.calledOnce(rpcPromiseResponseSuccess)
@@ -501,7 +501,7 @@ describe('RPC handler', () => {
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
       handleMessage(correlationIdPromiseRpc)
-      await BBPromise.delay(rpcResponseTimeout * 2)
+      await PromiseDelay(rpcResponseTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
 
@@ -520,7 +520,7 @@ describe('RPC handler', () => {
       })
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
-      await BBPromise.delay(rpcResponseTimeout * 2)
+      await PromiseDelay(rpcResponseTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, error)
@@ -543,7 +543,7 @@ describe('RPC handler', () => {
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
       handleMessage(correlationIdPromiseRpc)
-      await BBPromise.delay(rpcResponseTimeout * 2)
+      await PromiseDelay(rpcResponseTimeout * 2)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
@@ -552,7 +552,7 @@ describe('RPC handler', () => {
 
     it('responds with error when onConnectionLost', async () => {
       services.simulateConnectionLost()
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, EVENT.CLIENT_OFFLINE)
@@ -574,7 +574,7 @@ describe('RPC handler', () => {
       rpcHandler.make(name, data, rpcMakeSpy)
       services.simulateExitLimbo()
 
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
 
       sinon.assert.calledOnce(rpcMakeSpy)
       sinon.assert.calledWithExactly(rpcMakeSpy, EVENT.CLIENT_OFFLINE)
@@ -591,7 +591,7 @@ describe('RPC handler', () => {
         .twice()
 
       services.simulateConnectionReestablished()
-      await BBPromise.delay(1)
+      await PromiseDelay(1)
     })
 
   })

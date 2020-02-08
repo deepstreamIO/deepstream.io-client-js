@@ -3,8 +3,8 @@ import { getServicesMock } from '../test/mocks'
 
 import { DefaultOptions } from '../client-options'
 import { RPCResponse } from './rpc-response'
-import { Promise as BBPromise } from 'bluebird'
 import { TOPIC, RPC_ACTION } from '../constants'
+import { PromiseDelay } from '../util/utils'
 
 describe('RPC response', () => {
   let services: any
@@ -35,7 +35,7 @@ describe('RPC response', () => {
       .expects('sendMessage')
       .never()
 
-    await BBPromise.delay(2)
+    await PromiseDelay(2)
   })
 
   it('sends an accept message automatically when autoAccept == true ', async () => {
@@ -51,7 +51,7 @@ describe('RPC response', () => {
 
     rpcResponse.autoAccept = true
 
-    await BBPromise.delay(2)
+    await PromiseDelay(2)
   })
 
   it('sends an accept message manually', () => {
