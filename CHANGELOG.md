@@ -1,3 +1,13 @@
+## [5.0.6] - 2020.02.08
+
+### Improvement
+
+Updating depedencies
+
+### Fix
+
+Allow to work on react native (at cost of bigger bundle size)
+
 ## [5.0.5] - 2019.11.21
 
 ### Fix
