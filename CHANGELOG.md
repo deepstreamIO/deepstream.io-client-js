@@ -1,4 +1,10 @@
 ## [5.0.6] - 2020.02.08
+  
+### Fix
+
+Revert: Allow to work on react native (at cost of bigger bundle size)
+
+## [5.0.6] - 2020.02.08
 
 ### Improvement
 
