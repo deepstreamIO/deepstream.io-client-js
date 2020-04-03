@@ -753,7 +753,7 @@ export class RecordCore<Context = null> extends Emitter {
       const newValue = getPath(newData, paths[i], false)
       const oldValue = getPath(oldData, paths[i], false)
 
-      if (newValue !== oldValue || (force && newValue)) {
+      if (!utils.deepEquals(newValue, oldValue) || (force && newValue)) {
         this.emitter.emit(paths[i], this.get(paths[i]))
       }
     }
