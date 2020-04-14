@@ -1,3 +1,7 @@
+### Fix
+
+Deep-compare method in record change event emitter, this prevents spurious events when users are subscribed to a record path pointing to an object.
+
 ## [5.0.6] - 2020.02.08
   
 ### Fix
