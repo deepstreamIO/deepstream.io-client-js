@@ -1,8 +1,14 @@
+## [5.0.8] - 2020.04.15
+
 ### Fix
 
 Deep-compare method in record change event emitter, this prevents spurious events when users are subscribed to a record path pointing to an object.
 
-## [5.0.6] - 2020.02.08
+### Improvement
+
+Updating dependencies
+
+## [5.0.7] - 2020.02.08
   
 ### Fix
 
@@ -12,7 +18,7 @@ Revert: Allow to work on react native (at cost of bigger bundle size)
 
 ### Improvement
 
-Updating depedencies
+Updating dependencies
 
 ### Fix
 
