@@ -67,10 +67,10 @@ describe('connection', () => {
     await recieveConnectionClose()
   })
 
-  it('send pong when ping received across all states', async () => {
+  it('send ping and recieve pong across all states', async () => {
     await openConnection()
-    sendPong()
-    receivePing()
+    sendPing()
+    receivePong()
   })
 
   it('miss heartbeat once', async () => {
@@ -504,20 +504,20 @@ describe('connection', () => {
     await PromiseDelay(0)
   }
 
-  function receivePing () {
+  function receivePong () {
     socket.simulateMessages([{
       topic: TOPIC.CONNECTION,
-      action: CONNECTION_ACTION.PING
+      action: CONNECTION_ACTION.PONG
     }])
   }
 
-  function sendPong () {
+  function sendPing () {
     socketMock
       .expects('sendParsedMessage')
       .once()
       .withExactArgs({
         topic: TOPIC.CONNECTION,
-        action: CONNECTION_ACTION.PONG
+        action: CONNECTION_ACTION.PING
       })
   }
 
