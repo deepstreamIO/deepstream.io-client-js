@@ -551,6 +551,14 @@ export class RecordCore<Context = null> extends Emitter {
         this.services.timeoutRegistry.remove(actionMsg)
       }
 
+      // handle message denied on record set with ack
+      if (message.originalAction === RECORD_ACTION.PATCH) {
+        if (message.correlationId) {
+          this.recordServices.writeAckService.recieve(message)
+          return
+        }
+      }
+
       this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], RECORD_ACTION[message.originalAction as number])
 
       if (message.originalAction === RECORD_ACTION.DELETE) {

@@ -35,8 +35,8 @@ export const socketFactory: SocketFactory = (url, options = { jsonTransportMode:
         socket.onparsedmessages(parseResults)
     }
     socket.getTimeSinceLastMessage = () => {
-        return 0
-        // return Date.now() - lastRecievedMessageTimestamp
+      if (lastRecievedMessageTimestamp < 0) return 0
+      return Date.now() - lastRecievedMessageTimestamp
     }
     socket.sendParsedMessage = (message: Message): void => {
         if (message.topic === TOPIC.CONNECTION && message.action === CONNECTION_ACTION.CLOSING) {
