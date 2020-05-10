@@ -429,7 +429,7 @@ export class RecordHandler {
       return
     }
 
-    if (message.isWriteAck) {
+    if (message.isWriteAck && message.action !== RECORD_ACTION.VERSION_EXISTS) {
       this.recordServices.writeAckService.recieve(message)
       return
     }
@@ -535,30 +535,29 @@ export class RecordHandler {
     if (version === -1) {
       // deleted locally, how to merge?
       this.services.logger.warn({ topic: TOPIC.RECORD }, RECORD_ACTION.DELETE, "Deleted record while offline, can't resolve")
-    } else {
-      const callback = (error: string | null, name: string) => {
-        if (!error) {
-          this.dirtyService.setDirty(name, false)
-        } else {
-          this.recordServices.readRegistry.register(name, this, message => {
-            this.recordServices.mergeStrategy.merge(
-              message.name,
-              version,
-              data,
-              message.version as number,
-              message.parsedData as RecordData,
-              this.onMergeCompleted,
-              this
-            )
-          })
-        }
-      }
-      this.sendSetData(recordName, version, { data, callback })
+      return
     }
+
+    const callback = (error: string | null, name: string) => {
+      if (!error) {
+        this.dirtyService.setDirty(name, false)
+      } else {
+        this.recordServices.readRegistry.register(name, this, message => {
+          this.recordServices.mergeStrategy.merge(
+            message,
+            version,
+            data,
+            this.onMergeCompleted,
+            this
+          )
+        })
+      }
+    }
+    this.sendSetData(recordName, version, { data, callback })
   }
 
-  private onMergeCompleted (error: string | null, recordName: string, mergeData: RecordData, remoteVersion: number, remoteData: RecordData) {
-    this.sendSetData(recordName, remoteVersion + 1, { data: mergeData })
+  private onMergeCompleted (error: string | null, { name, version }: RecordMessage, mergeData: RecordData) {
+    this.sendSetData(name, version! + 1, { data: mergeData })
   }
 
   private getBulkSubscriptionService (bulkSubscribe: RECORD_ACTION) {

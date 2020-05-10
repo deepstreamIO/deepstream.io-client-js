@@ -19,7 +19,7 @@ export const socketFactory: SocketFactory = (url, options = { jsonTransportMode:
     const buildMessage = options.jsonTransportMode !== true ? getMessage : (message: Message, isAck: boolean) => JSON.stringify({ ...message, isAck })
 
     const pingMessage = buildMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PING }, false)
-    let pingInterval: NodeJS.Timeout | null = null
+    let pingInterval: number | null = null
     let lastRecievedMessageTimestamp = -1
 
     // tslint:disable-next-line:no-empty
@@ -72,7 +72,7 @@ export const socketFactory: SocketFactory = (url, options = { jsonTransportMode:
                     clearTimeout(pingInterval!)
                 }
             }
-        }, heartBeatInterval)
+        }, heartBeatInterval) as never as number
         socket.onopened()
     }
 

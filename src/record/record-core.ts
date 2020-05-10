@@ -506,7 +506,6 @@ export class RecordCore<Context = null> extends Emitter {
         // it might result in another merge conflict.
         return
       }
-
       this.applyUpdate(message as RecordWriteMessage)
       return
     }
@@ -528,8 +527,7 @@ export class RecordCore<Context = null> extends Emitter {
     }
 
     if (message.action === RECORD_ACTION.VERSION_EXISTS) {
-      // what kind of message is version exists?
-      // this.recoverRecord(message)
+      this.recoverRecordFromMessage(message as RecordWriteMessage)
       return
     }
 
@@ -583,7 +581,7 @@ export class RecordCore<Context = null> extends Emitter {
 
   public handleReadResponse (message: any): void {
     if (this.stateMachine.state === RECORD_STATE.MERGING) {
-      this.recoverRecord(message.version!, message.parsedData)
+      this.recoverRecordFromMessage(message)
       this.recordServices.dirtyService.setDirty(this.name, false)
       return
     }
@@ -620,7 +618,7 @@ export class RecordCore<Context = null> extends Emitter {
           this.sendRead()
           this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
         } else {
-          this.recoverRecord(-1, null)
+          this.recoverRecordDeletedRemotely()
         }
       }
     } else {
@@ -632,7 +630,7 @@ export class RecordCore<Context = null> extends Emitter {
          /**
           *  deleted and created again remotely, up to merge conflict I guess
           */
-         this.recoverRecord(-1, null)
+         this.recoverRecordDeletedRemotely()
         } else {
           this.sendRead()
           this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
@@ -722,7 +720,7 @@ export class RecordCore<Context = null> extends Emitter {
         **/
         this.sendRead()
       } else {
-        this.recoverRecord(message.version, data)
+        this.recoverRecordFromMessage(message)
       }
       return
     }
@@ -791,22 +789,25 @@ export class RecordCore<Context = null> extends Emitter {
     })
   }
 
-  /**
-   * Called when a merge conflict is detected by a VERSION_EXISTS error or if an update recieved
-   * is directly after the clients. If no merge strategy is configure it will emit a VERSION_EXISTS
-   * error and the record will remain in an inconsistent state.
-   *
-   * @param   {Number} remoteVersion The remote version number
-   * @param   {Object} remoteData The remote object data
-   * @param   {Object} message parsed and validated deepstream message
-   */
-  public recoverRecord (remoteVersion: number, remoteData: RecordData) {
+  public recoverRecordFromMessage (message: RecordWriteMessage) {
     this.recordServices.mergeStrategy.merge(
-      this.name,
+      message,
       (this.version as number),
       this.get(),
-      remoteVersion,
-      remoteData,
+      this.onRecordRecovered,
+      this,
+    )
+  }
+
+  public recoverRecordDeletedRemotely () {
+    this.recordServices.mergeStrategy.merge(
+      {
+        name: this.name,
+        version: -1,
+        parsedData: null
+      } as RecordMessage,
+      (this.version as number),
+      this.get(),
       this.onRecordRecovered,
       this
     )
@@ -817,9 +818,15 @@ export class RecordCore<Context = null> extends Emitter {
  * record state, else emit and error and the record will remain in an
  * inconsistent state until the next update.
  */
-  public onRecordRecovered (error: string | null, recordName: string, mergedData: RecordData, remoteVersion: number, remoteData: RecordData): void {
+  public onRecordRecovered (error: string | null, recordMessage: RecordMessage, mergedData: RecordData): void {
+    const { version: remoteVersion, parsedData: remoteData } = recordMessage
+
     if (error) {
       this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS)
+      if (recordMessage.correlationId) {
+        this.recordServices.writeAckService.recieve({ ...recordMessage, reason: error  })
+      }
+      return
     }
 
     if (mergedData === null) {
@@ -832,7 +839,7 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
 
-    this.version = remoteVersion
+    this.version = remoteVersion!
     const oldValue = this.data
 
     if (utils.deepEquals(oldValue, remoteData)) {

@@ -2,8 +2,10 @@ import { Services } from '../deepstream-client'
 import { EVENT, RecordData, TOPIC } from '../constants'
 
 import { MergeStrategy } from './merge-strategy'
+import { JSONObject } from '@deepstream/protobuf/dist/types/all'
+import { RecordMessage } from '@deepstream/protobuf/dist/types/messages'
 
-export type MergeCompleteInternal = (error: string | null, recordName: string, mergedData: RecordData, localVersion: number, localData: RecordData, remoteVersion: number, remoteData: RecordData) => void
+export type MergeCompleteInternal = (error: string | null, message: RecordMessage, mergedData: RecordData, localVersion: number, localData: RecordData) => void
 export class MergeStrategyService {
 
   private services: Services
@@ -27,32 +29,34 @@ export class MergeStrategyService {
   }
 
   public merge (
-    recordName: string, localVersion: number, localData: RecordData, remoteVersion: number, remoteData: RecordData, callback: MergeCompleteInternal, context: any
+    remoteRecord: RecordMessage, localVersion: number, localData: RecordData, callback: MergeCompleteInternal, context: any
   ): void {
+    const { name: recordName } = remoteRecord
+
     const exactMergeStrategy = this.strategiesByRecord.get(recordName)
     if (exactMergeStrategy) {
-      exactMergeStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
-        callback.call(context, error, recordName, data, remoteVersion, remoteData, localVersion, localData)
+      exactMergeStrategy(localData, localVersion, remoteRecord.parsedData as JSONObject, remoteRecord.version!, (error, data) => {
+        callback.call(context, error, remoteRecord, data, localVersion, localData)
       })
       return
     }
 
     for (const [pattern, patternMergeStrategy] of this.strategiesByPattern) {
       if (pattern.test(recordName)) {
-        patternMergeStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
-          callback.call(context, error, recordName, data, remoteVersion, remoteData, localVersion, localData)
+        patternMergeStrategy(localData, localVersion, remoteRecord.parsedData as JSONObject, remoteRecord.version!, (error, data) => {
+          callback.call(context, error, remoteRecord, data, localVersion, localData)
         })
         return
       }
     }
 
     if (this.defaultStrategy) {
-      this.defaultStrategy(localData, localVersion, remoteData, remoteVersion, (error, data) => {
-        callback.call(context, error, recordName, data, remoteVersion, remoteData, localVersion, localData)
+      this.defaultStrategy(localData, localVersion, remoteRecord.parsedData as JSONObject, remoteRecord.version!, (error, data) => {
+        callback.call(context, error, remoteRecord, data, localVersion, localData)
       })
       return
     }
 
-    this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS, { remoteVersion, recordName })
+    this.services.logger.error({ topic: TOPIC.RECORD }, EVENT.RECORD_VERSION_EXISTS, { remoteVersion: remoteRecord.version!, recordName })
   }
 }

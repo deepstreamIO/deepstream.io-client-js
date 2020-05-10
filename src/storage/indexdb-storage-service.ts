@@ -20,7 +20,7 @@ export class Storage implements RecordOfflineStore {
   private isReady: boolean = false
   private db: any
   private queuedRequests: Map<string, Request[]> = new Map()
-  private flushTimeout: NodeJS.Timeout | null = null
+  private flushTimeout: number | null = null
 
   constructor (private options: Options) {
     if (typeof indexedDB === 'undefined' || indexedDB === null) {
@@ -131,7 +131,7 @@ export class Storage implements RecordOfflineStore {
 
   private registerFlush () {
       if (this.isReady && !this.flushTimeout) {
-        this.flushTimeout = setTimeout(this.flush, this.options.indexdb.flushTimeout)
+        this.flushTimeout = setTimeout(this.flush, this.options.indexdb.flushTimeout) as never as number
       }
   }
 
