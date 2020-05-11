@@ -8,6 +8,7 @@ import {Services, Socket} from '../deepstream-client'
 import { Options } from '../client-options'
 import * as utils from '../util/utils'
 import { Emitter } from '../util/emitter'
+import * as pkg from '../../package.json'
 
 export type AuthenticationCallback = (success: boolean, clientData: JSONObject | null) => void
 export type ResumeCallback = (error?: JSONObject) => void
@@ -308,7 +309,9 @@ export class Connection {
       topic: TOPIC.CONNECTION,
       action: CONNECTION_ACTION.CHALLENGE,
       url: this.originalUrl,
-      protocolVersion: '0.1a'
+      protocolVersion: '0.1a',
+      sdkVersion: pkg.version,
+      sdkType: 'javascript'
     })
     this.stateMachine.transition(TRANSITIONS.CHALLENGE)
   }
