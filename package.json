@@ -8,8 +8,8 @@
     "realtime",
     "client"
   ],
-  "main": "dist/deepstream-client.js",
-  "types": "dist/deepstream-client.d.ts",
+  "main": "dist/src/deepstream-client.js",
+  "types": "dist/src/deepstream-client.d.ts",
   "directories": {
     "test": "src/test"
   },

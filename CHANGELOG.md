@@ -1,3 +1,25 @@
+## [5.1.0] - 2020.05.11
+
+### Feature
+
+Send down sdkVersion and sdkType to server on challenge for better metrics
+
+### Fix
+
+Fixes #504: WriteAcks on conflicts
+
+  This needs to be used with server 5.0.17 in order to work.
+
+  The issue was VERSION_EXISTS didn't go through the ack service
+  which resulted in it never reacting.
+
+  To test this, run `ts-node bugs/504-merge-conflict-silent.ts` in
+  two terminals
+
+Fix connection timeouts if server doesn't send something in time
+
+When a user has permission to read but not write to record, when trying to set with ack the error callback was not triggered and the client hanged indefinitely.
+
 ## [5.0.8] - 2020.04.15
 
 ### Fix
@@ -9,7 +31,7 @@ Deep-compare method in record change event emitter, this prevents spurious event
 Updating dependencies
 
 ## [5.0.7] - 2020.02.08
-  
+
 ### Fix
 
 Revert: Allow to work on react native (at cost of bigger bundle size)
@@ -113,7 +135,7 @@ intervalTimerResolution: 50,
 
 Either ways both implementations are expensive in terms of garbage collection since it binds to the context and data as part of the API. This can probably be avoided by providing a null context going forward.
 
-### Fix 
+### Fix
 
 Lists were not propagating the events on record-core. Discard, delete and error is now properly passed, and documentation needs to be updated to indicate the ready event was dropped in V4
 
@@ -137,7 +159,7 @@ Adding notify on record handler to notify if the db was changed without using de
 
 ### Fix
 
-Change error message on connection to pass through error 
+Change error message on connection to pass through error
 
 ### Breaking Change
 
