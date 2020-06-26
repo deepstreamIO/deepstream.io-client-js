@@ -33,6 +33,7 @@
   "dependencies": {
     "@deepstream/protobuf": "^1.0.3",
     "protobufjs": "^6.9.0",
+    "url": "^0.11.0",
     "ws": "^7.3.0"
   },
   "browser": {
