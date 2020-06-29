@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer'
 import { parse } from '@deepstream/protobuf/dist/src/message-parser'
 import { getMessage } from '@deepstream/protobuf/dist/src/message-builder'
 import {Socket} from '../deepstream-client'
