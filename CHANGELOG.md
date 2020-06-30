@@ -1,3 +1,11 @@
+## [5.1.1] - 2020.06.30
+
+### Fix
+
+- Manipulate string url in socket factory without external dependencies. Fixes #515
+- Export the client constructor as object in order to maintain api in bundle.Fixes #528
+- Make explicit Buffer import. Fixes #529
+
 ## [5.1.0] - 2020.05.11
 
 ### Feature
