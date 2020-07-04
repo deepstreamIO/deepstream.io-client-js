@@ -8,6 +8,12 @@
     "realtime",
     "client"
   ],
+  "mocha": {
+    "recursive": true,
+    "reporter": "dot",
+    "require": "ts-node/register/transpile-only",
+    "exit": true
+  },
   "main": "dist/src/deepstream-client.js",
   "types": "dist/src/deepstream-client.d.ts",
   "directories": {
@@ -22,8 +28,8 @@
     "clean": "rimraf dist",
     "lint": "tslint src/*.ts src/**/*.ts -t verbose",
     "lint:fix": "npm run lint -- --fix",
-    "test": "mocha --opts mocha.opts",
-    "test:coverage": "nyc mocha --opts mocha.opts",
+    "test": "mocha src/**/*.spec.ts",
+    "test:coverage": "nyc mocha src/**/*.spec.ts",
     "bundle:analyse": "webpack --config webpack.prod.js --profile --json > ./dist/stats.json && webpack-bundle-analyzer ./dist/stats.json"
   },
   "repository": {
@@ -31,7 +37,7 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
-    "@deepstream/protobuf": "^1.0.3",
+    "@deepstream/protobuf": "^1.0.4",
     "protobufjs": "^6.9.0",
     "ws": "^7.3.0"
   },
@@ -42,26 +48,26 @@
   "devDependencies": {
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^13.13.5",
-    "@types/sinon": "^9.0.0",
-    "@types/ws": "^7.2.4",
+    "@types/node": "^14.0.14",
+    "@types/sinon": "^9.0.4",
+    "@types/ws": "^7.2.6",
     "chai": "^4.2.0",
     "coveralls": "^3.1.0",
     "husky": "^4.2.5",
-    "mocha": "^7.1.2",
-    "nyc": "^15.0.1",
+    "mocha": "^8.0.1",
+    "nyc": "^15.1.0",
     "rimraf": "^3.0.2",
     "sinon": "^9.0.2",
-    "terser-webpack-plugin": "^3.0.1",
-    "ts-essentials": "^6.0.4",
-    "ts-loader": "^7.0.3",
-    "ts-node": "^8.10.1",
+    "terser-webpack-plugin": "^3.0.6",
+    "ts-essentials": "^7.0.0",
+    "ts-loader": "^7.0.5",
+    "ts-node": "^8.10.2",
     "tslint": "^6.1.2",
-    "typescript": "^3.8.3",
+    "typescript": "^3.9.6",
     "uglifyjs-webpack-plugin": "^2.2.0",
     "webpack": "^4.43.0",
-    "webpack-bundle-analyzer": "^3.7.0",
-    "webpack-cli": "^3.3.11"
+    "webpack-bundle-analyzer": "^3.8.0",
+    "webpack-cli": "^3.3.12"
   },
   "author": "deepstreamHub GmbH",
   "license": "MIT",
