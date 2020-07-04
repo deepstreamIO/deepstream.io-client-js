@@ -65,43 +65,50 @@ export {
   Options
 }
 
-class DeepstreamClient extends Emitter {
-  public event: EventHandler
-  public rpc: RPCHandler
-  public record: RecordHandler
-  public presence: PresenceHandler
+function reset (_this: DeepstreamClient): DeepstreamClient {
+  const services: Partial<Services> = {}
+  services.logger = new Logger(_this)
+  if (_this.options.nativeTimerRegistry) {
+    services.timerRegistry = new NativeTimerRegistry()
+  } else {
+    services.timerRegistry = new IntervalTimerRegistry(_this.options.intervalTimerResolution)
+  }
+  services.timeoutRegistry = new TimeoutRegistry(services as Services, _this.options)
+  services.socketFactory = _this.options.socketFactory || socketFactory
+  services.connection = new Connection(services as Services, _this.options, _this.url, _this)
+  if (_this.options.offlineEnabled) {
+    services.storage = _this.options.storage || new Storage(_this.options)
+  } else {
+    services.storage = new NoopStorage()
+  }
+  _this.services = services as Services
 
-  private services: Services
-  private options: Options
+  _this.services.connection.onLost(
+    services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
+  )
+
+  _this.event = new EventHandler(_this.services, _this.options)
+  _this.rpc = new RPCHandler(_this.services, _this.options)
+  _this.record = new RecordHandler(_this.services, _this.options)
+  _this.presence = new PresenceHandler(_this.services, _this.options)
+  return _this
+}
+
+class DeepstreamClient extends Emitter {
+  public event!: EventHandler
+  public rpc!: RPCHandler
+  public record!: RecordHandler
+  public presence!: PresenceHandler
+
+  public services!: Services
+  public options: Options
+  public url: string
 
   constructor (url: string, options: Partial<Options> = {}) {
     super()
     this.options = { ...DefaultOptions, ...options } as Options
-    const services: Partial<Services> = {}
-    services.logger = new Logger(this)
-    if (options.nativeTimerRegistry) {
-      services.timerRegistry = new NativeTimerRegistry()
-    } else {
-      services.timerRegistry = new IntervalTimerRegistry(this.options.intervalTimerResolution)
-    }
-    services.timeoutRegistry = new TimeoutRegistry(services as Services, this.options)
-    services.socketFactory = this.options.socketFactory || socketFactory
-    services.connection = new Connection(services as Services, this.options, url, this)
-    if (this.options.offlineEnabled) {
-      services.storage = this.options.storage || new Storage(this.options)
-    } else {
-      services.storage = new NoopStorage()
-    }
-    this.services = services as Services
-
-    this.services.connection.onLost(
-      services.timeoutRegistry.onConnectionLost.bind(services.timeoutRegistry)
-    )
-
-    this.event = new EventHandler(this.services, this.options)
-    this.rpc = new RPCHandler(this.services, this.options)
-    this.record = new RecordHandler(this.services, this.options)
-    this.presence = new PresenceHandler(this.services, this.options)
+    this.url = url
+    reset(this)
   }
 
   public login (): Promise<JSONObject>
@@ -142,6 +149,13 @@ class DeepstreamClient extends Emitter {
         (this.services as any)[serviceName].close()
       }
     })
+  }
+
+  public reset (): void {
+    const connectionState = this.services.connection.getConnectionState()
+    if (connectionState === CONNECTION_STATE.CLOSED || connectionState === CONNECTION_STATE.CLOSING) {
+      reset(this)
+    }
   }
 
   public pause (): void {
