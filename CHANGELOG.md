@@ -1,3 +1,10 @@
+## [5.1.2] - 2020.07.05
+
+### Fix
+
+- set main file in package.json to minified bundle
+- Revert the explicit Buffer import since it's not required when using the bundled client file.
+
 ## [5.1.1] - 2020.06.30
 
 ### Fix
