@@ -1,6 +1,6 @@
 {
   "name": "@deepstream/client",
-  "version": "5.1.1",
+  "version": "5.1.2",
   "description": "the javascript client for deepstream.io",
   "keywords": [
     "deepstream",
@@ -14,7 +14,7 @@
     "require": "ts-node/register/transpile-only",
     "exit": true
   },
-  "main": "dist/src/deepstream-client.js",
+  "main": "dist/bundle/ds.min.js",
   "types": "dist/src/deepstream-client.d.ts",
   "directories": {
     "test": "src/test"
