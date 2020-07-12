@@ -1,3 +1,7 @@
-import { DeepstreamClient } from './deepstream-client'
+import { DeepstreamClient, C, DefaultOptions } from './deepstream-client'
 
-export { DeepstreamClient }
+export {
+  DeepstreamClient,
+  C,
+  DefaultOptions as Options
+}
