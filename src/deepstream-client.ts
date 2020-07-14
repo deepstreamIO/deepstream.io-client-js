@@ -62,7 +62,7 @@ export interface Services {
 export {
   DeepstreamClient,
   C,
-  Options
+  DefaultOptions
 }
 
 class DeepstreamClient extends Emitter {
