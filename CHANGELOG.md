@@ -1,3 +1,11 @@
+## [5.1.3] - 2020.07.14
+
+### Fix
+
+- set main file in package.json to `dist/src/deepstream.js`
+- add postinstall script that works when passing the `DEEPSTREAM_ENV=react-native` variable to the npm install command in order to change the main file in package.json to `dist/bundle/ds.min.js` for react-native usage.
+
+
 ## [5.1.2] - 2020.07.05
 
 ### Fix

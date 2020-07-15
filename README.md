@@ -20,3 +20,7 @@ Make sure the `src/client.d.ts` file is accessible to the Typescript compiler. D
 >  "typeRoots": [
      "./node_modules/deepstream.io-client.js/src/client.d.ts"
     ]
+
+## Install in react-native  
+
+For usage in react-native the bundled client available at `dist/bundle/ds.min.js` must be used. In order to automatically change the main file in package.json to the bundle file install as: `DEEPSTREAM_ENV=react-native npm install @deepstream/client`.  
