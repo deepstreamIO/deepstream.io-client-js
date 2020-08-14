@@ -112,11 +112,13 @@ export class Record extends Emitter  {
     }
 
     public discard (): void {
-        for (let i = 0; i < this.subscriptions.length; i++) {
-            this.record.unsubscribe(this.subscriptions[i])
+      for (const item of this.record.references) {
+        for (let i = 0; i < item.subscriptions.length; i++) {
+          this.record.unsubscribe(item.subscriptions[i])
         }
-        this.record.removeReference(this)
-        this.record.removeContext(this)
+        this.record.removeReference(item)
+        this.record.removeContext(item)
+      }
     }
 
     public delete (callback?: (error: string | null) => void): void | Promise<void> {
