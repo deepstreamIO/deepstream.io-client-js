@@ -101,12 +101,14 @@ export class Record extends Emitter  {
 
     public unsubscribe (path: string, callback: (data: any) => void): void {
         const parameters = utils.normalizeArguments(arguments)
-        this.subscriptions = this.subscriptions.filter(subscription => {
-            return (
-                subscription.path !== parameters.path ||
-                subscription.callback !== parameters.callback
-            )
-        })
+        for (const item of this.record.references) {
+          item.subscriptions = item.subscriptions.filter((subscription: any) => {
+            if (!parameters.callback && (subscription.path === parameters.path)) return false
+            if (parameters.callback && (subscription.path === parameters.path && subscription.callback === parameters.callback)) return false
+            if (parameters.callback && subscription.callback === parameters.callback) return false
+            return true
+          })
+        }
 
         this.record.unsubscribe(parameters)
     }
