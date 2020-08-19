@@ -1,3 +1,16 @@
+## [5.1.5] - 2020.08.18
+
+### Fix  
+
+- Discard all references of a record when calling `.discard()`
+- Remove subscriptions from record reference when calling `.unsubscribe()`
+
+## [5.1.4] - 2020.07.29
+
+### Chore  
+
+- Bump dependencies
+
 ## [5.1.3] - 2020.07.14
 
 ### Fix

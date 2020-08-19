@@ -117,6 +117,13 @@ export class RecordCore<Context = null> extends Emitter {
   })
 }
 
+  /**
+  * Removes scope from emitter
+  */
+  public removeContext (ref: any): void {
+    this.emitter.removeContext(ref)
+  }
+
   private onDirtyServiceLoaded () {
     this.services.storage.get(this.name, (recordName, version, data) => {
       this.services.connection.onReestablished(this.onConnectionReestablished)

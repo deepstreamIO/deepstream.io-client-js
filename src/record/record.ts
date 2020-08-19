@@ -101,22 +101,26 @@ export class Record extends Emitter  {
 
     public unsubscribe (path: string, callback: (data: any) => void): void {
         const parameters = utils.normalizeArguments(arguments)
-        this.subscriptions = this.subscriptions.filter(subscription => {
-            return (
-                subscription.path !== parameters.path ||
-                subscription.callback !== parameters.callback
-            )
-        })
+        for (const item of this.record.references) {
+          item.subscriptions = item.subscriptions.filter((subscription: any) => {
+            if (!parameters.callback && (subscription.path === parameters.path)) return false
+            if (parameters.callback && (subscription.path === parameters.path && subscription.callback === parameters.callback)) return false
+            if (parameters.callback && subscription.callback === parameters.callback) return false
+            return true
+          })
+        }
 
         this.record.unsubscribe(parameters)
     }
 
     public discard (): void {
-        for (let i = 0; i < this.subscriptions.length; i++) {
-            this.record.unsubscribe(this.subscriptions[i])
+      for (const item of this.record.references) {
+        for (let i = 0; i < item.subscriptions.length; i++) {
+          this.record.unsubscribe(item.subscriptions[i])
         }
-        this.record.removeReference(this)
-        this.record.removeContext(this)
+        this.record.removeReference(item)
+        this.record.removeContext(item)
+      }
     }
 
     public delete (callback?: (error: string | null) => void): void | Promise<void> {
