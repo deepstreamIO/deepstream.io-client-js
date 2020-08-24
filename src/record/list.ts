@@ -47,14 +47,20 @@ export class List extends Emitter {
     }
 
     public discard (): void {
-      this.destroy()
-      this.record.removeReference(this)
+      for (const item of this.record.references) {
+        for (let i = 0; i < item.subscriptions.length; i++) {
+          this.record.unsubscribe(item.subscriptions[i])
+        }
+        item.wrappedFunctions.clear()
+        this.record.removeReference(item)
+        this.record.removeContext(item)
+      }
     }
 
     public delete (callback: (error: string | null) => void): void
     public delete (): Promise<void>
     public delete (callback?: (error: string | null) => void): void | Promise<void> {
-      this.destroy()
+      this.discard()
       return this.record.delete(callback)
     }
 
@@ -337,13 +343,4 @@ private applyUpdate  (message: RecordMessage) {
 
     return structure
   }
-
-  private destroy () {
-    for (let i = 0; i < this.subscriptions.length; i++) {
-      this.record.unsubscribe(this.subscriptions[i])
-    }
-    this.wrappedFunctions.clear()
-    this.record.removeContext(this)
-  }
-
 }
