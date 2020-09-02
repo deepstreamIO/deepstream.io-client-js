@@ -61,7 +61,7 @@ export class AnonymousRecord extends Emitter  {
         this.record.addReference(this)
 
         for (let i = 0; i < this.subscriptions.length; i++) {
-          this.record.subscribe(this.subscriptions[i])
+          this.record.subscribe(this.subscriptions[i], this)
         }
 
         this.emit('nameChanged', recordName)
@@ -109,7 +109,7 @@ export class AnonymousRecord extends Emitter  {
         const parameters = utils.normalizeArguments(arguments)
         this.subscriptions.push(parameters)
         if (this.record) {
-            this.record.subscribe(parameters)
+            this.record.subscribe(parameters, this)
         }
     }
 
@@ -117,21 +117,20 @@ export class AnonymousRecord extends Emitter  {
         const parameters = utils.normalizeArguments(arguments)
 
         this.subscriptions = this.subscriptions.filter(subscription => {
-            return (
-                subscription.path !== parameters.path ||
-                subscription.callback !== parameters.callback
-            )
+          if (!parameters.callback && (subscription.path === parameters.path)) return false
+          if (parameters.callback && (subscription.path === parameters.path && subscription.callback === parameters.callback)) return false
+          return true
         })
 
         if (this.record) {
-            this.record.unsubscribe(parameters)
+            this.record.unsubscribe(parameters, this)
         }
     }
 
     public discard (): void {
         if (this.record) {
             for (let i = 0; i < this.subscriptions.length; i++) {
-                this.record.unsubscribe(this.subscriptions[i])
+                this.record.unsubscribe(this.subscriptions[i], this)
             }
             return this.record.removeReference(this)
         }

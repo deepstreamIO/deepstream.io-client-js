@@ -117,13 +117,6 @@ export class RecordCore<Context = null> extends Emitter {
   })
 }
 
-  /**
-  * Removes scope from emitter
-  */
-  public removeContext (ref: any): void {
-    this.emitter.removeContext(ref)
-  }
-
   private onDirtyServiceLoaded () {
     this.services.storage.get(this.name, (recordName, version, data) => {
       this.services.connection.onReestablished(this.onConnectionReestablished)
@@ -291,7 +284,7 @@ export class RecordCore<Context = null> extends Emitter {
  * If called with true for triggerNow, the callback will
  * be called immediatly with the current value
  */
-  public subscribe (args: utils.RecordSubscribeArguments) {
+  public subscribe (args: utils.RecordSubscribeArguments, context?: any) {
     if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
       throw new Error('invalid argument path')
     }
@@ -305,11 +298,11 @@ export class RecordCore<Context = null> extends Emitter {
 
     if (args.triggerNow) {
       this.whenReadyInternal(null, () => {
-        this.emitter.on(args.path || '', args.callback)
+        this.emitter.on(args.path || '', args.callback, context)
         args.callback(this.get(args.path))
       })
     } else {
-      this.emitter.on(args.path || '', args.callback)
+      this.emitter.on(args.path || '', args.callback, context)
     }
   }
 
@@ -328,7 +321,7 @@ export class RecordCore<Context = null> extends Emitter {
    *                                          method was passed to subscribe, the same method
    *                                          must be passed to unsubscribe as well.
    */
-  public unsubscribe (args: utils.RecordSubscribeArguments) {
+  public unsubscribe (args: utils.RecordSubscribeArguments, context?: any) {
     if (args.path !== undefined && (typeof args.path !== 'string' || args.path.length === 0)) {
       throw new Error('invalid argument path')
     }
@@ -340,7 +333,7 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
 
-    this.emitter.off(args.path || '', args.callback)
+    this.emitter.off(args.path || '', args.callback, context)
   }
 
   /**

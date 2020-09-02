@@ -196,7 +196,7 @@ export class List extends Emitter {
         parameters.callback = listCallback
 
         this.subscriptions.push(parameters)
-        this.record.subscribe(parameters)
+        this.record.subscribe(parameters, this)
     }
 
     /**
@@ -212,8 +212,13 @@ export class List extends Emitter {
 
         const listenCallback = this.wrappedFunctions.get(parameters.callback)
         parameters.callback = listenCallback as (data: any) => void
-        this.record.unsubscribe(parameters)
         this.wrappedFunctions.delete(parameters.callback)
+        this.subscriptions = this.subscriptions.filter((subscription: any) => {
+          if (parameters.callback && parameters.callback !== subscription.callback) return true
+          return false
+        })
+
+        this.record.unsubscribe(parameters, this)
     }
 
 /**
@@ -340,7 +345,7 @@ private applyUpdate  (message: RecordMessage) {
 
   private destroy () {
     for (let i = 0; i < this.subscriptions.length; i++) {
-      this.record.unsubscribe(this.subscriptions[i])
+      this.record.unsubscribe(this.subscriptions[i], this)
     }
     this.wrappedFunctions.clear()
     this.record.removeContext(this)

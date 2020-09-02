@@ -56,6 +56,17 @@ export class Emitter {
     // remove specific handler
     for (let i = 0; i < callbacks.length; i++) {
       const { fn: cb, scope: context } = callbacks[i]
+
+      // handle unsubscribing from all callbacks for a given record path
+      if (event !== '' && fn === undefined && scope === context) {
+        callbacks.splice(i, 1)
+      }
+
+      // handle unsubscribing from all callbacks for a list
+      if (event === '' && fn === undefined && scope === context && scope.constructor.name === 'List') {
+        callbacks.splice(i, 1)
+      }
+
       if (cb === fn || (cb as any).fn === fn) {
         if (scope === undefined || scope === context) {
           callbacks.splice(i, 1)

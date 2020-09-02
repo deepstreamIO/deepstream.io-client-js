@@ -96,31 +96,26 @@ export class Record extends Emitter  {
     public subscribe (path: string, callback: (data: any) => void, triggerNow?: boolean) {
         const parameters = utils.normalizeArguments(arguments)
         this.subscriptions.push(parameters)
-        this.record.subscribe(parameters)
+        this.record.subscribe(parameters, this)
     }
 
     public unsubscribe (path: string, callback: (data: any) => void): void {
         const parameters = utils.normalizeArguments(arguments)
-        for (const item of this.record.references) {
-          item.subscriptions = item.subscriptions.filter((subscription: any) => {
-            if (!parameters.callback && (subscription.path === parameters.path)) return false
-            if (parameters.callback && (subscription.path === parameters.path && subscription.callback === parameters.callback)) return false
-            if (parameters.callback && subscription.callback === parameters.callback) return false
-            return true
-          })
-        }
+        this.subscriptions = this.subscriptions.filter((subscription: any) => {
+          if (!parameters.callback && (subscription.path === parameters.path)) return false
+          if (parameters.callback && (subscription.path === parameters.path && subscription.callback === parameters.callback)) return false
+          return true
+        })
 
-        this.record.unsubscribe(parameters)
+        this.record.unsubscribe(parameters, this)
     }
 
     public discard (): void {
-      for (const item of this.record.references) {
-        for (let i = 0; i < item.subscriptions.length; i++) {
-          this.record.unsubscribe(item.subscriptions[i])
+        for (let i = 0; i < this.subscriptions.length; i++) {
+            this.record.unsubscribe(this.subscriptions[i], this)
         }
-        this.record.removeReference(item)
-        this.record.removeContext(item)
-      }
+        this.record.removeReference(this)
+        this.record.removeContext(this)
     }
 
     public delete (callback?: (error: string | null) => void): void | Promise<void> {
