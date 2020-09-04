@@ -1,3 +1,11 @@
+## [5.1.6] - 2020.09.04
+
+### Fix  
+
+- Undo last changes to  `discard()` and `unsubscribe()` logic. Those operations only affect the current record instances, not all instances of the record in the client.
+- provide context for record subscriptions
+- Fix emitter logic
+
 ## [5.1.5] - 2020.08.18
 
 ### Fix  
