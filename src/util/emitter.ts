@@ -42,7 +42,7 @@ export class Emitter {
     }
 
     // specific event
-    const callbacks = this.callbacks.get(event!)
+    let callbacks = this.callbacks.get(event!)
     if (!callbacks) {
         return this
     }
@@ -54,19 +54,26 @@ export class Emitter {
     }
 
     // remove specific handler
-    for (let i = 0; i < callbacks.length; i++) {
-      const { fn: cb, scope: context } = callbacks[i]
+    callbacks = callbacks.filter((item: any) => {
+      const { fn: cb, scope: context } = item
+
+      // handle unsubscribing from all callbacks for a given record path
+      if (event !== '' && fn === undefined && scope === context) {
+        return false
+      }
+
       if (cb === fn || (cb as any).fn === fn) {
         if (scope === undefined || scope === context) {
-          callbacks.splice(i, 1)
+          return false
         }
       }
-    }
+      return true
+    })
 
-    // Remove event specific arrays for event types that no
-    // one is subscribed for to avoid memory leak.
     if (callbacks.length === 0) {
         this.callbacks.delete(event!)
+    } else {
+        this.callbacks.set(event!, callbacks)
     }
 
     return this
