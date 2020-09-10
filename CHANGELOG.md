@@ -1,3 +1,9 @@
+## [5.1.7] - 2020.09.10
+
+### Fix  
+
+- Remove callback after calling single notifier with error. This was preventing future messages from being sent after reconnection.
+
 ## [5.1.6] - 2020.09.04
 
 ### Fix  

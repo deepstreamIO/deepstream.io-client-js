@@ -55,6 +55,7 @@ export class SingleNotifier<MessageType extends Message> {
     } else if (this.services.connection.isInLimbo) {
       this.limboQueue.push(message)
     } else {
+      this.requests.delete(name)
       callback(EVENT.CLIENT_OFFLINE)
     }
   }
