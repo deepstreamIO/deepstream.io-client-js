@@ -21,6 +21,29 @@ Make sure the `src/client.d.ts` file is accessible to the Typescript compiler. D
      "./node_modules/deepstream.io-client.js/src/client.d.ts"
     ]
 
+## Usage in browser
+```
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="https://cdn.deepstream.io/js/client/latest/ds.min.js" charset="utf-8">
+    </script>
+  </head>
+  <body>
+    <p>Welcome to Deepstream, the realtime server</p>
+    <script type="text/javascript">
+      var client = new window.DeepstreamClient('localhost:6020')
+      client.login({}, function(success) {
+        console.log('success', success)
+      })
+    </script>
+  </body>
+</html>
+```
+Please check [Javascript client documentation](https://deepstream.io/tutorials/getting-started/javascript/#getting-the-client) on how to use records, events, and make RPC calls.
+
 ## Install in react-native  
 
 For usage in react-native the bundled client available at `dist/bundle/ds.min.js` must be used. In order to automatically change the main file in package.json to the bundle file install as: `DEEPSTREAM_ENV=react-native npm install @deepstream/client`.  
