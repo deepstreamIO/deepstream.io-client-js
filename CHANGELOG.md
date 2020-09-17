@@ -1,3 +1,9 @@
+## [5.1.8] - 2020.09.17
+
+### Fix  
+
+- React-native post install script must point to non-minified bundle.
+
 ## [5.1.7] - 2020.09.10
 
 ### Fix  
