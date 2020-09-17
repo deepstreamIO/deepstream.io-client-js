@@ -23,4 +23,4 @@ Make sure the `src/client.d.ts` file is accessible to the Typescript compiler. D
 
 ## Install in react-native  
 
-For usage in react-native the bundled client available at `dist/bundle/ds.min.js` must be used. In order to automatically change the main file in package.json to the bundle file install as: `DEEPSTREAM_ENV=react-native npm install @deepstream/client`.  
+For usage in react-native the bundled client available at `dist/bundle/ds.js` must be used. In order to automatically change the main file in package.json to the bundle file install as: `DEEPSTREAM_ENV=react-native npm install @deepstream/client`. Also the metro bundler must be configured. Check the [documentation](https://deepstream.io/tutorials/integrations/mobile/reactnative/) for more details
