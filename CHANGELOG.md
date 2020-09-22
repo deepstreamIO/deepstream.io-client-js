@@ -1,3 +1,9 @@
+## [5.1.9] - 2020.09.22
+
+### Fix  
+
+- Typescript definitions for record subscribe method
+
 ## [5.1.8] - 2020.09.17
 
 ### Fix  
