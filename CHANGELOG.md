@@ -1,3 +1,9 @@
+## [5.1.10] - 2020.09.24
+
+### Fix  
+
+- React-native postinstall script for Windows
+
 ## [5.1.9] - 2020.09.22
 
 ### Fix  
