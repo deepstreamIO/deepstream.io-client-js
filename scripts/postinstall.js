@@ -1,3 +1,5 @@
+const path = require('path');
+
 const deepstreamEnv = process.env.DEEPSTREAM_ENV
 
 if (deepstreamEnv !== 'react-native') {
@@ -7,9 +9,9 @@ if (deepstreamEnv !== 'react-native') {
 const saveFile = require('fs').writeFileSync
 const reactNativeMainPath = 'dist/bundle/ds.js'
 
-const basePath = require.main.filename.split('scripts/postinstall')[0]
-const pkgJsonPath =  basePath + 'package.json'
-const pkgJsonPathDist = basePath + 'dist/package.json'
+const basePath = path.normalize(path.join(__dirname, '..'))
+const pkgJsonPath = path.join(basePath, 'package.json')
+const pkgJsonPathDist = path.join(basePath, 'dist', 'package.json')
 
 const json = require(pkgJsonPath)
 const jsonDist = require(pkgJsonPathDist)
