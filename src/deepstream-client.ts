@@ -148,12 +148,12 @@ class DeepstreamClient extends Emitter {
     this.services.connection.pause()
   }
 
-  public resume (callback?: ResumeCallback): void | Promise<JSONObject> {
+  public resume (callback?: ResumeCallback): void | Promise<void> {
     if (callback) {
       this.services.connection.resume(callback)
       return
     }
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.services.connection.resume(error => {
         error ? reject(error) : resolve()
       })
