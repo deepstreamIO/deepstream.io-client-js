@@ -21,7 +21,7 @@ export const socketFactory: SocketFactory = (url, options = { jsonTransportMode:
     const pingMessage = buildMessage({ topic: TOPIC.CONNECTION, action: CONNECTION_ACTION.PING }, false)
     let pingInterval: number | null = null
     let lastRecievedMessageTimestamp = -1
-    let lastSentMessageTimestamp = -1
+    let messageSentDurationHeatbeatInterval = false
 
     // tslint:disable-next-line:no-empty
     socket.onparsedmessage = () => {}
@@ -55,7 +55,7 @@ export const socketFactory: SocketFactory = (url, options = { jsonTransportMode:
             delete message.data
         }
         socket.send(buildMessage(message, false))
-        lastSentMessageTimestamp = Date.now()
+        messageSentDurationHeatbeatInterval = true
     }
 
     socket.onclosed = null
@@ -67,10 +67,10 @@ export const socketFactory: SocketFactory = (url, options = { jsonTransportMode:
     socket.onopened = null
     socket.onopen = () => {
         pingInterval = setInterval(() => {
-            if (Date.now() - lastSentMessageTimestamp > heartBeatInterval) {
+            if (!messageSentDurationHeatbeatInterval) {
                 try {
                     socket.send(pingMessage)
-                    lastSentMessageTimestamp = Date.now()
+                    messageSentDurationHeatbeatInterval = false
                 } catch (e) {
                     clearTimeout(pingInterval!)
                 }
