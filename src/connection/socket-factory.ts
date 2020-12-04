@@ -70,11 +70,11 @@ export const socketFactory: SocketFactory = (url, options = { jsonTransportMode:
             if (!messageSentDurationHeatbeatInterval) {
                 try {
                     socket.send(pingMessage)
-                    messageSentDurationHeatbeatInterval = false
                 } catch (e) {
                     clearTimeout(pingInterval!)
                 }
             }
+            messageSentDurationHeatbeatInterval = false
         }, heartBeatInterval) as never as number
         socket.onopened()
     }
