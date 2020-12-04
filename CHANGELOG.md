@@ -2,7 +2,7 @@
 
 ### Fix
 
-- heartbeat packet missing.
+- send heartbeats strictly according to `heartbeatInterval`.
 
 
 ## [5.1.11] - 2020.12.1
