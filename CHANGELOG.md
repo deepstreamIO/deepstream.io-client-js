@@ -1,3 +1,10 @@
+## [5.1.12] - 2020.12.4
+
+### Fix
+
+- send heartbeats strictly according to `heartbeatInterval`.
+
+
 ## [5.1.11] - 2020.12.1
 
 ### Fix
