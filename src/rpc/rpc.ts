@@ -14,9 +14,11 @@ export type RPCMakeCallback = (error: string | null, result?: RPCResult) => void
 export class RPC {
     private readonly acceptTimeout: TimeoutId
     private readonly responseTimeout: TimeoutId
+    private isComplete: boolean
 
     constructor (private name: string, private correlationId: string, data: any, private response: RPCMakeCallback, private options: Options, private services: Services) {
       this.onTimeout = this.onTimeout.bind(this)
+      this.isComplete = false
 
       const message = {
         topic: TOPIC.RPC,
@@ -64,6 +66,9 @@ export class RPC {
      * Called once a response message is received from the server.
      */
     public respond (data: any) {
+      if (this.isComplete) {
+        return
+      }
       this.response(null, data)
       this.complete()
     }
@@ -72,6 +77,9 @@ export class RPC {
      * Called once an error is received from the server.
      */
     public error (data: any) {
+      if (this.isComplete) {
+        return
+      }
       this.response(data)
       this.complete()
     }
@@ -92,6 +100,7 @@ export class RPC {
      * was received
     */
     private complete () {
+      this.isComplete = true
       this.services.timeoutRegistry.clear(this.acceptTimeout)
       this.services.timeoutRegistry.clear(this.responseTimeout)
   }
