@@ -30,14 +30,6 @@ export interface  Options {
      * Default: 5
      */
     maxReconnectAttempts: number
-    /** The number of milliseconds after which a RPC will error if no Ack-message has been received.
-     * Default: 6000
-     */
-    rpcAcceptTimeout: number
-    /** The number of milliseconds after which a RPC will error if no response-message has been received.
-     * Default: 10000
-     */
-    rpcResponseTimeout: number
     /** The number of milliseconds that can pass after providing/unproviding a RPC or subscribing/unsubscribing/listening to a record or event before an error is thrown.
      * Default: 2000
      */
@@ -159,8 +151,6 @@ export const DefaultOptions: Options = {
     reconnectIntervalIncrement: 4000,
     maxReconnectInterval: 180000,
     maxReconnectAttempts: 5,
-    rpcAcceptTimeout: 6000,
-    rpcResponseTimeout: 10000,
     subscriptionTimeout: 2000,
     recordReadAckTimeout: 15000,
     recordReadTimeout: 15000,

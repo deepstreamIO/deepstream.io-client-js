@@ -215,6 +215,7 @@ export class RPCHandler {
         rpc.error(message.parsedData)
       } else if (
         message.action === RPC_ACTION.RESPONSE_TIMEOUT ||
+        message.action === RPC_ACTION.ACCEPT_TIMEOUT ||
         message.action === RPC_ACTION.NO_RPC_PROVIDER
       ) {
         rpc.error(RPC_ACTION[message.action])
