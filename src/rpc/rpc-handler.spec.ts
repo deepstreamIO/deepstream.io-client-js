@@ -388,7 +388,17 @@ describe('RPC handler', () => {
     })
 
     it('responds rpc with error when request is not accepted in time', async () => {
-      await PromiseDelay(rpcAcceptTimeout * 2)
+      const action = RPC_ACTION.ACCEPT_TIMEOUT
+      const handleMessage = (correlationId: string) => handle({
+        topic: TOPIC.RPC,
+        action,
+        name,
+        correlationId
+      })
+      handleMessage(correlationIdCallbackRpc)
+      handleMessage(correlationIdPromiseRpc)
+
+      await PromiseDelay(0)
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.ACCEPT_TIMEOUT])
@@ -424,10 +434,25 @@ describe('RPC handler', () => {
       })
       handleMessage(correlationIdCallbackRpc)
       handleMessage(correlationIdPromiseRpc)
-      await PromiseDelay(rpcResponseTimeout * 2)
+
+      handle({
+        topic: TOPIC.RPC,
+        action: RPC_ACTION.RESPONSE_TIMEOUT,
+        name,
+        correlationId: correlationIdCallbackRpc
+      })
+
+      handle({
+        topic: TOPIC.RPC,
+        action: RPC_ACTION.RESPONSE_TIMEOUT,
+        name,
+        correlationId: correlationIdPromiseRpc
+      })
 
       sinon.assert.calledOnce(rpcResponseCallback)
       sinon.assert.calledWithExactly(rpcResponseCallback, RPC_ACTION[RPC_ACTION.RESPONSE_TIMEOUT])
+
+      await PromiseDelay(0)
 
       sinon.assert.notCalled(rpcPromiseResponseSuccess)
       sinon.assert.calledOnce(rpcPromiseResponseFail)
@@ -586,9 +611,6 @@ describe('RPC handler', () => {
       services.connectionMock
         .expects('sendMessage')
         .once()
-      services.timeoutRegistryMock
-        .expects('add')
-        .twice()
 
       services.simulateConnectionReestablished()
       await PromiseDelay(1)

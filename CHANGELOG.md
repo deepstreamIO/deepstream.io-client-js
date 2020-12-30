@@ -1,3 +1,9 @@
+## [5.2.0] - 2020.12.29
+
+### Breaking Change
+
+Remove rpcAcceptTimeout and rpcResponseTimeout from client logic. These timeouts will be handled server side only.
+
 ## [5.1.12] - 2020.12.4
 
 ### Fix
