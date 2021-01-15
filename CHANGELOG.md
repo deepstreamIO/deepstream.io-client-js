@@ -1,3 +1,9 @@
+## [5.2.1] - 2021.01.11
+
+### Task
+
+Implement CI using github actions.
+
 ## [5.2.0] - 2020.12.29
 
 ### Breaking Change
