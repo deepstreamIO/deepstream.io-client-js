@@ -3,7 +3,7 @@ import { getMessage } from '@deepstream/protobuf/dist/src/message-builder'
 import {Socket} from '../deepstream-client'
 import { JSONObject, TOPIC, Message, CONNECTION_ACTION } from '../constants'
 
-const global = window
+const global = global || window
 const BrowserWebsocket = (global.WebSocket || global.MozWebSocket) as any
 
 export type SocketFactory = (url: string, options: JSONObject, heartBeatInterval: number) => Socket
