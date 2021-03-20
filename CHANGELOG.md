@@ -1,3 +1,9 @@
+## [5.2.2] - 2021.01.11
+
+### Fix
+
+- ignore version conflicts that are of equal resolved values and state is not merging
+
 ## [5.2.1] - 2021.01.11
 
 ### Task
