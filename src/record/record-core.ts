@@ -843,7 +843,9 @@ export class RecordCore<Context = null> extends Emitter {
     const oldValue = this.data
 
     if (utils.deepEquals(oldValue, remoteData)) {
-      this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
+      if (this.stateMachine.state === RECORD_STATE.MERGING) {
+        this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
+      }
       return
     }
 
