@@ -1,4 +1,10 @@
-## [5.2.2] - 2021.01.11
+## [5.2.3] - 2021.05.02
+
+### Fix
+
+- ignore version conflicts that are of equal resolved values and state is not merging
+
+## [5.2.2] - 2021.04.20
 
 ### Fix
 
