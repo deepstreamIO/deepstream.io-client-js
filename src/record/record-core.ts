@@ -849,6 +849,14 @@ export class RecordCore<Context = null> extends Emitter {
       return
     }
 
+    if (this.stateMachine.state !== RECORD_STATE.MERGING) {
+      this.services.logger.warn({
+        topic: TOPIC.RECORD,
+        action: RECORD_ACTION.VERSION_EXISTS
+      })
+      return
+    }
+
     const newValue = mergedData
     this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.MERGED)
 

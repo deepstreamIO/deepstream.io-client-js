@@ -15,6 +15,6 @@ client.login({}, function () {
                 }
             });
         }
-        setInterval(updateRecord, 50);
+        setInterval(updateRecord, 20);
     });
 });
