@@ -1,3 +1,9 @@
+## [5.2.4] - 2021.04.05
+
+### Misc
+
+- Updating dependencies
+
 ## [5.2.3] - 2021.05.02
 
 ### Fix
@@ -35,37 +41,37 @@ Remove rpcAcceptTimeout and rpcResponseTimeout from client logic. These timeouts
 
 - Send heartbeat packets according to `lastSentMessageTimestamp`, not `lastRecievedMessageTimestamp`.
 
-### Misc  
+### Misc
 
 - Updating dependencies
 
 ## [5.1.10] - 2020.09.24
 
-### Fix  
+### Fix
 
 - React-native postinstall script for Windows
 
 ## [5.1.9] - 2020.09.22
 
-### Fix  
+### Fix
 
 - Typescript definitions for record subscribe method
 
 ## [5.1.8] - 2020.09.17
 
-### Fix  
+### Fix
 
 - React-native post install script must point to non-minified bundle.
 
 ## [5.1.7] - 2020.09.10
 
-### Fix  
+### Fix
 
 - Remove callback after calling single notifier with error. This was preventing future messages from being sent after reconnection.
 
 ## [5.1.6] - 2020.09.04
 
-### Fix  
+### Fix
 
 - Undo last changes to  `discard()` and `unsubscribe()` logic. Those operations only affect the current record instances, not all instances of the record in the client.
 - provide context for record subscriptions
@@ -73,14 +79,14 @@ Remove rpcAcceptTimeout and rpcResponseTimeout from client logic. These timeouts
 
 ## [5.1.5] - 2020.08.18
 
-### Fix  
+### Fix
 
 - Discard all references of a record when calling `.discard()`
 - Remove subscriptions from record reference when calling `.unsubscribe()`
 
 ## [5.1.4] - 2020.07.29
 
-### Chore  
+### Chore
 
 - Bump dependencies
 
