@@ -719,6 +719,7 @@ export class RecordCore<Context = null> extends Emitter {
         * the full state of the record
         **/
         this.sendRead()
+        this.recordServices.readRegistry.register(this.name, this, this.handleReadResponse)
       } else {
         this.recoverRecordFromMessage(message)
       }
