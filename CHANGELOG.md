@@ -1,3 +1,9 @@
+## [5.2.6] - 2022.01.09
+
+### Fix
+
+- Add missing read registry
+
 ## [5.2.5] - 2021.09.24
 
 ### Misc
