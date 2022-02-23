@@ -533,7 +533,8 @@ export class RecordCore<Context = null> extends Emitter {
 
     if (
       message.action === RECORD_ACTION.MESSAGE_DENIED ||
-      message.action === RECORD_ACTION.MESSAGE_PERMISSION_ERROR
+      message.action === RECORD_ACTION.MESSAGE_PERMISSION_ERROR ||
+      message.action === RECORD_ACTION.RECORD_UPDATE_ERROR
     ) {
       if (
         message.originalAction === RECORD_ACTION.SUBSCRIBECREATEANDREAD ||
@@ -557,7 +558,7 @@ export class RecordCore<Context = null> extends Emitter {
         }
       }
 
-      this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[RECORD_ACTION.MESSAGE_DENIED], RECORD_ACTION[message.originalAction as number])
+      this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[message.action], RECORD_ACTION[message.originalAction as number])
 
       if (message.originalAction === RECORD_ACTION.DELETE) {
         if (this.deleteResponse!.callback) {
@@ -963,6 +964,6 @@ const recordStateTransitions = [
     { name: RECORD_ACTION.DELETE_SUCCESS, from: RECORD_STATE.DELETING, to: RECORD_STATE.DELETED, handler: RecordCore.prototype.onDeleted },
     { name: RECORD_ACTION.UNSUBSCRIBE, from: RECORD_STATE.READY, to: RECORD_STATE.UNSUBSCRIBING },
     { name: RECORD_ACTION.SUBSCRIBE, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.READY },
-    { name: RECORD_OFFLINE_ACTIONS.UNSUBSCRIBE_FOR_REAL, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: RecordCore.prototype.onUnsubscribed },
+    { name: RECORD_OFFLINE_ACTIONS.UNSUBSCRIBE_FOR_REAL, from: RECORD_STATE.UNSUBSCRIBING, to: RECORD_STATE.UNSUBSCRIBED, handler: RecordCore.prototype.onUnsubscribed, isEndState: true },
     { name: RECORD_OFFLINE_ACTIONS.INVALID_VERSION, from: RECORD_STATE.READY, to: RECORD_STATE.MERGING },
 ]

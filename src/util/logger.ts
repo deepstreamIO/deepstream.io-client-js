@@ -32,6 +32,9 @@ export class Logger {
     if (isEvent(event)) {
       if (event === EVENT.IS_CLOSED || event === EVENT.CONNECTION_ERROR) {
         this.emitter.emit('error', meta, EVENT[event], TOPIC[TOPIC.CONNECTION])
+      } else {
+        // @ts-ignore
+        this.emitter.emit('error', meta, EVENT[event], TOPIC[message.topic])
       }
     } else {
       const action = event ? event : (message as Message).action

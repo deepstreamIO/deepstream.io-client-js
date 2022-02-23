@@ -32,6 +32,9 @@ export class StateMachine {
         if (transition.handler) {
           transition.handler.call(this.context)
         }
+        if (transition.isEndState === true) {
+          this.inEndState = true
+        }
         return
       }
     }
