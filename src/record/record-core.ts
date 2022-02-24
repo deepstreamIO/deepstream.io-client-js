@@ -548,6 +548,7 @@ export class RecordCore<Context = null> extends Emitter {
         }
         this.services.timeoutRegistry.remove(subscribeMsg) // TODO: This doesn't contain correlationIds
         this.services.timeoutRegistry.remove(actionMsg)
+        this.services.logger.error(message)
       }
 
       // handle message denied on record set with ack
