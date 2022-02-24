@@ -552,11 +552,9 @@ export class RecordCore<Context = null> extends Emitter {
       }
 
       // handle message denied on record set with ack
-      if (message.originalAction === RECORD_ACTION.PATCH) {
-        if (message.correlationId) {
-          this.recordServices.writeAckService.recieve(message)
-          return
-        }
+      if (message.isWriteAck) {
+        this.recordServices.writeAckService.recieve(message)
+        return
       }
 
       this.emit(EVENT.RECORD_ERROR, RECORD_ACTION[message.action], RECORD_ACTION[message.originalAction as number])
