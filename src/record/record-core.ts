@@ -577,6 +577,11 @@ export class RecordCore<Context = null> extends Emitter {
       this.emit(EVENT.RECORD_HAS_PROVIDER_CHANGED, this.hasProvider)
       return
     }
+
+    if (message.action === RECORD_ACTION.CACHE_RETRIEVAL_TIMEOUT || message.action === RECORD_ACTION.STORAGE_RETRIEVAL_TIMEOUT) {
+      this.services.logger.error(message)
+      return
+    }
   }
 
   public handleReadResponse (message: any): void {
