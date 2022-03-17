@@ -1,3 +1,13 @@
+## [6.0.0] - 2022.03.17
+
+### Task
+
+- Handle write ack errors now sent by deepstream server >= v6.1.0. This comes with some changes to state machine logic.
+
+### Fix
+
+- Various error logs
+
 ## [5.2.7] - 2022.02.20
 
 ### Misc
