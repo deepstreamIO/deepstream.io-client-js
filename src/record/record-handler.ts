@@ -455,6 +455,7 @@ export class RecordHandler {
           version: message.versions![name]
         }, null, message.versions![name])
       })
+      return
     }
 
     if (
@@ -466,6 +467,7 @@ export class RecordHandler {
       } else {
         this.recordServices.headRegistry.recieve(message, null, message.version)
       }
+      return
     }
 
     const recordCore = this.recordCores.get(message.name)
