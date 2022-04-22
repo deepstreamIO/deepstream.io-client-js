@@ -1,3 +1,13 @@
+## [6.0.1] - 2022.04.22
+
+### Fix
+
+- Add missing return statements
+
+### Misc
+
+- Remove yarn.lock
+
 ## [6.0.0] - 2022.03.17
 
 ### Task
