@@ -1,3 +1,9 @@
+## [6.0.2] - 2022.06.02
+
+### Task
+
+- RPC provider callback now can return the rpcRequestorName and rpcRequestorData as third parameter if the server configuration mandates they are sent to the provider.
+
 ## [6.0.1] - 2022.04.22
 
 ### Fix
