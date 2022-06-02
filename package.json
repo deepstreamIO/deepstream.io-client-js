@@ -1,7 +1,7 @@
 {
   "name": "@deepstream/client",
   "version": "6.0.1",
-  "description": "the javascript client for deepstream.io",
+  "description": "the javascript client for deepstreamIO",
   "keywords": [
     "deepstream",
     "javascript",
@@ -38,7 +38,7 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
-    "@deepstream/protobuf": "^1.0.4",
+    "@deepstream/protobuf": "^1.0.6",
     "protobufjs": "^6.10.2",
     "ws": "^7.4.0"
   },
@@ -77,7 +77,7 @@
   "bugs": {
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js/issues"
   },
-  "homepage": "http://deepstream.io",
+  "homepage": "http://deepstreamio.github.io",
   "eslintConfig": {
     "extends": "deepstream"
   },

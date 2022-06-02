@@ -6,7 +6,7 @@ import { RPCResponse } from '../rpc/rpc-response'
 import { getUid } from '../util/utils'
 import { BulkSubscriptionService } from '../util/bulk-subscription-service'
 
-export type RPCProvider = (rpcData: any, response: RPCResponse) => void
+export type RPCProvider = (rpcData: any, response: RPCResponse, rpcRequestor?: any) => void
 
 export class RPCHandler {
   private rpcs = new Map<string, RPC>()
@@ -155,7 +155,11 @@ export class RPCHandler {
   private respondToRpc (message: RPCMessage) {
     const provider = this.providers.get(message.name)
     if (provider) {
-      provider(message.parsedData, new RPCResponse(message, this.options, this.services))
+      if (message.requestorName || message.requestorData) {
+        provider(message.parsedData, new RPCResponse(message, this.options, this.services), { requestorName: message.requestorName, requestorData: message.requestorData })
+      } else {
+        provider(message.parsedData, new RPCResponse(message, this.options, this.services))
+      }
     } else {
       this.services.connection.sendMessage({
         topic: TOPIC.RPC,
