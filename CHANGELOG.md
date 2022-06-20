@@ -1,3 +1,9 @@
+## [6.0.4] - 2022.06.20
+
+### Fix
+
+- data types when using record.set with path
+
 ## [6.0.3] - 2022.06.05
 
 ### Misc
