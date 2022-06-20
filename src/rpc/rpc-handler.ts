@@ -42,6 +42,8 @@ export class RPCHandler {
    *     {Mixed} data The data passed to the client.rpc.make function
    *     {RpcResponse} rpcResponse An object with methods to response,
    *                               acknowledge or reject the request
+   *     {rpcRequestor} An object with requestorName and/or requestorData,
+   *                               if enabled on the connected server
    *
    * Only one callback can be registered for a RPC at a time
    *

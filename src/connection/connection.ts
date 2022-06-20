@@ -395,6 +395,7 @@ export class Connection {
         return
       }
       const message: any = parseResult
+      // NOTE: parseData mutates the message object adding the parsedData property and returns true when succesful
       const res = parseData(message)
       if (res !== true) {
         this.services.logger.error({ topic: TOPIC.PARSER }, PARSER_ACTION.INVALID_MESSAGE, res)
