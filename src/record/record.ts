@@ -1,5 +1,5 @@
 import * as utils from '../util/utils'
-import { EVENT, JSONObject, RecordData } from '../constants'
+import { EVENT, JSONObject, RecordData, RecordPathData } from '../constants'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { MergeStrategy } from './merge-strategy'
 import { Emitter } from '../util/emitter'
@@ -51,17 +51,17 @@ export class Record extends Emitter  {
     }
 
     public set (data: JSONObject, callback?: WriteAckCallback): void
-    public set (path: string, data: RecordData | undefined, callback?: WriteAckCallback): void
-    public set (dataOrPath: string | JSONObject, dataOrCallback: WriteAckCallback | RecordData | undefined, callback?: WriteAckCallback): void {
+    public set (path: string, data: RecordPathData | undefined, callback?: WriteAckCallback): void
+    public set (dataOrPath: string | JSONObject, dataOrCallback: WriteAckCallback | RecordData | RecordPathData | undefined, callback?: WriteAckCallback): void {
         return this.record.set(utils.normalizeSetArguments(arguments))
     }
 
     public setWithAck (data: JSONObject): Promise<void>
     public setWithAck (data: JSONObject, callback: ((error: string) => void)): void
-    public setWithAck (path: string, data: RecordData | undefined): Promise<void>
-    public setWithAck (path: string, data: RecordData | undefined, callback: ((error: string) => void)): void
+    public setWithAck (path: string, data: RecordPathData | undefined): Promise<void>
+    public setWithAck (path: string, data: RecordPathData | undefined, callback: ((error: string) => void)): void
     public setWithAck (data: JSONObject, callback?: ((error: string) => void)): Promise<void> | void
-    public setWithAck (pathOrData: string | JSONObject, dataOrCallback?: RecordData | ((error: string) => void) | undefined, callback?: ((error: string) => void)): Promise<void> | void {
+    public setWithAck (pathOrData: string | JSONObject, dataOrCallback?: RecordData | RecordPathData | ((error: string) => void) | undefined, callback?: ((error: string) => void)): Promise<void> | void {
         return this.record.setWithAck(utils.normalizeSetArguments(arguments))
     }
 
