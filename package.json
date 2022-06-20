@@ -1,6 +1,6 @@
 {
   "name": "@deepstream/client",
-  "version": "6.0.4",
+  "version": "6.0.5",
   "description": "the javascript client for deepstreamIO",
   "keywords": [
     "deepstream",
@@ -38,7 +38,7 @@
     "url": "https://github.com/deepstreamIO/deepstream.io-client-js.git"
   },
   "dependencies": {
-    "@deepstream/protobuf": "^1.0.6",
+    "@deepstream/protobuf": "^1.0.8",
     "protobufjs": "^6.11.3",
     "ws": "^7.4.0"
   },
