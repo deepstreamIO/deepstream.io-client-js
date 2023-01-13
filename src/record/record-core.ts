@@ -493,6 +493,7 @@ export class RecordCore<Context = null> extends Emitter {
 
   public onDeleted (): void {
     this.services.storage.delete(this.name, () => {})
+    this.recordServices.dirtyService.setDirty(this.name, false)
     this.emit(EVENT.RECORD_DELETED)
     this.destroy()
   }
@@ -592,6 +593,8 @@ export class RecordCore<Context = null> extends Emitter {
     }
     this.version = message.version
     this.data = message.parsedData
+    // in order to avoid invalid state transitions
+    if (this.stateMachine.state === RECORD_STATE.READY) return
 
     this.stateMachine.transition(RECORD_ACTION.READ_RESPONSE)
   }
@@ -936,6 +939,7 @@ export class RecordCore<Context = null> extends Emitter {
 
   public onConnectionLost (): void {
     this.saveRecordToOffline()
+    this.recordServices.dirtyService.setDirty(this.name, true)
   }
 
   public getDebugId (): string | null {
