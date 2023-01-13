@@ -2,15 +2,15 @@ import { RecordOfflineStore, offlineStoreWriteResponse } from '../deepstream-cli
 import { Options } from '../client-options'
 import { RecordData } from '../constants'
 
-export class Storage implements RecordOfflineStore {
+export class LocalstorageStorage implements RecordOfflineStore {
   public isReady = true
   private storage: any
 
-  constructor (options: Options) {
+  constructor (private options: Options) {
     if (typeof localStorage === 'undefined' || localStorage === null) {
       try {
         const LocalStorage = require('node-localstorage').LocalStorage
-        this.storage = new LocalStorage(options.nodeStoragePath, options.nodeStorageSize * 1024 * 1024)
+        this.storage = new LocalStorage(options.localstorage.nodeStoragePath, options.localstorage.nodeStorageSize * 1024 * 1024)
       } catch (e) {
         throw new Error('Attempting to use localStorage outside of browser without node-localstorage polyfill')
       }
@@ -20,6 +20,12 @@ export class Storage implements RecordOfflineStore {
   }
 
   public get (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) {
+    const ignore = this.options.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    if (ignore) {
+        callback(recordName, -1, null)
+        return
+    }
+
     const item = this.storage.getItem(recordName)
     if (item) {
       const doc = JSON.parse(item)
@@ -30,11 +36,23 @@ export class Storage implements RecordOfflineStore {
   }
 
   public set (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) {
+    const ignore = this.options.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    if (ignore) {
+        callback(null, recordName)
+        return
+    }
+
     this.storage.setItem(recordName, JSON.stringify({ recordName, version, data }))
     setTimeout(callback, 0)
   }
 
   public delete (recordName: string, callback: offlineStoreWriteResponse) {
+    const ignore = this.options.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    if (ignore) {
+        callback(null, recordName)
+        return
+    }
+
     this.storage.removeItem(recordName)
     setTimeout(callback, 0)
   }

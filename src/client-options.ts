@@ -7,6 +7,9 @@ export interface  Options {
     subscriptionInterval: number,
     offlineEnabled: boolean,
     saveUpdatesOffline: boolean,
+    /**
+     * Any storage adapter can be passed as long as it conforms to the RecordOfflineStore interface
+     */
     storage?: RecordOfflineStore,
 
     socketFactory?: (url: string, options: any) => Socket
@@ -50,6 +53,9 @@ export interface  Options {
     recordDeleteTimeout: number
 
     recordReadOnlyMode: boolean
+    /**
+     * Ignore record read only mode for records starting with a given string
+     */
     recordPrefixWriteWhitelist: string[]
 
     /**
@@ -92,18 +98,6 @@ export interface  Options {
     dirtyStorageName: string,
 
     /**
-     * nodeStoragePath specifies the disk location to save records
-     * Default: ./local-storage
-     */
-    nodeStoragePath: string,
-
-    /**
-     * nodeStorageSize specifies maximum database size in megabytes
-     * Default: 5
-     */
-    nodeStorageSize: number
-
-    /**
      * lazyConnect
      */
     lazyConnect: boolean,
@@ -118,7 +112,14 @@ export interface  Options {
      * versions when retrieving from a database
      */
     initialRecordVersion: 1,
-
+    /**
+     * Select wich storage to use: indexdb or localstorage. localstorage in node requires installing node-localstorage or equivalent. Defaults to indexdb.
+     */
+    storageName: string
+    /**
+     * Ignore record names starting with a given string from offline mode
+     */
+    ignorePrefixes: string[],
     indexdb: {
         autoVersion: boolean,
         dbVersion: number,
@@ -135,11 +136,23 @@ export interface  Options {
          * objectStoreNames
          */
         objectStoreNames: string[],
-        ignorePrefixes: string[],
         /**
          * flushTimeout
          */
         flushTimeout: number,
+    },
+    localstorage: {
+        /**
+         * nodeStoragePath specifies the disk location to save records
+         * Default: ./local-storage
+         */
+        nodeStoragePath: string,
+
+        /**
+         * nodeStorageSize specifies maximum database size in megabytes
+         * Default: 5
+         */
+        nodeStorageSize: number
     }
 }
 
@@ -165,7 +178,8 @@ export const DefaultOptions: Options = {
     mergeStrategy: REMOTE_WINS,
     recordDeepCopy: true,
     dirtyStorageName: '__ds__dirty_records',
-    nodeStoragePath: './local-storage',
+    ignorePrefixes: [],
+    storageName: 'indexdb',
     indexdb: {
         autoVersion: false,
         dbVersion: 1,
@@ -173,10 +187,12 @@ export const DefaultOptions: Options = {
         storageDatabaseName: 'deepstream',
         defaultObjectStoreName: 'records',
         objectStoreNames: [],
-        ignorePrefixes: [],
         flushTimeout: 50,
     },
-    nodeStorageSize: 5,
+    localstorage: {
+        nodeStoragePath: './local-storage',
+        nodeStorageSize: 5
+    },
     lazyConnect: false,
     debug: false,
     initialRecordVersion: 1

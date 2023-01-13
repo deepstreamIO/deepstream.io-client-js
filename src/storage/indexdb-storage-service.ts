@@ -16,7 +16,7 @@ interface Request {
     callback: any
 }
 
-export class Storage implements RecordOfflineStore {
+export class IndexdbStorage implements RecordOfflineStore {
   private isReady: boolean = false
   private db: any
   private queuedRequests: Map<string, Request[]> = new Map()
@@ -84,7 +84,7 @@ export class Storage implements RecordOfflineStore {
   }
 
   public get (recordName: string, callback: ((recordName: string, version: number, data: RecordData) => void)) {
-    const ignore = this.options.indexdb.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    const ignore = this.options.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
     if (ignore) {
         callback(recordName, -1, null)
         return
@@ -94,7 +94,7 @@ export class Storage implements RecordOfflineStore {
   }
 
   public set (recordName: string, version: number, data: RecordData, callback: offlineStoreWriteResponse) {
-    const ignore = this.options.indexdb.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    const ignore = this.options.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
     if (ignore) {
         callback(null, recordName)
         return
@@ -104,7 +104,7 @@ export class Storage implements RecordOfflineStore {
   }
 
   public delete (recordName: string, callback: offlineStoreWriteResponse) {
-    const ignore = this.options.indexdb.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
+    const ignore = this.options.ignorePrefixes.some(prefix => recordName.startsWith(prefix))
     if (ignore) {
         callback(null, recordName)
         return

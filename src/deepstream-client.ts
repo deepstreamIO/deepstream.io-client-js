@@ -12,7 +12,8 @@ import { RPCHandler } from './rpc/rpc-handler'
 import { RecordHandler} from './record/record-handler'
 import { PresenceHandler } from './presence/presence-handler'
 import { Emitter } from './util/emitter'
-import { Storage } from './storage/indexdb-storage-service'
+import { IndexdbStorage } from './storage/indexdb-storage-service'
+import { LocalstorageStorage } from './storage/localstorage-storage-service'
 import { NoopStorage } from './storage/noop-storage-service'
 
 export type offlineStoreWriteResponse = ((error: string | null, recordName: string) => void)
@@ -88,7 +89,9 @@ class DeepstreamClient extends Emitter {
     services.socketFactory = this.options.socketFactory || socketFactory
     services.connection = new Connection(services as Services, this.options, url, this)
     if (this.options.offlineEnabled) {
-      services.storage = this.options.storage || new Storage(this.options)
+      if (this.options.storageName === 'indexdb') services.storage = new IndexdbStorage(this.options)
+      if (this.options.storageName === 'localstorage') services.storage = new LocalstorageStorage(this.options)
+      if (this.options.storage) services.storage = this.options.storage
     } else {
       services.storage = new NoopStorage()
     }
