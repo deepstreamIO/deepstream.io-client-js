@@ -23,6 +23,7 @@ module.exports = {
   plugins: [
     new webpack.IgnorePlugin(/url/),
     new webpack.IgnorePlugin(/ws/),
+    new webpack.IgnorePlugin(/localstorage/),
   ],
   node: {
     fs: 'empty',
