@@ -13,7 +13,7 @@
     "strictNullChecks": true,
     "strict": true,
    "declaration": true,
-    //"noUnusedParameters": true,    
+    //"noUnusedParameters": true,
     "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true,
     "downlevelIteration": true,

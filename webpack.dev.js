@@ -12,6 +12,11 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.js'],
+    fallback: {
+      fs: false,
+      module: false,
+      url: false,
+    }
   },
   module: {
     rules: [{
@@ -21,13 +26,8 @@ module.exports = {
     }],
   },
   plugins: [
-    new webpack.IgnorePlugin(/url/),
-    new webpack.IgnorePlugin(/ws/),
-    new webpack.IgnorePlugin(/localstorage/),
-  ],
-  node: {
-    fs: 'empty',
-    module: 'empty',
-    url: 'empty',
-  }
+    new webpack.IgnorePlugin({resourceRegExp: /url/}),
+    new webpack.IgnorePlugin({resourceRegExp:/ws/}),
+    new webpack.IgnorePlugin({resourceRegExp:/localstorage/}),
+  ]
 };
