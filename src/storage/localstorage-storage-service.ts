@@ -58,6 +58,11 @@ export class LocalstorageStorage implements RecordOfflineStore {
   }
 
   public reset (callback: (error: string | null) => void) {
-    callback("We don't keep an index of all entries in LocalStorage, please use indexdb or delete manually")
+    try {
+      this.storage.clear()
+      callback(null)
+    } catch (error: any) {
+      callback(error)
+    }
   }
 }
