@@ -5,7 +5,13 @@ export interface  Options {
     nativeTimerRegistry: boolean,
     intervalTimerResolution: number,
     subscriptionInterval: number,
+    /**
+     * Enable storing an offline copy of the record using indexdb or localstorage
+     */
     offlineEnabled: boolean,
+    /**
+     * Flag in order to save data updates to offline store
+     */
     saveUpdatesOffline: boolean,
     /**
      * Any storage adapter can be passed as long as it conforms to the RecordOfflineStore interface
