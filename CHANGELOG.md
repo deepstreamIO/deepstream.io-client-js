@@ -1,3 +1,16 @@
+## [7.0.0] - 2023.02.01
+
+### Task
+- Enable localstorage in client options. This provokes a breaking change for current users of offline record functionality. if you're not using offline records, there are no breaking changes.
+
+### Fix
+- Logic around dirty records and state transitions
+
+### Misc
+
+- update deps
+- code comments
+
 ## [6.0.5] - 2022.06.20
 
 ### Misc
