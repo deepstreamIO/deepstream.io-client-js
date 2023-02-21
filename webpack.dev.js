@@ -16,6 +16,7 @@ module.exports = {
       fs: false,
       module: false,
       url: false,
+      buffer: require.resolve('buffer/')
     }
   },
   module: {
@@ -28,6 +29,7 @@ module.exports = {
   plugins: [
     new webpack.IgnorePlugin({resourceRegExp: /url/}),
     new webpack.IgnorePlugin({resourceRegExp:/ws/}),
-    new webpack.IgnorePlugin({resourceRegExp:/localstorage/}),
+    new webpack.IgnorePlugin({resourceRegExp:/node-localstorage/}),
+    new webpack.ProvidePlugin({Buffer: ['buffer', 'Buffer']})
   ]
 };
