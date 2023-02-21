@@ -1,3 +1,9 @@
+## [7.0.1] - 2023.02.21
+
+### Fix
+- Polyfill buffer since webpack doesn't do it starting v5
+- remove outdated deps
+
 ## [7.0.0] - 2023.02.01
 
 ### Task
