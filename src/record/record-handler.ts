@@ -6,6 +6,7 @@ import { RecordCore, WriteAckCallback } from './record-core'
 import { Record } from './record'
 import { AnonymousRecord } from './anonymous-record'
 import { List } from './list'
+import { Dequeue } from './dequeue'
 import { Listener, ListenCallback } from '../util/listener'
 import { SingleNotifier } from './single-notifier'
 import { WriteAcknowledgementService } from './write-ack-service'
@@ -108,6 +109,16 @@ export class RecordHandler {
    */
   public getList (name: string): List {
     return new List(this.getRecordCore(name))
+  }
+
+  /**
+   * Returns an existing Dequeue or creates a new one. A Dq is a specialised
+   * type of record that provides a double-ended queue interface.
+   *
+   * @param   {String} name       the unique name of the Dq
+   */
+  public getDq (name: string): Dequeue {
+    return new Dequeue(this.getRecordCore(name))
   }
 
   /**
