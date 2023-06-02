@@ -1,3 +1,9 @@
+## [7.0.2] - 2023.06.02
+
+### Feature
+
+New API to create double ended queues, a new implementation of lists that are efficient in network usage.
+
 ## [7.0.1] - 2023.02.21
 
 ### Fix
