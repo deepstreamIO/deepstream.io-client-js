@@ -1,3 +1,13 @@
+## [7.0.3] - 2024.02.16
+
+### Fix
+
+onAuthUnsuccessful accepts custom server messages, either a string in response.body or a JSON `{clientData: 'customMessage' }`
+
+### Misc
+
+- update deps
+
 ## [7.0.2] - 2023.06.02
 
 ### Feature
