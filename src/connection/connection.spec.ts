@@ -177,6 +177,25 @@ describe('connection', () => {
     assert.calledWithExactly(authCallback, false, { reason: EVENT.INVALID_AUTHENTICATION_DETAILS })
   })
 
+  it('handles rejected authentication with custom data', async () => {
+    emitterMock
+      .expects('emit')
+      .once()
+      .withExactArgs(
+        EVENT.CONNECTION_STATE_CHANGED,
+        CONNECTION_STATE.AWAITING_AUTHENTICATION
+      )
+
+    await awaitConnectionAck()
+    await sendChallenge()
+    await receiveChallengeAccept()
+    await sendAuth()
+    await receiveAuthRejectResponse(AUTH_ACTION.INVALID_MESSAGE_DATA)
+
+    assert.calledOnce(authCallback)
+    assert.calledWithExactly(authCallback, false, { reason: AUTH_ACTION.INVALID_MESSAGE_DATA })
+  })
+
   it('handles authenticating too may times', async () => {
     emitterMock
       .expects('emit')
@@ -565,11 +584,11 @@ describe('connection', () => {
     await PromiseDelay(0)
   }
 
-  async function receiveAuthRejectResponse () {
+  async function receiveAuthRejectResponse (message?: any) {
     socket.simulateMessages([{
       topic: TOPIC.AUTH,
       action: AUTH_ACTION.AUTH_UNSUCCESSFUL,
-      parsedData: AUTH_ACTION.INVALID_MESSAGE_DATA
+      parsedData: message
     }])
 
     await PromiseDelay(10)

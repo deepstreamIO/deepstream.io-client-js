@@ -572,7 +572,7 @@ export class Connection {
 
     if (message.action === AUTH_ACTION.AUTH_UNSUCCESSFUL) {
       this.stateMachine.transition(TRANSITIONS.UNSUCCESFUL_LOGIN)
-      this.onAuthUnSuccessful()
+      this.onAuthUnSuccessful(message.parsedData)
       return
     }
 
@@ -603,8 +603,8 @@ export class Connection {
     this.authCallback = null
   }
 
-  private onAuthUnSuccessful (): void {
-    const reason = { reason: EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] }
+  private onAuthUnSuccessful (clientData?: any): void {
+    const reason = { reason: clientData || EVENT[EVENT.INVALID_AUTHENTICATION_DETAILS] }
     if (this.resumeCallback) {
       this.resumeCallback(reason)
       this.resumeCallback = null
