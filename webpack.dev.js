@@ -31,5 +31,11 @@ module.exports = {
     new webpack.IgnorePlugin({resourceRegExp:/ws/}),
     new webpack.IgnorePlugin({resourceRegExp:/node-localstorage/}),
     new webpack.ProvidePlugin({Buffer: ['buffer', 'Buffer']})
+  ],
+  ignoreWarnings: [
+    {
+      module: /node_modules\/protobufjs\/src\/util\/inquire\.js/,
+      message: /Critical dependency: the request of a dependency is an expression/
+    }
   ]
 };
