@@ -1,3 +1,4 @@
+const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
@@ -12,6 +13,10 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.js'],
+    alias: {
+      [path.resolve(__dirname, 'src/connection/socket-factory.ts')]:
+        path.resolve(__dirname, 'src/connection/socket-factory-browser.ts')
+    },
     fallback: {
       fs: false,
       module: false,
@@ -28,7 +33,6 @@ module.exports = {
   },
   plugins: [
     new webpack.IgnorePlugin({resourceRegExp: /url/}),
-    new webpack.IgnorePlugin({resourceRegExp:/ws/}),
     new webpack.IgnorePlugin({resourceRegExp:/node-localstorage/}),
     new webpack.ProvidePlugin({Buffer: ['buffer', 'Buffer']})
   ],

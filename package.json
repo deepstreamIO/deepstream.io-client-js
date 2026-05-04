@@ -44,7 +44,7 @@
   },
   "browser": {
     "net": false,
-    "ws": false
+    "./dist/src/connection/socket-factory.js": "./dist/src/connection/socket-factory-browser.js"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.1",

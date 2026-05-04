@@ -284,7 +284,7 @@ export class Connection {
    * was initialised with.
    */
   private createEndpoint (): void {
-    this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions, this.options.heartbeatInterval)
+    this.endpoint = this.services.socketFactory(this.url, this.options.socketOptions, this.options.heartbeatInterval, this.services.logger)
 
     this.endpoint.onopened = this.onOpen.bind(this)
     this.endpoint.onerror = this.onError.bind(this)
