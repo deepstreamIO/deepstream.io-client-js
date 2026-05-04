@@ -1,3 +1,13 @@
+## [7.0.6] - 2026.05.04
+
+### Fix bug 608
+
+- Node v>= 22 provides a native webSocket that does not support options. Fixed and separated the socket factory for browsers: browser bundle does not include ws at all reducing size in ~50kb.
+
+### Chore
+
+- update deps
+
 ## [7.0.5] - 2025.04.26
 
 ### Chore
