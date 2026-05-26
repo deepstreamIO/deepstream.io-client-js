@@ -177,6 +177,94 @@ describe('online scenario, not individual tests', () => {
         recordCore.set({ path: 'firstname' })
     })
 
+    it('sends a single PATCH_MULTI message for a batch of patches after when ready', () => {
+        recordServices.readRegistry.recieve(READ_RESPONSE)
+
+        const patches = [
+            { path: 'firstname', data: 'Marty' },
+            { path: 'lastname',  data: 'McFly' }
+        ]
+
+        services.connectionMock
+            .expects('sendMessage')
+            .once()
+            .withExactArgs({
+                topic: TOPIC.RECORD,
+                action: RECORD_ACTION.PATCH_MULTI,
+                name,
+                version: 2,
+                parsedData: patches
+            })
+
+        recordCore.setMulti({ patches })
+    })
+
+    it('routes setMulti through writeAckService when a callback is supplied', () => {
+        recordServices.readRegistry.recieve(READ_RESPONSE)
+
+        const patches = [
+            { path: 'firstname', data: 'Marty' },
+            { path: 'lastname',  data: 'McFly' }
+        ]
+        const cb = () => {}
+
+        recordServices.writeAckServiceMock
+            .expects('send')
+            .once()
+            .withExactArgs(match({
+                topic: TOPIC.RECORD,
+                action: RECORD_ACTION.PATCH_MULTI,
+                name,
+                version: 2,
+                parsedData: patches
+            }), cb)
+
+        services.connectionMock.expects('sendMessage').never()
+
+        recordCore.setMulti({ patches, callback: cb })
+    })
+
+    it('applies an inbound PATCH_MULTI message by replaying each op locally', () => {
+        recordServices.readRegistry.recieve(READ_RESPONSE)
+
+        const incoming = {
+            topic: TOPIC.RECORD,
+            action: RECORD_ACTION.PATCH_MULTI,
+            name,
+            version: 2,
+            parsedData: [
+                { path: 'firstname', data: 'Marty' },
+                { path: 'lastname',  data: 'McFly' }
+            ]
+        }
+
+        recordCore.handle(incoming as any)
+
+        expect(recordCore.get()).to.deep.equal({ firstname: 'Marty', lastname: 'McFly' })
+        expect(recordCore.version).to.equal(2)
+    })
+
+    it('only bumps the version once per setMulti call', () => {
+        recordServices.readRegistry.recieve(READ_RESPONSE)
+        expect(recordCore.version).to.equal(1)
+
+        services.connectionMock.expects('sendMessage').once()
+
+        recordCore.setMulti({ patches: [
+            { path: 'a', data: 1 },
+            { path: 'b', data: 2 },
+            { path: 'c', data: 3 }
+        ]})
+
+        expect(recordCore.version).to.equal(2)
+    })
+
+    it('rejects setMulti with an empty patches array', () => {
+        recordServices.readRegistry.recieve(READ_RESPONSE)
+        services.connectionMock.expects('sendMessage').never()
+        expect(() => recordCore.setMulti({ patches: [] })).to.throw(/non-empty array/)
+    })
+
     it('sends erase write ack messages for erase after when ready', () => {
         recordServices.readRegistry.recieve({ ...READ_RESPONSE, parsedData: { firstname: 'John' }})
 

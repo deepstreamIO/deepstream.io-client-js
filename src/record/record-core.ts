@@ -261,6 +261,77 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   /**
+   * Apply an ordered batch of {path, data} patches to the record atomically
+   * (one version bump, one PATCH_MULTI message on the wire). data === undefined
+   * on a patch deletes the path.
+   */
+  public setMulti ({ patches, callback }: { patches: Array<{ path: string, data: any }>, callback?: WriteAckCallback }): void {
+    if (this.checkDestroyed('setMulti')) {
+      return
+    }
+    if (!Array.isArray(patches) || patches.length === 0) {
+      throw new Error('setMulti requires a non-empty array of patches')
+    }
+    for (let i = 0; i < patches.length; i++) {
+      if (!patches[i] || typeof patches[i].path !== 'string' || patches[i].path.length === 0) {
+        throw new Error('setMulti patches must each have a non-empty path string')
+      }
+    }
+    if (this.recordReadOnlyMode) {
+      this.services.logger.error(
+        { topic: TOPIC.RECORD }, EVENT.RECORD_READ_ONLY_MODE, 'Attempting to set data when in readonly mode, ignoring'
+      )
+      return
+    }
+
+    if (this.isReady === false) {
+      // Decompose into individual pendingWrites; they will be coalesced and
+      // flushed as a single UPDATE by applyPendingWrites once ready.
+      for (let i = 0; i < patches.length - 1; i++) {
+        this.pendingWrites.push({ path: patches[i].path, data: patches[i].data })
+      }
+      const last = patches[patches.length - 1]
+      this.pendingWrites.push({ path: last.path, data: last.data, callback })
+      return
+    }
+
+    const oldValue = this.data
+    let newValue = oldValue
+    for (let i = 0; i < patches.length; i++) {
+      newValue = setPath(newValue, patches[i].path, patches[i].data)
+    }
+
+    if (utils.deepEquals(oldValue, newValue)) {
+      if (callback) {
+        this.services.timerRegistry.requestIdleCallback(() => callback(null, this.name))
+      }
+      return
+    }
+
+    this.applyChange(newValue)
+
+    if (this.services.connection.isConnected) {
+      this.sendPatchMulti(patches, callback)
+    } else {
+      if (callback) {
+        callback(EVENT.CLIENT_OFFLINE, this.name)
+      }
+      this.saveUpdate()
+    }
+  }
+
+  public setMultiWithAck (args: { patches: Array<{ path: string, data: any }>, callback?: WriteAckCallback }): Promise<void> | void {
+    if (args.callback) {
+      this.setMulti(args)
+      return
+    }
+    return new Promise((resolve, reject) => {
+      args.callback = error => error === null ? resolve() : reject(error)
+      this.setMulti(args)
+    })
+  }
+
+  /**
  * Returns a copy of either the entire dataset of the record
  * or - if called with a path - the value of that path within
  * the record's dataset.
@@ -499,7 +570,7 @@ export class RecordCore<Context = null> extends Emitter {
   }
 
   public handle (message: RecordMessage): void {
-    if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE) {
+    if (message.action === RECORD_ACTION.PATCH || message.action === RECORD_ACTION.UPDATE || message.action === RECORD_ACTION.ERASE || message.action === RECORD_ACTION.PATCH_MULTI) {
       if (this.stateMachine.state === RECORD_STATE.MERGING) {
         // The scenario this covers is when a read is requested because the head doesn't match
         // but an update comes in because we subscribed. In that scenario we just ignore the update
@@ -699,6 +770,32 @@ export class RecordCore<Context = null> extends Emitter {
     }
   }
 
+  public sendPatchMulti (patches: Array<{ path: string, data: any }>, callback?: WriteAckCallback) {
+    if (this.recordReadOnlyMode) {
+      this.services.logger.error(
+        { topic: TOPIC.RECORD }, EVENT.RECORD_READ_ONLY_MODE, 'Attempting to send updated data, ignoring'
+      )
+      return
+    }
+    if (this.recordServices.dirtyService.isDirty(this.name)) {
+      this.recordServices.dirtyService.setDirty(this.name, false)
+    } else {
+      (this.version as number)++
+    }
+    const message = {
+      topic: TOPIC.RECORD,
+      action: RECORD_ACTION.PATCH_MULTI,
+      name: this.name,
+      version: this.version,
+      parsedData: patches
+    }
+    if (callback) {
+      this.recordServices.writeAckService.send(message as unknown as RecordWriteMessage, callback)
+    } else {
+      this.services.connection.sendMessage(message as unknown as RecordWriteMessage)
+    }
+  }
+
   public sendCreateUpdate (data: RecordData) {
     this.services.connection.sendMessage({
       name: this.name,
@@ -721,7 +818,10 @@ export class RecordCore<Context = null> extends Emitter {
       this.version = version
     } else if (this.version + 1 !== version) {
       this.stateMachine.transition(RECORD_OFFLINE_ACTIONS.INVALID_VERSION)
-      if (message.action === RECORD_ACTION.PATCH) {
+      if (
+        message.action === RECORD_ACTION.PATCH ||
+        message.action === RECORD_ACTION.PATCH_MULTI
+      ) {
         /**
         * Request a snapshot so that a merge can be done with the read reply which contains
         * the full state of the record
@@ -738,6 +838,12 @@ export class RecordCore<Context = null> extends Emitter {
     let newData
     if (message.action === RECORD_ACTION.PATCH) {
       newData = setPath(this.data, message.path as string, data)
+    } else if (message.action === RECORD_ACTION.PATCH_MULTI) {
+      const ops = data as unknown as Array<{ path: string, data: any }>
+      newData = this.data
+      for (let i = 0; i < ops.length; i++) {
+        newData = setPath(newData, ops[i].path, ops[i].data)
+      }
     } else if (message.action === RECORD_ACTION.ERASE) {
       newData = setPath(this.data, message.path as string, undefined)
     } else {

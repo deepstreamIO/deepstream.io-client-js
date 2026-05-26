@@ -66,6 +66,21 @@ export class Record extends Emitter  {
     }
 
     /**
+     * Applies an ordered batch of {path, data} patches atomically (one PATCH_MULTI
+     * message on the wire, one server-side version bump). Set `data: undefined`
+     * on a patch to delete that path.
+     */
+    public setMulti (patches: Array<{ path: string, data: any }>, callback?: WriteAckCallback): void {
+        this.record.setMulti({ patches, callback })
+    }
+
+    public setMultiWithAck (patches: Array<{ path: string, data: any }>): Promise<void>
+    public setMultiWithAck (patches: Array<{ path: string, data: any }>, callback: WriteAckCallback): void
+    public setMultiWithAck (patches: Array<{ path: string, data: any }>, callback?: WriteAckCallback): Promise<void> | void {
+        return this.record.setMultiWithAck({ patches, callback })
+    }
+
+    /**
      * Deletes a path from the record. Equivalent to doing `record.set(path, undefined)`
      *
      * @param {String} path The path to be deleted

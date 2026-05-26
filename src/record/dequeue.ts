@@ -248,71 +248,103 @@ export class Dequeue extends Emitter {
     }
 
     /**
-     * Add value at first position
+     * Add value at first position. Issues a single atomic PATCH_MULTI message
+     * to the server (one version bump, no race window between sub-writes).
+     * Pass a callback (or use unshiftWithAck) to detect errors on old servers
+     * that reject PATCH_MULTI as INVALID_MESSAGE_DATA — the caller can then
+     * fall back to setEntries with the desired ordering.
      *
      * @param {String} entry
      */
-    public unshift (entry: string) : void {
+    public unshift (entry: string, callback?: WriteAckCallback) : void {
       // check if empty
       if (this.isEmpty()) {
-        this.setEntries([entry])
+        this.setEntries([entry], callback)
         return
       }
       const head = this.record.get(this.headPath) as Head || this.emptyHead
       const key = this.getNodeKey()
+      const patches: Array<{ path: string, data: any }> = [
+        { path: key, data: { d: entry, p: '', n: head.n } }
+      ]
+      if (head.n) {
+        patches.push({ path: `${head.n}.p`, data: key })
+      }
+      patches.push({ path: `${this.headPath}.n`, data: key })
       this.beforeChange()
-      // set node
-      this.record.set({path: key, data: {d: entry, p: '', n: head.n}})
-      // update previous first node
-      if (head.n) this.record.set({path: `${head.n}.p`, data: key})
-      // update head
-      this.record.set({path: `${this.headPath}.n`, data: key})
+      this.record.setMulti({ patches, callback })
       this.afterChange()
     }
 
+    public unshiftWithAck (entry: string): Promise<void>
+    public unshiftWithAck (entry: string, callback: WriteAckCallback): void
+    public unshiftWithAck (entry: string, callback?: WriteAckCallback): Promise<void> | void {
+      if (!callback) {
+        return new Promise((resolve, reject) => {
+          this.unshift(entry, (error: string | null) => error ? reject(error) : resolve())
+        })
+      }
+      this.unshift(entry, callback)
+    }
+
     /**
-     * Add value at last position
+     * Add value at last position. See unshift() for atomicity semantics.
      *
      * @param {String} entry
      */
-    public push (entry: string) : void {
+    public push (entry: string, callback?: WriteAckCallback) : void {
       // check if empty
       if (this.isEmpty()) {
-        this.setEntries([entry])
+        this.setEntries([entry], callback)
         return
       }
       const head = this.record.get(this.headPath) as Head || this.emptyHead
       const key = this.getNodeKey()
+      const patches: Array<{ path: string, data: any }> = [
+        { path: key, data: { d: entry, p: head.p, n: '' } }
+      ]
+      if (head.p) {
+        patches.push({ path: `${head.p}.n`, data: key })
+      }
+      patches.push({ path: `${this.headPath}.p`, data: key })
       this.beforeChange()
-      // set node
-      this.record.set({path: key, data: {d: entry, p: head.p, n: ''}})
-      // update previous last node
-      if (head.p) this.record.set({path: `${head.p}.n`, data: key})
-      // update head
-      this.record.set({path: `${this.headPath}.p`, data: key})
+      this.record.setMulti({ patches, callback })
       this.afterChange()
     }
 
+    public pushWithAck (entry: string): Promise<void>
+    public pushWithAck (entry: string, callback: WriteAckCallback): void
+    public pushWithAck (entry: string, callback?: WriteAckCallback): Promise<void> | void {
+      if (!callback) {
+        return new Promise((resolve, reject) => {
+          this.push(entry, (error: string | null) => error ? reject(error) : resolve())
+        })
+      }
+      this.push(entry, callback)
+    }
+
     /**
-     * Remove a node
+     * Remove a node — atomic PATCH_MULTI batch updating neighbour pointers,
+     * head pointers if needed, and erasing the node itself.
      */
-    private removeNode (nodeKey: string, node: Node) {
+    private removeNode (nodeKey: string, node: Node, callback?: WriteAckCallback) {
       const head = this.record.get(this.headPath) as Head || this.emptyHead
-      this.beforeChange()
-      // update previous and next node
-      if (node.p) this.record.set({path: `${node.p}.n`, data: node.n})
-      if (node.n) this.record.set({path: `${node.n}.p`, data: node.p})
-      // if last node was removed update head
+      const patches: Array<{ path: string, data: any }> = []
+      if (node.p) {
+        patches.push({ path: `${node.p}.n`, data: node.n })
+      }
+      if (node.n) {
+        patches.push({ path: `${node.n}.p`, data: node.p })
+      }
       if (head.p === nodeKey) {
-        this.record.set({path: `${this.headPath}.p`, data: node.p})
+        patches.push({ path: `${this.headPath}.p`, data: node.p })
       }
-      // if first node was removed update head
       if (head.n === nodeKey) {
-        this.record.set({path: `${this.headPath}.n`, data: node.n})
+        patches.push({ path: `${this.headPath}.n`, data: node.n })
       }
-      // erase node
-      this.record.set({path: nodeKey, data: undefined})
-
+      patches.push({ path: nodeKey, data: undefined })
+      this.beforeChange()
+      this.record.setMulti({ patches, callback })
       this.afterChange()
     }
 
@@ -353,11 +385,11 @@ export class Dequeue extends Emitter {
    * @param {String} entry
    * @param {Number} [index]
    */
-    public insertEntry (entry: string, index: number) {
+    public insertEntry (entry: string, index: number, callback?: WriteAckCallback) {
       const hasIndex = this.hasIndex(index)
 
       if (index === 0) {
-        this.unshift(entry)
+        this.unshift(entry, callback)
         return
       }
 
@@ -369,14 +401,15 @@ export class Dequeue extends Emitter {
           const node = this.record.get(next) as Node
           if (index === position) {
             const key = this.getNodeKey()
+            const patches: Array<{ path: string, data: any }> = [
+              { path: key, data: { d: entry, n: next, p: node.p } },
+              { path: `${next}.p`, data: key }
+            ]
+            if (node.p) {
+              patches.push({ path: `${node.p}.n`, data: key })
+            }
             this.beforeChange()
-            // set node
-            this.record.set({path: key, data: {d: entry, n: next, p: node.p}})
-            // update next node
-            this.record.set({path: `${next}.p`, data: key})
-            // update previous node
-            if (node.p) this.record.set({path: `${node.p}.n`, data: key})
-
+            this.record.setMulti({ patches, callback })
             this.afterChange()
             break
           }
