@@ -1,3 +1,10 @@
+## [7.1.0] - 2026.05.26
+
+### Feature:
+
+- Starting this version it is possible to make multiple path updates atomically in one message, with one version bump for a given record.
+- add setMulti / setMultiWithAck on Record; atomic PATCH_MULTI for Dequeue mutators; new unshiftWithAck / pushWithAck
+
 ## [7.0.6] - 2026.05.04
 
 ### Fix bug 608
