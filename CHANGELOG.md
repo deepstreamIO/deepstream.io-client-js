@@ -1,3 +1,9 @@
+## [7.1.1] - 2026.08.25
+
+### Fix:
+
+- Update local value on dq when removing an entry
+
 ## [7.1.0] - 2026.05.26
 
 ### Feature:
