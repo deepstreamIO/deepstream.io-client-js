@@ -1,5 +1,5 @@
 import * as utils from '../util/utils'
-import { EVENT, RecordMessage } from '../constants'
+import { EVENT, RecordMessage, RecordData } from '../constants'
 import { RecordCore, WriteAckCallback } from './record-core'
 import { Emitter } from '../util/emitter'
 
@@ -11,6 +11,7 @@ export class Dequeue extends Emitter {
     public  debugId = this.record.getDebugId()
     private wrappedFunctions: Map<Function, Function> = new Map()
     private originalApplyUpdate: Function
+    private originalApplyChange: Function
 
     private beforeStructure: any
     private headPath: string = 'h'
@@ -27,6 +28,8 @@ export class Dequeue extends Emitter {
         super()
         this.originalApplyUpdate = this.record.applyUpdate.bind(this.record)
         this.record.applyUpdate = this.applyUpdate.bind(this)
+        this.originalApplyChange = this.record.applyChange.bind(this.record)
+        this.record.applyChange = this.applyChange.bind(this)
         this.record.addReference(this)
         this.record.on('discard', () => this.emit('discard', this), this)
         this.record.on('delete', () => this.emit('delete', this), this)
@@ -351,10 +354,16 @@ export class Dequeue extends Emitter {
     /**
      * Removes an entry from the list. If no index is given it will remove the first occurrence
      *
-     * @param {String} entry
-     * @param {Number} [index]
      */
-    public removeEntry (entry: string, index?: number) {
+    public removeEntry (entry: string, indexOrCallback?: number|WriteAckCallback, callback?: WriteAckCallback) {
+      let index
+      if (typeof indexOrCallback === 'number') {
+        index = indexOrCallback
+      }
+      if (typeof indexOrCallback === 'function') {
+        callback = indexOrCallback
+      }
+
       const head = this.record.get(this.headPath) as Head || this.emptyHead
       let next = head.n
       let position = 0
@@ -362,11 +371,11 @@ export class Dequeue extends Emitter {
         const node = this.record.get(next) as Node
         if (node.d === entry) {
           if (!index) {
-            this.removeNode(next, node)
+            this.removeNode(next, node, callback)
             break
           }
           if (index && index === position) {
-            this.removeNode(next, node)
+            this.removeNode(next, node, callback)
             break
           }
         }
@@ -508,10 +517,19 @@ export class Dequeue extends Emitter {
      * Proxies the underlying Record's _update method.
      */
     private applyUpdate  (message: RecordMessage) {
-        this.beforeChange()
-        this.originalApplyUpdate(message)
-        this.afterChange()
-      }
+      this.beforeChange()
+      this.originalApplyUpdate(message)
+      this.afterChange()
+    }
+
+    /**
+     * Proxies the underlying Record's _change method in order to update local values
+     */
+    private applyChange  (newData: RecordData, force: boolean = false, save: boolean = true) {
+      // force getEntries() to recompute (version is never < 0)
+      this.lastVersion = -1
+      this.originalApplyChange(newData, force, save)
+    }
 
     /**
      * Validates that the index provided is within the current set of entries.
