@@ -15,11 +15,11 @@ For tutorials see the [tutorial page](https://deepstreamio.github.io/docs/tutori
 
 This repository comes with the Typescript typings bundled. No need to download them separately!
 
-Make sure the `src/client.d.ts` file is accessible to the Typescript compiler. Do this by making sure it's an included file in tsconfig.json by adding a `typeRoots` defininition. (Required Typescript 2.0 or higher.)
+Import the client from `@deepstream/client`; TypeScript resolves the bundled declarations through the package's `types` field. No custom `typeRoots` entry is needed.
 
->  "typeRoots": [
-     "./node_modules/deepstream.io-client.js/src/client.d.ts"
-    ]
+```typescript
+import { DeepstreamClient } from '@deepstream/client'
+```
 
 ## Install in react-native
 
